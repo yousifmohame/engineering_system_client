@@ -16,19 +16,20 @@ import { clsx } from "clsx";
 
 // تعريف القائمة وربطها بمعرفات الشاشات في النظام
 const MENU_ITEMS = [
-  { id: "DASH", label: "لوحة التحكم", icon: LayoutDashboard },
-  { id: "055", label: "المعاملات", icon: FileText },
-  { id: "310", label: "صكوك الملكية", icon: ShieldCheck }, // ✅ الإضافة الجديدة هنا
+  // { id: "DASH", label: "لوحة التحكم", icon: LayoutDashboard },
+  // { id: "055", label: "المعاملات", icon: FileText },
+  { id: "310", label: "ملفات الملكية", icon: ShieldCheck }, // ✅ الإضافة الجديدة هنا
   { id: "300", label: "العملاء", icon: Users },
-  { id: "817", label: "إدارة الموظفين", icon: UserCog },
-  { id: "937", label: "إدارة المعقبين", icon: Users },
-  { id: "939", label: "شوارع الرياض", icon: MapIcon },
-  { id: "285", label: "المشاريع", icon: Briefcase },
-  { id: "FIN", label: "المالية", icon: FileCheck },
-  { id: "SET", label: "الإعدادات", icon: Settings },
+  // { id: "817", label: "إدارة الموظفين", icon: UserCog },
+  // { id: "937", label: "إدارة المعقبين", icon: Users },
+  // { id: "939", label: "شوارع الرياض", icon: MapIcon },
+  // { id: "285", label: "المشاريع", icon: Briefcase },
+  // { id: "FIN", label: "المالية", icon: FileCheck },
+  // { id: "942", label: "إدارة المستندات والقوالب", icon: Settings },
+  // { id: "SET", label: "الإعدادات", icon: Settings },
 ];
 
-export const Sidebar = () => {
+const Sidebar = () => {
   const { activeScreenId, openScreen } = useAppStore();
 
   return (
@@ -90,3 +91,5 @@ export const Sidebar = () => {
     </aside>
   );
 };
+
+export default Sidebar;

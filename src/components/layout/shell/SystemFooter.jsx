@@ -6,7 +6,7 @@ import {
 import { clsx } from 'clsx';
 import api from '../../../api/axios';
 
-export const SystemFooter = () => {
+const SystemFooter = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [serverStatus, setServerStatus] = useState('checking');
   const [latency, setLatency] = useState(null);
@@ -134,3 +134,5 @@ const StatusItem = ({ ok, label, icon: Icon, okColor }) => (
     <span className="text-slate-400">{label}</span>
   </div>
 );
+
+export default SystemFooter;

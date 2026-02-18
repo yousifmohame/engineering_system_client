@@ -4,11 +4,37 @@ import api from './axios';
 // 1. إدارة المعاملات اليومية (Instances) - شاشة 286 و 284
 // ============================================================
 
-// إنشاء معاملة جديدة
+export const getTransactions = async (params) => {
+  // params: { page, limit, search, status, ... }
+  const response = await api.get('/transactions', { params });
+  return response.data;
+};
+
 export const createTransaction = async (data) => {
   const response = await api.post('/transactions', data);
   return response.data;
 };
+
+// نحتاج أيضاً لدوال مساعدة لجلب القوائم
+export const searchClients = async (query) => {
+  // ✅ التصحيح: يجب تمرير كلمة البحث إلى الباك اند
+  const response = await api.get('/clients/simple', { 
+    params: { search: query } 
+  });
+  return response.data;
+};
+
+export const getTransactionTypes = async () => {
+  // افترضنا وجود هذا المسار في الباك اند
+  const response = await axios.get('/settings/transaction-types'); 
+  return response.data;
+};
+
+// إنشاء معاملة جديدة
+// export const createTransaction = async (data) => {
+//   const response = await api.post('/transactions', data);
+//   return response.data;
+// };
 
 // تحديث معاملة موجودة
 export const updateTransaction = async (id, data) => {
@@ -35,12 +61,12 @@ export const deleteTransaction = async (id) => {
 };
 
 // جلب قائمة مختصرة للأنواع (للقوائم المنسدلة)
-export const getTransactionTypes = async () => {
-  const response = await api.get('/transactions/types/simple'); // تأكد من المسار في الباك اند
-  // إذا لم يكن لديك مسار simple، استخدم العام:
-  // const response = await api.get('/transactions/types');
-  return response.data;
-};
+// export const getTransactionTypes = async () => {
+//   const response = await api.get('/transactions/types/simple'); // تأكد من المسار في الباك اند
+//   // إذا لم يكن لديك مسار simple، استخدم العام:
+//   // const response = await api.get('/transactions/types');
+//   return response.data;
+// };
 
 // ============================================================
 // 2. إدارة قوالب/أنواع المعاملات (Templates) - شاشة الإعدادات 701

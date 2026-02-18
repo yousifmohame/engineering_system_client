@@ -2,7 +2,7 @@ import React from "react";
 import { useAppStore } from "../../stores/useAppStore";
 import ClientManagement from "./ClientManagement";
 
-export const ClientsScreenWrapper = () => {
+const ClientsScreenWrapper = () => {
   const { activeTabPerScreen } = useAppStore();
   const activeTabId = activeTabPerScreen["300"];
 
@@ -16,3 +16,5 @@ export const ClientsScreenWrapper = () => {
     </div>
   );
 };
+
+export default ClientsScreenWrapper;

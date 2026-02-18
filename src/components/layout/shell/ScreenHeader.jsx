@@ -1,192 +1,143 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useAppStore } from "../../../stores/useAppStore";
 import {
   X,
   Home,
   ChevronLeft,
   RefreshCw,
-  Clock,
-  Calendar,
-  Wifi,
-  Activity,
-  ShieldCheck,
+  LayoutTemplate
 } from "lucide-react";
 import { clsx } from "clsx";
 
-export const ScreenHeader = ({ screenId }) => {
-  const { screenTabs, activeTabPerScreen, setActiveTab, removeTab } =
-    useAppStore();
-  const [sessionDuration, setSessionDuration] = useState(0);
-  const [currentDate, setCurrentDate] = useState("");
+const ScreenHeader = ({ screenId }) => {
+  // 👈 تمت إضافة openScreen للعودة للرئيسية
+  const { screenTabs, activeTabPerScreen, setActiveTab, removeTab, openScreen } = useAppStore();
 
   const tabs = screenTabs[screenId] || [];
   const activeTabId = activeTabPerScreen[screenId];
   const activeTabTitle = tabs.find((t) => t.id === activeTabId)?.title;
 
-  // 1. منطق عداد الجلسة
-  useEffect(() => {
-    // تنسيق التاريخ مرة واحدة عند التحميل
-    const dateOptions = {
-      weekday: "long",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    };
-    setCurrentDate(new Date().toLocaleDateString("ar-SA", dateOptions));
-
-    const timer = setInterval(() => {
-      setSessionDuration((prev) => prev + 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  // تحويل الثواني إلى تنسيق HH:MM:SS
-  const formatTime = (totalSeconds) => {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-  };
-
   // تحديد اسم الشاشة للعرض
   const getScreenName = () => {
     switch (screenId) {
-      case "300":
-        return "إدارة العملاء";
-      case "310":
-        return "ملفات الملكية";
-      case "320":
-        return "المعاملات"; // افتراض
-      default:
-        return "النظام";
+      case "300": return "إدارة العملاء";
+      case "310": return "ملفات الملكية";
+      case "320": return "المعاملات";
+      default: return "شاشة النظام";
     }
   };
 
   return (
-    <div className="sticky top-0 z-40 flex flex-col bg-white border-b border-gray-200 shadow-sm transition-all">
+    <div className="sticky top-0 z-30 flex flex-col bg-white shrink-0">
+      
       {/* ==================================================================================
-          الشريط العلوي: شريط المعلومات والأدوات (Info Bar)
+          1. شريط مسار التنقل (Breadcrumbs) - الآن تفاعلي بالكامل
       ================================================================================== */}
-      <div className="h-9 flex items-center justify-between px-4 bg-slate-50 border-b border-gray-200/50">
-        {/* اليمين: مسار التنقل (Breadcrumbs) */}
-        <div className="flex items-center text-[11px] text-gray-500 font-medium">
-          <div className="flex items-center hover:text-blue-600 transition-colors cursor-pointer">
-            <Home className="w-3.5 h-3.5 ml-1.5" />
+      <div className="h-10 flex items-center justify-between px-4 bg-white border-b border-slate-100 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+        
+        <div className="flex items-center text-[11px] font-medium text-slate-500">
+          
+          {/* 👈 1. زر الرئيسية (ينقلك للداشبورد) */}
+          <div 
+            onClick={() => openScreen('001')} // افتراض أن 001 هو كود الرئيسية، عدله حسب نظامك
+            className="flex items-center hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded transition-colors cursor-pointer group"
+            title="العودة للصفحة الرئيسية للنظام"
+          >
+            <Home className="w-3.5 h-3.5 ml-1.5 text-slate-400 group-hover:text-blue-600 transition-colors" />
             <span>الرئيسية</span>
           </div>
 
-          <ChevronLeft className="w-3 h-3 mx-1 text-gray-300" />
+          <ChevronLeft className="w-3.5 h-3.5 mx-0.5 text-slate-300" />
 
-          <span className="text-gray-700">{getScreenName()}</span>
+          {/* 👈 2. زر الشاشة (يعيدك للتاب الأساسي الأول للشاشة المفتوحة) */}
+          <div 
+            onClick={() => {
+              if (tabs.length > 0) setActiveTab(screenId, tabs[0].id);
+            }}
+            className="flex items-center gap-1.5 cursor-pointer hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+            title={`إعادة تعيين شاشة ${getScreenName()}`}
+          >
+            <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[9px] font-mono border border-slate-200">
+              {screenId}
+            </span>
+            <span className="text-slate-700 font-bold hover:text-blue-700">{getScreenName()}</span>
+          </div>
 
+          {/* التاب النشط الحالي (غير قابل للضغط لأنه التاب الحالي) */}
           {activeTabTitle && (
             <>
-              <ChevronLeft className="w-3 h-3 mx-1 text-gray-300" />
-              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+              <ChevronLeft className="w-3.5 h-3.5 mx-0.5 text-slate-300" />
+              <span className="text-blue-700 font-bold bg-blue-50/50 px-2 py-1 rounded cursor-default select-text">
                 {activeTabTitle}
               </span>
             </>
           )}
         </div>
 
-        {/* اليسار: مؤشرات النظام (System Indicators) */}
-        <div className="flex items-center gap-4 text-[10px] text-gray-500">
-          {/* التاريخ */}
-          <div className="hidden md:flex items-center gap-1.5 bg-white px-2 py-0.5 rounded border border-gray-100 shadow-sm">
-            <Calendar className="w-3 h-3 text-indigo-500" />
-            <span className="pt-0.5">{currentDate}</span>
-          </div>
-
-          {/* عداد الجلسة */}
-          <div
-            className="flex items-center gap-1.5 bg-white px-2 py-0.5 rounded border border-gray-100 shadow-sm"
-            title="مدة الجلسة النشطة"
-          >
-            <Clock className="w-3 h-3 text-emerald-500" />
-            <span className="font-mono pt-0.5 font-bold text-gray-700">
-              {formatTime(sessionDuration)}
-            </span>
-          </div>
-
-          {/* حالة الاتصال */}
-          <div className="flex items-center gap-1.5" title="حالة النظام: متصل">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="text-emerald-600 font-semibold">متصل</span>
-          </div>
-        </div>
       </div>
 
       {/* ==================================================================================
-          الشريط السفلي: الألسنة (Tabs Strip)
+          2. شريط الألسنة المحلية (Local Tabs Strip)
       ================================================================================== */}
-      <div className="flex items-end px-2 pt-2 gap-1 overflow-x-auto bg-[#e5e7eb] scrollbar-hide h-[40px]">
+      <div className="flex items-end px-3 pt-2 gap-[2px] bg-slate-50 border-b border-slate-200 overflow-x-auto custom-scrollbar-hide h-[42px]">
         {tabs.map((tab) => {
           const isActive = activeTabId === tab.id;
           return (
             <div
               key={tab.id}
               onClick={() => setActiveTab(screenId, tab.id)}
+              // 👈 إضافة خاصية Title لظهور التلميح (Tooltip) عند وقوف الماوس
+              title={`الشاشة: ${tab.title}\nالكود: ${tab.id}`} 
               className={clsx(
-                "group relative flex items-center min-w-[150px] max-w-[220px] h-[36px] px-3 rounded-t-lg text-xs cursor-pointer select-none transition-all duration-200 border-t border-l border-r",
+                "group relative flex items-center h-[34px] min-w-[130px] max-w-[200px] px-3 rounded-t-md text-xs cursor-pointer select-none transition-all duration-200",
                 isActive
-                  ? "bg-white border-gray-300 text-blue-700 font-bold z-10 shadow-[0_-2px_5px_rgba(0,0,0,0.02)] translate-y-[1px]" // translate-y لإخفاء خط الحدود السفلي
-                  : "bg-gray-100 border-gray-200 hover:bg-gray-50 text-gray-500 hover:text-gray-700 mt-1 h-[34px]", // الألسنة غير النشطة أقصر قليلاً
+                  ? "bg-white text-blue-700 font-bold border border-b-0 border-slate-200 z-10 shadow-[0_-2px_4px_rgba(0,0,0,0.03)] pb-px" 
+                  : "bg-slate-100/50 text-slate-500 hover:bg-slate-200 hover:text-slate-800 border border-transparent border-b-slate-200"
               )}
+              style={isActive ? { marginBottom: "-1px", borderBottomColor: "white" } : {}}
             >
-              {/* أيقونة صغيرة للتبويب (اختياري) */}
-              <Activity
-                className={clsx(
-                  "w-3 h-3 ml-2 opacity-70",
-                  isActive ? "text-blue-500" : "text-gray-400",
-                )}
-              />
-
+              
+              <LayoutTemplate className={clsx("w-3 h-3 ml-2 shrink-0 transition-colors", isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-500")} />
               <span className="truncate flex-1 pt-0.5">{tab.title}</span>
 
-              {/* أزرار التحكم في التبويب */}
-              <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity mr-1">
-                {/* زر التحديث */}
+              {/* أزرار الإجراءات للتاب */}
+              <div className={clsx(
+                "flex items-center mr-1 transition-opacity duration-200",
+                isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              )}>
                 {isActive && (
                   <button
-                    className="p-1 hover:bg-blue-50 rounded-full text-blue-400 hover:text-blue-600 ml-1"
-                    title="تحديث هذا التبويب"
+                    className="p-1 hover:bg-blue-50 rounded text-blue-400 hover:text-blue-600 ml-1 transition-colors"
+                    title="تحديث البيانات"
                   >
                     <RefreshCw className="w-3 h-3" />
                   </button>
                 )}
 
-                {/* زر الإغلاق */}
                 {tab.closable && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       removeTab(screenId, tab.id);
                     }}
-                    className="p-1 hover:bg-red-100 rounded-full text-gray-400 hover:text-red-600"
-                    title="إغلاق"
+                    className="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-500 transition-colors"
+                    title="إغلاق التبويب"
                   >
                     <X className="w-3 h-3" />
                   </button>
                 )}
               </div>
 
-              {/* خط ملون علوي للتبويب النشط */}
               {isActive && (
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-blue-600 rounded-t-lg"></div>
+                <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-blue-600 rounded-t-md"></div>
               )}
             </div>
           );
         })}
-
-        {/* زر إضافة تبويب جديد (وهمي للتصميم) */}
-        {/* <button className="mb-2 mr-1 p-1 hover:bg-gray-200 rounded text-gray-500 transition-colors">
-          <Plus className="w-4 h-4" />
-        </button> */}
       </div>
+      
     </div>
   );
 };
+
+export default ScreenHeader;
