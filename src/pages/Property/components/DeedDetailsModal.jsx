@@ -24,6 +24,8 @@ import {
   Loader2,
   Rocket,
   Compass,
+  Layers,
+  TableProperties,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -63,6 +65,7 @@ const DeedDetailsModal = ({ isOpen, deedId, onClose }) => {
   const [activeTab, setActiveTab] = useState("ai"); // جعلت الـ AI هو الافتراضي للتجربة
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
   const [aiResult, setAiResult] = useState(null);
+  const [selectedPlotForBounds, setSelectedPlotForBounds] = useState("all");
 
   const handleAiUpload = async (e) => {
     const file = e.target.files[0];
@@ -133,6 +136,7 @@ const DeedDetailsModal = ({ isOpen, deedId, onClose }) => {
         // في حال كان هناك حدود قديمة، نحذفها ونضع الجديدة لتجنب التكرار
         ...(aiResult.boundaries || []).map((b, i) => ({
           id: Date.now() + i + 200,
+          plotId: targetPlotId,
           direction: b.direction,
           length: b.length,
           description: b.description,
@@ -151,6 +155,11 @@ const DeedDetailsModal = ({ isOpen, deedId, onClose }) => {
         },
       ],
     }));
+
+    const targetPlotId =
+      newPlots.length > 0
+        ? newPlots[0].id
+        : localData.plots[0]?.id || Date.now();
 
     // 2. إعداد الحقول الأساسية (Root Fields) لإرسالها لقاعدة البيانات
     setLocalData((prev) => ({
@@ -216,6 +225,7 @@ const DeedDetailsModal = ({ isOpen, deedId, onClose }) => {
   // عند تحميل البيانات من السيرفر، نقوم بنسخها للحالة المحلية
   useEffect(() => {
     if (isOpen && deed.id) {
+      const fetchedPlots = Array.isArray(deed.plots) ? deed.plots : [];
       setLocalData({
         documents: Array.isArray(deed.documents) ? deed.documents : [],
         plots: Array.isArray(deed.plots) ? deed.plots : [],
@@ -225,8 +235,16 @@ const DeedDetailsModal = ({ isOpen, deedId, onClose }) => {
       });
       setHasChanges(false);
       setActiveTab("ai"); // إرجاعها إلى summary أو ai حسب رغبتك
+
+      setSelectedPlotForBounds("all");
     }
   }, [isOpen, deed.id]);
+
+  useEffect(() => {
+    if (localData.plots.length > 0 && !selectedPlotForBounds) {
+      setSelectedPlotForBounds(localData.plots[0].id);
+    }
+  }, [localData.plots]);
 
   const triggerChange = () => setHasChanges(true);
 
@@ -245,10 +263,10 @@ const DeedDetailsModal = ({ isOpen, deedId, onClose }) => {
   const handleAddPlot = () => {
     if (!newPlot.plotNumber || !newPlot.area)
       return toast.error("رقم القطعة والمساحة مطلوبان");
-    setLocalData((prev) => ({
-      ...prev,
-      plots: [...prev.plots, { ...newPlot, id: Date.now() }],
-    }));
+    const newPlotData = { ...newPlot, id: Date.now() };
+    setLocalData((prev) => ({ ...prev, plots: [...prev.plots, newPlotData] }));
+    if (selectedPlotForBounds === "all")
+      setSelectedPlotForBounds(newPlotData.id);
     setNewPlot({ plotNumber: "", planNumber: "", area: "", notes: "" });
     setShowPlotForm(false);
     triggerChange();
@@ -285,13 +303,19 @@ const DeedDetailsModal = ({ isOpen, deedId, onClose }) => {
     e.target.value = "";
   };
 
-  const handleUpdateBoundary = (direction, field, value) => {
+  const handleUpdateBoundary = (direction, field, value, plotId) => {
+    if (!plotId || plotId === "all")
+      return toast.error("الرجاء اختيار القطعة أولاً");
+
     setLocalData((prev) => {
-      const existing = prev.boundaries.filter((b) => b.direction !== direction);
+      const existing = prev.boundaries.filter(
+        (b) => !(b.direction === direction && b.plotId === plotId),
+      );
       const current = prev.boundaries.find(
-        (b) => b.direction === direction,
+        (b) => b.direction === direction && b.plotId === plotId,
       ) || {
         id: Date.now(),
+        plotId: plotId,
         direction,
         length: 0,
         description: "",
@@ -305,43 +329,26 @@ const DeedDetailsModal = ({ isOpen, deedId, onClose }) => {
     triggerChange();
   };
 
-  const handleBoundaryImageUpload = async (direction, e) => {
+  const handleBoundaryImageUpload = async (direction, plotId, e) => {
     const file = e.target.files[0];
     if (!file) return;
     const base64 = await convertToBase64(file);
-    handleUpdateBoundary(direction, "imageUrl", base64);
-    e.target.value = "";
-  };
-
-  const handleBoundaryUpload = async (direction, e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const base64 = await convertToBase64(file);
-    setLocalData((prev) => {
-      const existing = prev.boundaries.filter((b) => b.direction !== direction);
-      return {
-        ...prev,
-        boundaries: [
-          ...existing,
-          {
-            id: Date.now(),
-            direction,
-            imageUrl: base64,
-            length: 0,
-            description: "تم تحديث الصورة",
-          },
-        ],
-      };
-    });
-    triggerChange();
+    handleUpdateBoundary(direction, "imageUrl", base64, plotId);
     e.target.value = "";
   };
 
   const handleDeleteItem = (listName, id) => {
-    setLocalData((prev) => ({
-      ...prev,
-      [listName]: prev[listName].filter((item) => item.id !== id),
-    }));
+    setLocalData((prev) => {
+      let newData = {
+        ...prev,
+        [listName]: prev[listName].filter((item) => item.id !== id),
+      };
+      if (listName === "plots") {
+        newData.boundaries = newData.boundaries.filter((b) => b.plotId !== id);
+        if (selectedPlotForBounds === id) setSelectedPlotForBounds("all");
+      }
+      return newData;
+    });
     triggerChange();
   };
 
@@ -367,24 +374,38 @@ const DeedDetailsModal = ({ isOpen, deedId, onClose }) => {
   const ownersCount = localData.owners.length;
 
   const tabs = [
-      { id: "docs", label: "الوثائق", icon: FileText },
-      { id: "plots", label: "القطع", icon: MapIcon },
-      { id: "owners", label: "الملاك", icon: Users },
-      { id: "bounds", label: "الحدود والصور", icon: Ruler },
-      { id: "attachments", label: "المرفقات", icon: Paperclip },
-      { id: "ai", label: "استخراج بيانات الوثيقة AI", icon: Sparkles },
-      { id: "summary", label: "ملخص", icon: Home },
+    { id: "docs", label: "الوثائق", icon: FileText },
+    { id: "plots", label: "القطع", icon: MapIcon },
+    { id: "owners", label: "الملاك", icon: Users },
+    { id: "bounds", label: "الحدود والصور", icon: Ruler },
+    { id: "attachments", label: "المرفقات", icon: Paperclip },
+    { id: "ai", label: "استخراج بيانات الوثيقة AI", icon: Sparkles },
+    { id: "summary", label: "ملخص", icon: Home },
   ];
 
-  const getBound = (dir) =>
-    localData.boundaries.find((b) => b.direction === dir) || {
-      length: "",
-      description: "",
-    };
-  const north = getBound("شمال");
-  const south = getBound("جنوب");
-  const east = getBound("شرق");
-  const west = getBound("غرب");
+  const getBound = (dir, plotId) => {
+    const fallbackPlotId = localData.plots[0]?.id;
+    return (
+      localData.boundaries.find(
+        (b) =>
+          b.direction === dir &&
+          (b.plotId === plotId || (!b.plotId && plotId === fallbackPlotId)),
+      ) || {
+        length: "",
+        description: "",
+        imageUrl: null,
+      }
+    );
+  };
+
+  const north = getBound("شمال", selectedPlotForBounds);
+  const south = getBound("جنوب", selectedPlotForBounds);
+  const east = getBound("شرق", selectedPlotForBounds);
+  const west = getBound("غرب", selectedPlotForBounds);
+
+  const currentPlotDetails = localData.plots.find(
+    (p) => p.id === selectedPlotForBounds,
+  );
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
@@ -1175,201 +1196,426 @@ const DeedDetailsModal = ({ isOpen, deedId, onClose }) => {
               )}
 
               {activeTab === "bounds" && (
-                <div className="space-y-6 animate-in fade-in duration-300">
-                  {/* قسم الكروكي والرسم الهندسي */}
-                  <div className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden flex flex-col md:flex-row">
-                    {/* معلومات الرسم (يمين) */}
-                    <div className="w-full md:w-1/3 bg-slate-800 text-white p-6 flex flex-col justify-center relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <Compass className="w-32 h-32" />
-                      </div>
-                      <h3 className="text-xl font-bold mb-2 relative z-10">
-                        المخطط الكروكي للحدود
-                      </h3>
-                      <p className="text-slate-300 text-sm mb-6 relative z-10">
-                        هذا الرسم التوضيحي يعكس البيانات المدخلة للأطوال
-                        والاتجاهات لتسهيل المراجعة الهندسية.
+                <div className="animate-in fade-in duration-300 h-full flex flex-col">
+                  {localData.plots.length === 0 ? (
+                    <div className="p-10 flex flex-col items-center justify-center text-stone-400 h-full">
+                      <Layers className="w-16 h-16 mb-4 opacity-50" />
+                      <p className="text-lg font-bold text-stone-600">
+                        الرجاء إضافة قطع الأراضي أولاً
                       </p>
-                      <div className="space-y-3 relative z-10">
-                        <div className="flex justify-between border-b border-slate-700 pb-1 text-sm">
-                          <span className="text-slate-400">
-                            إجمالي المساحة:
-                          </span>
-                          <strong className="text-emerald-400">
-                            {deed.area || 0} م²
-                          </strong>
-                        </div>
-                        <div className="flex justify-between border-b border-slate-700 pb-1 text-sm">
-                          <span className="text-slate-400">محيط القطعة:</span>
-                          <strong>
-                            {(
-                              parseFloat(north.length || 0) +
-                              parseFloat(south.length || 0) +
-                              parseFloat(east.length || 0) +
-                              parseFloat(west.length || 0)
-                            ).toFixed(2)}{" "}
-                            م
-                          </strong>
+                      <p className="text-sm">
+                        يجب إضافة قطعة أرض واحدة على الأقل من تبويب "القطع"
+                        لتتمكن من عرض أو إدخال حدودها.
+                      </p>
+                      <button
+                        onClick={() => setActiveTab("plots")}
+                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded font-bold"
+                      >
+                        الذهاب لتبويب القطع
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {/* 1. محدد القطع (التبويبات العلوية داخل الشاشة) */}
+                      <div className="bg-stone-100 px-4 pt-4 border-b border-stone-200">
+                        <h3 className="text-sm font-bold text-stone-700 mb-2">
+                          اختر القطعة لإدخال أطوالها وحدودها أو استعرض ملخص
+                          الكل:
+                        </h3>
+                        <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                          {/* زر ملخص الكل */}
+                          <button
+                            onClick={() => setSelectedPlotForBounds("all")}
+                            className={`px-4 py-2 text-xs font-bold rounded-lg border flex flex-col items-center justify-center min-w-[120px] transition-all ${
+                              selectedPlotForBounds === "all"
+                                ? "bg-purple-600 text-white border-purple-600 shadow-md"
+                                : "bg-white text-stone-600 border-stone-300 hover:bg-purple-50"
+                            }`}
+                          >
+                            <TableProperties className="w-5 h-5 mb-1" />
+                            <span className="text-sm">ملخص الكل</span>
+                          </button>
+
+                          {/* أزرار القطع */}
+                          {localData.plots.map((plot) => (
+                            <button
+                              key={plot.id}
+                              onClick={() => setSelectedPlotForBounds(plot.id)}
+                              className={`px-4 py-2 text-xs font-bold rounded-lg border flex flex-col items-start min-w-[120px] transition-all ${
+                                selectedPlotForBounds === plot.id
+                                  ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                                  : "bg-white text-stone-600 border-stone-300 hover:bg-blue-50"
+                              }`}
+                            >
+                              <span className="opacity-80 text-[10px]">
+                                قطعة رقم
+                              </span>
+                              <span
+                                className="text-sm text-left w-full"
+                                dir="ltr"
+                              >
+                                {plot.plotNumber || "بدون رقم"}
+                              </span>
+                            </button>
+                          ))}
                         </div>
                       </div>
-                    </div>
 
-                    {/* لوحة الرسم الهندسي (يسار) */}
-                    <div className="flex-1 bg-[url('https://www.transparenttextures.com/patterns/graphy.png')] bg-blue-50/50 p-8 flex items-center justify-center min-h-[350px]">
-                      <div className="relative w-64 h-64 bg-white border-2 border-blue-500 shadow-xl flex items-center justify-center">
-                        {/* الشمال */}
-                        <div className="absolute -top-8 left-0 right-0 text-center">
-                          <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold shadow">
-                            شمال: {north.length || 0}م
-                          </span>
-                          <p
-                            className="text-[10px] text-stone-600 mt-1 truncate max-w-[200px] mx-auto"
-                            title={north.description}
-                          >
-                            {north.description || "جار/شارع"}
-                          </p>
-                        </div>
-                        {/* الجنوب */}
-                        <div className="absolute -bottom-8 left-0 right-0 text-center">
-                          <p
-                            className="text-[10px] text-stone-600 mb-1 truncate max-w-[200px] mx-auto"
-                            title={south.description}
-                          >
-                            {south.description || "جار/شارع"}
-                          </p>
-                          <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold shadow">
-                            جنوب: {south.length || 0}م
-                          </span>
-                        </div>
-                        {/* الشرق */}
-                        <div className="absolute top-0 bottom-0 -right-8 flex flex-col justify-center text-center w-8">
-                          <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold shadow rotate-90 origin-center whitespace-nowrap">
-                            شرق: {east.length || 0}م
-                          </span>
-                        </div>
-                        {/* الغرب */}
-                        <div className="absolute top-0 bottom-0 -left-8 flex flex-col justify-center text-center w-8">
-                          <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold shadow -rotate-90 origin-center whitespace-nowrap">
-                            غرب: {west.length || 0}م
-                          </span>
-                        </div>
-
-                        <div className="text-stone-300 font-bold tracking-widest opacity-50 text-xl rotate-45 border-2 border-stone-200 p-2">
-                          قطعة الأرض
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* قسم تحرير البيانات التفصيلية للحدود */}
-                  <div>
-                    <h3 className="text-lg font-bold text-stone-800 mb-4 flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-blue-600" /> تفاصيل
-                      الحدود والصور من الطبيعة
-                    </h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {["شمال", "جنوب", "شرق", "غرب"].map((dir) => {
-                        const bound = getBound(dir);
-                        return (
-                          <div
-                            key={dir}
-                            className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden flex flex-col transition-all hover:border-blue-300 hover:shadow-md"
-                          >
-                            {/* رأس البطاقة */}
-                            <div className="bg-slate-50 border-b border-stone-200 p-3 flex justify-between items-center">
-                              <h4 className="font-black text-blue-900 text-sm">
-                                الحد ال{dir}
-                              </h4>
-                              <Compass className="w-4 h-4 text-slate-400" />
-                            </div>
-
-                            {/* مدخلات البيانات */}
-                            <div className="p-4 space-y-3 flex-1">
-                              <div>
-                                <label className="text-[11px] font-bold text-stone-500 mb-1 block">
-                                  الطول (متر)
-                                </label>
-                                <input
-                                  type="number"
-                                  className="w-full border border-stone-300 rounded p-2 text-sm font-bold text-blue-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                                  value={bound.length}
-                                  onChange={(e) =>
-                                    handleUpdateBoundary(
-                                      dir,
-                                      "length",
-                                      e.target.value,
-                                    )
-                                  }
-                                  placeholder="مثال: 25"
-                                />
+                      <div className="p-4 space-y-6 flex-1 overflow-y-auto bg-slate-50">
+                        {selectedPlotForBounds === "all" ? (
+                          /* ========================================= */
+                          /* شاشة "ملخص الكل" (الجدول المجمع والصور) */
+                          /* ========================================= */
+                          <div className="space-y-6 animate-in fade-in">
+                            {/* الجدول المجمع */}
+                            <div className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden">
+                              <div className="bg-purple-50 border-b border-purple-100 p-4">
+                                <h3 className="text-base font-bold text-purple-900 flex items-center gap-2">
+                                  <FileText className="w-5 h-5 text-purple-600" />
+                                  الجدول التفصيلي لمساحات وحدود جميع القطع
+                                </h3>
                               </div>
-                              <div>
-                                <label className="text-[11px] font-bold text-stone-500 mb-1 block">
-                                  الوصف / المجاور
-                                </label>
-                                <textarea
-                                  className="w-full border border-stone-300 rounded p-2 text-xs text-stone-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all h-16 resize-none"
-                                  value={bound.description}
-                                  onChange={(e) =>
-                                    handleUpdateBoundary(
-                                      dir,
-                                      "description",
-                                      e.target.value,
-                                    )
-                                  }
-                                  placeholder="شارع عرض 15م..."
-                                />
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-right">
+                                  <thead className="bg-stone-50 text-stone-600">
+                                    <tr>
+                                      <th className="px-4 py-3 font-bold border-b border-stone-200">
+                                        القطعة
+                                      </th>
+                                      <th className="px-4 py-3 font-bold border-b border-stone-200">
+                                        المخطط
+                                      </th>
+                                      <th className="px-4 py-3 font-bold border-b border-stone-200 text-center">
+                                        المساحة
+                                      </th>
+                                      <th className="px-4 py-3 font-bold border-b border-stone-200 text-center">
+                                        شمال
+                                      </th>
+                                      <th className="px-4 py-3 font-bold border-b border-stone-200 text-center">
+                                        جنوب
+                                      </th>
+                                      <th className="px-4 py-3 font-bold border-b border-stone-200 text-center">
+                                        شرق
+                                      </th>
+                                      <th className="px-4 py-3 font-bold border-b border-stone-200 text-center">
+                                        غرب
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-stone-100">
+                                    {localData.plots.map((plot) => {
+                                      const pn = getBound("شمال", plot.id);
+                                      const ps = getBound("جنوب", plot.id);
+                                      const pe = getBound("شرق", plot.id);
+                                      const pw = getBound("غرب", plot.id);
+                                      return (
+                                        <tr
+                                          key={plot.id}
+                                          className="hover:bg-purple-50/50 transition-colors"
+                                        >
+                                          <td
+                                            className="px-4 py-3 font-bold text-blue-700"
+                                            dir="ltr"
+                                          >
+                                            {plot.plotNumber}
+                                          </td>
+                                          <td className="px-4 py-3 text-stone-600">
+                                            {plot.planNumber || "-"}
+                                          </td>
+                                          <td className="px-4 py-3 text-center font-bold text-green-600">
+                                            {plot.area} م²
+                                          </td>
+                                          <td className="px-4 py-3 text-center font-mono">
+                                            {pn.length ? `${pn.length}م` : "-"}
+                                          </td>
+                                          <td className="px-4 py-3 text-center font-mono">
+                                            {ps.length ? `${ps.length}م` : "-"}
+                                          </td>
+                                          <td className="px-4 py-3 text-center font-mono">
+                                            {pe.length ? `${pe.length}م` : "-"}
+                                          </td>
+                                          <td className="px-4 py-3 text-center font-mono">
+                                            {pw.length ? `${pw.length}م` : "-"}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
                               </div>
                             </div>
 
-                            {/* منطقة الصورة */}
-                            <div className="p-3 bg-stone-50 border-t border-stone-100">
-                              {bound.imageUrl ? (
-                                <div className="relative h-24 rounded border border-stone-300 overflow-hidden group">
-                                  <img
-                                    src={bound.imageUrl}
-                                    alt={dir}
-                                    className="w-full h-full object-cover"
-                                  />
-                                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
-                                    <button
-                                      onClick={() =>
-                                        handleUpdateBoundary(
-                                          dir,
-                                          "imageUrl",
-                                          null,
-                                        )
-                                      }
-                                      className="bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-transform hover:scale-110"
-                                      title="حذف الصورة"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
+                            {/* معرض الصور المجمع */}
+                            <div className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden p-4">
+                              <h3 className="text-base font-bold text-stone-800 mb-4 flex items-center gap-2">
+                                <ImageIcon className="w-5 h-5 text-blue-600" />
+                                الصور والمرفقات من الطبيعة (مجمعة)
+                              </h3>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {localData.plots.flatMap((plot) => {
+                                  const dirs = ["شمال", "جنوب", "شرق", "غرب"];
+                                  return dirs.map((dir) => {
+                                    const b = getBound(dir, plot.id);
+                                    if (!b.imageUrl) return null;
+                                    return (
+                                      <div
+                                        key={`${plot.id}-${dir}`}
+                                        className="border border-stone-200 rounded-lg overflow-hidden shadow-sm group bg-white hover:border-blue-300 transition-colors"
+                                      >
+                                        <div className="relative h-40 bg-stone-100 flex items-center justify-center">
+                                          <img
+                                            src={b.imageUrl}
+                                            alt={`${dir} - ${plot.plotNumber}`}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        </div>
+                                        <div className="p-3 bg-stone-50 flex justify-between items-center border-t border-stone-200">
+                                          <div className="flex flex-col">
+                                            <span className="text-[10px] text-stone-500 font-bold">
+                                              قطعة رقم
+                                            </span>
+                                            <span
+                                              className="font-bold text-blue-700 text-sm"
+                                              dir="ltr"
+                                            >
+                                              {plot.plotNumber}
+                                            </span>
+                                          </div>
+                                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold shadow-sm">
+                                            الحد {dir}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    );
+                                  });
+                                })}
+                                {/* في حال لم يتم رفع أي صور لأي قطعة */}
+                                {localData.boundaries.filter((b) => b.imageUrl)
+                                  .length === 0 && (
+                                  <div className="col-span-full p-10 flex flex-col items-center justify-center text-stone-400 bg-stone-50 rounded-lg border border-dashed border-stone-300">
+                                    <Camera className="w-10 h-10 mb-2 opacity-50" />
+                                    <span className="font-bold">
+                                      لا توجد صور مرفوعة لأي من القطع حتى الآن.
+                                    </span>
+                                    <span className="text-xs mt-1">
+                                      يمكنك رفع الصور بالدخول إلى كل قطعة من
+                                      التبويبات بالأعلى.
+                                    </span>
                                   </div>
-                                </div>
-                              ) : (
-                                <label className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-slate-300 rounded bg-white cursor-pointer hover:bg-blue-50 hover:border-blue-400 transition-all group">
-                                  <Camera className="w-6 h-6 text-slate-400 mb-1 group-hover:text-blue-500 transition-colors" />
-                                  <span className="text-[10px] text-slate-500 font-bold group-hover:text-blue-600">
-                                    إرفاق صورة من الطبيعة
-                                  </span>
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={(e) =>
-                                      handleBoundaryImageUpload(dir, e)
-                                    }
-                                  />
-                                </label>
-                              )}
+                                )}
+                              </div>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                        ) : (
+                          /* ========================================= */
+                          /* شاشة "تحرير وإدخال بيانات قطعة محددة"   */
+                          /* ========================================= */
+                          <div className="space-y-6 animate-in fade-in">
+                            <div className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden flex flex-col md:flex-row">
+                              <div className="w-full md:w-1/3 bg-slate-800 text-white p-6 flex flex-col justify-center relative overflow-hidden">
+                                <div className="absolute top-0 left-0 p-4 opacity-10">
+                                  <Compass className="w-32 h-32" />
+                                </div>
+                                <h3 className="text-xl font-bold mb-2 relative z-10">
+                                  المخطط الكروكي للقطعة
+                                </h3>
+                                <div
+                                  className="inline-block bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold mb-4 relative z-10 w-fit"
+                                  dir="ltr"
+                                >
+                                  قطعة:{" "}
+                                  {currentPlotDetails?.plotNumber || "---"}
+                                </div>
+
+                                <div className="space-y-3 relative z-10">
+                                  <div className="flex justify-between border-b border-slate-700 pb-1 text-sm">
+                                    <span className="text-slate-400">
+                                      مساحة القطعة المحددة:
+                                    </span>
+                                    <strong className="text-emerald-400">
+                                      {currentPlotDetails?.area || 0} م²
+                                    </strong>
+                                  </div>
+                                  <div className="flex justify-between border-b border-slate-700 pb-1 text-sm">
+                                    <span className="text-slate-400">
+                                      مجموع أطوال الحدود:
+                                    </span>
+                                    <strong>
+                                      {(
+                                        parseFloat(north.length || 0) +
+                                        parseFloat(south.length || 0) +
+                                        parseFloat(east.length || 0) +
+                                        parseFloat(west.length || 0)
+                                      ).toFixed(2)}{" "}
+                                      م
+                                    </strong>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* لوحة الرسم الهندسي للقطعة المحددة */}
+                              <div className="flex-1 bg-[url('https://www.transparenttextures.com/patterns/graphy.png')] bg-blue-50/50 p-8 flex items-center justify-center min-h-[350px]">
+                                <div className="relative w-64 h-64 bg-white border-2 border-blue-500 shadow-xl flex items-center justify-center">
+                                  {/* الشمال */}
+                                  <div className="absolute -top-8 left-0 right-0 text-center">
+                                    <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold shadow">
+                                      شمال: {north.length || 0}م
+                                    </span>
+                                    <p className="text-[10px] text-stone-600 mt-1 truncate max-w-[200px] mx-auto">
+                                      {north.description || "جار/شارع"}
+                                    </p>
+                                  </div>
+                                  {/* الجنوب */}
+                                  <div className="absolute -bottom-8 left-0 right-0 text-center">
+                                    <p className="text-[10px] text-stone-600 mb-1 truncate max-w-[200px] mx-auto">
+                                      {south.description || "جار/شارع"}
+                                    </p>
+                                    <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold shadow">
+                                      جنوب: {south.length || 0}م
+                                    </span>
+                                  </div>
+                                  {/* الشرق */}
+                                  <div className="absolute top-0 bottom-0 -right-8 flex flex-col justify-center text-center w-8">
+                                    <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold shadow rotate-90 whitespace-nowrap">
+                                      شرق: {east.length || 0}م
+                                    </span>
+                                  </div>
+                                  {/* الغرب */}
+                                  <div className="absolute top-0 bottom-0 -left-8 flex flex-col justify-center text-center w-8">
+                                    <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold shadow -rotate-90 whitespace-nowrap">
+                                      غرب: {west.length || 0}م
+                                    </span>
+                                  </div>
+                                  <div className="text-stone-300 font-bold tracking-widest opacity-50 text-xl rotate-45 border-2 border-stone-200 p-2 text-center">
+                                    قطعة{" "}
+                                    <span dir="ltr">
+                                      {currentPlotDetails?.plotNumber}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* قسم تحرير البيانات التفصيلية للحدود للقطعة المحددة */}
+                            <div>
+                              <h3 className="text-lg font-bold text-stone-800 mb-4 flex items-center gap-2">
+                                <Ruler className="w-5 h-5 text-blue-600" />{" "}
+                                إدخال الأطوال والصور (للقطعة المحددة فقط)
+                              </h3>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {["شمال", "جنوب", "شرق", "غرب"].map((dir) => {
+                                  const bound = getBound(
+                                    dir,
+                                    selectedPlotForBounds,
+                                  );
+                                  return (
+                                    <div
+                                      key={dir}
+                                      className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden flex flex-col transition-all hover:border-blue-300 hover:shadow-md"
+                                    >
+                                      <div className="bg-slate-50 border-b border-stone-200 p-3 flex justify-between items-center">
+                                        <h4 className="font-black text-blue-900 text-sm">
+                                          الحد ال{dir}
+                                        </h4>
+                                        <Compass className="w-4 h-4 text-slate-400" />
+                                      </div>
+
+                                      <div className="p-4 space-y-3 flex-1">
+                                        <div>
+                                          <label className="text-[11px] font-bold text-stone-500 mb-1 block">
+                                            الطول (متر)
+                                          </label>
+                                          <input
+                                            type="number"
+                                            className="w-full border border-stone-300 rounded p-2 text-sm font-bold text-blue-700 focus:border-blue-500 outline-none"
+                                            value={bound.length}
+                                            onChange={(e) =>
+                                              handleUpdateBoundary(
+                                                dir,
+                                                "length",
+                                                e.target.value,
+                                                selectedPlotForBounds,
+                                              )
+                                            }
+                                            placeholder="مثال: 25"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="text-[11px] font-bold text-stone-500 mb-1 block">
+                                            الوصف / المجاور
+                                          </label>
+                                          <textarea
+                                            className="w-full border border-stone-300 rounded p-2 text-xs text-stone-700 h-16 resize-none focus:border-blue-500 outline-none"
+                                            value={bound.description}
+                                            onChange={(e) =>
+                                              handleUpdateBoundary(
+                                                dir,
+                                                "description",
+                                                e.target.value,
+                                                selectedPlotForBounds,
+                                              )
+                                            }
+                                            placeholder="شارع عرض 15م..."
+                                          />
+                                        </div>
+                                      </div>
+
+                                      <div className="p-3 bg-stone-50 border-t border-stone-100">
+                                        {bound.imageUrl ? (
+                                          <div className="relative h-24 rounded border border-stone-300 overflow-hidden group">
+                                            <img
+                                              src={bound.imageUrl}
+                                              alt={dir}
+                                              className="w-full h-full object-cover"
+                                            />
+                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                              <button
+                                                onClick={() =>
+                                                  handleUpdateBoundary(
+                                                    dir,
+                                                    "imageUrl",
+                                                    null,
+                                                    selectedPlotForBounds,
+                                                  )
+                                                }
+                                                className="bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600"
+                                              >
+                                                <Trash2 className="w-4 h-4" />
+                                              </button>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <label className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-slate-300 rounded bg-white cursor-pointer hover:bg-blue-50 transition-all group">
+                                            <Camera className="w-6 h-6 text-slate-400 mb-1 group-hover:text-blue-500" />
+                                            <span className="text-[10px] text-slate-500 font-bold group-hover:text-blue-600">
+                                              إرفاق صورة للمجاور
+                                            </span>
+                                            <input
+                                              type="file"
+                                              accept="image/*"
+                                              className="hidden"
+                                              onChange={(e) =>
+                                                handleBoundaryImageUpload(
+                                                  dir,
+                                                  selectedPlotForBounds,
+                                                  e,
+                                                )
+                                              }
+                                            />
+                                          </label>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
