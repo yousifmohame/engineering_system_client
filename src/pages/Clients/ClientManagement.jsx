@@ -1046,7 +1046,7 @@ const ClientManagement = () => {
 
   // --- مكون القائمة الجانبية الاحترافي (Internal Sidebar) ---
   const SidebarMenu = () => (
-    <div className="w-64 bg-white border-l h-full flex flex-col shadow-sm">
+    <div className="w-56 bg-white border-l h-full flex flex-col shadow-sm">
       <div className="p-4 border-b bg-gray-50/50">
         <h3 className="font-bold text-gray-700">تصفح الملف</h3>
         <p className="text-xs text-gray-400 mt-1">

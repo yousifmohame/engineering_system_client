@@ -56,7 +56,7 @@ export const useAppStore = create((set, get) => ({
       },
     ],
     310: [
-      { id: "310-MAIN", title: "سجل الصكوك", type: "wrapper", closable: false },
+      { id: "DASHBOARD_TAB", title: "لوحة الملكيات", type: "dashboard", closable: false },
     ],
     942: [
       {
@@ -72,7 +72,7 @@ export const useAppStore = create((set, get) => ({
     DASH: "DASH-MAIN",
     "055": "055-MAIN",
     300: "300-MAIN",
-    310: "310-MAIN",
+    310: "DASHBOARD_TAB",
     942: "942-MAIN",
   },
 

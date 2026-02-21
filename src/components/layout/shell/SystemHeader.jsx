@@ -16,8 +16,6 @@ const SystemHeader = ({ user = { name: "أحمد محمد" } }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [sessionSeconds, setSessionSeconds] = useState(0);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-
-  // حالة التحكم في ظهور قائمة المستخدم
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
   const navigate = useNavigate();
@@ -34,7 +32,6 @@ const SystemHeader = ({ user = { name: "أحمد محمد" } }) => {
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
-    // إغلاق قائمة المستخدم عند النقر خارجها
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
@@ -51,12 +48,8 @@ const SystemHeader = ({ user = { name: "أحمد محمد" } }) => {
   }, []);
 
   const formatSessionTime = (totalSeconds) => {
-    const h = Math.floor(totalSeconds / 3600)
-      .toString()
-      .padStart(2, "0");
-    const m = Math.floor((totalSeconds % 3600) / 60)
-      .toString()
-      .padStart(2, "0");
+    const h = Math.floor(totalSeconds / 3600).toString().padStart(2, "0");
+    const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, "0");
     const s = (totalSeconds % 60).toString().padStart(2, "0");
     return `${h}:${m}:${s}`;
   };
@@ -87,7 +80,6 @@ const SystemHeader = ({ user = { name: "أحمد محمد" } }) => {
   };
   const hijriDate = formatHijriNumeric(currentTime);
 
-  // دالة تسجيل الخروج
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -95,122 +87,102 @@ const SystemHeader = ({ user = { name: "أحمد محمد" } }) => {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-3 md:px-6 shrink-0 z-30 shadow-sm relative">
-      {/* 2. بيانات النظام الحية (متجاوبة Responsive) */}
-      <div className="flex flex-1 md:flex-none items-center justify-start md:justify-center gap-2 md:gap-5 text-[10px] md:text-xs font-medium md:border-x border-gray-200 md:mx-4 px-2">
-        {/* المدينة والوقت (تظهر دائماً ولكن أصغر في الجوال) */}
-        <div className="flex items-center gap-2 md:gap-3 md:border-l border-gray-200 md:pl-5">
-          <div className="flex flex-col items-start gap-0.5 md:gap-1">
+    // 👈 تم تغيير الارتفاع من h-16 إلى h-12
+    <header className="h-12 bg-white border-b border-gray-200 flex items-center justify-between px-3 md:px-4 shrink-0 z-30 shadow-sm relative">
+      
+      {/* 1. بيانات النظام الحية */}
+      <div className="flex flex-1 md:flex-none items-center justify-start md:justify-center gap-2 md:gap-4 text-[9px] md:text-[11px] font-medium md:border-x border-gray-200 md:mx-2 px-2 h-full">
+        
+        {/* المدينة والوقت */}
+        <div className="flex items-center gap-2 md:border-l border-gray-100 md:pl-4">
+          <div className="flex flex-col items-start leading-tight">
             <div className="flex items-center gap-1 text-gray-800 font-bold">
-              <MapPin className="w-3 h-3 text-blue-500 hidden sm:block" />{" "}
+              <MapPin className="w-2.5 h-2.5 text-blue-500 hidden sm:block" />{" "}
               الرياض
             </div>
             <div className="flex items-center gap-1 text-blue-600 font-bold">
-              <Clock className="w-3 h-3 hidden sm:block" /> {time12}
+              <Clock className="w-2.5 h-2.5 hidden sm:block" /> {time12}
             </div>
           </div>
         </div>
 
-        {/* التاريخ (يختفي في الشاشات الصغيرة جداً جداً ليمنع التكدس) */}
-        <div className="hidden sm:flex flex-col items-center justify-center font-mono text-gray-500 border-l border-gray-200 pl-3 md:pl-5">
-          <span
-            className="text-gray-800 font-bold mb-0.5"
-            title="التاريخ الميلادي"
-          >
-            {gregDate}{" "}
-            <span className="text-[8px] md:text-[9px] text-gray-400 font-sans ml-0.5">
-              م
-            </span>
+        {/* التاريخ */}
+        <div className="hidden sm:flex flex-col items-center justify-center font-mono text-gray-500 border-l border-gray-100 pl-4 h-full">
+          <span className="text-gray-800 font-bold leading-none" title="التاريخ الميلادي">
+            {gregDate} <span className="text-[7px] text-gray-400 font-sans">م</span>
           </span>
-          <span className="text-gray-600" title="التاريخ الهجري">
-            {hijriDate}{" "}
-            <span className="text-[8px] md:text-[9px] text-gray-400 font-sans ml-0.5">
-              هـ
-            </span>
+          <span className="text-gray-500 leading-none mt-0.5" title="التاريخ الهجري">
+            {hijriDate} <span className="text-[7px] text-gray-400 font-sans">هـ</span>
           </span>
         </div>
 
-        {/* زمن الجلسة (يختفي في الجوالات الصغيرة) */}
-        <div className="hidden lg:flex flex-col items-center justify-center border-l border-gray-200 pl-5">
-          <span className="text-[10px] text-gray-400 mb-0.5 flex items-center gap-1">
-            <Timer className="w-3 h-3" /> زمن الجلسة
+        {/* زمن الجلسة */}
+        <div className="hidden lg:flex flex-col items-center justify-center border-l border-gray-100 pl-4 h-full">
+          <span className="text-[9px] text-gray-400 flex items-center gap-1 leading-none">
+            <Timer className="w-2.5 h-2.5" /> الجلسة
           </span>
-          <span className="font-mono font-bold text-gray-700 tracking-wider">
+          <span className="font-mono font-bold text-gray-600 tracking-tighter leading-none mt-0.5">
             {formatSessionTime(sessionSeconds)}
           </span>
         </div>
 
-        {/* حالة الاتصال (تظهر دائماً كأيقونة في الجوال، وكنص في الشاشات الأكبر) */}
-        <div className="flex items-center gap-1 md:min-w-[80px]">
+        {/* حالة الاتصال */}
+        <div className="flex items-center gap-1">
           {isOnline ? (
             <>
-              <Wifi className="w-3.5 h-3.5 text-green-500" />
-              <span className="hidden md:inline text-green-600 font-bold text-[11px]">
-                متصل
-              </span>
+              <Wifi className="w-3 h-3 text-green-500" />
+              <span className="hidden md:inline text-green-600 font-bold text-[10px]">متصل</span>
             </>
           ) : (
             <>
-              <WifiOff className="w-3.5 h-3.5 text-red-500 animate-pulse" />
-              <span className="hidden md:inline text-red-600 font-bold text-[11px]">
-                غير متصل
-              </span>
+              <WifiOff className="w-3 h-3 text-red-500 animate-pulse" />
+              <span className="hidden md:inline text-red-600 font-bold text-[10px]">منقطع</span>
             </>
           )}
         </div>
       </div>
 
-      {/* 3. الإجراءات والملف الشخصي */}
+      {/* 2. الإجراءات والملف الشخصي */}
       <div className="flex items-center gap-1 md:gap-2 relative">
-        {/* أزرار الإشعارات والإعدادات (مخفية في الشاشات الصغيرة جداً لتوفير المساحة) */}
-        <div className="hidden sm:flex items-center gap-1">
-          <button className="relative p-2 text-gray-500 hover:bg-gray-100 hover:text-blue-600 rounded-full transition-colors">
-            <Bell className="w-4 h-4 md:w-5 md:h-5" />
-            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 md:w-2 md:h-2 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+        <div className="hidden sm:flex items-center gap-0.5">
+          <button className="relative p-1.5 text-gray-400 hover:bg-gray-50 hover:text-blue-600 rounded-full transition-colors">
+            <Bell className="w-4 h-4" />
+            <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full border border-white"></span>
           </button>
-          <button className="p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-full transition-colors">
-            <Settings className="w-4 h-4 md:w-5 md:h-5" />
+          <button className="p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 rounded-full transition-colors">
+            <Settings className="w-4 h-4" />
           </button>
         </div>
 
-        {/* قائمة المستخدم المنسدلة */}
+        {/* قائمة المستخدم */}
         <div className="relative" ref={userMenuRef}>
           <div
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            className="flex items-center gap-2 group cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200 md:mr-2 md:border-r border-gray-200 md:pr-4"
+            className="flex items-center gap-2 group cursor-pointer p-1 rounded-lg hover:bg-gray-50 transition-colors md:mr-1 md:border-r border-gray-100 md:pr-3"
           >
-            <div className="text-left hidden md:block leading-tight">
-              <div className="text-sm font-bold text-gray-800 text-right">
-                {user.name}
-              </div>
-              <div className="text-[10px] text-gray-500 font-medium">
-                مهندس أول • مسؤول نظام
-              </div>
+            <div className="text-left hidden md:block leading-none">
+              <div className="text-[12px] font-bold text-gray-800 text-right">{user.name}</div>
+              <div className="text-[9px] text-gray-400 font-medium text-right mt-0.5">مسؤول نظام</div>
             </div>
+            
             <div className="relative">
-              <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center shadow-md shadow-blue-200 border-2 border-white">
-                <span className="font-bold text-xs md:text-sm">
-                  {user.name?.charAt(0).toUpperCase()}
-                </span>
+              {/* 👈 تصغير الصورة الشخصية من w-10 إلى w-8 */}
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center shadow-sm border border-white">
+                <span className="font-bold text-xs">{user.name?.charAt(0).toUpperCase()}</span>
               </div>
-              <div
-                className={`absolute -bottom-1 -right-1 w-2.5 h-2.5 md:w-3.5 md:h-3.5 border-2 border-white rounded-full ${isOnline ? "bg-green-500" : "bg-gray-400"}`}
-              ></div>
+              <div className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 border border-white rounded-full ${isOnline ? "bg-green-500" : "bg-gray-400"}`}></div>
             </div>
-            <ChevronDown
-              className={`w-3 h-3 md:w-4 md:h-4 text-gray-400 group-hover:text-gray-600 transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`}
-            />
+            <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`} />
           </div>
 
-          {/* محتوى قائمة المستخدم */}
+          {/* القائمة المنسدلة */}
           {isUserMenuOpen && (
-            <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 animate-in fade-in slide-in-from-top-2">
+            <div className="absolute top-full left-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-xl py-1 z-50 animate-in fade-in slide-in-from-top-1">
               <button
                 onClick={handleLogout}
-                className="w-full text-right px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 font-bold transition-colors"
+                className="w-full text-right px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 font-bold transition-colors"
               >
-                <LogOut className="w-4 h-4" />
-                تسجيل الخروج
+                <LogOut className="w-3.5 h-3.5" /> تسجيل الخروج
               </button>
             </div>
           )}
