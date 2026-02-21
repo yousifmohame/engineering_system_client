@@ -29,6 +29,14 @@ export const updateClient = async (id, updates) => {
   return response.data;
 };
 
+export const analyzeClientIdentity = async (base64Image, documentType) => {
+  const response = await api.post("/clients/analyze-identity", { // تأكد من المسار حسب الـ router لديك
+    base64Image,
+    documentType
+  });
+  return response.data; 
+};
+
 // حذف عميل
 export const deleteClient = async (id) => {
   await api.delete(`/clients/${id}`);

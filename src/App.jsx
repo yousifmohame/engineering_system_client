@@ -14,7 +14,7 @@ import SystemFooter from "./components/layout/shell/SystemFooter";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import TransactionsScreenWrapper from "./pages/Transactions/TransactionsScreenWrapper";
-import ClientsDashboard from "./pages/Clients/ClientsDashboard";
+import ClientsScreenWrapper from "./pages/Clients/ClientsScreenWrapper";
 import OwnershipScreenWrapper from "./pages/Property/OwnershipScreenWrapper";
 import Screen942_DocumentTypes from "./pages/Settings/Screen942_DocumentTypes"; // تأكد من استيراد الشاشة الجديدة
 
@@ -79,7 +79,7 @@ const AppContent = () => {
             <div
               className={activeScreenId === "300" ? "block h-full" : "hidden"}
             >
-              <ClientsDashboard />
+              <ClientsScreenWrapper />
             </div>
             <div
               className={activeScreenId === "310" ? "block h-full" : "hidden"}
