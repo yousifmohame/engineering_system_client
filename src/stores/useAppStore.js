@@ -49,9 +49,9 @@ export const useAppStore = create((set, get) => ({
     ],
     300: [
       {
-        id: "300-MAIN",
-        title: "سجل العملاء",
-        type: "wrapper",
+        id: "DASHBOARD_CLIENTS", // 👈 تعديل هذا السطر
+        title: "لوحة العملاء",
+        type: "dashboard",
         closable: false,
       },
     ],
@@ -71,7 +71,7 @@ export const useAppStore = create((set, get) => ({
   activeTabPerScreen: {
     DASH: "DASH-MAIN",
     "055": "055-MAIN",
-    300: "300-MAIN",
+    300: "DASHBOARD_CLIENTS",
     310: "DASHBOARD_TAB",
     942: "942-MAIN",
   },
