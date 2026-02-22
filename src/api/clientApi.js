@@ -35,10 +35,12 @@ export const updateClient = async (id, updates) => {
   return response.data;
 };
 
-export const analyzeClientIdentity = async (base64Image, documentType) => {
-  const response = await api.post("/clients/analyze-identity", { // تأكد من المسار حسب الـ router لديك
-    base64Image,
-    documentType
+// src/api/clientApi.js
+
+export const analyzeClientIdentity = async (imageBase64, documentType) => {
+  const response = await api.post("/clients/analyze-identity", {
+    imageBase64: imageBase64, // 👈 تم التعديل هنا ليتطابق مع الباك إند
+    documentType: documentType
   });
   return response.data; 
 };
