@@ -221,12 +221,20 @@ const CreateClientWizard = ({ onComplete }) => {
           imageBase64,
           documentType: formData.documentType,
         });
+
         if (response.data?.success) {
           setAiResults(response.data.data);
           toast.success("تم استخراج البيانات بنجاح!");
         }
       } catch (error) {
-        toast.error("فشل استخراج البيانات من الهوية.");
+        // 👇 التعديل هنا: إظهار الخطأ القادم من السيرفر مباشرة
+        const serverError =
+          error.response?.data?.message || error.message || "خطأ غير معروف";
+        toast.error(`سبب الفشل: ${serverError}`);
+        console.error(
+          "🔥 تفاصيل الخطأ الكاملة:",
+          error.response?.data || error,
+        );
       } finally {
         setIsAnalyzingId(false);
       }
