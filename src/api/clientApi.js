@@ -1,8 +1,14 @@
 import api from './axios';
 
 // جلب جميع العملاء
-export const getAllClients = async () => {
-  const response = await api.get('/clients');
+// src/api/clientApi.js
+export const getAllClients = async (params = {}) => {
+  const response = await api.get('/clients', { params });
+  return response.data;
+};
+
+export const getClientById = async (id) => {
+  const response = await api.get(`/clients/${id}`);
   return response.data;
 };
 

@@ -17,6 +17,7 @@ import {
   History,
   Archive,
 } from "lucide-react";
+import { toast } from "sonner"; // 👈 تأكد من وجود هذا الاستيراد للتنبيهات
 
 const CLIENT_TOOLS = [
   {
@@ -42,6 +43,7 @@ const CLIENT_TOOLS = [
     color: "text-amber-500",
     bg: "bg-amber-50",
     badge: null,
+    target: "CLIENTS_RATINGS", // 👈 تمت إضافته
   },
   {
     id: "D01",
@@ -50,6 +52,7 @@ const CLIENT_TOOLS = [
     color: "text-purple-500",
     bg: "bg-purple-50",
     badge: 3,
+    target: "CLIENTS_DOCS", // 👈 تمت إضافته
   },
   {
     id: "E01",
@@ -128,9 +131,7 @@ const CLIENT_TOOLS = [
 const ClientsDashboard = ({ onNavigate }) => {
   return (
     <div className="flex flex-col h-full bg-slate-50" dir="rtl">
-      {/* =========================================================
-          1. المنطقة العلوية الثابتة (Header) - تم إزالة التابات الوهمية ومسار التنقل (Breadcrumbs)
-      ========================================================= */}
+      {/* المنطقة العلوية الثابتة (Header) */}
       <div className="sticky top-0 z-20 bg-white border-b border-slate-200 shadow-sm">
         <div className="px-6 py-5 flex flex-wrap lg:flex-nowrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -202,9 +203,7 @@ const ClientsDashboard = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* =========================================================
-          2. منطقة المحتوى (الشبكة / Grid)
-      ========================================================= */}
+      {/* منطقة المحتوى (الشبكة / Grid) */}
       <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-50/50 custom-scrollbar">
         <div className="max-w-[1600px] mx-auto">
           <div className="flex justify-between items-center mb-6">
@@ -222,10 +221,19 @@ const ClientsDashboard = ({ onNavigate }) => {
               <div
                 key={idx}
                 onClick={() => {
-                  if (tool.id === "A01" && onNavigate) {
+                  // 👇 هنا التعديل الأهم لدعم فتح التابات الديناميكية
+                  if (!onNavigate) return;
+
+                  if (tool.id === "A01") {
                     onNavigate("NEW_CLIENT_TAB");
-                  } else if (tool.id === "B01" && onNavigate) {
-                    onNavigate("300-MAIN"); // فتح سجل العملاء
+                  } else if (tool.id === "B01") {
+                    onNavigate("300-MAIN");
+                  } else if (tool.target) {
+                    onNavigate(tool.target); // 👈 يفتح التاب المربوط بالـ target
+                  } else {
+                    toast.info("قريباً - جاري العمل على هذه الشاشة", {
+                      position: "top-center",
+                    });
                   }
                 }}
                 className="p-6 bg-white rounded-2xl border border-slate-200 hover:border-blue-400 cursor-pointer transition-all duration-300 relative shadow-sm hover:shadow-lg hover:-translate-y-1 group flex flex-col items-center text-center"
