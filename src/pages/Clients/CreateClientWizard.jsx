@@ -204,7 +204,6 @@ const CreateClientWizard = ({ onComplete }) => {
   };
 
   // 2. الهوية (الخطوة 1)
-  // 2. الهوية (الخطوة 1) - النسخة المنيعة
   const handleIdentityUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -218,36 +217,16 @@ const CreateClientWizard = ({ onComplete }) => {
         // إضافة الملف لقائمة المستندات
         addDocumentToState(file, "dt-001", imageBase64);
 
-        // 🚀 الحل الجذري: إجبار الإرسال كـ JSON وتمرير الاسمين معاً لقطع الشك باليقين
-        const payload = {
-          base64Image: imageBase64,
-          imageBase64: imageBase64,
-          documentType: formData.documentType || "هوية شخصية",
-        };
-
-        const response = await axios.post(
-          "/clients/analyze-identity",
-          payload,
-          {
-            headers: {
-              "Content-Type": "application/json", // إجبار السيرفر على قراءتها
-              Accept: "application/json",
-            },
-          },
-        );
-
+        const response = await axios.post("/clients/analyze-identity", {
+          imageBase64,
+          documentType: formData.documentType,
+        });
         if (response.data?.success) {
           setAiResults(response.data.data);
           toast.success("تم استخراج البيانات بنجاح!");
         }
       } catch (error) {
-        const serverError =
-          error.response?.data?.message || error.message || "خطأ غير معروف";
-        toast.error(`سبب الفشل: ${serverError}`);
-        console.error(
-          "🔥 تفاصيل الخطأ الكاملة:",
-          error.response?.data || error,
-        );
+        toast.error("فشل استخراج البيانات من الهوية.");
       } finally {
         setIsAnalyzingId(false);
       }
