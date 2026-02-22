@@ -9,7 +9,7 @@ import Sidebar from "./components/layout/shell/Sidebar";
 import GlobalScreenTabs from "./components/layout/shell/GlobalScreenTabs";
 import ScreenHeader from "./components/layout/shell/ScreenHeader";
 import SystemFooter from "./components/layout/shell/SystemFooter";
-
+import ServerSettings from "./components/ServerSettings";
 // --- Pages / Screens ---
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -92,6 +92,10 @@ const AppContent = () => {
               className={activeScreenId === "942" ? "block h-full" : "hidden"}
             >
               <Screen942_DocumentTypes />
+            </div>
+            {/* 👈 2. عرض شاشة الإعدادات عندما يكون activeScreenId هو "SET" */}
+            <div className={activeScreenId === "SET" ? "block h-full" : "hidden"}>
+              <ServerSettings />
             </div>
           </div>
         </main>

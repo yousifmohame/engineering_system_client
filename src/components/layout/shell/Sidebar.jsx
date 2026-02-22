@@ -26,7 +26,7 @@ const MENU_ITEMS = [
   // { id: "285", label: "المشاريع", icon: Briefcase },
   // { id: "FIN", label: "المالية", icon: FileCheck },
   // { id: "942", label: "إدارة المستندات والقوالب", icon: Settings },
-  // { id: "SET", label: "الإعدادات", icon: Settings },
+  { id: "SET", label: "الإعدادات", icon: Settings },
 ];
 
 const Sidebar = () => {

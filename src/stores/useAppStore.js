@@ -66,6 +66,9 @@ export const useAppStore = create((set, get) => ({
         closable: false,
       },
     ],
+    SET: [
+      { id: "SET-SERVER", title: "حالة السيرفر", type: "wrapper", closable: false },
+    ],
   },
 
   activeTabPerScreen: {
@@ -74,6 +77,7 @@ export const useAppStore = create((set, get) => ({
     300: "DASHBOARD_CLIENTS",
     310: "DASHBOARD_TAB",
     942: "942-MAIN",
+    SET: "SET-SERVER",
   },
 
   // ==========================================
