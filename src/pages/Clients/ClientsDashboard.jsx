@@ -1,4 +1,6 @@
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
+import axios from "../../api/axios"; // تأكد من مسار axios
 import {
   Users,
   Plus,
@@ -16,8 +18,9 @@ import {
   BarChart3,
   History,
   Archive,
+  Loader2,
 } from "lucide-react";
-import { toast } from "sonner"; // 👈 تأكد من وجود هذا الاستيراد للتنبيهات
+import { toast } from "sonner";
 
 const CLIENT_TOOLS = [
   {
@@ -34,7 +37,8 @@ const CLIENT_TOOLS = [
     icon: BookUser,
     color: "text-blue-500",
     bg: "bg-blue-50",
-    badge: 12,
+    badge: null,
+    target: "300-MAIN",
   },
   {
     id: "C01",
@@ -43,7 +47,7 @@ const CLIENT_TOOLS = [
     color: "text-amber-500",
     bg: "bg-amber-50",
     badge: null,
-    target: "CLIENTS_RATINGS", // 👈 تمت إضافته
+    target: "CLIENTS_RATINGS",
   },
   {
     id: "D01",
@@ -51,8 +55,8 @@ const CLIENT_TOOLS = [
     icon: FileCheck,
     color: "text-purple-500",
     bg: "bg-purple-50",
-    badge: 3,
-    target: "CLIENTS_DOCS", // 👈 تمت إضافته
+    badge: null,
+    target: "CLIENTS_DOCS",
   },
   {
     id: "E01",
@@ -68,7 +72,7 @@ const CLIENT_TOOLS = [
     icon: Receipt,
     color: "text-red-500",
     bg: "bg-red-50",
-    badge: 2,
+    badge: null,
   },
   {
     id: "G01",
@@ -118,17 +122,41 @@ const CLIENT_TOOLS = [
     bg: "bg-slate-100",
     badge: null,
   },
-  {
-    id: "M01",
-    title: "التزامات الأمانة",
-    icon: Receipt,
-    color: "text-orange-600",
-    bg: "bg-orange-50",
-    badge: null,
-  },
 ];
 
 const ClientsDashboard = ({ onNavigate }) => {
+  // جلب إحصائيات العملاء الحقيقية
+  const {
+    data: statsData,
+    isLoading,
+    refetch,
+    isFetching,
+  } = useQuery({
+    queryKey: ["clients-stats"],
+    queryFn: async () => {
+      const response = await axios.get("/clients/stats");
+      return response.data.data;
+    },
+    refetchInterval: 60000, // تحديث تلقائي كل دقيقة
+  });
+
+  const stats = statsData || {
+    totalClients: 0,
+    defaulters: 0,
+    missingDocs: 0,
+  };
+
+  // تحديث بيانات الـ Badges في الأدوات بناءً على السيرفر
+  const toolsWithStats = CLIENT_TOOLS.map((tool) => {
+    if (tool.id === "B01") return { ...tool, badge: stats.totalClients };
+    if (tool.id === "D01")
+      return {
+        ...tool,
+        badge: stats.missingDocs > 0 ? stats.missingDocs : null,
+      };
+    return tool;
+  });
+
   return (
     <div className="flex flex-col h-full bg-slate-50" dir="rtl">
       {/* المنطقة العلوية الثابتة (Header) */}
@@ -154,27 +182,39 @@ const ClientsDashboard = ({ onNavigate }) => {
           </div>
 
           <div className="flex items-center gap-5">
-            {/* الإحصائيات السريعة */}
+            {/* الإحصائيات السريعة من السيرفر */}
             <div className="flex gap-2">
-              <div className="text-center px-4 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="text-center px-4 py-1.5 bg-slate-50 rounded-lg border border-slate-200 min-w-[80px]">
                 <div className="text-lg font-black text-blue-600 leading-none mb-1">
-                  12
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 mx-auto animate-spin" />
+                  ) : (
+                    stats.totalClients
+                  )}
                 </div>
                 <div className="text-[10px] font-bold text-slate-500">
                   إجمالي العملاء
                 </div>
               </div>
-              <div className="text-center px-4 py-1.5 bg-amber-50 rounded-lg border border-amber-200">
+              <div className="text-center px-4 py-1.5 bg-amber-50 rounded-lg border border-amber-200 min-w-[80px]">
                 <div className="text-lg font-black text-amber-600 leading-none mb-1">
-                  1
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 mx-auto animate-spin" />
+                  ) : (
+                    stats.defaulters
+                  )}
                 </div>
                 <div className="text-[10px] font-bold text-amber-700">
-                  متعثرين
+                  متعثرين مالياً
                 </div>
               </div>
-              <div className="text-center px-4 py-1.5 bg-red-50 rounded-lg border border-red-200">
+              <div className="text-center px-4 py-1.5 bg-red-50 rounded-lg border border-red-200 min-w-[80px]">
                 <div className="text-lg font-black text-red-600 leading-none mb-1">
-                  2
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 mx-auto animate-spin" />
+                  ) : (
+                    stats.missingDocs
+                  )}
                 </div>
                 <div className="text-[10px] font-bold text-red-700">
                   وثائق ناقصة
@@ -195,15 +235,21 @@ const ClientsDashboard = ({ onNavigate }) => {
               <button className="p-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-600 transition-colors shadow-sm">
                 <Search className="w-4 h-4" />
               </button>
-              <button className="p-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-600 transition-colors shadow-sm">
-                <RefreshCw className="w-4 h-4" />
+              <button
+                onClick={() => refetch()}
+                disabled={isFetching}
+                className="p-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-600 transition-colors shadow-sm disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`}
+                />
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* منطقة المحتوى (الشبكة / Grid) */}
+      {/* منطقة المحتوى (الشبكة) */}
       <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-50/50 custom-scrollbar">
         <div className="max-w-[1600px] mx-auto">
           <div className="flex justify-between items-center mb-6">
@@ -211,45 +257,34 @@ const ClientsDashboard = ({ onNavigate }) => {
               <Grid3x3 className="w-5 h-5 text-slate-400" />
               أدوات إدارة العملاء
             </h2>
-            <button className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline transition-colors">
-              تخصيص الواجهة
-            </button>
           </div>
 
           <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-5">
-            {CLIENT_TOOLS.map((tool, idx) => (
+            {toolsWithStats.map((tool, idx) => (
               <div
                 key={idx}
                 onClick={() => {
-                  // 👇 هنا التعديل الأهم لدعم فتح التابات الديناميكية
                   if (!onNavigate) return;
-
-                  if (tool.id === "A01") {
-                    onNavigate("NEW_CLIENT_TAB");
-                  } else if (tool.id === "B01") {
-                    onNavigate("300-MAIN");
-                  } else if (tool.target) {
-                    onNavigate(tool.target); // 👈 يفتح التاب المربوط بالـ target
-                  } else {
+                  if (tool.id === "A01") onNavigate("NEW_CLIENT_TAB");
+                  else if (tool.id === "B01") onNavigate("300-MAIN");
+                  else if (tool.target) onNavigate(tool.target);
+                  else
                     toast.info("قريباً - جاري العمل على هذه الشاشة", {
                       position: "top-center",
                     });
-                  }
                 }}
                 className="p-6 bg-white rounded-2xl border border-slate-200 hover:border-blue-400 cursor-pointer transition-all duration-300 relative shadow-sm hover:shadow-lg hover:-translate-y-1 group flex flex-col items-center text-center"
               >
-                {tool.badge && (
+                {tool.badge > 0 && (
                   <div className="absolute top-3 left-3 min-w-[24px] h-6 px-1.5 bg-red-500 text-white rounded-full flex items-center justify-center text-[11px] font-bold shadow-sm z-10">
                     {tool.badge}
                   </div>
                 )}
-
                 <div
                   className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 ${tool.bg} ${tool.color}`}
                 >
                   <tool.icon className="w-8 h-8" />
                 </div>
-
                 <h3 className="text-sm font-black text-slate-800 mb-1 group-hover:text-blue-600 transition-colors">
                   {tool.title}
                 </h3>

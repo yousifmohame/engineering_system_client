@@ -11,6 +11,7 @@ export const SCREENS = {
   "055": { id: "055", title: "المعاملات", icon: "FileText" },
   300: { id: "300", title: "العملاء", icon: "Users" },
   310: { id: "310", title: "إدارة الملكيات", icon: "ShieldCheck" },
+  815: { id: "815", title: "عروض الأسعار", icon: "FileSignature" },
   942: { id: "942", title: "المستندات والقوالب", icon: "FileCode" },
   285: { id: "285", title: "المشاريع", icon: "Briefcase" },
   817: { id: "817", title: "شؤون الموظفين", icon: "UserCog" },
@@ -58,6 +59,9 @@ export const useAppStore = create((set, get) => ({
     310: [
       { id: "DASHBOARD_TAB", title: "لوحة الملكيات", type: "dashboard", closable: false },
     ],
+    815: [
+      { id: "QUOTATIONS_DASH", title: "لوحة عروض الأسعار", type: "dashboard", closable: false },
+    ],
     942: [
       {
         id: "942-MAIN",
@@ -76,6 +80,7 @@ export const useAppStore = create((set, get) => ({
     "055": "055-MAIN",
     300: "DASHBOARD_CLIENTS",
     310: "DASHBOARD_TAB",
+    815: "QUOTATIONS_DASH",
     942: "942-MAIN",
     SET: "SET-SERVER",
   },

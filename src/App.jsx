@@ -17,6 +17,7 @@ import TransactionsScreenWrapper from "./pages/Transactions/TransactionsScreenWr
 import ClientsScreenWrapper from "./pages/Clients/ClientsScreenWrapper";
 import OwnershipScreenWrapper from "./pages/Property/OwnershipScreenWrapper";
 import Screen942_DocumentTypes from "./pages/Settings/Screen942_DocumentTypes"; // تأكد من استيراد الشاشة الجديدة
+import QuotationsScreenWrapper from "./pages/Quotations/QuotationsScreenWrapper";
 
 // --- Icons ---
 import { Search, Bell, Settings, ChevronDown } from "lucide-react";
@@ -86,6 +87,11 @@ const AppContent = () => {
             >
               <OwnershipScreenWrapper />
             </div>
+            <div
+              className={activeScreenId === "815" ? "block h-full" : "hidden"}
+            >
+              <QuotationsScreenWrapper />
+            </div>
 
             {/* ✅ إضافة شاشة المستندات هنا */}
             <div
@@ -94,7 +100,9 @@ const AppContent = () => {
               <Screen942_DocumentTypes />
             </div>
             {/* 👈 2. عرض شاشة الإعدادات عندما يكون activeScreenId هو "SET" */}
-            <div className={activeScreenId === "SET" ? "block h-full" : "hidden"}>
+            <div
+              className={activeScreenId === "SET" ? "block h-full" : "hidden"}
+            >
               <ServerSettings />
             </div>
           </div>

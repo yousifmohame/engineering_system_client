@@ -10,7 +10,8 @@ import {
   FileCheck,
   Map as MapIcon,
   UserCog,
-  ShieldCheck, // أيقونة إضافية للصكوك
+  ShieldCheck,
+  FileSignature, // 👈 استيراد أيقونة عروض الأسعار
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -18,8 +19,9 @@ import { clsx } from "clsx";
 const MENU_ITEMS = [
   // { id: "DASH", label: "لوحة التحكم", icon: LayoutDashboard },
   // { id: "055", label: "المعاملات", icon: FileText },
-  { id: "310", label: "ملفات الملكية", icon: ShieldCheck }, // ✅ الإضافة الجديدة هنا
+  { id: "310", label: "ملفات الملكية", icon: ShieldCheck }, 
   { id: "300", label: "العملاء", icon: Users },
+  { id: "815", label: "عروض الأسعار", icon: FileSignature }, // ✅ الإضافة الجديدة هنا
   // { id: "817", label: "إدارة الموظفين", icon: UserCog },
   // { id: "937", label: "إدارة المعقبين", icon: Users },
   // { id: "939", label: "شوارع الرياض", icon: MapIcon },
@@ -86,8 +88,6 @@ const Sidebar = () => {
           );
         })}
       </nav>
-
-      
     </aside>
   );
 };
