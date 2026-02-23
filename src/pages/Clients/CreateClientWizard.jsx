@@ -443,19 +443,39 @@ const CreateClientWizard = ({ onComplete }) => {
                   <label className="block text-sm font-bold text-slate-700 mb-3">
                     نوع وثيقة الهوية المرفوعة *
                   </label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {/* تم تعديل الـ grid ليصبح 3 أعمدة في الشاشات الكبيرة ليتناسب مع الـ 6 خيارات */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {[
-                      { id: "هوية شخصية", icon: "🪪", desc: "وطنية أو إقامة" },
-                      { id: "سجل تجاري", icon: "🏢", desc: "شركات ومؤسسات" },
+                      {
+                        id: "هوية شخصية",
+                        icon: "🪪",
+                        desc: "هوية وطنية للسعوديين",
+                      },
+                      {
+                        id: "سجل تجاري",
+                        icon: "🏢",
+                        desc: "سجل تجاري للشركات والمؤسسات",
+                      },
                       {
                         id: "رقم وطني موحد",
                         icon: "🔢",
-                        desc: "الرقم الموحد (700)",
+                        desc: "رقم الهوية الوطني الموحد (700)",
                       },
                       {
                         id: "رقم منشأة",
                         icon: "🏛️",
-                        desc: "لدى الجهات الحكومية",
+                        desc: "رقم منشأة لدى الجهات الحكومية",
+                      },
+                      // 👇 الخيارات الجديدة التي طلبتها
+                      {
+                        id: "إقامة",
+                        icon: "📋",
+                        desc: "بطاقة إقامة لفرد غير سعودي",
+                      },
+                      {
+                        id: "جواز سفر",
+                        icon: "🛂",
+                        desc: "جواز سفر لفرد غير سعودي",
                       },
                     ].map((doc) => (
                       <div
@@ -463,13 +483,17 @@ const CreateClientWizard = ({ onComplete }) => {
                         onClick={() =>
                           handleChange(null, "documentType", doc.id)
                         }
-                        className={`p-3 rounded-xl cursor-pointer text-center transition-all ${formData.documentType === doc.id ? "bg-white border-2 border-violet-500 shadow-sm" : "bg-white/60 border border-slate-200 hover:bg-white"}`}
+                        className={`p-3 rounded-xl cursor-pointer text-center transition-all ${
+                          formData.documentType === doc.id
+                            ? "bg-white border-2 border-violet-500 shadow-sm scale-[1.02]"
+                            : "bg-white/60 border border-slate-200 hover:bg-white hover:border-violet-300"
+                        }`}
                       >
-                        <div className="text-2xl mb-1">{doc.icon}</div>
+                        <div className="text-2xl mb-1.5">{doc.icon}</div>
                         <div className="text-[12px] font-bold text-slate-800">
                           {doc.id}
                         </div>
-                        <div className="text-[10px] text-slate-500 mt-1">
+                        <div className="text-[10px] text-slate-500 mt-1 leading-relaxed">
                           {doc.desc}
                         </div>
                       </div>
