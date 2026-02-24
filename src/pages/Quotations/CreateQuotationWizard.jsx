@@ -28,13 +28,14 @@ import {
   Download,
   Copy,
   Loader2,
+  MapPin,
 } from "lucide-react";
 
 // ==========================================
 // 1. الثوابت (Constants)
 // ==========================================
 const STEPS = [
-  { id: 0, label: "الأساس", icon: Sparkles },
+  { id: 0, label: "الملكية والعميل", icon: Building },
   { id: 1, label: "البيانات", icon: FileText },
   { id: 2, label: "النموذج", icon: Eye },
   { id: 3, label: "البنود", icon: Receipt },
@@ -102,6 +103,28 @@ const mapHandlingToEnum = (arMethod) => {
     "عن طريق وكيل": "AGENT",
   };
   return map[arMethod] || "DIRECT";
+};
+
+// دالة لحساب السنة الهجرية الحالية تقريبياً
+const getCurrentHijriYear = () => {
+  const currentYear = new Date().getFullYear();
+  // معادلة تقريبية لتحويل الميلادي إلى هجري
+  return Math.floor((currentYear - 622) * (33 / 32));
+};
+
+// دالة لتوليد مصفوفة السنوات الهجرية مع ما يقابلها بالميلادي
+const generateHijriYears = (startYear, endYear) => {
+  const years = [];
+  for (let hYear = endYear; hYear >= startYear; hYear--) {
+    // ترتيب تنازلي (الأحدث أولاً)
+    // معادلة تقريبية لحساب بداية ونهاية السنة الميلادية المقابلة للسنة الهجرية
+    const gYearStart = Math.floor(hYear - hYear / 33 + 622);
+    years.push({
+      value: hYear.toString(),
+      label: `${hYear} هـ (${gYearStart} - ${gYearStart + 1} م)`,
+    });
+  }
+  return years;
 };
 
 // ==========================================
@@ -324,8 +347,8 @@ const CreateQuotationWizard = ({ onComplete }) => {
   });
 
   const handleSave = (isDraft = false) => {
-    if (!selectedClient) {
-      toast.error("يرجى اختيار العميل في الخطوة الأولى");
+    if (!selectedClient && !selectedProperty) {
+      toast.error("يرجى اختيار ملف عميل أو ملف ملكية واحد على الأقل.");
       setCurrentStep(0);
       return;
     }
@@ -337,7 +360,7 @@ const CreateQuotationWizard = ({ onComplete }) => {
     }
 
     const payload = {
-      clientId: selectedClient,
+      clientId: selectedClient || null, // قد يكون null لو اختار ملكية فقط بدون عميل (نظرياً)
       propertyId: selectedProperty || null,
       issueDate,
       validityDays: validityDays === "custom" ? 30 : validityDays,
@@ -518,15 +541,79 @@ const CreateQuotationWizard = ({ onComplete }) => {
   const renderStep0 = () => (
     <div className="animate-in fade-in duration-300">
       <div className="text-[15px] font-bold text-slate-800 mb-4 flex items-center gap-2">
-        <Sparkles className="w-5 h-5 text-violet-600" />
-        الخطوة 0 — تحليل AI ومطابقة العميل/الملكية
+        <Building className="w-5 h-5 text-blue-600" />
+        الخطوة 0 — تحديد الملكية والعميل (الأساس)
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* اختيار العميل */}
-        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm">
+        {/* 1. اختيار الملكية (تم نقله ليصبح الأول على اليمين) */}
+        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+          {/* شريط زينة جانبي */}
+          <div className="absolute top-0 bottom-0 right-0 w-1 bg-cyan-500"></div>
+
           <div className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-            <Users className="w-4 h-4 text-blue-500" /> تحديد العميل (إلزامي)
+            <Building className="w-4 h-4 text-cyan-500" /> تحديد ملف الملكية
+          </div>
+          <div className="relative mb-3">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={propertySearch}
+              onChange={(e) => setPropertySearch(e.target.value)}
+              placeholder="بحث برقم الصك، الحي، أو الكود..."
+              className="w-full py-2.5 pr-9 pl-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200"
+            />
+          </div>
+          <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+            {propertiesLoading ? (
+              <div className="p-4 flex justify-center">
+                <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
+              </div>
+            ) : propertiesData?.length > 0 ? (
+              propertiesData.map((prop) => (
+                <div
+                  key={prop.id}
+                  onClick={() => {
+                    setSelectedProperty(prop.id);
+                    // 👈 الربط الذكي: إذا اخترت ملكية، نحدد العميل الخاص بها تلقائياً
+                    const relatedClientId = prop.clientId || prop.client?.id;
+                    if (relatedClientId) {
+                      setSelectedClient(relatedClientId);
+                    }
+                  }}
+                  className={`flex flex-col gap-1 p-3 rounded-xl cursor-pointer border transition-all ${selectedProperty === prop.id ? "border-cyan-500 bg-cyan-50 text-cyan-800 shadow-sm" : "border-slate-100 bg-white hover:bg-slate-50 hover:border-slate-200"}`}
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="font-bold text-sm text-cyan-700">
+                      {prop.code}
+                    </div>
+                    <div className="font-mono text-[10px] text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-100">
+                      صك: {prop.deedNumber || "—"}
+                    </div>
+                  </div>
+                  {prop.district && (
+                    <div className="text-[11px] text-slate-600 flex items-center gap-1 mt-1">
+                      <MapPin className="w-3 h-3 text-slate-400" /> {prop.city}{" "}
+                      - {prop.district}
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-xs text-slate-400 text-center p-4">
+                لا توجد ملكيات مطابقة
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 2. اختيار العميل (أصبح على اليسار) */}
+        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+          {/* شريط زينة جانبي */}
+          <div className="absolute top-0 bottom-0 right-0 w-1 bg-blue-500"></div>
+
+          <div className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+            <Users className="w-4 h-4 text-blue-500" /> تحديد ملف العميل
           </div>
           <div className="relative mb-3">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -534,11 +621,11 @@ const CreateQuotationWizard = ({ onComplete }) => {
               type="text"
               value={clientSearch}
               onChange={(e) => setClientSearch(e.target.value)}
-              placeholder="بحث بالاسم أو الكود أو الهوية..."
+              placeholder="بحث بالاسم، الهوية، الجوال..."
               className="w-full py-2.5 pr-9 pl-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
             />
           </div>
-          <div className="flex flex-col gap-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
+          <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
             {clientsLoading ? (
               <div className="p-4 flex justify-center">
                 <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
@@ -548,188 +635,230 @@ const CreateQuotationWizard = ({ onComplete }) => {
                 <div
                   key={client.id}
                   onClick={() => setSelectedClient(client.id)}
-                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer border transition-all ${selectedClient === client.id ? "border-blue-500 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-100 bg-white hover:bg-slate-50 hover:border-slate-200"}`}
+                  className={`flex flex-col p-3 rounded-xl cursor-pointer border transition-all ${selectedClient === client.id ? "border-blue-500 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-100 bg-white hover:bg-slate-50 hover:border-slate-200"}`}
                 >
-                  <div className="font-bold text-sm">
-                    {getClientName(client)}
-                  </div>
-                  <div className="font-mono text-[10px] text-slate-500 px-1.5 py-0.5 bg-slate-100 rounded">
-                    {client.clientCode}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-xs text-slate-400 text-center p-4">
-                لا توجد نتائج
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* اختيار الملكية */}
-        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm">
-          <div className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-            <Building className="w-4 h-4 text-cyan-500" /> تحديد الملكية / الصك
-            (اختياري)
-          </div>
-          <div className="relative mb-3">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              value={propertySearch}
-              onChange={(e) => setPropertySearch(e.target.value)}
-              placeholder="بحث بالكود، رقم الصك..."
-              className="w-full py-2.5 pr-9 pl-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200"
-            />
-          </div>
-          <div className="flex flex-col gap-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
-            {propertiesLoading ? (
-              <div className="p-4 flex justify-center">
-                <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
-              </div>
-            ) : propertiesData?.length > 0 ? (
-              propertiesData.map((prop) => (
-                <div
-                  key={prop.id}
-                  onClick={() => setSelectedProperty(prop.id)}
-                  className={`flex flex-col gap-1 p-3 rounded-xl cursor-pointer border transition-all ${selectedProperty === prop.id ? "border-cyan-500 bg-cyan-50 text-cyan-800 shadow-sm" : "border-slate-100 bg-white hover:bg-slate-50 hover:border-slate-200"}`}
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="font-bold text-sm">{prop.code}</div>
-                    <div className="font-mono text-[10px] text-slate-500">
-                      صك: {prop.deedNumber || "—"}
+                  <div className="flex justify-between items-start mb-1">
+                    <div className="font-bold text-sm text-blue-800">
+                      {getClientName(client)}
+                    </div>
+                    <div className="font-mono text-[10px] text-slate-500 px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200">
+                      {client.clientCode}
                     </div>
                   </div>
-                  {prop.district && (
-                    <div className="text-[10px] text-slate-500">
-                      {prop.district}
+                  {(client.idNumber || client.mobile) && (
+                    <div className="text-[10px] text-slate-500 flex gap-3 mt-1">
+                      {client.idNumber && <span>هوية: {client.idNumber}</span>}
+                      {client.mobile && (
+                        <span className="dir-ltr text-left">
+                          {client.mobile}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
               ))
             ) : (
               <div className="text-xs text-slate-400 text-center p-4">
-                لا توجد نتائج
+                لا يوجد عملاء مطابقين
               </div>
             )}
           </div>
         </div>
       </div>
+
+      <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-2 text-xs text-blue-800">
+        <Sparkles className="w-4 h-4 text-blue-500" />
+        <strong>نصيحة:</strong> اختيار ملف الملكية أولاً سيقوم بتحديد العميل
+        المالك لها تلقائياً. يمكنك الاستمرار بتحديد أحدهما فقط إذا لزم الأمر.
+      </div>
     </div>
   );
 
-  const renderStep1 = () => (
-    <div className="animate-in fade-in duration-300">
-      <div className="text-[15px] font-bold text-slate-800 mb-3">
-        الخطوة 1 — البيانات الأساسية
-      </div>
-      <div className="p-4 bg-white rounded-xl border border-slate-200 mb-3 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-[11px] font-bold text-slate-700 mb-1">
-              تاريخ العرض
-            </label>
-            <input
-              type="date"
-              value={issueDate}
-              onChange={(e) => setIssueDate(e.target.value)}
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500"
-            />
+  const renderStep1 = () => {
+    // 1. توليد قائمة سنوات طلب الخدمة (من 1430 إلى السنة الحالية)
+    const currentHijri = getCurrentHijriYear();
+    const serviceYearsList = generateHijriYears(1430, currentHijri);
+
+    // 2. توليد قائمة سنوات الرخصة بناءً على نوع المعاملة
+    let licenseYearsList = [];
+    if (transactionType === "تصحيح وضع مبنى قائم") {
+      licenseYearsList = generateHijriYears(1370, 1427);
+    } else {
+      licenseYearsList = generateHijriYears(1427, currentHijri);
+    }
+
+    return (
+      <div className="animate-in fade-in duration-300">
+        <div className="text-[15px] font-bold text-slate-800 mb-3">
+          الخطوة 1 — البيانات الأساسية
+        </div>
+
+        {/* ----------------- الجزء الأول: تواريخ وصلاحية العرض ----------------- */}
+        <div className="p-4 bg-white rounded-xl border border-slate-200 mb-3 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                تاريخ العرض
+              </label>
+              <input
+                type="date"
+                value={issueDate}
+                onChange={(e) => setIssueDate(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                صلاحية العرض (أيام)
+              </label>
+              <input
+                type="text" // غيرناه لـ text ليقبل كلمة "غير محدد"
+                value={validityDays === "unlimited" ? "غير محدد" : validityDays}
+                onChange={(e) => setValidityDays(e.target.value)}
+                readOnly={validityDays === "unlimited"}
+                className={`w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 ${validityDays === "unlimited" ? "bg-slate-100 font-bold" : ""}`}
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-[11px] font-bold text-slate-700 mb-1">
-              صلاحية العرض (أيام)
-            </label>
-            <input
-              type="number"
-              value={validityDays}
-              onChange={(e) => setValidityDays(e.target.value)}
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500"
-            />
+
+          {/* أزرار الصلاحية السريعة (حسب التصميم المرفق) */}
+          <div className="flex flex-wrap gap-2 mb-4 justify-center md:justify-start">
+            {[3, 7, 14, 30, 60, "unlimited"].map((val) => (
+              <button
+                key={val}
+                onClick={() => setValidityDays(val)}
+                className={`px-4 py-1.5 rounded-md text-[11px] font-bold cursor-pointer border transition-colors ${
+                  validityDays === val
+                    ? "bg-slate-800 text-white border-slate-800 shadow-md" // لون داكن ليتطابق مع شكل الأزرار في رسمتك
+                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                }`}
+              >
+                {val === "unlimited" ? "غير محدد" : `${val} أيام`}
+              </button>
+            ))}
           </div>
-        </div>
-        <div className="mt-3 flex items-center gap-2">
-          <label className="text-[11px] font-bold text-slate-700">
-            قابل للتجديد التلقائي؟
-          </label>
-          <button
-            onClick={() => setIsRenewable(!isRenewable)}
-            className={`px-4 py-1 rounded-full text-[10px] font-bold cursor-pointer border transition-colors ${isRenewable ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-slate-100 text-slate-400 border-slate-200"}`}
-          >
-            {isRenewable ? "نعم" : "لا"}
-          </button>
-        </div>
-      </div>
-      <div className="p-4 bg-white rounded-xl border border-slate-200 border-r-[3px] border-r-cyan-600 mb-3 shadow-sm">
-        <div className="text-xs font-bold text-cyan-700 mb-3 flex items-center gap-1.5">
-          <FileSearch className="w-3.5 h-3.5" /> بيانات الخدمة والرخصة
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 mb-2.5">
-          <div>
-            <label className="block text-[11px] font-bold text-slate-700 mb-1">
-              نوع المعاملة
+
+          <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+            <label className="text-[11px] font-bold text-slate-700">
+              قابل للتجديد التلقائي؟
             </label>
-            <select
-              value={transactionType}
-              onChange={(e) => setTransactionType(e.target.value)}
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500"
+            <button
+              onClick={() => setIsRenewable(!isRenewable)}
+              className={`px-4 py-1 rounded-full text-[10px] font-bold cursor-pointer border transition-colors ${
+                isRenewable
+                  ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                  : "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200"
+              }`}
             >
-              <option value="">— اختر —</option>
-              <option value="ifraagh">إفراغ عقاري</option>
-              <option value="rahn">رهن عقاري</option>
-              <option value="fak_rahn">فك رهن</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-[11px] font-bold text-slate-700 mb-1">
-              رقم الخدمة
-            </label>
-            <input
-              type="text"
-              value={serviceNumber}
-              onChange={(e) => setServiceNumber(e.target.value)}
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-bold text-slate-700 mb-1">
-              سنة طلب الخدمة
-            </label>
-            <input
-              type="text"
-              value={serviceYear}
-              onChange={(e) => setServiceYear(e.target.value)}
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono outline-none focus:border-blue-500"
-            />
+              {isRenewable ? "نعم" : "لا"}
+            </button>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-          <div>
-            <label className="block text-[11px] font-bold text-slate-700 mb-1">
-              رقم الرخصة
-            </label>
-            <input
-              type="text"
-              value={licenseNumber}
-              onChange={(e) => setLicenseNumber(e.target.value)}
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono outline-none focus:border-blue-500"
-            />
+
+        {/* ----------------- الجزء الثاني: بيانات الخدمة والرخصة ----------------- */}
+        <div className="p-4 bg-white rounded-xl border border-slate-200 border-r-[3px] border-r-cyan-600 mb-3 shadow-sm relative">
+          <div className="text-xs font-bold text-cyan-700 mb-3 flex items-center gap-1.5">
+            <FileSearch className="w-3.5 h-3.5" /> بيانات الخدمة والرخصة
           </div>
-          <div>
-            <label className="block text-[11px] font-bold text-slate-700 mb-1">
-              سنة الرخصة
-            </label>
-            <input
-              type="text"
-              value={licenseYear}
-              onChange={(e) => setLicenseYear(e.target.value)}
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono outline-none focus:border-blue-500"
-            />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                نوع المعاملة
+              </label>
+              <select
+                value={transactionType}
+                onChange={(e) => setTransactionType(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 bg-white"
+              >
+                <option value="">— اختر المعاملة —</option>
+                <option value="إفراغ عقاري">إفراغ عقاري</option>
+                <option value="رهن عقاري">رهن عقاري</option>
+                <option value="تصحيح وضع مبنى قائم">
+                  تصحيح وضع مبنى قائم
+                </option>{" "}
+                {/* الخيار الذي يغير السنوات */}
+              </select>
+              <div className="text-[9px] text-slate-400 mt-1">
+                سيتم ربطها بشاشة الخدمات لاحقاً
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                رقم الخدمة
+              </label>
+              <input
+                type="text"
+                value={serviceNumber}
+                onChange={(e) => setServiceNumber(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                سنة طلب الخدمة
+              </label>
+              <select
+                value={serviceYear}
+                onChange={(e) => setServiceYear(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono outline-none focus:border-blue-500 bg-white"
+              >
+                <option value="">— اختر السنة —</option>
+                {serviceYearsList.map((year) => (
+                  <option key={year.value} value={year.value}>
+                    {year.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                رقم الرخصة
+              </label>
+              <input
+                type="text"
+                value={licenseNumber}
+                onChange={(e) => setLicenseNumber(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                سنة الرخصة
+              </label>
+              <select
+                value={licenseYear}
+                onChange={(e) => setLicenseYear(e.target.value)}
+                className={`w-full p-2 border rounded-lg text-xs font-mono outline-none bg-white transition-colors ${
+                  transactionType === "تصحيح وضع مبنى قائم"
+                    ? "border-amber-400 focus:border-amber-500 bg-amber-50/30" // تمييز لوني إذا تغير النطاق
+                    : "border-slate-300 focus:border-blue-500"
+                }`}
+              >
+                <option value="">— اختر السنة —</option>
+                {licenseYearsList.map((year) => (
+                  <option key={year.value} value={year.value}>
+                    {year.label}
+                  </option>
+                ))}
+              </select>
+              {transactionType === "تصحيح وضع مبنى قائم" && (
+                <div className="text-[9px] text-amber-600 mt-1 font-bold">
+                  * تم تحديد النطاق (1370 هـ - 1427 هـ) بناءً على نوع المعاملة
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderStep2 = () => {
     const summaryTemplates = serverTemplates.filter(

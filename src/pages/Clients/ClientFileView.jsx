@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getClientById } from "../../api/clientApi"; // 👈 تأكد من صحة المسار
 import {
   Copy,
@@ -44,9 +44,10 @@ import {
   CheckCircle,
   ArrowLeft,
   Loader2,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
-
+import api from "../../api/axios";
 // دالة مساعدة لاسم العميل
 const getFullName = (nameObj) => {
   if (!nameObj) return "غير محدد";
@@ -83,12 +84,20 @@ const maskId = (id) => {
 };
 
 const ClientFileView = ({ clientId, onBack }) => {
+  const queryClient = useQueryClient();
   // ==========================================
   // States
   // ==========================================
   const [activeTab, setActiveTab] = useState("summary");
   const [isPhotoBlurred, setIsPhotoBlurred] = useState(false);
   const [isIdMasked, setIsIdMasked] = useState(true);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const fileInputRef = useRef(null);
+  const [uploadForm, setUploadForm] = useState({
+    file: null,
+    name: "",
+    notes: "",
+  });
 
   // ==========================================
   // Fetch Client Data
@@ -102,6 +111,100 @@ const ClientFileView = ({ clientId, onBack }) => {
     queryFn: () => getClientById(clientId),
     enabled: !!clientId,
   });
+
+  // ==========================================
+  // 👈 دالة رفع الوثيقة (Mutation)
+  // ==========================================
+  // ==========================================
+  // دوال الرفع والمعاينة والتحميل (تم التصحيح)
+  // ==========================================
+  const uploadDocMutation = useMutation({
+    mutationFn: async (formData) => {
+      const res = await api.post(`/clients/${clientId}/documents`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return res.data;
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success("تم رفع الوثيقة بنجاح");
+
+        // 👈 التعديل هنا: استخدام الكائن { queryKey: ... } ليتوافق مع React Query v5
+        queryClient.invalidateQueries({ queryKey: ["client", clientId] });
+
+        // الآن ستعمل دالة الإغلاق بنجاح
+        closeUploadModal();
+      } else {
+        toast.error(data.message || "حدث خطأ غير متوقع");
+      }
+    },
+    onError: (error) => {
+      console.error("Upload Error:", error); // مفيد لاكتشاف الأخطاء في الكونسول
+      toast.error(
+        error.response?.data?.message ||
+          "تعذر رفع الوثيقة. تأكد من إعدادات الباك إند.",
+      );
+    },
+  });
+
+  const closeUploadModal = () => {
+    setIsUploadModalOpen(false);
+    setUploadForm({ file: null, name: "", notes: "" });
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const selectedFile = e.target.files[0];
+      setUploadForm({
+        ...uploadForm,
+        file: selectedFile,
+        name: uploadForm.name || selectedFile.name.split(".")[0],
+      });
+    }
+  };
+
+  const handleUploadSubmit = () => {
+    if (!uploadForm.file) return toast.error("يرجى اختيار ملف أولاً");
+    if (!uploadForm.name) return toast.error("يرجى كتابة اسم/نوع الوثيقة");
+
+    const formData = new FormData();
+    formData.append("file", uploadForm.file);
+    formData.append("name", uploadForm.name);
+    // إذا حذفت حقل notes من الكنترولر، يمكنك عدم إرساله، أو إرساله ولا بأس
+    formData.append("notes", uploadForm.notes);
+
+    uploadDocMutation.mutate(formData);
+  };
+
+  // 👈 دالة فتح/معاينة الملف
+  const handleViewDocument = (filePath) => {
+    if (!filePath) return toast.error("مسار الملف غير متوفر");
+    // بناء الرابط الكامل للملف (يجب أن يكون الباك إند يوفر مجلد uploads كـ static)
+    const fileUrl = `${api.defaults.baseURL.replace("/api", "")}${filePath}`;
+    window.open(fileUrl, "_blank");
+  };
+
+  // 👈 دالة تحميل الملف
+  const handleDownloadDocument = async (filePath, fileName) => {
+    if (!filePath) return toast.error("مسار الملف غير متوفر");
+
+    const fileUrl = `${api.defaults.baseURL.replace("/api", "")}${filePath}`;
+    try {
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      // استخراج امتداد الملف من المسار الأصلي لإضافته للاسم
+      const ext = filePath.split(".").pop();
+      link.setAttribute("download", `${fileName}.${ext}`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (error) {
+      toast.error("فشل تحميل الملف");
+    }
+  };
 
   // ==========================================
   // Tabs Config
@@ -196,6 +299,120 @@ const ClientFileView = ({ clientId, onBack }) => {
   const clientName = getFullName(client.name);
   const englishName =
     client.name?.en || client.name?.englishName || client.name?.firstEn || "";
+
+  // ==========================================
+  // 👈 نافذة رفع الوثيقة (Upload Modal)
+  // ==========================================
+  const renderUploadModal = () => {
+    if (!isUploadModalOpen) return null;
+
+    return (
+      <div
+        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+        dir="rtl"
+      >
+        <div className="bg-white rounded-2xl p-6 w-full max-w-[480px] shadow-2xl animate-in zoom-in-95">
+          <div className="flex justify-between items-center mb-5">
+            <div className="text-base font-bold text-violet-700 flex items-center gap-2">
+              <Upload className="w-5 h-5" /> رفع وثيقة للعميل
+            </div>
+            <button
+              onClick={closeUploadModal}
+              className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${uploadForm.file ? "border-violet-500 bg-violet-50" : "border-slate-300 hover:bg-slate-50 bg-white"}`}
+            >
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              {uploadForm.file ? (
+                <>
+                  <FileCheck className="w-8 h-8 text-violet-600 mx-auto mb-2" />
+                  <div className="text-sm font-bold text-violet-800">
+                    {uploadForm.file.name}
+                  </div>
+                  <div className="text-[10px] text-violet-500 mt-1">
+                    {(uploadForm.file.size / 1024 / 1024).toFixed(2)} MB
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                  <div className="text-sm font-bold text-slate-600">
+                    اضغط هنا لاختيار ملف
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-1">
+                    PDF, JPG, PNG (بحد أقصى 5MB)
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                اسم/نوع الوثيقة <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="مثال: صورة الهوية، السجل التجاري..."
+                value={uploadForm.name}
+                onChange={(e) =>
+                  setUploadForm({ ...uploadForm, name: e.target.value })
+                }
+                className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-200"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                ملاحظات (اختياري)
+              </label>
+              <textarea
+                rows="3"
+                placeholder="أي ملاحظات حول هذه الوثيقة..."
+                value={uploadForm.notes}
+                onChange={(e) =>
+                  setUploadForm({ ...uploadForm, notes: e.target.value })
+                }
+                className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-200 resize-none"
+              ></textarea>
+            </div>
+          </div>
+
+          <div className="flex gap-2 mt-6">
+            <button
+              onClick={handleUploadSubmit}
+              disabled={uploadDocMutation.isPending}
+              className="flex-1 py-2.5 bg-violet-600 text-white rounded-lg text-sm font-bold shadow-md hover:bg-violet-700 flex justify-center items-center gap-2 disabled:opacity-50"
+            >
+              {uploadDocMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}{" "}
+              حفظ ورفع الوثيقة
+            </button>
+            <button
+              onClick={closeUploadModal}
+              className="px-6 py-2.5 bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-sm hover:bg-slate-200 font-bold"
+            >
+              إلغاء
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // ==========================================
   // Render Tab Contents
@@ -648,13 +865,19 @@ const ClientFileView = ({ clientId, onBack }) => {
     </div>
   );
 
+  // ==========================================
+  // 👈 تاب الوثائق (تم التحديث ليقرأ من الداتابيز ويرفع)
+  // ==========================================
   const renderDocsTab = () => (
     <div className="space-y-4 animate-in fade-in duration-300">
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
           <FileCheck className="w-5 h-5 text-violet-500" /> وثائق العميل
         </h3>
-        <button className="px-3 py-1.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg text-xs font-bold shadow flex items-center gap-1">
+        <button
+          onClick={() => setIsUploadModalOpen(true)}
+          className="px-3 py-1.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg text-xs font-bold shadow flex items-center gap-1 hover:from-violet-700 hover:to-purple-700 transition-all"
+        >
           <Upload className="w-3 h-3" /> رفع وثيقة
         </button>
       </div>
@@ -671,17 +894,48 @@ const ClientFileView = ({ clientId, onBack }) => {
                   <FileText className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="font-bold text-sm text-slate-700 truncate max-w-[150px]">
-                    {doc.name || "مستند"}
+                  <div
+                    className="font-bold text-sm text-slate-700 truncate max-w-[150px]"
+                    title={doc.fileName || doc.name}
+                  >
+                    {doc.fileName || doc.name || "مستند"}
                   </div>
                   <div className="text-[10px] text-slate-400 mt-1">
-                    {formatDate(doc.createdAt)} • {doc.type || "عام"}
+                    {formatDate(doc.createdAt)}
                   </div>
+                  {doc.notes && (
+                    <div
+                      className="text-[9px] text-slate-500 mt-1 truncate max-w-[150px]"
+                      title={doc.notes}
+                    >
+                      ملاحظة: {doc.notes}
+                    </div>
+                  )}
                 </div>
               </div>
-              <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                <Eye className="w-4 h-4" />
-              </button>
+              <div className="flex gap-1">
+                {/* 👈 زر المعاينة */}
+                <button
+                  onClick={() => handleViewDocument(doc.filePath)}
+                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  title="عرض"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+                {/* 👈 زر التنزيل */}
+                <button
+                  onClick={() =>
+                    handleDownloadDocument(
+                      doc.filePath,
+                      doc.fileName || "document",
+                    )
+                  }
+                  className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                  title="تحميل"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -873,6 +1127,7 @@ const ClientFileView = ({ clientId, onBack }) => {
           </div>
         )}
       </div>
+      {renderUploadModal()}
     </div>
   );
 };

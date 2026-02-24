@@ -43,7 +43,7 @@ import {
   CircleCheckBig,
   ClipboardList,
   Eye,
-  Brain
+  Brain,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -86,6 +86,123 @@ const safeFormatDate = (dateString, formatStr = "yyyy-MM-dd") => {
   } catch (e) {
     return dateString;
   }
+};
+
+// ==========================================
+// عارض الوثائق (Document Viewer Modal)
+// ==========================================
+const DocumentViewer = ({ doc, onClose }) => {
+  const [scale, setScale] = useState(1);
+  const isPdf = doc?.fileType?.includes("pdf");
+
+  const handlePrint = () => {
+    const printWindow = window.open("", "_blank");
+    if (isPdf) {
+      printWindow.document.write(
+        `<iframe src="${doc.fileData}" width="100%" height="100%" style="border:none;"></iframe>`,
+      );
+    } else {
+      printWindow.document.write(
+        `<div style="text-align:center;"><img src="${doc.fileData}" style="max-width:100%;" /></div>`,
+      );
+    }
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/90 z-[200] flex flex-col backdrop-blur-sm animate-in fade-in"
+      dir="rtl"
+    >
+      {/* شريط الأدوات العلوي */}
+      <div className="bg-slate-900 text-white p-4 flex justify-between items-center shadow-lg">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onClose}
+            className="p-2 bg-slate-800 hover:bg-red-500 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <div>
+            <h3 className="font-bold text-sm">
+              {doc.type} - {doc.number}
+            </h3>
+            <p className="text-[10px] text-slate-400 font-mono">
+              الرمز: {doc.sysCode}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {!isPdf && (
+            <>
+              <button
+                onClick={() => setScale((s) => Math.max(0.5, s - 0.2))}
+                className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg"
+              >
+                <ZoomOut className="w-4 h-4" />
+              </button>
+              <span className="text-xs font-mono w-10 text-center">
+                {Math.round(scale * 100)}%
+              </span>
+              <button
+                onClick={() => setScale((s) => Math.min(3, s + 0.2))}
+                className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setScale(1)}
+                className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg mr-2"
+              >
+                <Maximize className="w-4 h-4" />
+              </button>
+            </>
+          )}
+          <div className="w-px h-6 bg-slate-700 mx-2"></div>
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-xs font-bold transition-colors"
+          >
+            <Printer className="w-4 h-4" /> طباعة
+          </button>
+        </div>
+      </div>
+
+      {/* منطقة العرض */}
+      <div className="flex-1 overflow-auto flex items-center justify-center p-4 custom-scrollbar relative">
+        {doc.fileData ? (
+          isPdf ? (
+            <iframe
+              src={doc.fileData}
+              className="w-full h-full rounded-lg bg-white"
+              title="PDF Viewer"
+            />
+          ) : (
+            <div
+              className="transition-transform duration-200 ease-out origin-center"
+              style={{ transform: `scale(${scale})` }}
+            >
+              <img
+                src={doc.fileData}
+                alt="وثيقة"
+                className="max-w-full max-h-[85vh] rounded shadow-2xl"
+                draggable="false"
+              />
+            </div>
+          )
+        ) : (
+          <div className="text-slate-500 flex flex-col items-center">
+            <FileText className="w-16 h-16 mb-4 opacity-50" />
+            <p>لا توجد معاينة متاحة لهذه الوثيقة</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 // ==========================================
@@ -202,6 +319,8 @@ const DeedDetailsModal = ({ isOpen, deedId, onClose }) => {
   const [aiResult, setAiResult] = useState(null);
   const [selectedPlotForBounds, setSelectedPlotForBounds] = useState("all");
 
+  const [viewingDoc, setViewingDoc] = useState(null);
+
   const [localData, setLocalData] = useState({
     documents: [],
     plots: [],
@@ -212,10 +331,13 @@ const DeedDetailsModal = ({ isOpen, deedId, onClose }) => {
   const [hasChanges, setHasChanges] = useState(false);
 
   const [showDocForm, setShowDocForm] = useState(false);
+  const fileInputRef = useRef(null);
   const [newDoc, setNewDoc] = useState({
     number: "",
     date: "",
     type: "صك ملكية",
+    fileData: null,
+    fileType: null,
   });
 
   const [showPlotForm, setShowPlotForm] = useState(false);
@@ -245,21 +367,37 @@ const DeedDetailsModal = ({ isOpen, deedId, onClose }) => {
 
   useEffect(() => {
     if (isOpen && deed.id) {
-      const fetchedPlots = Array.isArray(deed.plots) ? deed.plots : [];
+      // التأكد من إعطاء رمز (System Code) لأي وثيقة قديمة لا تملكه
+      const fetchedDocs = Array.isArray(deed.documents)
+        ? deed.documents.map((d) => ({
+            ...d,
+            sysCode:
+              d.sysCode ||
+              `DOC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+          }))
+        : [];
+
       setLocalData({
-        documents: Array.isArray(deed.documents) ? deed.documents : [],
-        plots: fetchedPlots,
+        documents: fetchedDocs,
+        plots: Array.isArray(deed.plots) ? deed.plots : [],
         owners: Array.isArray(deed.owners) ? deed.owners : [],
         boundaries: Array.isArray(deed.boundaries) ? deed.boundaries : [],
         attachments: Array.isArray(deed.attachments) ? deed.attachments : [],
       });
       setHasChanges(false);
-      setActiveTab("summary");
+      setActiveTab("summary"); // للتجربة المباشرة
       setSelectedPlotForBounds("all");
     }
   }, [isOpen, deed.id]);
 
   const triggerChange = () => setHasChanges(true);
+
+  const handleDocFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const base64 = await convertToBase64(file);
+    setNewDoc((prev) => ({ ...prev, fileData: base64, fileType: file.type }));
+  };
 
   // --- دوال الـ AI ---
   const handleAiUpload = async (e) => {
@@ -344,13 +482,109 @@ const DeedDetailsModal = ({ isOpen, deedId, onClose }) => {
   // --- دوال الإضافة والحذف ---
   const handleAddDoc = () => {
     if (!newDoc.number) return toast.error("رقم الوثيقة مطلوب");
+
+    // إنشاء كود نظام تسلسلي
+    const sysCode = `DOC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
     setLocalData((prev) => ({
       ...prev,
-      documents: [...prev.documents, { ...newDoc, id: Date.now() }],
+      documents: [...prev.documents, { ...newDoc, id: Date.now(), sysCode }],
     }));
-    setNewDoc({ number: "", date: "", type: "صك ملكية" });
+    setNewDoc({
+      number: "",
+      date: "",
+      type: "صك ملكية",
+      fileData: null,
+      fileType: null,
+    });
     setShowDocForm(false);
     triggerChange();
+  };
+
+  const shareDocument = (doc, platform) => {
+    // نص الرسالة المشتركة
+    const text = `مرفق وثيقة متعلقة بالمعاملة:\nالنوع: ${doc.type}\nالرقم: ${doc.number}\nرمز النظام: ${doc.sysCode}\n(يتم إرسال الملفات عبر النظام المعتمد)`;
+    const encodedText = encodeURIComponent(text);
+
+    if (platform === "whatsapp") {
+      window.open(`https://wa.me/?text=${encodedText}`, "_blank");
+    } else if (platform === "telegram") {
+      window.open(
+        `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodedText}`,
+        "_blank",
+      );
+    } else if (platform === "email") {
+      window.open(
+        `mailto:?subject=مشاركة وثيقة - ${doc.sysCode}&body=${encodedText}`,
+        "_blank",
+      );
+    }
+  };
+
+  const shareAllDocuments = (platform) => {
+    if (localData.documents.length === 0)
+      return toast.error("لا توجد وثائق للمشاركة");
+    const text =
+      `مرفق قائمة وثائق المعاملة (${localData.documents.length} وثائق):\n` +
+      localData.documents.map((d) => `- ${d.type} (${d.sysCode})`).join("\n");
+    const encodedText = encodeURIComponent(text);
+
+    if (platform === "whatsapp")
+      window.open(`https://wa.me/?text=${encodedText}`, "_blank");
+    else if (platform === "telegram")
+      window.open(
+        `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodedText}`,
+        "_blank",
+      );
+    else if (platform === "email")
+      window.open(
+        `mailto:?subject=وثائق المعاملة المجمعة&body=${encodedText}`,
+        "_blank",
+      );
+  };
+
+  const printAllDocuments = () => {
+    if (localData.documents.length === 0)
+      return toast.error("لا توجد وثائق للطباعة");
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(
+      `<html dir="rtl"><head><title>طباعة كل الوثائق</title></head><body style="font-family:sans-serif;">`,
+    );
+    printWindow.document.write(
+      `<h2 style="text-align:center;">تقرير الوثائق المجمعة</h2><hr/>`,
+    );
+
+    localData.documents.forEach((doc, idx) => {
+      printWindow.document.write(
+        `<div style="page-break-after: always; text-align:center; padding: 20px;">`,
+      );
+      printWindow.document.write(
+        `<h3>وثيقة رقم ${idx + 1}: ${doc.type} (رمز: ${doc.sysCode})</h3>`,
+      );
+      if (doc.fileData) {
+        if (doc.fileType?.includes("pdf")) {
+          printWindow.document.write(
+            `<p><em>[ملف PDF - يرجى طباعته من العارض المنفصل]</em></p>`,
+          );
+        } else {
+          printWindow.document.write(
+            `<img src="${doc.fileData}" style="max-width:100%; max-height:800px; border:1px solid #ccc;" />`,
+          );
+        }
+      } else {
+        printWindow.document.write(
+          `<p style="color:gray;">[لا توجد صورة مرفقة لهذه الوثيقة]</p>`,
+        );
+      }
+      printWindow.document.write(`</div>`);
+    });
+
+    printWindow.document.write(`</body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 1000);
   };
 
   const handleAddPlot = () => {
@@ -965,96 +1199,252 @@ const DeedDetailsModal = ({ isOpen, deedId, onClose }) => {
       // =======================================
       case "docs":
         return (
-          <div className="animate-in fade-in">
-            <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-slate-200">
+          <div className="animate-in fade-in h-full flex flex-col">
+            {/* شريط الإجراءات العلوي للوثائق */}
+            <div className="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-200">
               <span className="text-sm font-black text-slate-800 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600" /> الوثائق (
-                {docsCount})
+                <FileText className="w-5 h-5 text-blue-600" /> الوثائق المرتبطة
+                ({docsCount})
               </span>
-              <button
-                onClick={() => setShowDocForm(!showDocForm)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4" /> إضافة وثيقة
-              </button>
+              <div className="flex items-center gap-2">
+                {docsCount > 0 && (
+                  <>
+                    <button
+                      onClick={printAllDocuments}
+                      className="px-3 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                    >
+                      <Printer className="w-4 h-4" /> طباعة الكل
+                    </button>
+                    <div className="relative group">
+                      <button className="px-3 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors">
+                        <Share2 className="w-4 h-4" /> إرسال الكل
+                      </button>
+                      {/* قائمة الإرسال المنسدلة */}
+                      <div className="absolute left-0 mt-1 w-36 bg-white border border-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+                        <button
+                          onClick={() => shareAllDocuments("whatsapp")}
+                          className="w-full text-right px-3 py-2 text-xs hover:bg-slate-50 border-b border-slate-100 flex items-center gap-2 text-green-600"
+                        >
+                          <Send className="w-3 h-3" /> واتساب
+                        </button>
+                        <button
+                          onClick={() => shareAllDocuments("telegram")}
+                          className="w-full text-right px-3 py-2 text-xs hover:bg-slate-50 border-b border-slate-100 flex items-center gap-2 text-blue-500"
+                        >
+                          <Send className="w-3 h-3" /> تليجرام
+                        </button>
+                        <button
+                          onClick={() => shareAllDocuments("email")}
+                          className="w-full text-right px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 text-slate-600"
+                        >
+                          <Send className="w-3 h-3" /> بريد إلكتروني
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+                <div className="w-px h-6 bg-slate-300 mx-1"></div>
+                <button
+                  onClick={() => setShowDocForm(!showDocForm)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700 shadow-sm"
+                >
+                  <Plus className="w-4 h-4" /> إضافة وثيقة
+                </button>
+              </div>
             </div>
 
+            {/* فورم إضافة وثيقة */}
             {showDocForm && (
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl flex items-end gap-4 mb-4 animate-in slide-in-from-top-2">
-                <div className="flex-1">
-                  <label className="text-xs font-bold block mb-1">
-                    رقم الوثيقة
+              <div className="bg-blue-50/50 border border-blue-200 p-5 rounded-xl grid grid-cols-1 md:grid-cols-4 items-end gap-4 mb-5 animate-in slide-in-from-top-2 shadow-inner">
+                <div>
+                  <label className="text-xs font-bold block mb-1.5 text-blue-900">
+                    رقم الوثيقة *
                   </label>
                   <input
                     type="text"
-                    className="w-full p-2.5 text-xs border rounded-lg outline-none focus:border-blue-500"
+                    className="w-full p-2.5 text-xs border rounded-lg outline-none focus:border-blue-500 shadow-sm"
                     value={newDoc.number}
                     onChange={(e) =>
                       setNewDoc({ ...newDoc, number: e.target.value })
                     }
+                    placeholder="مثال: 310123456"
                   />
                 </div>
-                <div className="flex-1">
-                  <label className="text-xs font-bold block mb-1">
-                    التاريخ
+                <div>
+                  <label className="text-xs font-bold block mb-1.5 text-blue-900">
+                    نوع الوثيقة
                   </label>
-                  <input
-                    type="date"
-                    className="w-full p-2.5 text-xs border rounded-lg outline-none focus:border-blue-500"
-                    value={newDoc.date}
+                  <select
+                    className="w-full p-2.5 text-xs border rounded-lg outline-none focus:border-blue-500 shadow-sm bg-white"
+                    value={newDoc.type}
                     onChange={(e) =>
-                      setNewDoc({ ...newDoc, date: e.target.value })
+                      setNewDoc({ ...newDoc, type: e.target.value })
                     }
+                  >
+                    <option value="صك ملكية">صك ملكية</option>
+                    <option value="رخصة بناء">رخصة بناء</option>
+                    <option value="كروكي تنظيمي">كروكي تنظيمي</option>
+                    <option value="قرار مساحي">قرار مساحي</option>
+                    <option value="مخطط معتمد">مخطط معتمد</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold block mb-1.5 text-blue-900">
+                    ملف الوثيقة (اختياري)
+                  </label>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full p-2.5 text-xs border border-dashed border-blue-400 bg-white text-blue-600 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-100 transition-colors"
+                  >
+                    <Upload className="w-4 h-4" />{" "}
+                    {newDoc.fileData
+                      ? "تم اختيار الملف"
+                      : "اختر ملف (صورة/PDF)"}
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*,application/pdf"
+                    onChange={handleDocFileUpload}
                   />
                 </div>
                 <button
                   onClick={handleAddDoc}
-                  className="px-6 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700"
+                  className="px-6 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 shadow-md h-[42px] flex items-center justify-center gap-2"
                 >
-                  حفظ مؤقت
+                  <Save className="w-4 h-4" /> إضافة للقائمة
                 </button>
               </div>
             )}
 
+            {/* جدول الوثائق المطور */}
             {localData.documents.length > 0 ? (
-              <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm">
+              <div className="flex-1 rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm">
                 <table className="w-full text-right text-xs">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
+                  <thead className="bg-slate-100 border-b-2 border-slate-200 text-slate-600">
                     <tr>
+                      <th className="p-3 font-black w-10 text-center">#</th>
+                      <th className="p-3 font-bold w-16">معاينة</th>
+                      <th className="p-3 font-bold">الرمز (الكود)</th>
                       <th className="p-3 font-bold">النوع</th>
                       <th className="p-3 font-bold">رقم الوثيقة</th>
-                      <th className="p-3 font-bold">التاريخ</th>
-                      <th className="p-3 font-bold">المساحة م²</th>
-                      <th className="p-3 font-bold text-center">إجراءات</th>
+                      <th className="p-3 font-bold text-center">
+                        إجراءات سريعة
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {localData.documents.map((doc) => (
+                    {localData.documents.map((doc, idx) => (
                       <tr
                         key={doc.id}
-                        className="hover:bg-blue-50/50 transition-colors"
+                        className="hover:bg-blue-50/30 transition-colors group"
                       >
-                        <td className="p-3 font-bold text-slate-700">
-                          {doc.type || doc.documentType || "صك"}
+                        <td className="p-3 text-center font-bold text-slate-400">
+                          {idx + 1}
+                        </td>
+                        <td className="p-3">
+                          {doc.fileData ? (
+                            <div
+                              onClick={() => setViewingDoc(doc)}
+                              className="w-10 h-10 rounded border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 hover:shadow-md transition-all relative"
+                            >
+                              {doc.fileType?.includes("pdf") ? (
+                                <div className="w-full h-full bg-red-50 flex items-center justify-center text-red-500 font-bold text-[8px]">
+                                  PDF
+                                </div>
+                              ) : (
+                                <img
+                                  src={doc.fileData}
+                                  alt="معاينة"
+                                  className="w-full h-full object-cover"
+                                />
+                              )}
+                              <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Eye className="w-4 h-4 text-white" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded border border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-300">
+                              <ImageIcon className="w-4 h-4" />
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <span className="font-mono font-bold text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded border border-slate-200">
+                            {doc.sysCode}
+                          </span>
+                        </td>
+                        <td className="p-3 font-bold text-slate-800">
+                          {doc.type || doc.documentType}
                         </td>
                         <td className="p-3 font-mono font-black text-blue-700">
-                          {doc.number || doc.documentNumber || "---"}
+                          {doc.number || doc.documentNumber}
                         </td>
-                        <td className="p-3 font-mono text-slate-600">
-                          {doc.date || doc.gregorianDate || "---"}
-                        </td>
-                        <td className="p-3 font-bold text-emerald-600">
-                          {doc.area || "---"}
-                        </td>
-                        <td className="p-3 text-center">
-                          <button
-                            onClick={() =>
-                              handleDeleteItem("documents", doc.id)
-                            }
-                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-md"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+
+                        <td className="p-3">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => setViewingDoc(doc)}
+                              disabled={!doc.fileData}
+                              className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent"
+                              title="عرض وتكبير"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setViewingDoc(doc);
+                                setTimeout(
+                                  () =>
+                                    document
+                                      .querySelector(".print-btn")
+                                      ?.click(),
+                                  100,
+                                );
+                              }}
+                              disabled={!doc.fileData}
+                              className="p-2 text-slate-600 hover:bg-slate-200 rounded-lg disabled:opacity-30"
+                              title="طباعة"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </button>
+
+                            <div className="relative group/share">
+                              <button
+                                className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-lg"
+                                title="مشاركة"
+                              >
+                                <Share2 className="w-4 h-4" />
+                              </button>
+                              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 w-32 bg-white border border-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover/share:opacity-100 group-hover/share:visible transition-all z-50">
+                                <button
+                                  onClick={() => shareDocument(doc, "whatsapp")}
+                                  className="w-full text-right px-3 py-2 text-xs hover:bg-slate-50 border-b border-slate-100 flex items-center gap-2 text-green-600"
+                                >
+                                  <Send className="w-3 h-3" /> واتساب
+                                </button>
+                                <button
+                                  onClick={() => shareDocument(doc, "email")}
+                                  className="w-full text-right px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 text-slate-600"
+                                >
+                                  <Mail className="w-3 h-3" /> إيميل
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="w-px h-4 bg-slate-200 mx-1"></div>
+
+                            <button
+                              onClick={() =>
+                                handleDeleteItem("documents", doc.id)
+                              }
+                              className="p-2 text-red-500 hover:bg-red-100 rounded-lg"
+                              title="حذف"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1062,9 +1452,14 @@ const DeedDetailsModal = ({ isOpen, deedId, onClose }) => {
                 </table>
               </div>
             ) : (
-              <div className="text-center py-16 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl">
-                <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500 font-bold">لا توجد وثائق مضافة</p>
+              <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl">
+                <FileText className="w-16 h-16 text-slate-300 mb-3" />
+                <p className="text-slate-500 font-bold text-lg">
+                  لا توجد وثائق مدرجة
+                </p>
+                <p className="text-slate-400 text-xs mt-1">
+                  قم بإضافة الوثائق المتعلقة بالمعاملة من الزر بالأعلى
+                </p>
               </div>
             )}
           </div>

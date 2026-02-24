@@ -102,9 +102,12 @@ const CreateClientWizard = ({ onComplete }) => {
   const [aiResults, setAiResults] = useState(null);
   const [useSameAsMobile, setUseSameAsMobile] = useState(true);
 
+  // 👈 الحالة الجديدة للتحقق من توفر رقم الجوال
+  const [isMobileUnavailable, setIsMobileUnavailable] = useState(false);
+
   // === إدارة الملفات الشاملة ===
-  const [profilePicture, setProfilePicture] = useState(null); // { file, previewBase64 }
-  const [documents, setDocuments] = useState([]); // Array of { id, file, name, size, type, privacy, version, base64 }
+  const [profilePicture, setProfilePicture] = useState(null);
+  const [documents, setDocuments] = useState([]);
 
   const [formData, setFormData] = useState({
     documentType: "هوية شخصية",
@@ -155,9 +158,9 @@ const CreateClientWizard = ({ onComplete }) => {
   };
 
   useEffect(() => {
-    if (useSameAsMobile)
+    if (useSameAsMobile && !isMobileUnavailable)
       handleChange("contact", "whatsapp", formData.contact.mobile);
-  }, [formData.contact.mobile, useSameAsMobile]);
+  }, [formData.contact.mobile, useSameAsMobile, isMobileUnavailable]);
 
   // ==========================================
   // دوال إدارة المستندات (إضافة، تعديل، حذف)
@@ -169,10 +172,10 @@ const CreateClientWizard = ({ onComplete }) => {
         id: Date.now() + Math.random(),
         file: file,
         name: file.name,
-        size: (file.size / 1024).toFixed(2), // بالحجم بـ KB
-        type: docType, // نوع المستند
-        privacy: "internal", // الافتراضي
-        version: "v1", // الافتراضي
+        size: (file.size / 1024).toFixed(2),
+        type: docType,
+        privacy: "internal",
+        version: "v1",
         base64: base64Data,
       },
     ]);
@@ -191,8 +194,6 @@ const CreateClientWizard = ({ onComplete }) => {
   // ==========================================
   // معالجة الملفات والذكاء الاصطناعي
   // ==========================================
-
-  // 1. صورة العميل
   const handleProfilePicUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -203,7 +204,6 @@ const CreateClientWizard = ({ onComplete }) => {
     reader.readAsDataURL(file);
   };
 
-  // 2. الهوية (الخطوة 1)
   const handleIdentityUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -214,7 +214,6 @@ const CreateClientWizard = ({ onComplete }) => {
     reader.onload = async () => {
       try {
         const imageBase64 = reader.result;
-        // إضافة الملف لقائمة المستندات
         addDocumentToState(file, "dt-001", imageBase64);
 
         const response = await axios.post("/clients/analyze-identity", {
@@ -233,7 +232,6 @@ const CreateClientWizard = ({ onComplete }) => {
     };
   };
 
-  // 3. مستند العنوان الوطني (الخطوة 4)
   const handleAddressUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -244,8 +242,7 @@ const CreateClientWizard = ({ onComplete }) => {
     reader.onload = async () => {
       try {
         const imageBase64 = reader.result;
-        // إضافة الملف لقائمة المستندات كإثبات عنوان
-        addDocumentToState(file, "dt-009", imageBase64); // افترضنا أن dt-009 هو إثبات عنوان
+        addDocumentToState(file, "dt-009", imageBase64);
 
         const response = await axios.post("/clients/analyze-address", {
           imageBase64,
@@ -277,7 +274,6 @@ const CreateClientWizard = ({ onComplete }) => {
     };
   };
 
-  // 4. مستندات عامة إضافية (الخطوة 5)
   const handleGeneralDocsUpload = (e) => {
     const files = Array.from(e.target.files);
     files.forEach((file) => {
@@ -317,7 +313,12 @@ const CreateClientWizard = ({ onComplete }) => {
   // الحفظ النهائي للباك إند
   // ==========================================
   const saveMutation = useMutation({
-    mutationFn: createClient,
+    mutationFn: async (formDataPayload) => {
+      const res = await axios.post("/clients", formDataPayload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return res.data;
+    },
     onSuccess: () => {
       toast.success("تم حفظ العميل ومستنداته بنجاح!");
       queryClient.invalidateQueries(["clients"]);
@@ -337,39 +338,60 @@ const CreateClientWizard = ({ onComplete }) => {
         .replace(/\s+/g, " ")
         .trim();
 
+    // 👈 التعديل هنا: نتأكد إما أن الجوال موجود، أو أن مربع "غير متوفر" محدد
     if (
       !formData.name.firstAr ||
       !formData.identification.idNumber ||
-      !formData.contact.mobile
+      (!isMobileUnavailable && !formData.contact.mobile)
     ) {
-      toast.error("يرجى التأكد من إدخال الاسم الأول، رقم الهوية، ورقم الجوال!");
+      toast.error(
+        "يرجى التأكد من إدخال الاسم الأول، رقم الهوية، ورقم الجوال (أو تحديد أنه غير متوفر)!",
+      );
       return;
     }
 
-    const payload = {
-      mobile: formData.contact.mobile,
-      email: formData.contact.email,
-      idNumber: formData.identification.idNumber,
-      type: formData.type,
-      officialNameAr,
-      name: { ar: officialNameAr, en: officialNameEn, details: formData.name },
-      contact: formData.contact,
-      address: formData.address,
-      identification: formData.identification,
-      isActive: true,
+    // 👈 الخدعة: إذا كان الجوال غير متوفر نرسل كلمة "غير متوفر" للباك إند
+    const finalMobileNumber = isMobileUnavailable
+      ? "غير متوفر"
+      : formData.contact.mobile;
+    const finalContactObj = { ...formData.contact, mobile: finalMobileNumber };
 
-      // إرسال الصورة والمستندات (يحتاج دعم من الباك إند لاستقبالها كـ Base64)
-      profilePictureBase64: profilePicture?.preview || null,
-      attachments: documents.map((doc) => ({
-        name: doc.name,
-        type: doc.type,
-        privacy: doc.privacy,
-        version: doc.version,
-        base64: doc.base64,
-      })),
-    };
+    const formDataToSend = new FormData();
 
-    saveMutation.mutate(payload);
+    formDataToSend.append("mobile", finalMobileNumber);
+    formDataToSend.append("email", formData.contact.email);
+    formDataToSend.append("idNumber", formData.identification.idNumber);
+    formDataToSend.append("type", formData.type);
+    formDataToSend.append("officialNameAr", officialNameAr);
+
+    formDataToSend.append(
+      "name",
+      JSON.stringify({
+        ar: officialNameAr,
+        en: officialNameEn,
+        details: formData.name,
+      }),
+    );
+    formDataToSend.append("contact", JSON.stringify(finalContactObj));
+    formDataToSend.append("address", JSON.stringify(formData.address));
+    formDataToSend.append(
+      "identification",
+      JSON.stringify(formData.identification),
+    );
+    formDataToSend.append("isActive", true);
+
+    if (profilePicture?.file) {
+      formDataToSend.append("profilePicture", profilePicture.file);
+    }
+
+    documents.forEach((doc, index) => {
+      formDataToSend.append("files", doc.file);
+      formDataToSend.append(`fileMeta_${index}_type`, doc.type);
+      formDataToSend.append(`fileMeta_${index}_name`, doc.name);
+      formDataToSend.append(`fileMeta_${index}_privacy`, doc.privacy);
+    });
+
+    saveMutation.mutate(formDataToSend);
   };
 
   const nextStep = () => currentStep < 5 && setCurrentStep((p) => p + 1);
@@ -443,7 +465,6 @@ const CreateClientWizard = ({ onComplete }) => {
                   <label className="block text-sm font-bold text-slate-700 mb-3">
                     نوع وثيقة الهوية المرفوعة *
                   </label>
-                  {/* تم تعديل الـ grid ليصبح 3 أعمدة في الشاشات الكبيرة ليتناسب مع الـ 6 خيارات */}
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {[
                       {
@@ -466,7 +487,6 @@ const CreateClientWizard = ({ onComplete }) => {
                         icon: "🏛️",
                         desc: "رقم منشأة لدى الجهات الحكومية",
                       },
-                      // 👇 الخيارات الجديدة التي طلبتها
                       {
                         id: "إقامة",
                         icon: "📋",
@@ -641,7 +661,6 @@ const CreateClientWizard = ({ onComplete }) => {
             )}
 
             <div className="flex flex-col md:flex-row gap-6 mb-6">
-              {/* === الصورة الشخصية (محدثة) === */}
               <div className="flex-shrink-0 md:w-32">
                 <label className="block text-[13px] font-bold mb-2 text-slate-700">
                   صورة العميل
@@ -785,7 +804,6 @@ const CreateClientWizard = ({ onComplete }) => {
               <h3 className="text-lg font-bold text-slate-800">
                 العنوان الوطني
               </h3>
-              {/* === زر رفع مستند العنوان (محدث) === */}
               <button
                 onClick={() => addressInputRef.current?.click()}
                 disabled={isAnalyzingAddress}
@@ -948,32 +966,59 @@ const CreateClientWizard = ({ onComplete }) => {
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              {/* 👈 التعديل الأول: حقل الجوال مع Checkbox */}
               <div>
-                <label className="text-xs font-bold mb-1.5 block text-slate-700">
-                  رقم الجوال (للاتصال) *
-                </label>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="text-xs font-bold text-slate-700">
+                    رقم الجوال (للاتصال) {isMobileUnavailable ? "" : "*"}
+                  </label>
+                  <label className="text-[11px] flex items-center gap-1.5 cursor-pointer text-slate-600 font-bold hover:text-red-600">
+                    <input
+                      type="checkbox"
+                      checked={isMobileUnavailable}
+                      onChange={(e) => {
+                        setIsMobileUnavailable(e.target.checked);
+                        if (e.target.checked) {
+                          handleChange("contact", "mobile", "");
+                          setUseSameAsMobile(false);
+                        }
+                      }}
+                      className="rounded text-red-600 w-3.5 h-3.5"
+                    />
+                    رقم الاتصال غير متوفر
+                  </label>
+                </div>
                 <input
                   type="tel"
                   value={formData.contact.mobile}
                   onChange={(e) =>
                     handleChange("contact", "mobile", e.target.value)
                   }
+                  disabled={isMobileUnavailable}
                   dir="ltr"
-                  className="w-full p-2.5 border-2 border-slate-200 focus:border-violet-500 outline-none rounded-lg text-sm text-left font-bold"
-                  placeholder="05XXXXXXXX"
+                  className={`w-full p-2.5 border-2 outline-none rounded-lg text-sm text-left font-bold transition-colors ${
+                    isMobileUnavailable
+                      ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
+                      : "border-slate-200 focus:border-violet-500 bg-white"
+                  }`}
+                  placeholder={isMobileUnavailable ? "غير متوفر" : "05XXXXXXXX"}
                 />
               </div>
+
               <div>
                 <div className="flex justify-between items-center mb-1.5">
                   <label className="text-xs font-bold text-slate-700">
-                    رقم الواتساب *
+                    رقم الواتساب
                   </label>
-                  <label className="text-[11px] flex items-center gap-1.5 cursor-pointer text-slate-600 font-bold hover:text-violet-600">
+                  <label
+                    className={`text-[11px] flex items-center gap-1.5 cursor-pointer font-bold ${isMobileUnavailable ? "text-slate-400 opacity-50" : "text-slate-600 hover:text-violet-600"}`}
+                  >
                     <input
                       type="checkbox"
-                      checked={useSameAsMobile}
+                      checked={useSameAsMobile && !isMobileUnavailable}
                       onChange={(e) => setUseSameAsMobile(e.target.checked)}
-                      className="rounded text-violet-600 w-3.5 h-3.5"
+                      disabled={isMobileUnavailable}
+                      className="rounded text-violet-600 w-3.5 h-3.5 disabled:opacity-50"
                     />{" "}
                     نفس الجوال
                   </label>
@@ -984,12 +1029,17 @@ const CreateClientWizard = ({ onComplete }) => {
                   onChange={(e) =>
                     handleChange("contact", "whatsapp", e.target.value)
                   }
-                  disabled={useSameAsMobile}
+                  disabled={useSameAsMobile && !isMobileUnavailable}
                   dir="ltr"
-                  className={`w-full p-2.5 border-2 outline-none rounded-lg text-sm text-left font-bold ${useSameAsMobile ? "bg-slate-100 border-slate-200 text-slate-500" : "border-slate-200 focus:border-violet-500 bg-white"}`}
+                  className={`w-full p-2.5 border-2 outline-none rounded-lg text-sm text-left font-bold ${
+                    useSameAsMobile && !isMobileUnavailable
+                      ? "bg-slate-100 border-slate-200 text-slate-500"
+                      : "border-slate-200 focus:border-violet-500 bg-white"
+                  }`}
                   placeholder="05XXXXXXXX"
                 />
               </div>
+
               <div>
                 <label className="text-xs font-bold mb-1.5 block text-slate-700">
                   البريد الإلكتروني
@@ -1022,7 +1072,6 @@ const CreateClientWizard = ({ onComplete }) => {
               </div>
             </div>
 
-            {/* === قسم المستندات (محدث بالكامل ليدعم العرض والرفع والإدارة) === */}
             <div className="border-t border-slate-100 pt-6">
               <div className="flex justify-between items-center mb-5">
                 <h3 className="text-lg font-bold text-slate-800">
@@ -1033,7 +1082,6 @@ const CreateClientWizard = ({ onComplete }) => {
                 </button>
               </div>
 
-              {/* منطقة الرفع الإضافي */}
               <div
                 onClick={() => generalDocRef.current?.click()}
                 className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center bg-slate-50 cursor-pointer hover:bg-slate-100 hover:border-violet-400 transition-colors mb-6"
@@ -1051,7 +1099,6 @@ const CreateClientWizard = ({ onComplete }) => {
                 />
               </div>
 
-              {/* قائمة المستندات المرفوعة */}
               {documents.length > 0 && (
                 <div className="flex flex-col gap-3">
                   {documents.map((doc) => (
@@ -1076,7 +1123,6 @@ const CreateClientWizard = ({ onComplete }) => {
                         </button>
                       </div>
 
-                      {/* خيارات المستند */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
                           <label className="block text-[11px] font-bold text-slate-500 mb-1">
