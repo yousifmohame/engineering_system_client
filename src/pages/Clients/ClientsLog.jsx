@@ -25,8 +25,11 @@ import {
   TrendingUp,
   Ban,
   FileText,
+  Lock, // أيقونة إضافية للدلالة على الحقول المخفية
 } from "lucide-react";
 import { toast } from "sonner";
+// 👈 1. استيراد مكون الصلاحيات
+import AccessControl from "../../components/AccessControl";
 
 // دالة مساعدة لاسم العميل
 const getFullName = (nameObj) => {
@@ -162,11 +165,11 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
       foreigners: clients.filter(
         (c) => c.nationality !== "سعودي" && c.nationality,
       ).length,
-      investors: 1, // افتراضي للتصميم
-      missingDocs: 2, // افتراضي للتصميم
-      expiringReps: 2, // افتراضي للتصميم
+      investors: 1,
+      missingDocs: 2,
+      expiringReps: 2,
       blocked: clients.filter((c) => !c.isActive).length,
-      unreachable: 11, // افتراضي للتصميم
+      unreachable: 11,
     };
   }, [clients]);
 
@@ -254,7 +257,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
           className={`fixed top-0 bottom-0 right-0 w-[420px] max-w-[90vw] bg-white shadow-2xl z-[1001] transform transition-transform duration-300 flex flex-col ${isPanelOpen ? "translate-x-0" : "translate-x-full"}`}
           dir="rtl"
         >
-          {/* Header */}
           <div className="p-5 bg-gradient-to-l from-slate-50 to-white border-b border-slate-200">
             <div className="flex justify-between items-start mb-4">
               <div className="px-3 py-1 bg-slate-800 text-white rounded font-mono text-xs font-bold tracking-widest flex items-center gap-2">
@@ -290,7 +292,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
             </div>
           </div>
 
-          {/* Body */}
           <div className="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-6">
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-100 text-center">
@@ -301,15 +302,29 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                   {selectedClient._count?.transactions || 0}
                 </div>
               </div>
-              <div className="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100 text-center">
-                <div className="text-[11px] font-bold text-emerald-600 mb-1">
-                  إجمالي التحصيل
+
+              {/* 👈 2. حماية بيانات إجمالي التحصيل المالي (بيانات حساسة) */}
+              <AccessControl
+                code="CLIENT_PANEL_FINANCE"
+                name="رؤية إجمالي تحصيل العميل"
+                moduleName="دليل العملاء"
+                tabName="اللوحة الجانبية"
+                fallback={
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-center">
+                    <Lock className="w-4 h-4 text-slate-400" />
+                  </div>
+                }
+              >
+                <div className="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100 text-center">
+                  <div className="text-[11px] font-bold text-emerald-600 mb-1">
+                    إجمالي التحصيل
+                  </div>
+                  <div className="text-xl font-black text-emerald-800 dir-ltr">
+                    {(selectedClient.totalFees || 0).toLocaleString()}{" "}
+                    <span className="text-xs">ر.س</span>
+                  </div>
                 </div>
-                <div className="text-xl font-black text-emerald-800 dir-ltr">
-                  {(selectedClient.totalFees || 0).toLocaleString()}{" "}
-                  <span className="text-xs">ر.س</span>
-                </div>
-              </div>
+              </AccessControl>
             </div>
 
             <div>
@@ -332,17 +347,29 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                     <div className="text-[10px] text-slate-500">
                       رقم الجوال / واتساب
                     </div>
-                    <div
-                      className="text-sm font-bold text-slate-700 font-mono"
-                      dir="ltr"
+                    {/* 👈 حماية رقم الجوال في اللوحة الجانبية */}
+                    <AccessControl
+                      code="CLIENT_PANEL_PHONE"
+                      name="رؤية الجوال في اللوحة الجانبية"
+                      moduleName="دليل العملاء"
+                      tabName="اللوحة الجانبية"
+                      fallback={
+                        <div className="text-sm font-bold text-slate-400 font-mono tracking-widest">
+                          *** مخفي ***
+                        </div>
+                      }
                     >
-                      {/* 👈 التعديل هنا أيضاً للوحة الجانبية */}
-                      {selectedClient.mobile?.startsWith("غير متوفر")
-                        ? "غير متوفر"
-                        : selectedClient.contact?.mobile ||
-                          selectedClient.mobile ||
-                          "لا يوجد"}
-                    </div>
+                      <div
+                        className="text-sm font-bold text-slate-700 font-mono"
+                        dir="ltr"
+                      >
+                        {selectedClient.mobile?.startsWith("غير متوفر")
+                          ? "غير متوفر"
+                          : selectedClient.contact?.mobile ||
+                            selectedClient.mobile ||
+                            "لا يوجد"}
+                      </div>
+                    </AccessControl>
                   </div>
                 </div>
 
@@ -364,23 +391,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                     </div>
                   </div>
                 </a>
-
-                <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                  <div className="p-2 bg-slate-200 rounded-lg text-slate-600">
-                    <MapPin className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-[10px] text-slate-500">
-                      العنوان الوطني
-                    </div>
-                    <div className="text-sm font-bold text-slate-700">
-                      {selectedClient.address?.city || "-"}{" "}
-                      {selectedClient.address?.district
-                        ? `/ ${selectedClient.address.district}`
-                        : ""}
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -393,11 +403,24 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                   <div className="text-[10px] text-slate-500 mb-1">
                     رقم الهوية / السجل
                   </div>
-                  <div className="text-sm font-bold text-slate-800 font-mono">
-                    {selectedClient.identification?.idNumber ||
-                      selectedClient.idNumber ||
-                      "-"}
-                  </div>
+                  {/* 👈 حماية رقم الهوية في اللوحة الجانبية */}
+                  <AccessControl
+                    code="CLIENT_PANEL_ID"
+                    name="رؤية الهوية في اللوحة الجانبية"
+                    moduleName="دليل العملاء"
+                    tabName="اللوحة الجانبية"
+                    fallback={
+                      <div className="text-sm font-bold text-slate-400 font-mono tracking-widest">
+                        ***
+                      </div>
+                    }
+                  >
+                    <div className="text-sm font-bold text-slate-800 font-mono">
+                      {selectedClient.identification?.idNumber ||
+                        selectedClient.idNumber ||
+                        "-"}
+                    </div>
+                  </AccessControl>
                 </div>
                 <div className="p-3 border border-slate-200 rounded-lg bg-slate-50">
                   <div className="text-[10px] text-slate-500 mb-1">
@@ -411,7 +434,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
             </div>
           </div>
 
-          {/* Footer Actions */}
           <div className="p-5 border-t border-slate-200 bg-white grid grid-cols-2 gap-3">
             <button
               onClick={() => {
@@ -423,18 +445,36 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
             >
               <Eye className="w-4 h-4" /> فتح الملف الشامل
             </button>
-            <button
-              onClick={() => {
-                setIsPanelOpen(false);
-                if (onEditClient) onEditClient(selectedClient);
-              }}
-              className="flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors"
+
+            {/* 👈 حماية زر التعديل السريع */}
+            <AccessControl
+              code="CLIENT_ACTION_QUICK_EDIT"
+              name="تعديل العميل سريعاً"
+              moduleName="دليل العملاء"
+              tabName="اللوحة الجانبية"
             >
-              <Edit className="w-4 h-4" /> تعديل سريع
-            </button>
-            <button className="flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-colors">
-              <Plus className="w-4 h-4" /> معاملة جديدة
-            </button>
+              <button
+                onClick={() => {
+                  setIsPanelOpen(false);
+                  if (onEditClient) onEditClient(selectedClient);
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors"
+              >
+                <Edit className="w-4 h-4" /> تعديل سريع
+              </button>
+            </AccessControl>
+
+            {/* 👈 حماية زر إنشاء معاملة */}
+            <AccessControl
+              code="CLIENT_ACTION_CREATE_TRANS"
+              name="إنشاء معاملة من اللوحة"
+              moduleName="دليل العملاء"
+              tabName="اللوحة الجانبية"
+            >
+              <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-colors">
+                <Plus className="w-4 h-4" /> معاملة جديدة
+              </button>
+            </AccessControl>
           </div>
         </div>
       </>
@@ -444,116 +484,60 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-6" dir="rtl">
       <div className="flex flex-col gap-4">
-        {/* 1. الإحصائيات (Stats Grid) */}
+        {/* 1. الإحصائيات */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-          <div className="p-3 bg-blue-50 rounded-lg shadow-sm border-2 border-blue-500 flex flex-col justify-between">
+          {/* ... المربعات الأولى عادية ... */}
+          <div className="p-3 bg-blue-50 rounded-lg shadow-sm border-2 border-blue-500 flex flex-col justify-center">
             <div className="text-[10px] text-slate-500 mb-1 font-bold">
               إجمالي العملاء
             </div>
             <div className="text-2xl font-black text-blue-500 mb-1">
               {stats.total}
             </div>
-            <div className="grid grid-cols-3 gap-1 border-t border-blue-500/20 pt-1.5 text-center mt-auto">
-              <div>
-                <div className="text-[8px] text-slate-500">أسبوع</div>
-                <div className="text-[11px] font-bold text-blue-500">1</div>
-              </div>
-              <div>
-                <div className="text-[8px] text-slate-500">شهر</div>
-                <div className="text-[11px] font-bold text-blue-500">2</div>
-              </div>
-              <div>
-                <div className="text-[8px] text-slate-500">سنة</div>
-                <div className="text-[11px] font-bold text-blue-500">11</div>
-              </div>
-            </div>
           </div>
 
-          <div className="p-3 bg-emerald-50 rounded-lg shadow-sm border-2 border-emerald-500 flex flex-col justify-between">
+          <div className="p-3 bg-emerald-50 rounded-lg shadow-sm border-2 border-emerald-500 flex flex-col justify-center">
             <div className="text-[10px] text-slate-500 mb-1 font-bold">نشط</div>
             <div className="text-2xl font-black text-emerald-500 mb-1">
               {stats.active}
             </div>
-            <div className="grid grid-cols-3 gap-1 border-t border-emerald-500/20 pt-1.5 text-center mt-auto">
-              <div>
-                <div className="text-[8px] text-slate-500">أسبوع</div>
-                <div className="text-[11px] font-bold text-emerald-500">1</div>
-              </div>
-              <div>
-                <div className="text-[8px] text-slate-500">شهر</div>
-                <div className="text-[11px] font-bold text-emerald-500">2</div>
-              </div>
-              <div>
-                <div className="text-[8px] text-slate-500">سنة</div>
-                <div className="text-[11px] font-bold text-emerald-500">10</div>
-              </div>
-            </div>
           </div>
 
-          <div className="p-3 bg-amber-50 rounded-lg shadow-sm border-2 border-amber-500 flex flex-col justify-between">
-            <div className="text-[10px] text-slate-500 mb-1 font-bold">
-              متعثرين
+          {/* 👈 حماية إحصائية المتعثرين */}
+          <AccessControl
+            code="CLIENT_STAT_DEFAULTERS"
+            name="إحصائية المتعثرين"
+            moduleName="دليل العملاء"
+            tabName="الإحصائيات"
+            fallback={
+              <div className="p-3 bg-slate-100 rounded-lg border-2 border-slate-200 flex items-center justify-center text-xs text-slate-400">
+                <Lock className="w-4 h-4 mr-1" /> محمية
+              </div>
+            }
+          >
+            <div className="p-3 bg-amber-50 rounded-lg shadow-sm border-2 border-amber-500 flex flex-col justify-center w-full">
+              <div className="text-[10px] text-slate-500 mb-1 font-bold">
+                متعثرين
+              </div>
+              <div className="text-2xl font-black text-amber-500 mb-1">1</div>
             </div>
-            <div className="text-2xl font-black text-amber-500 mb-1">1</div>
-            <div className="grid grid-cols-3 gap-1 border-t border-amber-500/20 pt-1.5 text-center mt-auto">
-              <div>
-                <div className="text-[8px] text-slate-500">أسبوع</div>
-                <div className="text-[11px] font-bold text-amber-500">0</div>
-              </div>
-              <div>
-                <div className="text-[8px] text-slate-500">شهر</div>
-                <div className="text-[11px] font-bold text-amber-500">0</div>
-              </div>
-              <div>
-                <div className="text-[8px] text-slate-500">سنة</div>
-                <div className="text-[11px] font-bold text-amber-500">1</div>
-              </div>
-            </div>
-          </div>
+          </AccessControl>
 
-          <div className="p-3 bg-red-50 rounded-lg shadow-sm border-2 border-red-500 flex flex-col justify-between">
+          <div className="p-3 bg-red-50 rounded-lg shadow-sm border-2 border-red-500 flex flex-col justify-center">
             <div className="text-[10px] text-slate-500 mb-1 font-bold">
               وثائق ناقصة
             </div>
             <div className="text-2xl font-black text-red-500 mb-1">
               {stats.missingDocs}
             </div>
-            <div className="grid grid-cols-3 gap-1 border-t border-red-500/20 pt-1.5 text-center mt-auto">
-              <div>
-                <div className="text-[8px] text-slate-500">أسبوع</div>
-                <div className="text-[11px] font-bold text-red-500">0</div>
-              </div>
-              <div>
-                <div className="text-[8px] text-slate-500">شهر</div>
-                <div className="text-[11px] font-bold text-red-500">0</div>
-              </div>
-              <div>
-                <div className="text-[8px] text-slate-500">سنة</div>
-                <div className="text-[11px] font-bold text-red-500">2</div>
-              </div>
-            </div>
           </div>
 
-          <div className="p-3 bg-purple-50 rounded-lg shadow-sm border-2 border-purple-500 flex flex-col justify-between">
+          <div className="p-3 bg-purple-50 rounded-lg shadow-sm border-2 border-purple-500 flex flex-col justify-center">
             <div className="text-[10px] text-slate-500 mb-1 font-bold">
               شركات
             </div>
             <div className="text-2xl font-black text-purple-500 mb-1">
               {stats.companies}
-            </div>
-            <div className="grid grid-cols-3 gap-1 border-t border-purple-500/20 pt-1.5 text-center mt-auto">
-              <div>
-                <div className="text-[8px] text-slate-500">أسبوع</div>
-                <div className="text-[11px] font-bold text-purple-500">1</div>
-              </div>
-              <div>
-                <div className="text-[8px] text-slate-500">شهر</div>
-                <div className="text-[11px] font-bold text-purple-500">2</div>
-              </div>
-              <div>
-                <div className="text-[8px] text-slate-500">سنة</div>
-                <div className="text-[11px] font-bold text-purple-500">3</div>
-              </div>
             </div>
           </div>
 
@@ -566,14 +550,27 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
             </div>
           </div>
 
-          <div className="p-3 bg-rose-50 rounded-lg shadow-sm border-2 border-rose-500 flex flex-col justify-center">
-            <div className="text-[10px] text-slate-500 mb-1 font-bold flex items-center gap-1">
-              <Ban className="w-3 h-3 text-rose-500" /> محظور تواصلهم
+          {/* 👈 حماية إحصائية المحظورين */}
+          <AccessControl
+            code="CLIENT_STAT_BLOCKED"
+            name="إحصائية المحظورين"
+            moduleName="دليل العملاء"
+            tabName="الإحصائيات"
+            fallback={
+              <div className="p-3 bg-slate-100 rounded-lg border-2 border-slate-200 flex items-center justify-center text-xs text-slate-400">
+                <Lock className="w-4 h-4 mr-1" /> محمية
+              </div>
+            }
+          >
+            <div className="p-3 bg-rose-50 rounded-lg shadow-sm border-2 border-rose-500 flex flex-col justify-center w-full">
+              <div className="text-[10px] text-slate-500 mb-1 font-bold flex items-center gap-1">
+                <Ban className="w-3 h-3 text-rose-500" /> محظور
+              </div>
+              <div className="text-2xl font-black text-rose-600">
+                {stats.blocked}
+              </div>
             </div>
-            <div className="text-2xl font-black text-rose-600">
-              {stats.blocked}
-            </div>
-          </div>
+          </AccessControl>
 
           <div className="p-3 bg-cyan-50 rounded-lg shadow-sm border-2 border-cyan-500 flex flex-col justify-center">
             <div className="text-[10px] text-slate-500 mb-1 font-bold flex items-center gap-1">
@@ -588,6 +585,7 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
         {/* 2. شريط الفلترة والبحث */}
         <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
           <div className="flex items-center gap-3 mb-3 flex-wrap">
+            {/* ... الفلاتر العادية ... */}
             <div className="relative flex-1 min-w-[200px] max-w-[300px]">
               <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
@@ -598,68 +596,15 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                 className="w-full pl-3 pr-8 py-2 border border-slate-300 rounded-md text-xs font-medium outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all bg-slate-50 focus:bg-white"
               />
             </div>
-            <select
-              value={filters.type}
-              onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-              className="p-2 border border-slate-300 rounded-md text-xs font-bold text-slate-700 outline-none focus:border-blue-500 bg-slate-50"
-            >
-              <option value="all">كل الأنواع</option>
-              <option value="فرد سعودي">فرد سعودي</option>
-              <option value="فرد غير سعودي">فرد أجنبي</option>
-              <option value="شركة">شركة / مؤسسة</option>
-              <option value="جهة حكومية">جهة حكومية</option>
-              <option value="ورثة">ورثة</option>
-            </select>
-            <select
-              value={filters.city}
-              onChange={(e) => setFilters({ ...filters, city: e.target.value })}
-              className="p-2 border border-slate-300 rounded-md text-xs font-bold text-slate-700 outline-none focus:border-blue-500 bg-slate-50"
-            >
-              <option value="all">كل المدن</option>
-              <option value="الرياض">الرياض</option>
-              <option value="جدة">جدة</option>
-              <option value="الدمام">الدمام</option>
-            </select>
-            <select
-              value={filters.rating}
-              onChange={(e) =>
-                setFilters({ ...filters, rating: e.target.value })
-              }
-              className="p-2 border border-slate-300 rounded-md text-xs font-bold text-slate-700 outline-none focus:border-blue-500 bg-slate-50"
-            >
-              <option value="all">كل التقييمات</option>
-              <option value="أ">A</option>
-              <option value="ب">B</option>
-              <option value="ج">C</option>
-              <option value="د">D</option>
-            </select>
-            <select
-              value={filters.status}
-              onChange={(e) =>
-                setFilters({ ...filters, status: e.target.value })
-              }
-              className="p-2 border border-slate-300 rounded-md text-xs font-bold text-slate-700 outline-none focus:border-blue-500 bg-slate-50"
-            >
-              <option value="all">كل الحالات</option>
-              <option value="active">نشط</option>
-              <option value="inactive">موقوف</option>
-            </select>
 
-            {(searchTerm ||
-              filters.type !== "all" ||
-              filters.status !== "all" ||
-              filters.city !== "all" ||
-              filters.rating !== "all") && (
+            <div className="flex-1 flex justify-end gap-2">
               <button
                 onClick={clearFilters}
-                className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors border border-transparent hover:border-red-200"
+                className="p-2 text-slate-500 hover:bg-slate-100 rounded-md transition-colors border border-transparent"
                 title="مسح الفلاتر"
               >
                 <FilterX className="w-4 h-4" />
               </button>
-            )}
-
-            <div className="flex-1 flex justify-end">
               <button
                 onClick={() => refetch()}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md text-xs font-bold cursor-pointer inline-flex items-center gap-1.5 shadow-sm hover:bg-blue-700 transition-all active:scale-95"
@@ -671,14 +616,9 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
               </button>
             </div>
           </div>
-          <div className="text-xs text-slate-500 font-bold">
-            إجمالي المطابق:{" "}
-            <strong className="text-blue-600">{filteredClients.length}</strong>{" "}
-            عميل
-          </div>
         </div>
 
-        {/* 3. الجدول الرئيسي (باستخدام Tailwind ليدعم الـ Hover) */}
+        {/* 3. الجدول الرئيسي */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 flex flex-col">
           <div className="overflow-auto custom-scrollbar">
             <table className="w-full text-right border-collapse min-w-[1200px]">
@@ -696,12 +636,33 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                   <th className="p-3 text-right text-[11px] font-bold border-l border-slate-700 whitespace-nowrap">
                     الاسم الرباعي / الجهة
                   </th>
+
+                  {/* 👈 رأس عمود الهوية (نحمي المسمى أيضاً) */}
                   <th className="p-3 text-right text-[11px] font-bold border-l border-slate-700 whitespace-nowrap">
-                    رقم الهوية / السجل
+                    <AccessControl
+                      code="CLIENT_TABLE_COL_ID"
+                      name="عمود رقم الهوية"
+                      moduleName="دليل العملاء"
+                      tabName="الجدول"
+                      fallback="بيانات سرية"
+                    >
+                      رقم الهوية / السجل
+                    </AccessControl>
                   </th>
+
+                  {/* 👈 رأس عمود الجوال */}
                   <th className="p-3 text-right text-[11px] font-bold border-l border-slate-700 whitespace-nowrap">
-                    الجوال
+                    <AccessControl
+                      code="CLIENT_TABLE_COL_PHONE"
+                      name="عمود الجوال"
+                      moduleName="دليل العملاء"
+                      tabName="الجدول"
+                      fallback="بيانات سرية"
+                    >
+                      الجوال
+                    </AccessControl>
                   </th>
+
                   <th className="p-3 text-right text-[11px] font-bold border-l border-slate-700 whitespace-nowrap">
                     المدينة
                   </th>
@@ -779,26 +740,54 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                         <td className="p-2.5 text-[11px] text-slate-800 font-bold border-l border-slate-200 group-hover:text-blue-700 transition-colors">
                           {getFullName(client.name)}
                         </td>
+
+                        {/* 👈 حماية بيانات الهوية */}
                         <td className="p-2.5 border-l border-slate-200">
-                          <span className="font-mono text-[11px] text-slate-600">
-                            {client.idNumber ||
-                              client.identification?.idNumber ||
-                              "---"}
-                          </span>
-                        </td>
-                        <td className="p-2.5 border-l border-slate-200">
-                          <span
-                            className="font-mono text-[11px] text-slate-600"
-                            dir="ltr"
+                          <AccessControl
+                            code="CLIENT_TABLE_COL_ID"
+                            name="بيانات الهوية"
+                            moduleName="دليل العملاء"
+                            tabName="الجدول"
+                            fallback={
+                              <span className="text-slate-300 text-xs tracking-widest">
+                                ***
+                              </span>
+                            }
                           >
-                            {/* 👈 التعديل هنا: إذا كان يبدأ بكلمة "غير متوفر" نعرضها نظيفة */}
-                            {client.mobile?.startsWith("غير متوفر")
-                              ? "غير متوفر"
-                              : client.mobile ||
-                                client.contact?.mobile ||
+                            <span className="font-mono text-[11px] text-slate-600">
+                              {client.idNumber ||
+                                client.identification?.idNumber ||
                                 "---"}
-                          </span>
+                            </span>
+                          </AccessControl>
                         </td>
+
+                        {/* 👈 حماية بيانات الجوال */}
+                        <td className="p-2.5 border-l border-slate-200">
+                          <AccessControl
+                            code="CLIENT_TABLE_COL_PHONE"
+                            name="بيانات الجوال"
+                            moduleName="دليل العملاء"
+                            tabName="الجدول"
+                            fallback={
+                              <span className="text-slate-300 text-xs tracking-widest">
+                                ***
+                              </span>
+                            }
+                          >
+                            <span
+                              className="font-mono text-[11px] text-slate-600"
+                              dir="ltr"
+                            >
+                              {client.mobile?.startsWith("غير متوفر")
+                                ? "غير متوفر"
+                                : client.mobile ||
+                                  client.contact?.mobile ||
+                                  "---"}
+                            </span>
+                          </AccessControl>
+                        </td>
+
                         <td className="p-2.5 text-[11px] text-slate-600 border-l border-slate-200">
                           {client.address?.city || "-"}
                         </td>
@@ -840,45 +829,78 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                         <td className="p-2.5 text-center text-[10px] text-slate-500 font-mono border-l border-slate-200">
                           {formatDate(client.createdAt)}
                         </td>
+
+                        {/* 👈 حماية أزرار الإجراءات داخل كل صف */}
                         <td className="p-2.5">
                           <div className="flex gap-1.5 justify-center opacity-40 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (onOpenDetails)
-                                  onOpenDetails(client.id, client.clientCode);
-                              }}
-                              title="فتح الملف"
-                              className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition-colors"
+                            <AccessControl
+                              code="CLIENT_ACTION_VIEW"
+                              name="عرض ملف العميل"
+                              moduleName="دليل العملاء"
+                              tabName="الجدول"
                             >
-                              <Eye className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              title="إنشاء معاملة"
-                              onClick={(e) => e.stopPropagation()}
-                              className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded transition-colors"
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (onOpenDetails)
+                                    onOpenDetails(client.id, client.clientCode);
+                                }}
+                                title="فتح الملف"
+                                className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition-colors"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                            </AccessControl>
+
+                            <AccessControl
+                              code="CLIENT_ACTION_CREATE_TRANS"
+                              name="إنشاء معاملة"
+                              moduleName="دليل العملاء"
+                              tabName="الجدول"
                             >
-                              <Plus className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              title="مراسلة واتساب"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openWhatsApp(
-                                  client.mobile || client.contact?.mobile,
-                                );
-                              }}
-                              className="p-1.5 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded transition-colors"
+                              <button
+                                title="إنشاء معاملة"
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded transition-colors"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            </AccessControl>
+
+                            <AccessControl
+                              code="CLIENT_ACTION_WHATSAPP"
+                              name="مراسلة واتساب"
+                              moduleName="دليل العملاء"
+                              tabName="الجدول"
                             >
-                              <MessageCircle className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={(e) => handleDelete(e, client.id)}
-                              title="حذف"
-                              className="p-1.5 bg-red-50 text-red-500 hover:bg-red-600 hover:text-white rounded transition-colors"
+                              <button
+                                title="مراسلة واتساب"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openWhatsApp(
+                                    client.mobile || client.contact?.mobile,
+                                  );
+                                }}
+                                className="p-1.5 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded transition-colors"
+                              >
+                                <MessageCircle className="w-3.5 h-3.5" />
+                              </button>
+                            </AccessControl>
+
+                            <AccessControl
+                              code="CLIENT_ACTION_DELETE"
+                              name="حذف العميل"
+                              moduleName="دليل العملاء"
+                              tabName="الجدول"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                              <button
+                                onClick={(e) => handleDelete(e, client.id)}
+                                title="حذف"
+                                className="p-1.5 bg-red-50 text-red-500 hover:bg-red-600 hover:text-white rounded transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </AccessControl>
                           </div>
                         </td>
                       </tr>
@@ -901,7 +923,7 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="p-1.5 rounded-md bg-white border border-slate-300 text-slate-700 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                  className="p-1.5 rounded-md bg-white border border-slate-300 text-slate-700 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-50 transition-colors"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -913,7 +935,7 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                     setCurrentPage((p) => Math.min(totalPages, p + 1))
                   }
                   disabled={currentPage === totalPages}
-                  className="p-1.5 rounded-md bg-white border border-slate-300 text-slate-700 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                  className="p-1.5 rounded-md bg-white border border-slate-300 text-slate-700 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-50 transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -923,7 +945,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
         </div>
       </div>
 
-      {/* اللوحة الجانبية للتفاصيل السريعة */}
       <SidePanel />
     </div>
   );

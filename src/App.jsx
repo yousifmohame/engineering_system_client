@@ -24,6 +24,8 @@ import EmployeesManagement from "./pages/employees/EmployeesManagement";
 // --- Icons ---
 import { Search, Bell, Settings, ChevronDown } from "lucide-react";
 import SystemHeader from "./components/layout/shell/SystemHeader";
+import { PermissionBuilderProvider } from "./context/PermissionBuilderContext";
+import PermissionBuilderToolbar from "./components/PermissionBuilderToolbar";
 
 const queryClient = new QueryClient();
 
@@ -127,7 +129,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AppContent />
+        {/* 👈 1. تغليف التطبيق بمزود الصلاحيات */}
+        <PermissionBuilderProvider>
+          <AppContent />
+          {/* 👈 2. إضافة الشريط العائم (سيظهر فقط للمدير) */}
+          <PermissionBuilderToolbar />
+        </PermissionBuilderProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

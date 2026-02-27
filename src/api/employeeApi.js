@@ -37,7 +37,9 @@ export const getPermissions = async () => {
 };
 
 export const updateRolePermissions = async ({ roleId, permissions }) => {
-  const { data } = await api.put(`/roles/${roleId}/permissions`, { permissions });
+  const { data } = await api.put(`/roles/${roleId}/permissions`, {
+    permissions,
+  });
   return data;
 };
 
@@ -46,3 +48,15 @@ export const createRole = async (roleData) => {
   const { data } = await api.post("/roles", roleData);
   return data;
 };
+
+export const updateEmployee = async ({ id, data }) =>
+  api.put(`/employees/${id}`, data).then((res) => res.data);
+
+export const updateRole = async ({ id, data }) =>
+  api.put(`/roles/${id}`, data).then((res) => res.data);
+export const deleteRole = async (id) =>
+  api.delete(`/roles/${id}`).then((res) => res.data);
+export const removePermissionFromRole = async ({ roleId, permissionId }) =>
+  api
+    .delete(`/roles/${roleId}/permissions/${permissionId}`)
+    .then((res) => res.data);

@@ -11,25 +11,26 @@ import {
   Map as MapIcon,
   UserCog,
   ShieldCheck,
-  FileSignature, // 👈 استيراد أيقونة عروض الأسعار
+  FileSignature, 
 } from "lucide-react";
 import { clsx } from "clsx";
+import AccessControl from "../../AccessControl"; // 👈 1. استيراد مكون الصلاحيات
 
-// تعريف القائمة وربطها بمعرفات الشاشات في النظام
+// 👈 2. إضافة أكواد الصلاحيات (code) وأسمائها (permName) لكل شاشة
 const MENU_ITEMS = [
   // { id: "DASH", label: "لوحة التحكم", icon: LayoutDashboard },
   // { id: "055", label: "المعاملات", icon: FileText },
-  { id: "310", label: "ملفات الملكية", icon: ShieldCheck }, 
-  { id: "300", label: "العملاء", icon: Users },
-  { id: "815", label: "عروض الأسعار", icon: FileSignature }, // ✅ الإضافة الجديدة هنا
-  { id: "817", label: "إدارة الموظفين", icon: UserCog },
+  { id: "310", label: "ملفات الملكية", icon: ShieldCheck, code: "SCREEN_310_VIEW", permName: "رؤية شاشة ملفات الملكية" }, 
+  { id: "300", label: "العملاء", icon: Users, code: "SCREEN_300_VIEW", permName: "رؤية شاشة العملاء" },
+  { id: "815", label: "عروض الأسعار", icon: FileSignature, code: "SCREEN_815_VIEW", permName: "رؤية شاشة عروض الأسعار" }, 
+  { id: "817", label: "إدارة الموظفين", icon: UserCog, code: "SCREEN_817_VIEW", permName: "رؤية شاشة إدارة الموظفين" },
   // { id: "937", label: "إدارة المعقبين", icon: Users },
   // { id: "939", label: "شوارع الرياض", icon: MapIcon },
   // { id: "285", label: "المشاريع", icon: Briefcase },
   // { id: "FIN", label: "المالية", icon: FileCheck },
   // { id: "942", label: "إدارة المستندات والقوالب", icon: Settings },
   
-  { id: "SET", label: "الإعدادات", icon: Settings },
+  { id: "SET", label: "الإعدادات", icon: Settings, code: "SCREEN_SET_VIEW", permName: "رؤية شاشة الإعدادات" },
 ];
 
 const Sidebar = () => {
@@ -54,38 +55,48 @@ const Sidebar = () => {
           const isActive = activeScreenId === item.id;
 
           return (
-            <button
+            /* 👈 3. تغليف الزر بمكون AccessControl 
+               لن يظهر الزر في الوضع الطبيعي إلا لمن يمتلك الصلاحية، 
+               وفي وضع البناء سيتمكن المدير من النقر عليه لتسجيل الصلاحية */
+            <AccessControl 
               key={item.id}
-              onClick={() => openScreen(item.id)}
-              className={clsx(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group text-right relative overflow-hidden",
-                isActive
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-900/30"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-slate-100",
-              )}
+              code={item.code} 
+              name={item.permName} 
+              moduleName="القائمة الجانبية"
+              type="screen"
             >
-              {/* Active Indicator Line */}
-              {isActive && (
-                <div className="absolute right-0 top-0 bottom-0 w-1 bg-blue-400 rounded-l" />
-              )}
-
-              <Icon
-                size={20}
+              <button
+                onClick={() => openScreen(item.id)}
                 className={clsx(
-                  "transition-colors",
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group text-right relative overflow-hidden",
                   isActive
-                    ? "text-white"
-                    : "text-slate-500 group-hover:text-blue-400",
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-900/30"
+                    : "text-slate-400 hover:bg-slate-800 hover:text-slate-100",
                 )}
-              />
+              >
+                {/* Active Indicator Line */}
+                {isActive && (
+                  <div className="absolute right-0 top-0 bottom-0 w-1 bg-blue-400 rounded-l" />
+                )}
 
-              <span className="font-medium text-sm flex-1">{item.label}</span>
+                <Icon
+                  size={20}
+                  className={clsx(
+                    "transition-colors",
+                    isActive
+                      ? "text-white"
+                      : "text-slate-500 group-hover:text-blue-400",
+                  )}
+                />
 
-              {/* مؤشر بسيط للنشط */}
-              {isActive && (
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-300 shadow-sm" />
-              )}
-            </button>
+                <span className="font-medium text-sm flex-1">{item.label}</span>
+
+                {/* مؤشر بسيط للنشط */}
+                {isActive && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-300 shadow-sm" />
+                )}
+              </button>
+            </AccessControl>
           );
         })}
       </nav>
