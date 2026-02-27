@@ -19,9 +19,14 @@ import {
   History,
   Archive,
   Loader2,
+  Lock // 👈 إضافة أيقونة القفل للحقول المخفية
 } from "lucide-react";
 import { toast } from "sonner";
 
+// 👈 1. استيراد مكون الصلاحيات
+import AccessControl from "../../components/AccessControl"; 
+
+// 👈 2. إضافة كود الصلاحية (code) واسمها (permName) لكل أداة
 const CLIENT_TOOLS = [
   {
     id: "A01",
@@ -30,6 +35,8 @@ const CLIENT_TOOLS = [
     color: "text-emerald-500",
     bg: "bg-emerald-50",
     badge: null,
+    code: "CLIENT_TOOL_CREATE",
+    permName: "أداة إنشاء عميل"
   },
   {
     id: "B01",
@@ -39,6 +46,8 @@ const CLIENT_TOOLS = [
     bg: "bg-blue-50",
     badge: null,
     target: "300-MAIN",
+    code: "CLIENT_TOOL_DIRECTORY",
+    permName: "أداة دليل العملاء"
   },
   {
     id: "C01",
@@ -48,6 +57,8 @@ const CLIENT_TOOLS = [
     bg: "bg-amber-50",
     badge: null,
     target: "CLIENTS_RATINGS",
+    code: "CLIENT_TOOL_RATINGS",
+    permName: "أداة تقييم وتصنيف العملاء"
   },
   {
     id: "D01",
@@ -57,6 +68,8 @@ const CLIENT_TOOLS = [
     bg: "bg-purple-50",
     badge: null,
     target: "CLIENTS_DOCS",
+    code: "CLIENT_TOOL_DOCS",
+    permName: "أداة إدارة وثائق العملاء"
   },
   {
     id: "E01",
@@ -65,6 +78,8 @@ const CLIENT_TOOLS = [
     color: "text-cyan-500",
     bg: "bg-cyan-50",
     badge: null,
+    code: "CLIENT_TOOL_ADDRESS",
+    permName: "أداة العناوين الوطنية"
   },
   {
     id: "F01",
@@ -73,6 +88,8 @@ const CLIENT_TOOLS = [
     color: "text-red-500",
     bg: "bg-red-50",
     badge: null,
+    code: "CLIENT_TOOL_TAX",
+    permName: "أداة بيانات الزكاة والضريبة"
   },
   {
     id: "G01",
@@ -81,6 +98,8 @@ const CLIENT_TOOLS = [
     color: "text-indigo-500",
     bg: "bg-indigo-50",
     badge: null,
+    code: "CLIENT_TOOL_AGENTS",
+    permName: "أداة إدارة الوكلاء والمفوضين"
   },
   {
     id: "H01",
@@ -89,6 +108,8 @@ const CLIENT_TOOLS = [
     color: "text-teal-500",
     bg: "bg-teal-50",
     badge: null,
+    code: "CLIENT_TOOL_TRANS",
+    permName: "أداة استعراض معاملات العملاء"
   },
   {
     id: "I01",
@@ -97,14 +118,18 @@ const CLIENT_TOOLS = [
     color: "text-orange-500",
     bg: "bg-orange-50",
     badge: null,
+    code: "CLIENT_TOOL_FINANCE",
+    permName: "أداة السجل المالي للعميل"
   },
   {
     id: "J01",
     title: "تقارير العملاء",
-    icon: BarChart3,
+    icon: BarChart3, // Note: You might want to change this to PieChart or FileSpreadsheet later to avoid duplicates
     color: "text-lime-500",
     bg: "bg-lime-50",
     badge: null,
+    code: "CLIENT_TOOL_REPORTS",
+    permName: "أداة تقارير العملاء الشاملة"
   },
   {
     id: "K01",
@@ -113,6 +138,8 @@ const CLIENT_TOOLS = [
     color: "text-slate-500",
     bg: "bg-slate-100",
     badge: null,
+    code: "CLIENT_TOOL_AUDIT",
+    permName: "أداة سجل تدقيق حركات العملاء"
   },
   {
     id: "L01",
@@ -121,6 +148,8 @@ const CLIENT_TOOLS = [
     color: "text-slate-400",
     bg: "bg-slate-100",
     badge: null,
+    code: "CLIENT_TOOL_ARCHIVE",
+    permName: "أداة سلة المحذوفات المؤقتة"
   },
 ];
 
@@ -196,18 +225,29 @@ const ClientsDashboard = ({ onNavigate }) => {
                   إجمالي العملاء
                 </div>
               </div>
-              <div className="text-center px-4 py-1.5 bg-amber-50 rounded-lg border border-amber-200 min-w-[80px]">
-                <div className="text-lg font-black text-amber-600 leading-none mb-1">
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 mx-auto animate-spin" />
-                  ) : (
-                    stats.defaulters
-                  )}
+              
+              {/* 👈 3. حماية إحصائية المتعثرين (بيانات حساسة) */}
+              <AccessControl 
+                code="CLIENT_DASH_STAT_DEFAULTERS" 
+                name="إحصائية المتعثرين مالياً" 
+                moduleName="لوحة تحكم العملاء" 
+                tabName="الشريط العلوي"
+                fallback={<div className="text-center px-4 py-1.5 bg-slate-100 rounded-lg border border-slate-200 flex flex-col justify-center items-center opacity-70 min-w-[80px]"><Lock className="w-4 h-4 mb-1 text-slate-400"/><span className="text-[10px] font-bold text-slate-400">محمية</span></div>}
+              >
+                <div className="text-center px-4 py-1.5 bg-amber-50 rounded-lg border border-amber-200 min-w-[80px]">
+                  <div className="text-lg font-black text-amber-600 leading-none mb-1">
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 mx-auto animate-spin" />
+                    ) : (
+                      stats.defaulters
+                    )}
+                  </div>
+                  <div className="text-[10px] font-bold text-amber-700">
+                    متعثرين مالياً
+                  </div>
                 </div>
-                <div className="text-[10px] font-bold text-amber-700">
-                  متعثرين مالياً
-                </div>
-              </div>
+              </AccessControl>
+
               <div className="text-center px-4 py-1.5 bg-red-50 rounded-lg border border-red-200 min-w-[80px]">
                 <div className="text-lg font-black text-red-600 leading-none mb-1">
                   {isLoading ? (
@@ -226,12 +266,21 @@ const ClientsDashboard = ({ onNavigate }) => {
 
             {/* الأزرار والإجراءات */}
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => onNavigate && onNavigate("NEW_CLIENT_TAB")}
-                className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-95"
+              {/* 👈 4. حماية زر الإضافة السريعة */}
+              <AccessControl 
+                code="CLIENT_DASH_BTN_ADD" 
+                name="زر إضافة عميل جديد سريع" 
+                moduleName="لوحة تحكم العملاء" 
+                tabName="الشريط العلوي"
               >
-                <Plus className="w-4 h-4" /> إضافة عميل جديد
-              </button>
+                <button
+                  onClick={() => onNavigate && onNavigate("NEW_CLIENT_TAB")}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-95"
+                >
+                  <Plus className="w-4 h-4" /> إضافة عميل جديد
+                </button>
+              </AccessControl>
+
               <button className="p-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-600 transition-colors shadow-sm">
                 <Search className="w-4 h-4" />
               </button>
@@ -261,37 +310,46 @@ const ClientsDashboard = ({ onNavigate }) => {
 
           <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-5">
             {toolsWithStats.map((tool, idx) => (
-              <div
-                key={idx}
-                onClick={() => {
-                  if (!onNavigate) return;
-                  if (tool.id === "A01") onNavigate("NEW_CLIENT_TAB");
-                  else if (tool.id === "B01") onNavigate("300-MAIN");
-                  else if (tool.target) onNavigate(tool.target);
-                  else
-                    toast.info("قريباً - جاري العمل على هذه الشاشة", {
-                      position: "top-center",
-                    });
-                }}
-                className="p-6 bg-white rounded-2xl border border-slate-200 hover:border-blue-400 cursor-pointer transition-all duration-300 relative shadow-sm hover:shadow-lg hover:-translate-y-1 group flex flex-col items-center text-center"
+              /* 👈 5. تغليف كل أداة في الشبكة بمكون AccessControl */
+              <AccessControl 
+                key={tool.id} 
+                code={tool.code} 
+                name={tool.permName} 
+                moduleName="لوحة تحكم العملاء" 
+                tabName="شبكة الأدوات" 
+                type="screen"
               >
-                {tool.badge > 0 && (
-                  <div className="absolute top-3 left-3 min-w-[24px] h-6 px-1.5 bg-red-500 text-white rounded-full flex items-center justify-center text-[11px] font-bold shadow-sm z-10">
-                    {tool.badge}
-                  </div>
-                )}
                 <div
-                  className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 ${tool.bg} ${tool.color}`}
+                  onClick={() => {
+                    if (!onNavigate) return;
+                    if (tool.id === "A01") onNavigate("NEW_CLIENT_TAB");
+                    else if (tool.id === "B01") onNavigate("300-MAIN");
+                    else if (tool.target) onNavigate(tool.target);
+                    else
+                      toast.info("قريباً - جاري العمل على هذه الشاشة", {
+                        position: "top-center",
+                      });
+                  }}
+                  className="p-6 bg-white rounded-2xl border border-slate-200 hover:border-blue-400 cursor-pointer transition-all duration-300 relative shadow-sm hover:shadow-lg hover:-translate-y-1 group flex flex-col items-center text-center w-full"
                 >
-                  <tool.icon className="w-8 h-8" />
+                  {tool.badge > 0 && (
+                    <div className="absolute top-3 left-3 min-w-[24px] h-6 px-1.5 bg-red-500 text-white rounded-full flex items-center justify-center text-[11px] font-bold shadow-sm z-10">
+                      {tool.badge}
+                    </div>
+                  )}
+                  <div
+                    className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 ${tool.bg} ${tool.color}`}
+                  >
+                    <tool.icon className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-sm font-black text-slate-800 mb-1 group-hover:text-blue-600 transition-colors">
+                    {tool.title}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-mono font-bold">
+                    {tool.id}
+                  </p>
                 </div>
-                <h3 className="text-sm font-black text-slate-800 mb-1 group-hover:text-blue-600 transition-colors">
-                  {tool.title}
-                </h3>
-                <p className="text-[10px] text-slate-400 font-mono font-bold">
-                  {tool.id}
-                </p>
-              </div>
+              </AccessControl>
             ))}
           </div>
         </div>

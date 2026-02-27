@@ -19,10 +19,17 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCw,
-  Maximize2,
   Download,
   Check,
   Trash2,
+  CalendarDays,
+  AlertTriangle,
+  MapPin,
+  Image as ImageIcon,
+  FileText,
+  ScanSearch,
+  Clock
+  
 } from "lucide-react";
 
 // ==========================================
@@ -81,6 +88,48 @@ const DualInputWithAI = ({
   </div>
 );
 
+// 👈 دالة حساب الوقت المتبقي للوكالة
+const getRemainingTime = (expiryDateString) => {
+  if (!expiryDateString) return null;
+  const expiryDate = new Date(expiryDateString);
+  if (isNaN(expiryDate)) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // تصفير الوقت للمقارنة الدقيقة للأيام
+
+  const diffTime = expiryDate - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0)
+    return {
+      expired: true,
+      text: "منتهية الصلاحية",
+      color: "bg-red-50 border-red-200 text-red-700",
+    };
+  if (diffDays === 0)
+    return {
+      expired: false,
+      text: "تنتهي اليوم!",
+      color: "bg-orange-50 border-orange-200 text-orange-700",
+    };
+
+  const years = Math.floor(diffDays / 365);
+  const months = Math.floor((diffDays % 365) / 30);
+  const days = (diffDays % 365) % 30;
+
+  let textParts = [];
+  if (years > 0) textParts.push(`${years} سنة`);
+  if (months > 0) textParts.push(`${months} شهر`);
+  if (days > 0) textParts.push(`${days} يوم`);
+
+  const color =
+    diffDays < 30
+      ? "bg-orange-50 border-orange-200 text-orange-700"
+      : "bg-emerald-50 border-emerald-200 text-emerald-700";
+
+  return { expired: false, text: textParts.join(" و "), color };
+};
+
 const WIZARD_STEPS = [
   { id: 1, label: "طريقة الإنشاء" },
   { id: 2, label: "نوع العميل" },
@@ -97,31 +146,31 @@ const WIZARD_STEPS = [
 const CreateClientWizard = ({ onComplete }) => {
   const queryClient = useQueryClient();
 
-  // Refs للملفات
   const identityInputRef = useRef(null);
   const addressInputRef = useRef(null);
   const profilePicRef = useRef(null);
   const generalDocRef = useRef(null);
-  const repIdRef = useRef(null); // 👈 لرفع هوية الوكيل
-  const repAuthRef = useRef(null); // 👈 لرفع وثيقة الوكالة
+  const repIdRef = useRef(null);
+  const repAuthRef = useRef(null);
 
-  // حالات التنقل والذكاء الاصطناعي
   const [currentStep, setCurrentStep] = useState(1);
   const [creationMethod, setCreationMethod] = useState(null);
   const [isAnalyzingId, setIsAnalyzingId] = useState(false);
   const [isAnalyzingAddress, setIsAnalyzingAddress] = useState(false);
+  const [isAnalyzingRepAuth, setIsAnalyzingRepAuth] = useState(false);
+  const [isAnalyzingRepId, setIsAnalyzingRepId] = useState(false);
   const [aiResults, setAiResults] = useState(null);
   const [useSameAsMobile, setUseSameAsMobile] = useState(true);
   const [isMobileUnavailable, setIsMobileUnavailable] = useState(false);
 
-  // حالات عارض الوثيقة التفاعلي
+  // 👈 إضافة حالة لتخزين نوع الملف المرفوع للمعاينات
+  const [previewFileType, setPreviewFileType] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [previewFileName, setPreviewFileName] = useState("");
   const [previewFileSize, setPreviewFileSize] = useState("");
   const [viewerScale, setViewerScale] = useState(1);
   const [viewerRotation, setViewerRotation] = useState(0);
 
-  // إدارة الملفات
   const [profilePicture, setProfilePicture] = useState(null);
   const [documents, setDocuments] = useState([]);
 
@@ -149,6 +198,10 @@ const CreateClientWizard = ({ onComplete }) => {
       idNumber: "",
       idType: "هوية وطنية",
       birthDate: "",
+      placeOfBirth: "",
+      age: "",
+      birthDateGregorian: "",
+      birthDateHijri: "",
       nationality: "سعودي",
     },
     address: {
@@ -164,7 +217,7 @@ const CreateClientWizard = ({ onComplete }) => {
     },
     representative: {
       hasRepresentative: false,
-      type: "وكيل", // "وكيل" أو "مفوض"
+      type: "وكيل",
       name: "",
       idNumber: "",
       idExpiry: "",
@@ -209,21 +262,15 @@ const CreateClientWizard = ({ onComplete }) => {
     ]);
   };
 
-  const updateDocumentMeta = (docId, field, value) => {
-    setDocuments((prev) =>
-      prev.map((doc) => (doc.id === docId ? { ...doc, [field]: value } : doc)),
-    );
-  };
-
-  const removeDocument = (docId) => {
+  const removeDocument = (docId) =>
     setDocuments((prev) => prev.filter((doc) => doc.id !== docId));
-  };
 
   const handleProfilePicUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setProfilePicture({ file, preview: reader.result });
+    reader.onload = () =>
+      setProfilePicture({ file, preview: reader.result, isFromAi: false });
     reader.readAsDataURL(file);
   };
 
@@ -234,6 +281,7 @@ const CreateClientWizard = ({ onComplete }) => {
     setIsAnalyzingId(true);
     setPreviewFileName(file.name);
     setPreviewFileSize((file.size / 1024).toFixed(1) + " KB");
+    setPreviewFileType(file.type); // 👈 حفظ نوع الملف (pdf أو صورة)
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -242,6 +290,15 @@ const CreateClientWizard = ({ onComplete }) => {
         const imageBase64 = reader.result;
         setPreviewImage(imageBase64);
         addDocumentToState(file, "dt-001", imageBase64);
+
+        // 👈 إذا كانت الصورة هوية واسم العميل سيكون (فرد)، نحفظ الصورة المرفوعة لتستخدم كصورة للملف في التاب 3
+        if (file.type.startsWith("image/")) {
+          setProfilePicture({
+            file: null,
+            preview: imageBase64,
+            isFromAi: true,
+          });
+        }
 
         const response = await axios.post("/clients/analyze-identity", {
           imageBase64,
@@ -262,7 +319,6 @@ const CreateClientWizard = ({ onComplete }) => {
   };
 
   const handleAddressUpload = (e) => {
-    // ... (نفس الكود السابق للعنوان) ...
     const file = e.target.files[0];
     if (!file) return;
     setIsAnalyzingAddress(true);
@@ -311,14 +367,58 @@ const CreateClientWizard = ({ onComplete }) => {
     });
   };
 
-  const handleRepDocUpload = (e, type) => {
+  const handleRepDocUpload = (e, type, aiAnalyze = false) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      addDocumentToState(file, type, reader.result);
-      toast.success(`تم إرفاق ${type} للممثل بنجاح`);
-    };
+
+    if (aiAnalyze) {
+      const isAuthDoc = type.includes("مستند");
+      if (isAuthDoc) setIsAnalyzingRepAuth(true);
+      else setIsAnalyzingRepId(true);
+
+      reader.onload = async () => {
+        const base64Data = reader.result;
+        addDocumentToState(file, type, base64Data);
+
+        try {
+          const response = await axios.post("/clients/analyze-representative", {
+            imageBase64: base64Data,
+            docType: isAuthDoc ? "وكالة" : "هوية",
+          });
+
+          if (response.data?.success) {
+            const data = response.data.data;
+            setFormData((prev) => ({
+              ...prev,
+              representative: {
+                ...prev.representative,
+                // تحديث الحقول إذا تم استخراجها بنجاح
+                name: data.agentName || prev.representative.name,
+                idNumber: data.agentIdNumber || prev.representative.idNumber,
+                authNumber: data.authNumber || prev.representative.authNumber,
+                authExpiry: data.authExpiry || prev.representative.authExpiry,
+                idExpiry: data.idExpiry || prev.representative.idExpiry,
+                powersScope:
+                  data.powersScope || prev.representative.powersScope,
+              },
+            }));
+            toast.success(`تم استخراج بيانات ${type} بنجاح!`);
+          }
+        } catch (error) {
+          toast.error(`فشل في استخراج البيانات من ${type}`);
+        } finally {
+          if (isAuthDoc) setIsAnalyzingRepAuth(false);
+          else setIsAnalyzingRepId(false);
+        }
+      };
+    } else {
+      reader.onload = () => {
+        addDocumentToState(file, type, reader.result);
+        toast.success(`تم إرفاق ${type} للممثل بنجاح`);
+      };
+    }
+
     reader.readAsDataURL(file);
   };
 
@@ -330,6 +430,10 @@ const CreateClientWizard = ({ onComplete }) => {
           ...prev.identification,
           idNumber: aiResults.idNumber || "",
           birthDate: aiResults.birthDate || "",
+          placeOfBirth: aiResults.placeOfBirth || "",
+          age: aiResults.age || "",
+          birthDateGregorian: aiResults.birthDateGregorian || "",
+          birthDateHijri: aiResults.birthDateHijri || "",
           nationality: aiResults.nationality || "سعودي",
         },
         name: {
@@ -379,9 +483,7 @@ const CreateClientWizard = ({ onComplete }) => {
       !formData.identification.idNumber ||
       (!isMobileUnavailable && !formData.contact.mobile)
     ) {
-      toast.error(
-        "يرجى التأكد من إدخال الاسم الأول، رقم الهوية، ورقم الجوال (أو تحديد أنه غير متوفر)!",
-      );
+      toast.error("يرجى التأكد من إدخال الاسم الأول، رقم الهوية، ورقم الجوال!");
       return;
     }
 
@@ -416,7 +518,8 @@ const CreateClientWizard = ({ onComplete }) => {
     );
     formDataToSend.append("isActive", true);
 
-    if (profilePicture?.file)
+    // نرفع الصورة الشخصية فقط إذا تم رفعها يدوياً. إذا كانت مأخوذة من الهوية لن نرفعها كملف منفصل لتوفير المساحة.
+    if (profilePicture?.file && !profilePicture.isFromAi)
       formDataToSend.append("profilePicture", profilePicture.file);
 
     documents.forEach((doc, index) => {
@@ -440,7 +543,6 @@ const CreateClientWizard = ({ onComplete }) => {
       case 1:
         return (
           <div className="bg-white rounded-xl p-6 mb-6 shadow-sm min-h-[400px]">
-            {/* الشاشة الأولى: قبل رفع الوثيقة */}
             {!aiResults && !isAnalyzingId && !previewImage && (
               <>
                 <h3 className="text-xl font-bold mb-2 text-slate-800">
@@ -467,7 +569,6 @@ const CreateClientWizard = ({ onComplete }) => {
                       تلقائياً
                     </div>
                   </div>
-
                   <div
                     onClick={() => {
                       setCreationMethod("manual");
@@ -532,11 +633,7 @@ const CreateClientWizard = ({ onComplete }) => {
                             onClick={() =>
                               handleChange(null, "documentType", doc.id)
                             }
-                            className={`p-3 rounded-xl cursor-pointer text-center transition-all ${
-                              formData.documentType === doc.id
-                                ? "bg-white border-2 border-violet-500 shadow-sm scale-[1.02]"
-                                : "bg-white/60 border border-slate-200 hover:bg-white hover:border-violet-300"
-                            }`}
+                            className={`p-3 rounded-xl cursor-pointer text-center transition-all ${formData.documentType === doc.id ? "bg-white border-2 border-violet-500 shadow-sm scale-[1.02]" : "bg-white/60 border border-slate-200 hover:bg-white hover:border-violet-300"}`}
                           >
                             <div className="text-2xl mb-1.5">{doc.icon}</div>
                             <div className="text-[12px] font-bold text-slate-800">
@@ -549,7 +646,6 @@ const CreateClientWizard = ({ onComplete }) => {
                         ))}
                       </div>
                     </div>
-
                     <div
                       onClick={() => identityInputRef.current?.click()}
                       className="border-2 border-dashed border-violet-300 rounded-xl p-8 text-center bg-white cursor-pointer hover:bg-violet-50 transition-colors mt-4"
@@ -571,7 +667,6 @@ const CreateClientWizard = ({ onComplete }) => {
               </>
             )}
 
-            {/* شاشة التحميل (أثناء معالجة الذكاء الاصطناعي) */}
             {isAnalyzingId && (
               <div className="flex flex-col items-center justify-center p-20 animate-in fade-in text-center">
                 <Loader2 className="w-12 h-12 text-violet-600 animate-spin mb-4" />
@@ -584,14 +679,11 @@ const CreateClientWizard = ({ onComplete }) => {
               </div>
             )}
 
-            {/* 👈 الشاشة المحدثة: نتائج الاستخراج (اليمين) + عارض الوثيقة (اليسار) */}
             {!isAnalyzingId && aiResults && previewImage && (
               <div className="p-6 bg-purple-50/30 border-2 border-purple-200 rounded-2xl animate-in fade-in zoom-in-95">
                 <div className="flex items-center gap-2 mb-5 text-purple-700 font-bold text-[15px]">
                   <Shield className="w-5 h-5" /> رفع وثيقة هوية العميل
                 </div>
-
-                {/* الشريط الأخضر للنجاح */}
                 <div className="bg-emerald-50 border-2 border-dashed border-emerald-500 rounded-xl p-4 text-center mb-5 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-emerald-100 rounded-lg">
@@ -617,9 +709,7 @@ const CreateClientWizard = ({ onComplete }) => {
                   </button>
                 </div>
 
-                {/* الشبكة الرئيسية: النتائج والعارض */}
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-5">
-                  {/* قسم نتائج الاستخراج (اليمين) */}
                   <div className="bg-white border-2 border-emerald-100 rounded-xl p-5 shadow-sm">
                     <div className="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
                       <div className="flex items-center gap-3">
@@ -635,7 +725,7 @@ const CreateClientWizard = ({ onComplete }) => {
                             <span className="font-bold text-emerald-600">
                               97%
                             </span>{" "}
-                            — نوع العميل المقترح:{" "}
+                            — نوع العميل:{" "}
                             <span className="font-bold text-violet-600">
                               {formData.documentType}
                             </span>
@@ -648,7 +738,6 @@ const CreateClientWizard = ({ onComplete }) => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 mb-5">
-                      {/* الحقول المستخرجة بأسلوب جميل */}
                       {[
                         { label: "الاسم الأول (عربي)", val: aiResults.firstAr },
                         { label: "اسم الأب (عربي)", val: aiResults.fatherAr },
@@ -683,8 +772,19 @@ const CreateClientWizard = ({ onComplete }) => {
                           full: true,
                         },
                         {
-                          label: "تاريخ الميلاد",
-                          val: aiResults.birthDate,
+                          label: "تاريخ الميلاد هجري",
+                          val: aiResults.birthDateHijri,
+                          full: true,
+                        },
+                        {
+                          label: "تاريخ الميلاد ميلادي",
+                          val: aiResults.birthDateGregorian,
+                          full: true,
+                        },
+                        { label: "العمر", val: aiResults.age, full: true },
+                        {
+                          label: "مكان الميلاد",
+                          val: aiResults.placeOfBirth,
                           full: true,
                         },
                         {
@@ -737,7 +837,6 @@ const CreateClientWizard = ({ onComplete }) => {
                     </div>
                   </div>
 
-                  {/* قسم عارض المستندات التفاعلي (اليسار) */}
                   <div className="flex flex-col">
                     <div className="mb-2">
                       <h4 className="text-sm font-bold text-slate-800">
@@ -747,73 +846,78 @@ const CreateClientWizard = ({ onComplete }) => {
                         طابق البيانات المستخرجة مع الوثيقة بصرياً
                       </p>
                     </div>
+                    {/* 👈 تعديل العارض لدعم PDF */}
                     <div className="flex-1 bg-slate-800 rounded-xl overflow-hidden relative flex flex-col min-h-[400px] border border-slate-700 shadow-inner">
-                      {/* شريط أدوات العارض */}
                       <div className="flex justify-between items-center px-3 py-2 bg-slate-900 border-b border-slate-700 z-10">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-slate-200 font-bold truncate max-w-[120px]">
                             {previewFileName}
                           </span>
-                          <span className="text-[9px] text-slate-400 bg-slate-700 px-2 py-0.5 rounded">
-                            صورة
+                          <span className="text-[9px] text-slate-400 bg-slate-700 px-2 py-0.5 rounded uppercase">
+                            {previewFileType?.split("/")[1] || "DOC"}
                           </span>
                         </div>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() =>
-                              setViewerScale((s) => Math.max(0.5, s - 0.2))
-                            }
-                            className="p-1.5 bg-slate-700 hover:bg-slate-600 rounded text-white"
-                            title="تصغير"
-                          >
-                            <ZoomOut className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setViewerScale(1);
-                              setViewerRotation(0);
-                            }}
-                            className="px-2 bg-slate-700 hover:bg-slate-600 rounded text-white text-[10px] font-bold"
-                            title="إعادة تعيين"
-                          >
-                            100%
-                          </button>
-                          <button
-                            onClick={() =>
-                              setViewerScale((s) => Math.min(3, s + 0.2))
-                            }
-                            className="p-1.5 bg-slate-700 hover:bg-slate-600 rounded text-white"
-                            title="تكبير"
-                          >
-                            <ZoomIn className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setViewerRotation((r) => r + 90)}
-                            className="p-1.5 bg-slate-700 hover:bg-slate-600 rounded text-white ml-1"
-                            title="تدوير"
-                          >
-                            <RotateCw className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            className="p-1.5 bg-emerald-600 hover:bg-emerald-500 rounded text-white ml-1"
-                            title="تنزيل"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        {previewFileType?.startsWith("image/") && (
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() =>
+                                setViewerScale((s) => Math.max(0.5, s - 0.2))
+                              }
+                              className="p-1.5 bg-slate-700 hover:bg-slate-600 rounded text-white"
+                              title="تصغير"
+                            >
+                              <ZoomOut className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setViewerScale(1);
+                                setViewerRotation(0);
+                              }}
+                              className="px-2 bg-slate-700 hover:bg-slate-600 rounded text-white text-[10px] font-bold"
+                              title="إعادة تعيين"
+                            >
+                              100%
+                            </button>
+                            <button
+                              onClick={() =>
+                                setViewerScale((s) => Math.min(3, s + 0.2))
+                              }
+                              className="p-1.5 bg-slate-700 hover:bg-slate-600 rounded text-white"
+                              title="تكبير"
+                            >
+                              <ZoomIn className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setViewerRotation((r) => r + 90)}
+                              className="p-1.5 bg-slate-700 hover:bg-slate-600 rounded text-white ml-1"
+                              title="تدوير"
+                            >
+                              <RotateCw className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </div>
 
-                      {/* الصورة */}
-                      <div className="flex-1 flex items-center justify-center overflow-hidden relative select-none">
-                        <img
-                          src={previewImage}
-                          alt="Document Preview"
-                          draggable="false"
-                          className="max-w-full max-h-full transition-transform duration-200 object-contain"
-                          style={{
-                            transform: `scale(${viewerScale}) rotate(${viewerRotation}deg)`,
-                          }}
-                        />
+                      <div className="flex-1 flex items-center justify-center overflow-hidden relative select-none w-full h-full bg-white">
+                        {previewFileType === "application/pdf" ? (
+                          <embed
+                            src={previewImage}
+                            type="application/pdf"
+                            width="100%"
+                            height="100%"
+                            className="w-full h-full"
+                          />
+                        ) : (
+                          <img
+                            src={previewImage}
+                            alt="Document Preview"
+                            draggable="false"
+                            className="max-w-full max-h-full transition-transform duration-200 object-contain"
+                            style={{
+                              transform: `scale(${viewerScale}) rotate(${viewerRotation}deg)`,
+                            }}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -824,56 +928,58 @@ const CreateClientWizard = ({ onComplete }) => {
         );
 
       case 2:
-        const clientTypes = [
-          { id: "فرد سعودي", icon: Users, color: "emerald" },
-          { id: "فرد غير سعودي", icon: Users, color: "blue" },
-          { id: "شركة", label: "شركة/مؤسسة", icon: Building, color: "violet" },
-          { id: "جهة حكومية", icon: Building, color: "red" },
-          { id: "ورثة", icon: UsersRound, color: "amber" },
-          {
-            id: "مكتب هندسي",
-            label: "مكتب هندسي/وسيط",
-            icon: Building,
-            color: "cyan",
-          },
-        ];
-
-        const colorClasses = {
-          emerald: {
-            bg: "bg-emerald-50 text-emerald-500",
-            border: "border-emerald-500 ring-emerald-50",
-          },
-          blue: {
-            bg: "bg-blue-50 text-blue-500",
-            border: "border-blue-500 ring-blue-50",
-          },
-          violet: {
-            bg: "bg-violet-50 text-violet-500",
-            border: "border-violet-500 ring-violet-50",
-          },
-          red: {
-            bg: "bg-red-50 text-red-500",
-            border: "border-red-500 ring-red-50",
-          },
-          amber: {
-            bg: "bg-amber-50 text-amber-500",
-            border: "border-amber-500 ring-amber-50",
-          },
-          cyan: {
-            bg: "bg-cyan-50 text-cyan-500",
-            border: "border-cyan-500 ring-cyan-50",
-          },
-        };
-
         return (
+          // (نفس الكود السابق للخطوة 2 بدون تغيير)
           <div className="bg-white rounded-xl p-6 mb-6 shadow-sm min-h-[400px]">
             <h3 className="text-lg font-bold mb-6 text-slate-800">
               اختر نوع العميل
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {clientTypes.map((type) => {
+              {[
+                { id: "فرد سعودي", icon: Users, color: "emerald" },
+                { id: "فرد غير سعودي", icon: Users, color: "blue" },
+                {
+                  id: "شركة",
+                  label: "شركة/مؤسسة",
+                  icon: Building,
+                  color: "violet",
+                },
+                { id: "جهة حكومية", icon: Building, color: "red" },
+                { id: "ورثة", icon: UsersRound, color: "amber" },
+                {
+                  id: "مكتب هندسي",
+                  label: "مكتب هندسي/وسيط",
+                  icon: Building,
+                  color: "cyan",
+                },
+              ].map((type) => {
                 const isSelected = formData.type === type.id;
-                const colors = colorClasses[type.color];
+                const colors = {
+                  emerald: {
+                    bg: "bg-emerald-50 text-emerald-500",
+                    border: "border-emerald-500 ring-emerald-50",
+                  },
+                  blue: {
+                    bg: "bg-blue-50 text-blue-500",
+                    border: "border-blue-500 ring-blue-50",
+                  },
+                  violet: {
+                    bg: "bg-violet-50 text-violet-500",
+                    border: "border-violet-500 ring-violet-50",
+                  },
+                  red: {
+                    bg: "bg-red-50 text-red-500",
+                    border: "border-red-500 ring-red-50",
+                  },
+                  amber: {
+                    bg: "bg-amber-50 text-amber-500",
+                    border: "border-amber-500 ring-amber-50",
+                  },
+                  cyan: {
+                    bg: "bg-cyan-50 text-cyan-500",
+                    border: "border-cyan-500 ring-cyan-50",
+                  },
+                }[type.color];
                 return (
                   <div
                     key={type.id}
@@ -896,41 +1002,64 @@ const CreateClientWizard = ({ onComplete }) => {
         );
 
       case 3:
+        const currentAge = formData.identification.age
+          ? parseInt(formData.identification.age)
+          : null;
+        const isWarningAge =
+          currentAge !== null && (currentAge > 85 || currentAge < 18);
+        const isCompany = ["شركة", "جهة حكومية", "مكتب هندسي"].includes(
+          formData.type,
+        );
+
         return (
           <div className="bg-white rounded-xl p-6 mb-6 shadow-sm min-h-[400px]">
             <h3 className="text-lg font-bold mb-4 text-slate-800">
               البيانات الأساسية
             </h3>
+
             {aiResults && (
               <div className="p-3 bg-violet-50 rounded-lg mb-5 flex items-center gap-2 border border-violet-100">
                 <Star className="w-4 h-4 text-violet-600" />
                 <span className="text-xs text-violet-800 font-bold">
-                  الحقول المحاطة بإطار أخضر أو أصفر تم استخراجها عبر الذكاء
-                  الاصطناعي بدقة عالية.
+                  الحقول المحاطة بإطار أخضر تم استخراجها عبر الذكاء الاصطناعي
+                  بدقة.
                 </span>
               </div>
             )}
 
             <div className="flex flex-col md:flex-row gap-6 mb-6">
+              {/* 👈 تحديث مربع الصورة حسب نوع العميل ومصدر الذكاء الاصطناعي */}
               <div className="flex-shrink-0 md:w-32">
                 <label className="block text-[13px] font-bold mb-2 text-slate-700">
-                  صورة العميل
+                  {isCompany ? "شعار المنشأة" : "صورة العميل"}
                 </label>
                 <div
                   onClick={() => profilePicRef.current?.click()}
-                  className="w-[120px] h-[140px] rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors overflow-hidden relative"
+                  className="w-[120px] h-[140px] rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors overflow-hidden relative group"
                 >
                   {profilePicture ? (
-                    <img
-                      src={profilePicture.preview}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
+                    <>
+                      <img
+                        src={profilePicture.preview}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Upload className="w-6 h-6 text-white mb-1" />
+                        <span className="text-[10px] text-white font-bold">
+                          تغيير الصورة
+                        </span>
+                      </div>
+                    </>
                   ) : (
                     <>
-                      <Upload className="w-6 h-6 text-slate-400 mb-2" />
-                      <span className="text-[11px] text-slate-500">
-                        رفع صورة
+                      {isCompany ? (
+                        <Building className="w-8 h-8 text-slate-300 mb-2" />
+                      ) : (
+                        <ImageIcon className="w-8 h-8 text-slate-300 mb-2" />
+                      )}
+                      <span className="text-[11px] text-slate-500 font-bold text-center px-2">
+                        {isCompany ? "رفع الشعار (اختياري)" : "لقطة من الهوية"}
                       </span>
                     </>
                   )}
@@ -998,7 +1127,7 @@ const CreateClientWizard = ({ onComplete }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 pt-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 pt-5 mb-5">
               <div>
                 <label className="text-xs font-bold mb-1.5 block text-slate-700">
                   رقم الهوية/السجل *
@@ -1010,21 +1139,6 @@ const CreateClientWizard = ({ onComplete }) => {
                     handleChange("identification", "idNumber", e.target.value)
                   }
                   className={`w-full p-2.5 rounded-lg text-sm border-2 outline-none focus:border-violet-500 ${aiResults?.idNumber ? "border-emerald-300 bg-emerald-50 font-bold" : "border-slate-200"}`}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold mb-1.5 block text-slate-700">
-                  تاريخ الميلاد / التأسيس
-                </label>
-                <input
-                  type="text"
-                  value={formData.identification.birthDate}
-                  onChange={(e) =>
-                    handleChange("identification", "birthDate", e.target.value)
-                  }
-                  placeholder="1405/06/15"
-                  className={`w-full p-2.5 rounded-lg text-sm border-2 outline-none focus:border-violet-500 text-left ${aiResults?.birthDate ? "border-emerald-300 bg-emerald-50 font-bold" : "border-slate-200 bg-white"}`}
-                  dir="ltr"
                 />
               </div>
               <div>
@@ -1043,6 +1157,96 @@ const CreateClientWizard = ({ onComplete }) => {
                   }
                   className={`w-full p-2.5 rounded-lg text-sm border-2 outline-none focus:border-violet-500 ${aiResults?.nationality ? "border-emerald-300 bg-emerald-50 font-bold" : "border-slate-200 bg-white"}`}
                 />
+              </div>
+              <div>
+                <label className="text-xs font-bold mb-1.5 block text-slate-700">
+                  مكان الميلاد
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={formData.identification.placeOfBirth}
+                    onChange={(e) =>
+                      handleChange(
+                        "identification",
+                        "placeOfBirth",
+                        e.target.value,
+                      )
+                    }
+                    className={`w-full pr-9 pl-3 py-2.5 rounded-lg text-sm border-2 outline-none focus:border-violet-500 ${aiResults?.placeOfBirth ? "border-emerald-300 bg-emerald-50 font-bold" : "border-slate-200 bg-white"}`}
+                    placeholder="مثال: الرياض"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* مربع تاريخ الميلاد وحساب العمر */}
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+              <div className="md:col-span-2 space-y-3">
+                <div>
+                  <label className="text-xs font-bold mb-1.5 flex items-center gap-2 text-slate-700">
+                    تاريخ الميلاد (هجري)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.identification.birthDateHijri}
+                    onChange={(e) =>
+                      handleChange(
+                        "identification",
+                        "birthDateHijri",
+                        e.target.value,
+                      )
+                    }
+                    placeholder="مثال: 1405/06/15"
+                    className={`w-full p-2.5 rounded-lg text-sm border-2 outline-none focus:border-violet-500 text-left ${aiResults?.birthDateHijri ? "border-emerald-300 bg-emerald-50 font-bold" : "border-slate-200 bg-white"}`}
+                    dir="ltr"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold mb-1.5 flex items-center gap-2 text-slate-700">
+                    تاريخ الميلاد (ميلادي)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.identification.birthDateGregorian}
+                    onChange={(e) =>
+                      handleChange(
+                        "identification",
+                        "birthDateGregorian",
+                        e.target.value,
+                      )
+                    }
+                    placeholder="مثال: 1985/02/05"
+                    className={`w-full p-2.5 rounded-lg text-sm border-2 outline-none focus:border-violet-500 text-left ${aiResults?.birthDateGregorian ? "border-emerald-300 bg-emerald-50 font-bold" : "border-slate-200 bg-white"}`}
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+
+              <div className="md:col-span-1 h-full">
+                <div
+                  className={`h-full p-3 rounded-xl border-2 flex flex-col items-center justify-center text-center transition-colors ${isWarningAge ? "bg-red-50 border-red-200" : currentAge !== null ? "bg-white border-violet-200 shadow-sm" : "bg-slate-100 border-slate-200 opacity-50"}`}
+                >
+                  <span className="text-[10px] font-bold text-slate-500 mb-1">
+                    العمر التقريبي
+                  </span>
+                  <div className="flex items-baseline gap-1">
+                    <span
+                      className={`text-3xl font-black ${isWarningAge ? "text-red-600" : "text-violet-700"}`}
+                    >
+                      {currentAge !== null ? currentAge : "--"}
+                    </span>
+                    <span className="text-xs font-bold text-slate-500">
+                      سنة
+                    </span>
+                  </div>
+                  {isWarningAge && (
+                    <div className="mt-2 text-[10px] font-bold text-red-600 bg-red-100 px-2 py-1 rounded-md leading-tight">
+                      يرجى الانتباه للعمر!
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -1327,6 +1531,12 @@ const CreateClientWizard = ({ onComplete }) => {
         const { hasRepresentative, type: repType } = formData.representative;
         const repIdDoc = documents.find((d) => d.type === `هوية ${repType}`);
         const repAuthDoc = documents.find((d) => d.type === `مستند ${repType}`);
+
+        // حساب العداد الزمني للوكالة
+        const authRemainingTime = getRemainingTime(
+          formData.representative.authExpiry,
+        );
+
         return (
           <div className="bg-white rounded-xl p-6 mb-6 shadow-sm min-h-[400px] animate-in fade-in">
             <div className="mb-4">
@@ -1339,7 +1549,6 @@ const CreateClientWizard = ({ onComplete }) => {
               </p>
             </div>
 
-            {/* سويتش يوجد مفوض أم لا */}
             <div className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
               <div className="flex items-center gap-3">
                 <User className="w-5 h-5 text-slate-400" />
@@ -1372,21 +1581,18 @@ const CreateClientWizard = ({ onComplete }) => {
               </div>
             </div>
 
-            {/* نموذج تفاصيل الوكيل يظهر فقط إذا كان "نعم" */}
             {hasRepresentative && (
               <div className="bg-white rounded-xl border-2 border-blue-200 shadow-sm overflow-hidden animate-in slide-in-from-top-2">
                 <div className="w-full flex items-center justify-between p-3.5 bg-gradient-to-l from-blue-50 to-indigo-50 border-b border-blue-200">
                   <div className="flex items-center gap-2.5">
                     <Shield className="w-5 h-5 text-blue-600" />
-                    <div>
-                      <div className="text-sm font-bold text-blue-900">
-                        بيانات {repType}
-                      </div>
+                    <div className="text-sm font-bold text-blue-900">
+                      بيانات {repType}
                     </div>
                   </div>
                 </div>
 
-                <div className="p-4 space-y-5">
+                <div className="p-4 space-y-6">
                   {/* اختيار نوع الممثل */}
                   <div>
                     <label className="text-[11px] font-bold text-slate-500 mb-1.5 block">
@@ -1440,191 +1646,37 @@ const CreateClientWizard = ({ onComplete }) => {
                     </div>
                   </div>
 
-                  {/* بيانات الممثل الشخصية */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
-                      <User className="w-3.5 h-3.5" /> بيانات {repType} الشخصية
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 block mb-1">
-                          الاسم (كما بالهوية) *
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.representative.name}
-                          onChange={(e) =>
-                            handleChange(
-                              "representative",
-                              "name",
-                              e.target.value,
-                            )
-                          }
-                          className="w-full h-9 px-3 text-xs border border-slate-300 rounded-lg focus:border-blue-500 outline-none"
-                          placeholder="الاسم الكامل"
-                        />
+                  {/* 👈 قسم مستند التفويض/الوكالة والذكاء الاصطناعي */}
+                  <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-200 space-y-4">
+                    <div className="flex items-center justify-between border-b border-indigo-100 pb-3">
+                      <div className="flex items-center gap-2 text-sm font-bold text-indigo-900">
+                        <FileCheck className="w-4 h-4" /> بيانات وثيقة{" "}
+                        {repType === "وكيل" ? "الوكالة" : "التفويض"}
                       </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 block mb-1">
-                          رقم الهوية/الإقامة *
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.representative.idNumber}
-                          onChange={(e) =>
-                            handleChange(
-                              "representative",
-                              "idNumber",
-                              e.target.value,
-                            )
-                          }
-                          className="w-full h-9 px-3 text-xs border border-slate-300 rounded-lg focus:border-blue-500 outline-none font-mono"
-                          placeholder="10XXXXXXXX"
-                          dir="ltr"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 block mb-1">
-                          تاريخ انتهاء الهوية
-                        </label>
-                        <input
-                          type="date"
-                          value={formData.representative.idExpiry}
-                          onChange={(e) =>
-                            handleChange(
-                              "representative",
-                              "idExpiry",
-                              e.target.value,
-                            )
-                          }
-                          className="w-full h-9 px-3 text-xs border border-slate-300 rounded-lg focus:border-blue-500 outline-none"
-                          dir="ltr"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 block mb-1">
-                          الجوال
-                        </label>
-                        <input
-                          type="tel"
-                          value={formData.representative.mobile}
-                          onChange={(e) =>
-                            handleChange(
-                              "representative",
-                              "mobile",
-                              e.target.value,
-                            )
-                          }
-                          className="w-full h-9 px-3 text-xs border border-slate-300 rounded-lg focus:border-blue-500 outline-none font-mono"
-                          placeholder="05XXXXXXXX"
-                          dir="ltr"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* رفع هوية الممثل */}
-                  <div
-                    className={`p-3 rounded-xl border flex justify-between items-center transition-colors ${repIdDoc ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-200"}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`p-2 rounded-lg ${repIdDoc ? "bg-emerald-100 text-emerald-600" : "bg-slate-200 text-slate-400"}`}
+                      <button
+                        onClick={() => repAuthRef.current?.click()}
+                        disabled={isAnalyzingRepAuth}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-lg text-xs font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-70"
                       >
-                        <User className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <span className="text-[11px] font-bold text-slate-700 block">
-                          هوية {repType}
-                        </span>
-                        <span className="text-[9px] text-slate-500">
-                          {repIdDoc ? repIdDoc.name : "لم يتم الإرفاق"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {repIdDoc ? (
-                        <>
-                          <button
-                            onClick={() => removeDocument(repIdDoc.id)}
-                            className="p-1.5 text-red-500 hover:bg-red-100 rounded-md"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => repIdRef.current?.click()}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100"
-                          >
-                            <Upload className="w-3.5 h-3.5" /> إرفاق
-                          </button>
-                          <input
-                            type="file"
-                            ref={repIdRef}
-                            className="hidden"
-                            accept="image/*,.pdf"
-                            onChange={(e) =>
-                              handleRepDocUpload(e, `هوية ${repType}`)
-                            }
-                          />
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* بيانات مستند التفويض/الوكالة */}
-                  <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-200 space-y-3">
-                    <div
-                      className={`flex items-center justify-between p-3 rounded-xl border bg-white mb-2 transition-colors ${repAuthDoc ? "border-emerald-200" : "border-slate-200"}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`p-2 rounded-lg ${repAuthDoc ? "bg-emerald-100 text-emerald-600" : "bg-indigo-100 text-indigo-500"}`}
-                        >
-                          <FileCheck className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <span className="text-[11px] font-bold text-slate-700 block">
-                            مستند {repType === "وكيل" ? "الوكالة" : "التفويض"}
-                          </span>
-                          <span className="text-[9px] text-slate-500">
-                            {repAuthDoc ? repAuthDoc.name : "إلزامي للمتابعة"}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {repAuthDoc ? (
-                          <button
-                            onClick={() => removeDocument(repAuthDoc.id)}
-                            className="p-1.5 text-red-500 hover:bg-red-100 rounded-md"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        {isAnalyzingRepAuth ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
-                          <>
-                            <button
-                              onClick={() => repAuthRef.current?.click()}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-bold text-indigo-700 hover:bg-indigo-100"
-                            >
-                              <Upload className="w-3.5 h-3.5" /> رفع
-                            </button>
-                            <input
-                              type="file"
-                              ref={repAuthRef}
-                              className="hidden"
-                              accept="image/*,.pdf"
-                              onChange={(e) =>
-                                handleRepDocUpload(e, `مستند ${repType}`)
-                              }
-                            />
-                          </>
+                          <ScanSearch className="w-3.5 h-3.5" />
                         )}
-                      </div>
+                        استخراج البيانات بالـ AI
+                      </button>
+                      <input
+                        type="file"
+                        ref={repAuthRef}
+                        className="hidden"
+                        accept=".pdf,image/*"
+                        onChange={(e) =>
+                          handleRepDocUpload(e, `مستند ${repType}`, true)
+                        }
+                      />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="text-[10px] font-bold text-slate-500 block mb-1">
                           رقم المستند *
@@ -1639,31 +1691,48 @@ const CreateClientWizard = ({ onComplete }) => {
                               e.target.value,
                             )
                           }
-                          className="w-full h-8 px-2.5 text-xs border border-slate-300 rounded-lg outline-none font-mono"
+                          className="w-full h-10 px-3 text-sm border-2 border-slate-200 rounded-lg outline-none font-mono focus:border-indigo-500"
                           dir="ltr"
                         />
                       </div>
+
+                      {/* 👈 حقل تاريخ الانتهاء مع العداد الزمني */}
                       <div>
                         <label className="text-[10px] font-bold text-slate-500 block mb-1">
-                          تاريخ الانتهاء *
+                          تاريخ الانتهاء (ميلادي) *
                         </label>
-                        <input
-                          type="date"
-                          value={formData.representative.authExpiry}
-                          onChange={(e) =>
-                            handleChange(
-                              "representative",
-                              "authExpiry",
-                              e.target.value,
-                            )
-                          }
-                          className="w-full h-8 px-2.5 text-xs border border-slate-300 rounded-lg outline-none"
-                          dir="ltr"
-                        />
+                        <div className="flex gap-2 h-10">
+                          <input
+                            type="date"
+                            value={formData.representative.authExpiry}
+                            onChange={(e) =>
+                              handleChange(
+                                "representative",
+                                "authExpiry",
+                                e.target.value,
+                              )
+                            }
+                            className="flex-1 px-3 text-sm border-2 border-slate-200 rounded-lg outline-none focus:border-indigo-500"
+                            dir="ltr"
+                          />
+                          {authRemainingTime && (
+                            <div
+                              className={`px-3 flex items-center justify-center gap-1.5 rounded-lg border-2 text-[10px] font-bold whitespace-nowrap ${authRemainingTime.color}`}
+                            >
+                              {authRemainingTime.expired ? (
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                              ) : (
+                                <Clock className="w-3.5 h-3.5" />
+                              )}
+                              {authRemainingTime.text}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="col-span-2">
+
+                      <div className="md:col-span-2">
                         <label className="text-[10px] font-bold text-slate-500 block mb-1">
-                          نطاق الصلاحيات (اختياري)
+                          نطاق الصلاحيات والبنود
                         </label>
                         <textarea
                           value={formData.representative.powersScope}
@@ -1674,9 +1743,117 @@ const CreateClientWizard = ({ onComplete }) => {
                               e.target.value,
                             )
                           }
-                          className="w-full h-16 px-2.5 py-2 text-xs border border-slate-300 rounded-lg outline-none resize-none"
-                          placeholder="مثال: التوقيع على عقود البيع والشراء..."
+                          className="w-full h-20 px-3 py-2 text-xs border-2 border-slate-200 rounded-lg outline-none resize-none focus:border-indigo-500 leading-relaxed"
+                          placeholder="أدخل ملخص الصلاحيات الممنوحة للوكيل..."
                         ></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 👈 قسم بيانات الممثل وهوية الذكاء الاصطناعي */}
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                      <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
+                        <User className="w-4 h-4 text-slate-500" /> بيانات{" "}
+                        {repType} الشخصية
+                      </div>
+                      <button
+                        onClick={() => repIdRef.current?.click()}
+                        disabled={isAnalyzingRepId}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-100 transition-all disabled:opacity-70 shadow-sm"
+                      >
+                        {isAnalyzingRepId ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <ScanSearch className="w-3.5 h-3.5" />
+                        )}
+                        قراءة الهوية (AI)
+                      </button>
+                      <input
+                        type="file"
+                        ref={repIdRef}
+                        className="hidden"
+                        accept=".pdf,image/*"
+                        onChange={(e) =>
+                          handleRepDocUpload(e, `هوية ${repType}`, true)
+                        }
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="col-span-2 md:col-span-1">
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">
+                          الاسم (كما بالهوية) *
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.representative.name}
+                          onChange={(e) =>
+                            handleChange(
+                              "representative",
+                              "name",
+                              e.target.value,
+                            )
+                          }
+                          className="w-full h-10 px-3 text-sm border-2 border-slate-200 rounded-lg focus:border-blue-500 outline-none"
+                          placeholder="الاسم الكامل"
+                        />
+                      </div>
+                      <div className="col-span-2 md:col-span-1">
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">
+                          رقم الهوية/الإقامة *
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.representative.idNumber}
+                          onChange={(e) =>
+                            handleChange(
+                              "representative",
+                              "idNumber",
+                              e.target.value,
+                            )
+                          }
+                          className="w-full h-10 px-3 text-sm border-2 border-slate-200 rounded-lg focus:border-blue-500 outline-none font-mono"
+                          placeholder="10XXXXXXXX"
+                          dir="ltr"
+                        />
+                      </div>
+                      <div className="col-span-2 md:col-span-1">
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">
+                          تاريخ انتهاء الهوية
+                        </label>
+                        <input
+                          type="date"
+                          value={formData.representative.idExpiry}
+                          onChange={(e) =>
+                            handleChange(
+                              "representative",
+                              "idExpiry",
+                              e.target.value,
+                            )
+                          }
+                          className="w-full h-10 px-3 text-sm border-2 border-slate-200 rounded-lg focus:border-blue-500 outline-none"
+                          dir="ltr"
+                        />
+                      </div>
+                      <div className="col-span-2 md:col-span-1">
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">
+                          رقم الجوال
+                        </label>
+                        <input
+                          type="tel"
+                          value={formData.representative.mobile}
+                          onChange={(e) =>
+                            handleChange(
+                              "representative",
+                              "mobile",
+                              e.target.value,
+                            )
+                          }
+                          className="w-full h-10 px-3 text-sm border-2 border-slate-200 rounded-lg focus:border-blue-500 outline-none font-mono"
+                          placeholder="05XXXXXXXX"
+                          dir="ltr"
+                        />
                       </div>
                     </div>
                   </div>
