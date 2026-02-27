@@ -19,6 +19,8 @@ import OwnershipScreenWrapper from "./pages/Property/OwnershipScreenWrapper";
 import Screen942_DocumentTypes from "./pages/Settings/Screen942_DocumentTypes"; // تأكد من استيراد الشاشة الجديدة
 import QuotationsScreenWrapper from "./pages/Quotations/QuotationsScreenWrapper";
 
+import EmployeesManagement from "./pages/employees/EmployeesManagement";
+
 // --- Icons ---
 import { Search, Bell, Settings, ChevronDown } from "lucide-react";
 import SystemHeader from "./components/layout/shell/SystemHeader";
@@ -86,6 +88,11 @@ const AppContent = () => {
               className={activeScreenId === "310" ? "block h-full" : "hidden"}
             >
               <OwnershipScreenWrapper />
+            </div>
+            <div
+              className={activeScreenId === "817" ? "block h-full" : "hidden"}
+            >
+              <EmployeesManagement />
             </div>
             <div
               className={activeScreenId === "815" ? "block h-full" : "hidden"}

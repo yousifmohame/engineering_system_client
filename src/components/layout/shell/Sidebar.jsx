@@ -22,12 +22,13 @@ const MENU_ITEMS = [
   { id: "310", label: "ملفات الملكية", icon: ShieldCheck }, 
   { id: "300", label: "العملاء", icon: Users },
   { id: "815", label: "عروض الأسعار", icon: FileSignature }, // ✅ الإضافة الجديدة هنا
-  // { id: "817", label: "إدارة الموظفين", icon: UserCog },
+  { id: "817", label: "إدارة الموظفين", icon: UserCog },
   // { id: "937", label: "إدارة المعقبين", icon: Users },
   // { id: "939", label: "شوارع الرياض", icon: MapIcon },
   // { id: "285", label: "المشاريع", icon: Briefcase },
   // { id: "FIN", label: "المالية", icon: FileCheck },
   // { id: "942", label: "إدارة المستندات والقوالب", icon: Settings },
+  
   { id: "SET", label: "الإعدادات", icon: Settings },
 ];
 

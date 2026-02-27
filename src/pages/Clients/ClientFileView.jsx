@@ -45,6 +45,10 @@ import {
   ArrowLeft,
   Loader2,
   Save,
+  UsersRound,
+  Calendar,
+  ExternalLink,
+  SquarePen,
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../api/axios";
@@ -84,6 +88,137 @@ const maskId = (id) => {
 };
 
 const ClientFileView = ({ clientId, onBack }) => {
+  // ==========================================
+  // حالات التعديل لتاب البيانات الأساسية
+  // ==========================================
+  const [isEditingBasicInfo, setIsEditingBasicInfo] = useState(false);
+  const [editFormData, setEditFormData] = useState({});
+
+  // تفعيل التعديل وتعبئة البيانات من الداتابيز
+  const handleStartEdit = () => {
+    // 👈 قراءة التفاصيل من كائن details إن وجد
+    const nameDetails = client.name?.details || client.name || {};
+
+    setEditFormData({
+      type: client.type || "فرد سعودي",
+      idNumber: client.idNumber || client.identification?.idNumber || "",
+      mobile: client.mobile || client.contact?.mobile || "",
+      email: client.email || client.contact?.email || "",
+
+      // 👈 استخدام nameDetails
+      firstAr: nameDetails.firstAr || nameDetails.firstName || "",
+      firstEn: nameDetails.firstEn || nameDetails.englishName || "",
+      fatherAr: nameDetails.fatherAr || nameDetails.fatherName || "",
+      fatherEn: nameDetails.fatherEn || "",
+      grandAr: nameDetails.grandAr || nameDetails.grandFatherName || "", // أضفنا الجد
+      grandEn: nameDetails.grandEn || "",
+      familyAr: nameDetails.familyAr || nameDetails.familyName || "",
+      familyEn: nameDetails.familyEn || "",
+
+      defaultTitle: client.clientTitle || "تلقائي",
+      handlingMethod: client.representative?.hasRepresentative
+        ? client.representative.type
+        : "عن نفسه",
+      isInvestor: !!client.company || !!client.taxNumber,
+      company: client.company || "",
+      taxNumber: client.taxNumber || "",
+      occupation: client.occupation || "",
+      nationality: client.nationality || "سعودي",
+    });
+    setIsEditingBasicInfo(true);
+  };
+
+  const handleEditChange = (field, value) => {
+    setEditFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // ==========================================
+  // دالة الحفظ للبيانات الأساسية (Mutation)
+  // ==========================================
+  const updateClientMutation = useMutation({
+    mutationFn: async (payload) => {
+      const res = await api.put(`/clients/${clientId}`, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success("تم تحديث البيانات الأساسية بنجاح!");
+      setIsEditingBasicInfo(false);
+      queryClient.invalidateQueries(["client", clientId]);
+      queryClient.invalidateQueries(["clients"]); // لتحديث الجدول الخارجي
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "فشل تحديث البيانات");
+    },
+  });
+
+  const handleSaveBasicInfo = () => {
+    // 👈 تجميع الاسم بشكل آمن
+    const officialNameAr =
+      `${editFormData.firstAr} ${editFormData.fatherAr} ${editFormData.grandAr || ""} ${editFormData.familyAr}`
+        .replace(/\s+/g, " ")
+        .trim();
+    const officialNameEn =
+      `${editFormData.firstEn} ${editFormData.fatherEn} ${editFormData.grandEn || ""} ${editFormData.familyEn}`
+        .replace(/\s+/g, " ")
+        .trim();
+
+    // حماية إضافية: إذا كان الاسم ممسوحاً، نستخدم الاسم القديم
+    const finalAr =
+      officialNameAr ||
+      (typeof client.name === "string" ? client.name : client.name?.ar) ||
+      "غير محدد";
+
+    // تحديث أسلوب التعامل
+    let updatedRep = { ...client.representative };
+    if (editFormData.handlingMethod === "عن نفسه") {
+      updatedRep.hasRepresentative = false;
+    } else {
+      updatedRep.hasRepresentative = true;
+      updatedRep.type = editFormData.handlingMethod;
+    }
+
+    const payload = {
+      type: editFormData.type,
+      idNumber: editFormData.idNumber,
+      mobile: editFormData.mobile,
+      email: editFormData.email,
+      name: {
+        ar: finalAr,
+        en: officialNameEn || client.name?.en || "",
+        // 👈 إعادة حفظ التفاصيل داخل كائن details لتطابق طريقة الإنشاء
+        details: {
+          firstAr: editFormData.firstAr,
+          firstEn: editFormData.firstEn,
+          fatherAr: editFormData.fatherAr,
+          fatherEn: editFormData.fatherEn,
+          grandAr: editFormData.grandAr,
+          grandEn: editFormData.grandEn,
+          familyAr: editFormData.familyAr,
+          familyEn: editFormData.familyEn,
+        },
+      },
+      contact: {
+        ...client.contact,
+        mobile: editFormData.mobile,
+        email: editFormData.email,
+      },
+      identification: {
+        ...client.identification,
+        idNumber: editFormData.idNumber,
+      },
+      clientTitle: editFormData.defaultTitle,
+      representative: updatedRep,
+      company: editFormData.isInvestor ? editFormData.company : null,
+      taxNumber: editFormData.isInvestor ? editFormData.taxNumber : null,
+      occupation: editFormData.isInvestor ? editFormData.occupation : null,
+      nationality: editFormData.isInvestor
+        ? editFormData.nationality
+        : client.nationality,
+    };
+
+    updateClientMutation.mutate(payload);
+  };
+
   const queryClient = useQueryClient();
   // ==========================================
   // States
@@ -572,114 +707,488 @@ const ClientFileView = ({ clientId, onBack }) => {
     </div>
   );
 
-  const renderBasicInfoTab = () => (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      <h3 className="text-lg font-bold text-slate-800">البيانات الأساسية</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {[
-          { label: "كود العميل", value: client.clientCode, ltr: true },
-          { label: "نوع العميل", value: client.type },
-          { label: "الاسم الكامل", value: clientName },
-          {
-            label: "رقم الهوية/السجل",
-            value: client.identification?.idNumber || "—",
-            ltr: true,
-          },
-          {
-            label: "رقم الجوال",
-            value: client.contact?.mobile || "—",
-            ltr: true,
-          },
-          {
-            label: "البريد الإلكتروني",
-            value: client.contact?.email || "—",
-            ltr: true,
-          },
-          {
-            label: "الاسم الأول (عربي)",
-            value: client.name?.firstAr || client.name?.firstName || "—",
-          },
-          {
-            label: "الاسم الأول (English)",
-            value: client.name?.firstEn || client.name?.englishName || "—",
-            ltr: true,
-          },
-          {
-            label: "اسم الأب (عربي)",
-            value: client.name?.fatherAr || client.name?.fatherName || "—",
-          },
-          {
-            label: "اسم الأب (English)",
-            value: client.name?.fatherEn || "—",
-            ltr: true,
-          },
-          {
-            label: "اسم العائلة (عربي)",
-            value: client.name?.familyAr || client.name?.familyName || "—",
-          },
-          {
-            label: "اسم العائلة (English)",
-            value: client.name?.familyEn || "—",
-            ltr: true,
-          },
-        ].map((item, i) => (
-          <div
-            key={i}
-            className="p-4 bg-slate-50 rounded-lg border border-slate-100"
-          >
-            <div className="text-xs text-slate-500 font-bold mb-1">
-              {item.label}
+  // ==========================================
+  // تاب البيانات الأساسية (تفاعلي وحقيقي)
+  // ==========================================
+  const renderBasicInfoTab = () => {
+    const rep = client.representative;
+    const hasRep = rep && rep.hasRepresentative;
+    const isInvestorActive = isEditingBasicInfo
+      ? editFormData.isInvestor
+      : !!client.company || !!client.taxNumber;
+
+    return (
+      <div className="animate-in fade-in duration-300 space-y-6">
+        {/* هيدر التاب مع زر التعديل/الحفظ */}
+        <div className="flex justify-between items-center mb-5 pb-4 border-b border-slate-100">
+          <h3 className="text-lg font-bold text-slate-800">
+            البيانات الأساسية
+          </h3>
+          {isEditingBasicInfo ? (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsEditingBasicInfo(false)}
+                className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={handleSaveBasicInfo}
+                disabled={updateClientMutation.isPending}
+                className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 shadow-md transition-colors disabled:opacity-50"
+              >
+                {updateClientMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                حفظ التعديلات
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleStartEdit}
+              className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors shadow-sm"
+            >
+              <SquarePen className="w-4 h-4" /> تعديل البيانات
+            </button>
+          )}
+        </div>
+
+        <div>
+          {/* شبكة البيانات الأساسية 1 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div
+              className={`p-4 rounded-xl border shadow-sm ${isEditingBasicInfo ? "bg-slate-100 border-slate-200 opacity-60" : "bg-slate-50 border-slate-100"}`}
+            >
+              <div className="text-xs text-slate-500 font-bold mb-2 flex items-center gap-1.5">
+                <Shield className="w-4 h-4 text-blue-400" /> كود العميل
+              </div>
+              <p className="text-sm text-slate-800 font-black font-mono">
+                {client.clientCode}
+              </p>
+            </div>
+
+            <div
+              className={`p-4 rounded-xl border shadow-sm ${isEditingBasicInfo ? "bg-white border-blue-200 ring-2 ring-blue-50" : "bg-slate-50 border-slate-100"}`}
+            >
+              <div className="text-xs text-slate-500 font-bold mb-2 flex items-center gap-1.5">
+                <User className="w-4 h-4 text-emerald-400" /> نوع العميل
+              </div>
+              {isEditingBasicInfo ? (
+                <select
+                  value={editFormData.type}
+                  onChange={(e) => handleEditChange("type", e.target.value)}
+                  className="w-full text-sm font-bold text-slate-800 outline-none bg-transparent"
+                >
+                  <option value="فرد سعودي">فرد سعودي</option>
+                  <option value="فرد غير سعودي">فرد غير سعودي</option>
+                  <option value="شركة">شركة / مؤسسة</option>
+                  <option value="جهة حكومية">جهة حكومية</option>
+                  <option value="ورثة">ورثة</option>
+                </select>
+              ) : (
+                <p className="text-sm text-slate-800 font-bold">
+                  {client.type || "—"}
+                </p>
+              )}
+            </div>
+
+            <div
+              className={`p-4 rounded-xl border shadow-sm ${isEditingBasicInfo ? "bg-white border-blue-200 ring-2 ring-blue-50" : "bg-slate-50 border-slate-100"}`}
+            >
+              <div className="text-xs text-slate-500 font-bold mb-2 flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-amber-400" /> رقم الهوية/السجل
+              </div>
+              {isEditingBasicInfo ? (
+                <input
+                  type="text"
+                  value={editFormData.idNumber}
+                  onChange={(e) => handleEditChange("idNumber", e.target.value)}
+                  className="w-full text-sm font-bold text-slate-800 outline-none bg-transparent font-mono dir-ltr text-right"
+                  placeholder="رقم الهوية"
+                />
+              ) : (
+                <p className="text-sm text-slate-800 font-bold font-mono">
+                  {client.idNumber || client.identification?.idNumber || "—"}
+                </p>
+              )}
+            </div>
+
+            <div
+              className={`p-4 rounded-xl border shadow-sm ${isEditingBasicInfo ? "bg-white border-blue-200 ring-2 ring-blue-50" : "bg-slate-50 border-slate-100"}`}
+            >
+              <div className="text-xs text-slate-500 font-bold mb-2 flex items-center gap-1.5">
+                <Phone className="w-4 h-4 text-green-400" /> رقم الجوال
+              </div>
+              {isEditingBasicInfo ? (
+                <input
+                  type="tel"
+                  value={editFormData.mobile}
+                  onChange={(e) => handleEditChange("mobile", e.target.value)}
+                  className="w-full text-sm font-bold text-slate-800 outline-none bg-transparent font-mono dir-ltr text-right"
+                  placeholder="05XXXXXXXX"
+                />
+              ) : (
+                <p className="text-sm text-slate-800 font-bold font-mono dir-ltr text-left">
+                  {client.mobile || client.contact?.mobile || "—"}
+                </p>
+              )}
+            </div>
+
+            <div
+              className={`p-4 rounded-xl border shadow-sm ${isEditingBasicInfo ? "bg-white border-blue-200 ring-2 ring-blue-50" : "bg-slate-50 border-slate-100"}`}
+            >
+              <div className="text-xs text-slate-500 font-bold mb-2 flex items-center gap-1.5">
+                <Mail className="w-4 h-4 text-red-400" /> البريد الإلكتروني
+              </div>
+              {isEditingBasicInfo ? (
+                <input
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => handleEditChange("email", e.target.value)}
+                  className="w-full text-sm font-bold text-slate-800 outline-none bg-transparent dir-ltr text-right"
+                  placeholder="email@example.com"
+                />
+              ) : (
+                <p className="text-sm text-slate-800 font-bold font-mono dir-ltr text-left">
+                  {client.email || client.contact?.email || "—"}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* تفاصيل الاسم (عربي / انجليزي) */}
+          {/* تفاصيل الاسم (عربي / انجليزي) */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <div
+              className={`p-4 rounded-xl border ${isEditingBasicInfo ? "bg-white border-blue-200 ring-1 ring-blue-50" : "bg-slate-50 border-slate-100"}`}
+            >
+              <div className="text-[11px] text-slate-400 font-bold mb-1">
+                الاسم الأول (عربي)
+              </div>
+              {isEditingBasicInfo ? (
+                <input
+                  type="text"
+                  value={editFormData.firstAr}
+                  onChange={(e) => handleEditChange("firstAr", e.target.value)}
+                  className="w-full text-sm font-bold text-slate-800 outline-none bg-transparent"
+                />
+              ) : (
+                <p className="text-sm text-slate-800 font-bold">
+                  {client.name?.details?.firstAr ||
+                    client.name?.firstAr ||
+                    client.name?.firstName ||
+                    "—"}
+                </p>
+              )}
             </div>
             <div
-              className={`text-sm font-bold text-slate-800 ${item.ltr ? "dir-ltr text-left" : ""}`}
+              className={`p-4 rounded-xl border ${isEditingBasicInfo ? "bg-white border-blue-200 ring-1 ring-blue-50" : "bg-slate-50 border-slate-100"}`}
             >
-              {item.value}
+              <div className="text-[11px] text-slate-400 font-bold mb-1">
+                الاسم الأول (English)
+              </div>
+              {isEditingBasicInfo ? (
+                <input
+                  type="text"
+                  value={editFormData.firstEn}
+                  onChange={(e) => handleEditChange("firstEn", e.target.value)}
+                  className="w-full text-sm font-bold text-slate-800 outline-none bg-transparent dir-ltr text-left"
+                />
+              ) : (
+                <p className="text-sm text-slate-800 font-bold dir-ltr text-left">
+                  {client.name?.details?.firstEn ||
+                    client.name?.firstEn ||
+                    client.name?.englishName ||
+                    "—"}
+                </p>
+              )}
+            </div>
+            <div
+              className={`p-4 rounded-xl border ${isEditingBasicInfo ? "bg-white border-blue-200 ring-1 ring-blue-50" : "bg-slate-50 border-slate-100"}`}
+            >
+              <div className="text-[11px] text-slate-400 font-bold mb-1">
+                اسم العائلة (عربي)
+              </div>
+              {isEditingBasicInfo ? (
+                <input
+                  type="text"
+                  value={editFormData.familyAr}
+                  onChange={(e) => handleEditChange("familyAr", e.target.value)}
+                  className="w-full text-sm font-bold text-slate-800 outline-none bg-transparent"
+                />
+              ) : (
+                <p className="text-sm text-slate-800 font-bold">
+                  {client.name?.details?.familyAr ||
+                    client.name?.familyAr ||
+                    client.name?.familyName ||
+                    "—"}
+                </p>
+              )}
+            </div>
+            <div
+              className={`p-4 rounded-xl border ${isEditingBasicInfo ? "bg-white border-blue-200 ring-1 ring-blue-50" : "bg-slate-50 border-slate-100"}`}
+            >
+              <div className="text-[11px] text-slate-400 font-bold mb-1">
+                اسم العائلة (English)
+              </div>
+              {isEditingBasicInfo ? (
+                <input
+                  type="text"
+                  value={editFormData.familyEn}
+                  onChange={(e) => handleEditChange("familyEn", e.target.value)}
+                  className="w-full text-sm font-bold text-slate-800 outline-none bg-transparent dir-ltr text-left"
+                />
+              ) : (
+                <p className="text-sm text-slate-800 font-bold dir-ltr text-left">
+                  {client.name?.details?.familyEn ||
+                    client.name?.familyEn ||
+                    "—"}
+                </p>
+              )}
             </div>
           </div>
-        ))}
-      </div>
+        </div>
 
-      <div className="mt-8 p-5 bg-green-50 border border-green-200 rounded-xl">
-        <div className="flex items-center gap-3 mb-4">
-          <TrendingUp className="w-6 h-6 text-green-600" />
-          <div className="flex-1">
-            <h4 className="font-bold text-green-800">صفة المستثمر / الشركات</h4>
-            <p className="text-xs text-slate-500">
-              بيانات إضافية للشركات والجهات
-            </p>
+        {/* 👈 لقب العميل وأسلوب التعامل */}
+        <div
+          className={`p-5 rounded-2xl border transition-colors ${isEditingBasicInfo ? "bg-blue-50 border-blue-300 ring-2 ring-blue-100" : "bg-blue-50/50 border-blue-100"}`}
+        >
+          <div className="flex items-center gap-2 mb-4 text-blue-800 font-bold">
+            <Shield className="w-5 h-5" /> لقب العميل وأسلوب التعامل
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <div className="text-xs font-bold text-slate-600 mb-2">
+                اللقب الافتراضي في عروض الأسعار:
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  "تلقائي",
+                  "المواطن",
+                  "المواطنة",
+                  "السادة",
+                  "صاحب السمو الأمير",
+                  "مخصص",
+                ].map((title, i) => {
+                  const isSelected = isEditingBasicInfo
+                    ? editFormData.defaultTitle === title
+                    : client.clientTitle === title ||
+                      (client.clientTitle == null && title === "تلقائي");
+                  return (
+                    <span
+                      key={i}
+                      onClick={() =>
+                        isEditingBasicInfo &&
+                        handleEditChange("defaultTitle", title)
+                      }
+                      className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-colors ${isSelected ? "bg-blue-600 text-white border border-blue-600 shadow-sm" : "bg-white text-slate-600 border border-slate-200"} ${isEditingBasicInfo ? "cursor-pointer hover:bg-blue-50" : "opacity-80"}`}
+                    >
+                      {title}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs font-bold text-slate-600 mb-2">
+                أسلوب التعامل مع المكتب:
+              </div>
+              <div className="flex gap-2">
+                {["عن نفسه", "مفوض", "وكيل"].map((method) => {
+                  const isSelected = isEditingBasicInfo
+                    ? editFormData.handlingMethod === method
+                    : method === "عن نفسه"
+                      ? !hasRep
+                      : hasRep && rep?.type === method;
+                  return (
+                    <span
+                      key={method}
+                      onClick={() =>
+                        isEditingBasicInfo &&
+                        handleEditChange("handlingMethod", method)
+                      }
+                      className={`px-4 py-2 text-[11px] font-bold rounded-xl transition-colors ${isSelected ? "bg-amber-600 text-white border border-amber-600 shadow-sm" : "bg-white text-slate-600 border border-slate-200"} ${isEditingBasicInfo ? "cursor-pointer hover:bg-amber-50" : "opacity-80"}`}
+                    >
+                      {method === "عن نفسه" ? "عن نفسه" : `عن طريق ${method}`}
+                    </span>
+                  );
+                })}
+              </div>
+
+              {/* بيانات المفوض/الوكيل إن وجد */}
+              {hasRep && !isEditingBasicInfo && (
+                <div className="mt-3 p-3 bg-purple-50/50 rounded-xl border border-purple-200">
+                  <div className="font-bold text-purple-700 mb-2 text-xs flex items-center gap-1.5">
+                    <UsersRound className="w-4 h-4" /> بيانات {rep.type}{" "}
+                    الافتراضي
+                  </div>
+                  <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-[11px]">
+                    <div>
+                      <span className="text-slate-500">الاسم:</span>{" "}
+                      <strong className="text-slate-800">{rep.name}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">الهوية:</span>{" "}
+                      <strong className="text-slate-800 font-mono">
+                        {rep.idNumber}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">الجوال:</span>{" "}
+                      <strong className="text-slate-800 font-mono dir-ltr">
+                        {rep.mobile || "—"}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">رقم المستند:</span>{" "}
+                      <strong className="text-purple-700 font-mono">
+                        {rep.authNumber}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
-          <div>
-            <div className="text-[10px] text-slate-400 font-bold mb-1">
-              اسم الشركة
+
+        {/* 👈 صفة المستثمر / الشركات */}
+        <div className="mt-6">
+          <div
+            className={`flex items-center gap-3 mb-4 p-4 rounded-xl border transition-colors ${isInvestorActive ? "bg-emerald-50 border-emerald-400" : "bg-slate-50 border-slate-200"}`}
+          >
+            <TrendingUp
+              className={`w-6 h-6 ${isInvestorActive ? "text-emerald-600" : "text-slate-400"}`}
+            />
+            <div className="flex-1">
+              <div
+                className={`text-sm font-bold ${isInvestorActive ? "text-emerald-700" : "text-slate-500"}`}
+              >
+                الشركات والجهات / صفة مستثمر
+              </div>
+              <div className="text-[11px] text-slate-500">
+                بيانات السجل التجاري، الرقم الضريبي، والجهات الحكومية
+              </div>
             </div>
-            <div className="text-sm font-bold">{client.company || "—"}</div>
+            {isEditingBasicInfo && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <span className="text-xs text-slate-500 font-bold">
+                  تفعيل البيانات
+                </span>
+                <input
+                  type="checkbox"
+                  checked={editFormData.isInvestor}
+                  onChange={(e) =>
+                    handleEditChange("isInvestor", e.target.checked)
+                  }
+                  className="w-4 h-4 accent-emerald-600 rounded"
+                />
+              </label>
+            )}
           </div>
-          <div>
-            <div className="text-[10px] text-slate-400 font-bold mb-1">
-              الرقم الضريبي
+
+          {isInvestorActive && (
+            <div
+              className={`p-5 rounded-xl border shadow-sm transition-colors ${isEditingBasicInfo ? "bg-emerald-50/30 border-emerald-200 ring-2 ring-emerald-50" : "bg-white border-slate-200"}`}
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-3 bg-white rounded-xl border border-slate-200">
+                  <div className="text-[11px] text-slate-500 font-bold mb-1.5 flex items-center gap-1.5">
+                    <Building className="w-3.5 h-3.5 text-indigo-500" /> اسم
+                    الجهة / الشركة
+                  </div>
+                  {isEditingBasicInfo ? (
+                    <input
+                      type="text"
+                      value={editFormData.company}
+                      onChange={(e) =>
+                        handleEditChange("company", e.target.value)
+                      }
+                      className="w-full text-sm font-bold text-slate-800 outline-none border-b border-slate-300 focus:border-indigo-500 pb-1"
+                      placeholder="اسم الشركة"
+                    />
+                  ) : (
+                    <div className="text-sm font-bold text-slate-800">
+                      {client.company || "—"}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-slate-200">
+                  <div className="text-[11px] text-slate-500 font-bold mb-1.5 flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-slate-500" /> الرقم
+                    الضريبي
+                  </div>
+                  {isEditingBasicInfo ? (
+                    <input
+                      type="text"
+                      value={editFormData.taxNumber}
+                      onChange={(e) =>
+                        handleEditChange("taxNumber", e.target.value)
+                      }
+                      className="w-full text-sm font-bold text-slate-800 outline-none border-b border-slate-300 focus:border-indigo-500 font-mono pb-1"
+                      placeholder="300XXXXXXX"
+                    />
+                  ) : (
+                    <div className="text-sm font-bold text-slate-800 font-mono">
+                      {client.taxNumber || "—"}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-slate-200">
+                  <div className="text-[11px] text-slate-500 font-bold mb-1.5 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-emerald-500" /> المهنة
+                    / النشاط
+                  </div>
+                  {isEditingBasicInfo ? (
+                    <input
+                      type="text"
+                      value={editFormData.occupation}
+                      onChange={(e) =>
+                        handleEditChange("occupation", e.target.value)
+                      }
+                      className="w-full text-sm font-bold text-slate-800 outline-none border-b border-slate-300 focus:border-emerald-500 pb-1"
+                      placeholder="نشاط الشركة"
+                    />
+                  ) : (
+                    <div className="text-sm font-bold text-slate-800">
+                      {client.occupation || "—"}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-slate-200">
+                  <div className="text-[11px] text-slate-500 font-bold mb-1.5 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-amber-500" /> الجنسية
+                    (للمؤسسين)
+                  </div>
+                  {isEditingBasicInfo ? (
+                    <input
+                      type="text"
+                      value={editFormData.nationality}
+                      onChange={(e) =>
+                        handleEditChange("nationality", e.target.value)
+                      }
+                      className="w-full text-sm font-bold text-slate-800 outline-none border-b border-slate-300 focus:border-amber-500 pb-1"
+                    />
+                  ) : (
+                    <div className="text-sm font-bold text-slate-800">
+                      {client.nationality || "—"}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="text-sm font-bold font-mono">
-              {client.taxNumber || "—"}
-            </div>
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-400 font-bold mb-1">
-              المهنة / النشاط
-            </div>
-            <div className="text-sm font-bold">{client.occupation || "—"}</div>
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-400 font-bold mb-1">
-              الجنسية
-            </div>
-            <div className="text-sm font-bold">{client.nationality || "—"}</div>
-          </div>
+          )}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderContactTab = () => (
     <div className="space-y-6 animate-in fade-in duration-300">

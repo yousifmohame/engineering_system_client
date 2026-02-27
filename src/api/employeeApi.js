@@ -1,83 +1,48 @@
-import api from './axios'; // تأكد أن هذا المسار يشير إلى إعدادات axios لديك
+import api from "./axios";
 
-// 1. جلب قائمة الموظفين
-export const fetchEmployees = async () => {
-  const { data } = await api.get('/employees');
+// ==========================================
+// إدارة الموظفين
+// ==========================================
+export const getEmployees = async () => {
+  const { data } = await api.get("/employees");
   return data;
 };
 
-export const getEmployees = fetchEmployees; // اسم بديل لنفس الدالة
-
-// 2. إنشاء موظف جديد
 export const createEmployee = async (employeeData) => {
-  const { data } = await api.post('/employees', employeeData);
+  const { data } = await api.post("/employees", employeeData);
   return data;
 };
 
-// 3. تحديث حالة الموظف (تجميد/إنهاء)
-export const updateEmployeeStatus = async (id, statusData) => {
-  const { data } = await api.patch(`/employees/${id}/status`, statusData);
+export const deleteEmployee = async (id) => {
+  const { data } = await api.delete(`/employees/${id}`);
   return data;
 };
 
-// 4. تحديث الترقية (أو البيانات الوظيفية)
-export const updateEmployeePromotion = async (id, promotionData) => {
-  const { data } = await api.post(`/employees/${id}/promotion`, promotionData);
+export const toggleEmployeeStatus = async ({ id, status }) => {
+  const { data } = await api.patch(`/employees/${id}/status`, { status });
   return data;
 };
 
-// 5. رفع المرفقات
-export const uploadEmployeeAttachment = async (file, employeeId) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('employeeId', employeeId);
-
-  const { data } = await api.post('/attachments/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
+// ==========================================
+// إدارة الأدوار والصلاحيات (بناءً على مخطط Prisma)
+// ==========================================
+export const getRoles = async () => {
+  const { data } = await api.get("/roles"); // يجب إنشاء هذا الراوت في الباك إند
   return data;
 };
 
-// --- دوال الجلب الفرعية (للتابات التفصيلية) ---
-
-// الحضور
-export const fetchEmployeeAttendance = async (id) => {
-  const { data } = await api.get(`/employees/${id}/attendance`);
+export const getPermissions = async () => {
+  const { data } = await api.get("/permissions"); // يجب إنشاء هذا الراوت في الباك إند
   return data;
 };
 
-// الإجازات
-export const fetchEmployeeLeaveRequests = async (id) => {
-  const { data } = await api.get(`/employees/${id}/leave-requests`);
+export const updateRolePermissions = async ({ roleId, permissions }) => {
+  const { data } = await api.put(`/roles/${roleId}/permissions`, { permissions });
   return data;
 };
 
-// المهارات
-export const fetchEmployeeSkills = async (id) => {
-  const { data } = await api.get(`/employees/${id}/skills`);
-  return data;
-};
-
-// الشهادات
-export const fetchEmployeeCertifications = async (id) => {
-  const { data } = await api.get(`/employees/${id}/certifications`);
-  return data;
-};
-
-// التقييمات
-export const fetchEmployeeEvaluations = async (id) => {
-  const { data } = await api.get(`/employees/${id}/evaluations`);
-  return data;
-};
-
-// سجل الترقيات
-export const fetchEmployeePromotions = async (id) => {
-  const { data } = await api.get(`/employees/${id}/promotions`);
-  return data;
-};
-
-// المرفقات
-export const fetchEmployeeAttachments = async (id) => {
-  const { data } = await api.get(`/employees/${id}/attachments`); // أو المسار العام للمرفقات مع فلتر
+// إضافة دور وظيفي جديد مع صلاحياته
+export const createRole = async (roleData) => {
+  const { data } = await api.post("/roles", roleData);
   return data;
 };
