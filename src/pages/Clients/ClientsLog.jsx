@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllClients, deleteClient } from "../../api/clientApi";
+import api from "../../api/axios"; // 👈 استيراد api لتحديث حالة العميل
 import {
   Search,
   RefreshCw,
   Copy,
   Eye,
   Plus,
-  Upload,
   Phone,
   Mail,
   MapPin,
@@ -17,18 +17,16 @@ import {
   Edit,
   Trash2,
   MessageCircle,
-  Calendar,
   FilterX,
   ChevronRight,
   ChevronLeft,
-  ShieldCheck,
-  TrendingUp,
   Ban,
-  FileText,
-  Lock, // أيقونة إضافية للدلالة على الحقول المخفية
+  Lock,
+  AlertCircle,
+  ToggleLeft, // 👈 أيقونة التجميد
+  ToggleRight, // 👈 أيقونة التنشيط
 } from "lucide-react";
 import { toast } from "sonner";
-// 👈 1. استيراد مكون الصلاحيات
 import AccessControl from "../../components/AccessControl";
 
 // دالة مساعدة لاسم العميل
@@ -45,7 +43,6 @@ const getFullName = (nameObj) => {
   return parts.filter(Boolean).join(" ").trim() || nameObj.en || "غير محدد";
 };
 
-// دالة مساعدة لتنسيق التاريخ
 const formatDate = (dateString) => {
   if (!dateString) return "-";
   return new Date(dateString).toLocaleDateString("en-CA", {
@@ -55,7 +52,6 @@ const formatDate = (dateString) => {
   });
 };
 
-// دالة مساعدة لقراءة حقل JSON الخاص بالوكيل بأمان
 const getRepresentative = (repData) => {
   if (!repData) return null;
   if (typeof repData === "string") {
@@ -71,9 +67,6 @@ const getRepresentative = (repData) => {
 const ClientsLog = ({ onOpenDetails, onEditClient }) => {
   const queryClient = useQueryClient();
 
-  // ==========================================
-  // 1. States (الحالات)
-  // ==========================================
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
     type: "all",
@@ -87,13 +80,9 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
   const [selectedClient, setSelectedClient] = useState(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
-  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
-  // ==========================================
-  // 2. Fetch Data (جلب البيانات)
-  // ==========================================
   const {
     data: clients = [],
     isLoading,
@@ -111,13 +100,34 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
       queryClient.invalidateQueries(["clients"]);
       setIsPanelOpen(false);
     },
-    onError: () =>
-      toast.error("فشل حذف العميل لوجود ارتباطات مالية أو معاملات"),
+    onError: (err) => {
+      const errorMsg =
+        err.response?.data?.message ||
+        "فشل حذف العميل لوجود ارتباطات (ملكيات، معاملات، أو فواتير)";
+      toast.error(errorMsg);
+    },
   });
 
-  // ==========================================
-  // 3. Local Filtering & Stats
-  // ==========================================
+  // 👈 ميوتايشن جديد لتحديث حالة العميل (تجميد/تنشيط)
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ id, isActive }) => {
+      const res = await api.put(`/clients/${id}`, { isActive });
+      return res.data;
+    },
+    onSuccess: (data, variables) => {
+      toast.success(
+        variables.isActive
+          ? "تم تنشيط حساب العميل"
+          : "تم تجميد حساب العميل بنجاح",
+      );
+      queryClient.invalidateQueries(["clients"]);
+      if (selectedClient && selectedClient.id === variables.id) {
+        setSelectedClient({ ...selectedClient, isActive: variables.isActive });
+      }
+    },
+    onError: () => toast.error("حدث خطأ أثناء تغيير حالة العميل"),
+  });
+
   const filteredClients = useMemo(() => {
     return clients.filter((client) => {
       const searchMatch =
@@ -173,9 +183,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
     };
   }, [clients]);
 
-  // ==========================================
-  // 4. Handlers
-  // ==========================================
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
     toast.success("تم النسخ!");
@@ -188,8 +195,24 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
 
   const handleDelete = (e, id) => {
     e.stopPropagation();
-    if (window.confirm("هل أنت متأكد من رغبتك في حذف هذا العميل؟")) {
+    if (
+      window.confirm(
+        "هل أنت متأكد من رغبتك في حذف هذا العميل نهائياً؟ (يفضل تجميد الحساب بدلاً من الحذف)",
+      )
+    ) {
       deleteMutation.mutate(id);
+    }
+  };
+
+  // 👈 دالة التجميد والتنشيط
+  const handleToggleStatus = (e, client) => {
+    e.stopPropagation();
+    const action = client.isActive ? "تجميد" : "تنشيط";
+    if (window.confirm(`هل أنت متأكد من ${action} حساب العميل؟`)) {
+      toggleStatusMutation.mutate({
+        id: client.id,
+        isActive: !client.isActive,
+      });
     }
   };
 
@@ -214,9 +237,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
     window.open(`https://wa.me/${cleanPhone}`, "_blank");
   };
 
-  // ==========================================
-  // 5. UI Helpers
-  // ==========================================
   const getTypeBadge = (type) => {
     if (type?.includes("سعودي"))
       return "bg-emerald-50 text-emerald-600 border border-emerald-200";
@@ -240,9 +260,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
     return "bg-slate-100 text-slate-500";
   };
 
-  // ==========================================
-  // 6. اللوحة الجانبية (Side Panel)
-  // ==========================================
   const SidePanel = () => {
     if (!selectedClient) return null;
     const clientName = getFullName(selectedClient.name);
@@ -275,7 +292,10 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <h2 className="font-black text-slate-800 text-xl mb-3 leading-tight">
+            <h2 className="font-black text-slate-800 text-xl mb-3 leading-tight flex items-center gap-2">
+              {!selectedClient.isActive && (
+                <Ban className="w-5 h-5 text-red-500" />
+              )}
               {clientName}
             </h2>
             <div className="flex gap-2">
@@ -288,6 +308,11 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                 className={`px-2.5 py-1 rounded-md text-[11px] font-bold ${getGradeBadge(selectedClient.grade)}`}
               >
                 تصنيف: {selectedClient.grade || "-"}
+              </span>
+              <span
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold ${selectedClient.isActive ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}
+              >
+                {selectedClient.isActive ? "حساب نشط" : "حساب مجمد"}
               </span>
             </div>
           </div>
@@ -303,7 +328,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                 </div>
               </div>
 
-              {/* 👈 2. حماية بيانات إجمالي التحصيل المالي (بيانات حساسة) */}
               <AccessControl
                 code="CLIENT_PANEL_FINANCE"
                 name="رؤية إجمالي تحصيل العميل"
@@ -347,7 +371,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                     <div className="text-[10px] text-slate-500">
                       رقم الجوال / واتساب
                     </div>
-                    {/* 👈 حماية رقم الجوال في اللوحة الجانبية */}
                     <AccessControl
                       code="CLIENT_PANEL_PHONE"
                       name="رؤية الجوال في اللوحة الجانبية"
@@ -403,7 +426,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                   <div className="text-[10px] text-slate-500 mb-1">
                     رقم الهوية / السجل
                   </div>
-                  {/* 👈 حماية رقم الهوية في اللوحة الجانبية */}
                   <AccessControl
                     code="CLIENT_PANEL_ID"
                     name="رؤية الهوية في اللوحة الجانبية"
@@ -446,7 +468,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
               <Eye className="w-4 h-4" /> فتح الملف الشامل
             </button>
 
-            {/* 👈 حماية زر التعديل السريع */}
             <AccessControl
               code="CLIENT_ACTION_QUICK_EDIT"
               name="تعديل العميل سريعاً"
@@ -460,19 +481,30 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                 }}
                 className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors"
               >
-                <Edit className="w-4 h-4" /> تعديل سريع
+                <Edit className="w-4 h-4" /> تعديل
               </button>
             </AccessControl>
 
-            {/* 👈 حماية زر إنشاء معاملة */}
+            {/* 👈 زر تجميد/تنشيط الحساب من داخل اللوحة */}
             <AccessControl
-              code="CLIENT_ACTION_CREATE_TRANS"
-              name="إنشاء معاملة من اللوحة"
+              code="CLIENT_ACTION_TOGGLE_STATUS"
+              name="تجميد وتنشيط العميل"
               moduleName="دليل العملاء"
               tabName="اللوحة الجانبية"
             >
-              <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-colors">
-                <Plus className="w-4 h-4" /> معاملة جديدة
+              <button
+                onClick={(e) => handleToggleStatus(e, selectedClient)}
+                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-colors ${selectedClient.isActive ? "bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"}`}
+              >
+                {selectedClient.isActive ? (
+                  <>
+                    <ToggleLeft className="w-4 h-4" /> تجميد الحساب
+                  </>
+                ) : (
+                  <>
+                    <ToggleRight className="w-4 h-4" /> تنشيط الحساب
+                  </>
+                )}
               </button>
             </AccessControl>
           </div>
@@ -484,9 +516,8 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-6" dir="rtl">
       <div className="flex flex-col gap-4">
-        {/* 1. الإحصائيات */}
+        {/* 1. الإحصائيات (لم تتغير) */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-          {/* ... المربعات الأولى عادية ... */}
           <div className="p-3 bg-blue-50 rounded-lg shadow-sm border-2 border-blue-500 flex flex-col justify-center">
             <div className="text-[10px] text-slate-500 mb-1 font-bold">
               إجمالي العملاء
@@ -495,15 +526,12 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
               {stats.total}
             </div>
           </div>
-
           <div className="p-3 bg-emerald-50 rounded-lg shadow-sm border-2 border-emerald-500 flex flex-col justify-center">
             <div className="text-[10px] text-slate-500 mb-1 font-bold">نشط</div>
             <div className="text-2xl font-black text-emerald-500 mb-1">
               {stats.active}
             </div>
           </div>
-
-          {/* 👈 حماية إحصائية المتعثرين */}
           <AccessControl
             code="CLIENT_STAT_DEFAULTERS"
             name="إحصائية المتعثرين"
@@ -522,7 +550,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
               <div className="text-2xl font-black text-amber-500 mb-1">1</div>
             </div>
           </AccessControl>
-
           <div className="p-3 bg-red-50 rounded-lg shadow-sm border-2 border-red-500 flex flex-col justify-center">
             <div className="text-[10px] text-slate-500 mb-1 font-bold">
               وثائق ناقصة
@@ -531,7 +558,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
               {stats.missingDocs}
             </div>
           </div>
-
           <div className="p-3 bg-purple-50 rounded-lg shadow-sm border-2 border-purple-500 flex flex-col justify-center">
             <div className="text-[10px] text-slate-500 mb-1 font-bold">
               شركات
@@ -540,7 +566,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
               {stats.companies}
             </div>
           </div>
-
           <div className="p-3 bg-orange-50 rounded-lg shadow-sm border-2 border-orange-500 flex flex-col justify-center">
             <div className="text-[10px] text-slate-500 mb-1 font-bold">
               تفويضات قاربت الانتهاء
@@ -549,8 +574,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
               {stats.expiringReps}
             </div>
           </div>
-
-          {/* 👈 حماية إحصائية المحظورين */}
           <AccessControl
             code="CLIENT_STAT_BLOCKED"
             name="إحصائية المحظورين"
@@ -571,7 +594,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
               </div>
             </div>
           </AccessControl>
-
           <div className="p-3 bg-cyan-50 rounded-lg shadow-sm border-2 border-cyan-500 flex flex-col justify-center">
             <div className="text-[10px] text-slate-500 mb-1 font-bold flex items-center gap-1">
               <Phone className="w-3 h-3 text-cyan-600" /> تواصل غير محقق
@@ -582,10 +604,9 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
           </div>
         </div>
 
-        {/* 2. شريط الفلترة والبحث */}
+        {/* 2. شريط الفلترة */}
         <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
           <div className="flex items-center gap-3 mb-3 flex-wrap">
-            {/* ... الفلاتر العادية ... */}
             <div className="relative flex-1 min-w-[200px] max-w-[300px]">
               <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
@@ -596,6 +617,19 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                 className="w-full pl-3 pr-8 py-2 border border-slate-300 rounded-md text-xs font-medium outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all bg-slate-50 focus:bg-white"
               />
             </div>
+
+            {/* فلتر الحالة الجديد */}
+            <select
+              value={filters.status}
+              onChange={(e) =>
+                setFilters({ ...filters, status: e.target.value })
+              }
+              className="p-2 border border-slate-300 rounded-md text-xs font-bold text-slate-700 outline-none focus:border-blue-500 bg-slate-50"
+            >
+              <option value="all">كل الحالات</option>
+              <option value="active">النشطين فقط</option>
+              <option value="inactive">المجمدين فقط</option>
+            </select>
 
             <div className="flex-1 flex justify-end gap-2">
               <button
@@ -636,8 +670,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                   <th className="p-3 text-right text-[11px] font-bold border-l border-slate-700 whitespace-nowrap">
                     الاسم الرباعي / الجهة
                   </th>
-
-                  {/* 👈 رأس عمود الهوية (نحمي المسمى أيضاً) */}
                   <th className="p-3 text-right text-[11px] font-bold border-l border-slate-700 whitespace-nowrap">
                     <AccessControl
                       code="CLIENT_TABLE_COL_ID"
@@ -649,8 +681,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                       رقم الهوية / السجل
                     </AccessControl>
                   </th>
-
-                  {/* 👈 رأس عمود الجوال */}
                   <th className="p-3 text-right text-[11px] font-bold border-l border-slate-700 whitespace-nowrap">
                     <AccessControl
                       code="CLIENT_TABLE_COL_PHONE"
@@ -662,7 +692,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                       الجوال
                     </AccessControl>
                   </th>
-
                   <th className="p-3 text-right text-[11px] font-bold border-l border-slate-700 whitespace-nowrap">
                     المدينة
                   </th>
@@ -715,12 +744,24 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                   paginatedClients.map((client, index) => {
                     const grade = client.grade || "ج";
                     const rep = getRepresentative(client.representative);
+                    const isIncomplete =
+                      client.completionPercentage < 40 ||
+                      !client.idNumber ||
+                      client.idNumber.startsWith("TEMP");
+                    const isFrozen = !client.isActive; // 👈 التحقق من التجميد
 
                     return (
                       <tr
                         key={client.id}
                         onClick={() => handleRowClick(client)}
-                        className="cursor-pointer transition-colors border-b border-slate-200 odd:bg-white even:bg-slate-50 hover:bg-blue-50/60 group"
+                        // 👈 تلوين الصف بالرمادي إذا كان مجمداً، أو بالبرتقالي إذا كان غير مكتمل
+                        className={`cursor-pointer transition-colors border-b group ${
+                          isFrozen
+                            ? "bg-slate-100 hover:bg-slate-200 border-slate-300 opacity-70" // صف مجمد
+                            : isIncomplete
+                              ? "bg-orange-500/50 hover:bg-orange-100 border-orange-200" // صف غير مكتمل
+                              : "odd:bg-white even:bg-slate-50 hover:bg-blue-50/60 border-slate-200" // صف عادي
+                        }`}
                       >
                         <td className="p-2.5 text-center text-[11px] text-slate-500 font-mono border-l border-slate-200">
                           {index + 1 + (currentPage - 1) * itemsPerPage}
@@ -738,10 +779,28 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                           </span>
                         </td>
                         <td className="p-2.5 text-[11px] text-slate-800 font-bold border-l border-slate-200 group-hover:text-blue-700 transition-colors">
-                          {getFullName(client.name)}
+                          <div className="flex items-center gap-1.5">
+                            {isFrozen && (
+                              <Ban
+                                className="w-3.5 h-3.5 text-red-500"
+                                title="هذا الحساب مجمد"
+                              />
+                            )}
+                            {!isFrozen && isIncomplete && (
+                              <AlertCircle
+                                className="w-4 h-4 text-orange-600 animate-pulse"
+                                title="ملف غير مكتمل"
+                              />
+                            )}
+                            <span
+                              className={
+                                isFrozen ? "line-through text-slate-500" : ""
+                              }
+                            >
+                              {getFullName(client.name)}
+                            </span>
+                          </div>
                         </td>
-
-                        {/* 👈 حماية بيانات الهوية */}
                         <td className="p-2.5 border-l border-slate-200">
                           <AccessControl
                             code="CLIENT_TABLE_COL_ID"
@@ -761,8 +820,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                             </span>
                           </AccessControl>
                         </td>
-
-                        {/* 👈 حماية بيانات الجوال */}
                         <td className="p-2.5 border-l border-slate-200">
                           <AccessControl
                             code="CLIENT_TABLE_COL_PHONE"
@@ -779,7 +836,8 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                               className="font-mono text-[11px] text-slate-600"
                               dir="ltr"
                             >
-                              {client.mobile?.startsWith("غير متوفر")
+                              {client.mobile?.startsWith("غير متوفر") ||
+                              client.mobile?.startsWith("TEMP")
                                 ? "غير متوفر"
                                 : client.mobile ||
                                   client.contact?.mobile ||
@@ -787,7 +845,6 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                             </span>
                           </AccessControl>
                         </td>
-
                         <td className="p-2.5 text-[11px] text-slate-600 border-l border-slate-200">
                           {client.address?.city || "-"}
                         </td>
@@ -798,13 +855,16 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                             {grade}
                           </span>
                         </td>
+
+                        {/* 👈 حالة العميل */}
                         <td className="p-2.5 text-center border-l border-slate-200">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${client.isActive ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${!isFrozen ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}
                           >
-                            {client.isActive ? "نشط" : "موقوف"}
+                            {!isFrozen ? "نشط" : "مجمد"}
                           </span>
                         </td>
+
                         <td className="p-2.5 text-center border-l border-slate-200">
                           {rep?.hasRepresentative ? (
                             <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-[10px] font-bold whitespace-nowrap">
@@ -830,9 +890,31 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                           {formatDate(client.createdAt)}
                         </td>
 
-                        {/* 👈 حماية أزرار الإجراءات داخل كل صف */}
+                        {/* أزرار الإجراءات */}
                         <td className="p-2.5">
                           <div className="flex gap-1.5 justify-center opacity-40 group-hover:opacity-100 transition-opacity">
+                            {/* 👈 زر التجميد/التنشيط السريع في الجدول */}
+                            <AccessControl
+                              code="CLIENT_ACTION_TOGGLE_STATUS"
+                              name="تجميد/تنشيط العميل"
+                              moduleName="دليل العملاء"
+                              tabName="الجدول"
+                            >
+                              <button
+                                onClick={(e) => handleToggleStatus(e, client)}
+                                title={
+                                  isFrozen ? "تنشيط الحساب" : "تجميد الحساب"
+                                }
+                                className={`p-1.5 rounded transition-colors ${isFrozen ? "bg-amber-100 text-amber-600 hover:bg-amber-600 hover:text-white" : "bg-slate-200 text-slate-600 hover:bg-amber-500 hover:text-white"}`}
+                              >
+                                {isFrozen ? (
+                                  <ToggleRight className="w-3.5 h-3.5" />
+                                ) : (
+                                  <ToggleLeft className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            </AccessControl>
+
                             <AccessControl
                               code="CLIENT_ACTION_VIEW"
                               name="عرض ملف العميل"
@@ -861,7 +943,8 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                               <button
                                 title="إنشاء معاملة"
                                 onClick={(e) => e.stopPropagation()}
-                                className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded transition-colors"
+                                disabled={isFrozen}
+                                className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                               >
                                 <Plus className="w-3.5 h-3.5" />
                               </button>
@@ -895,7 +978,7 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                             >
                               <button
                                 onClick={(e) => handleDelete(e, client.id)}
-                                title="حذف"
+                                title="حذف نهائي"
                                 className="p-1.5 bg-red-50 text-red-500 hover:bg-red-600 hover:text-white rounded transition-colors"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
