@@ -327,6 +327,10 @@ const CreateClientWizard = ({ onComplete }) => {
   const [viewerScale, setViewerScale] = useState(1);
   const [viewerRotation, setViewerRotation] = useState(0);
 
+  // 👈 حالات التحقق من الهوية
+  const [idError, setIdError] = useState(null);
+  const [isCheckingId, setIsCheckingId] = useState(false);
+
   const [profilePicture, setProfilePicture] = useState(null);
   const [documents, setDocuments] = useState([]);
   // 👈 حالات أداة الضبط اليدوي للصورة
@@ -582,8 +586,41 @@ const CreateClientWizard = ({ onComplete }) => {
     reader.readAsDataURL(file);
   };
 
-  const handleAcceptAIData = () => {
+  // 👈 دالة التحقق من رقم الهوية في قاعدة البيانات
+  const verifyIdNumber = async (idToCheck) => {
+    if (!idToCheck || idToCheck.length < 5) return false;
+
+    setIsCheckingId(true);
+    setIdError(null);
+    try {
+      const res = await axios.get(`/clients/check-id?idNumber=${idToCheck}`);
+      if (res.data.exists) {
+        setIdError(`رقم الهوية مسجل مسبقاً باسم: ${res.data.clientName}`);
+        return true; // موجود
+      }
+      return false; // غير موجود
+    } catch (error) {
+      console.error("Error checking ID", error);
+      return false;
+    } finally {
+      setIsCheckingId(false);
+    }
+  };
+
+  const handleAcceptAIData = async () => {
     if (aiResults) {
+      const idToCheck = aiResults.idNumber;
+
+      // التحقق من الهوية إذا تم استخراجها
+      if (idToCheck) {
+        const isExists = await verifyIdNumber(idToCheck);
+        if (isExists) {
+          toast.error(
+            "لا يمكن المتابعة: رقم الهوية المستخرج مسجل مسبقاً في النظام!",
+          );
+          return; // 👈 إيقاف الانتقال للخطوة التالية
+        }
+      }
       setFormData((prev) => ({
         ...prev,
         identification: {
@@ -629,6 +666,11 @@ const CreateClientWizard = ({ onComplete }) => {
   });
 
   const handleFinalSave = () => {
+    if (idError) {
+      toast.error("يرجى تصحيح رقم الهوية قبل الحفظ، فهو مسجل مسبقاً!");
+      return;
+    }
+
     const isHeirs = formData.type === "ورثة";
     const officialNameAr =
       `${formData.name.firstAr} ${formData.name.fatherAr} ${formData.name.grandAr} ${formData.name.familyAr}`
@@ -1471,14 +1513,39 @@ const CreateClientWizard = ({ onComplete }) => {
                       ? "رقم هوية المورث *"
                       : "رقم الهوية/السجل *"}
                 </label>
-                <input
-                  type="text"
-                  value={formData.identification.idNumber}
-                  onChange={(e) =>
-                    handleChange("identification", "idNumber", e.target.value)
-                  }
-                  className={`w-full p-2.5 rounded-lg text-sm border-2 outline-none focus:border-violet-500 ${aiResults?.idNumber ? "border-emerald-300 bg-emerald-50 font-bold" : "border-slate-200"}`}
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formData.identification.idNumber}
+                    onChange={(e) => {
+                      handleChange(
+                        "identification",
+                        "idNumber",
+                        e.target.value,
+                      );
+                      setIdError(null); // إخفاء الخطأ فوراً عند التعديل
+                    }}
+                    onBlur={() =>
+                      verifyIdNumber(formData.identification.idNumber)
+                    } // 👈 التحقق عند الخروج من الحقل
+                    className={`w-full p-2.5 rounded-lg text-sm border-2 outline-none transition-colors ${
+                      idError
+                        ? "border-red-500 bg-red-50 text-red-700"
+                        : aiResults?.idNumber
+                          ? "focus:border-violet-500 border-emerald-300 bg-emerald-50 font-bold"
+                          : "focus:border-violet-500 border-slate-200"
+                    }`}
+                  />
+                  {isCheckingId && (
+                    <Loader2 className="absolute left-3 top-2.5 w-4 h-4 text-violet-500 animate-spin" />
+                  )}
+                </div>
+                {/* 👈 عرض رسالة الخطأ إن وجدت */}
+                {idError && (
+                  <p className="text-[10px] text-red-600 font-bold mt-1.5 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" /> {idError}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="text-xs font-bold mb-1.5 block text-slate-700">
