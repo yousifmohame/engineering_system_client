@@ -28,8 +28,9 @@ import {
   Image as ImageIcon,
   FileText,
   ScanSearch,
-  Clock
-  
+  Clock,
+  Landmark,
+  UserPlus,
 } from "lucide-react";
 
 // ==========================================
@@ -129,6 +130,161 @@ const getRemainingTime = (expiryDateString) => {
 
   return { expired: false, text: textParts.join(" و "), color };
 };
+// ==========================================
+// 2. مكون بطاقة الوريث (ديناميكي مع AI مستقل)
+// ==========================================
+const HeirCard = ({
+  heir,
+  index,
+  updateHeir,
+  removeHeir,
+  addDocumentToState,
+}) => {
+  // 👈 إضافة Prop جديد هنا
+  const fileInputRef = useRef(null);
+  const [isScanning, setIsScanning] = useState(false);
+
+  const handleHeirAI = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+
+    reader.onload = async () => {
+      const imageBase64 = reader.result;
+
+      // 👈 1. إضافة الصورة فوراً إلى المرفقات العامة بنوع واضح
+      if (addDocumentToState) {
+        addDocumentToState(file, `هوية وريث (${index + 1})`, imageBase64);
+      }
+
+      try {
+        // 2. إرسال الصورة للتحليل بالذكاء الاصطناعي
+        const response = await axios.post("/clients/analyze-identity", {
+          imageBase64,
+          documentType: "هوية شخصية",
+        });
+
+        if (response.data?.success) {
+          const aiData = response.data.data;
+          // تجميع الاسم
+          const fullName =
+            `${aiData.firstAr || ""} ${aiData.fatherAr || ""} ${aiData.grandAr || ""} ${aiData.familyAr || ""}`
+              .replace(/\s+/g, " ")
+              .trim();
+
+          updateHeir(index, "name", fullName);
+          updateHeir(index, "idNumber", aiData.idNumber || "");
+          updateHeir(index, "nationality", aiData.nationality || "سعودي");
+          updateHeir(index, "birthDate", aiData.birthDate || "");
+          toast.success(
+            `تم استخراج بيانات الوريث (${index + 1}) وإرفاق الهوية بنجاح!`,
+          ); // 👈 تحديث رسالة النجاح
+        }
+      } catch (error) {
+        toast.error("فشل استخراج بيانات الوريث، ولكن تم إرفاق الملف."); // 👈 تنبيه أدق
+      } finally {
+        setIsScanning(false);
+      }
+    };
+  };
+
+  return (
+    <div className="p-4 bg-amber-50/50 border border-amber-200 rounded-xl relative group transition-all hover:shadow-sm">
+      <div className="absolute top-3 left-3 flex gap-2">
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isScanning}
+          className="p-1.5 bg-white border border-amber-300 text-amber-700 rounded-md hover:bg-amber-100 transition-colors flex items-center gap-1 shadow-sm disabled:opacity-50"
+          title="استخراج بالذكاء الاصطناعي"
+        >
+          {isScanning ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <ScanSearch className="w-3.5 h-3.5" />
+          )}
+          <span className="text-[10px] font-bold">
+            قراءة وإرفاق الهوية (AI)
+          </span>{" "}
+          {/* 👈 تحديث النص */}
+        </button>
+        <button
+          onClick={() => removeHeir(index)}
+          className="p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-md transition-colors shadow-sm"
+          title="حذف الوريث"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          accept=".jpg,.jpeg,.png,.pdf"
+          onChange={handleHeirAI}
+        />
+      </div>
+
+      {/* باقي كود عرض بيانات الوريث يبقى كما هو */}
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-6 h-6 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center text-xs font-bold">
+          {index + 1}
+        </div>
+        <span className="text-sm font-bold text-slate-700">بيانات الوريث</span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="md:col-span-2">
+          <label className="text-[10px] font-bold text-slate-500 block mb-1">
+            الاسم الرباعي *
+          </label>
+          <input
+            type="text"
+            value={heir.name}
+            onChange={(e) => updateHeir(index, "name", e.target.value)}
+            className="w-full p-2 text-xs border border-amber-200 rounded-lg outline-none focus:border-amber-500 bg-white"
+            placeholder="الاسم كما بالهوية"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] font-bold text-slate-500 block mb-1">
+            رقم الهوية *
+          </label>
+          <input
+            type="text"
+            value={heir.idNumber}
+            onChange={(e) => updateHeir(index, "idNumber", e.target.value)}
+            className="w-full p-2 text-xs border border-amber-200 rounded-lg outline-none focus:border-amber-500 bg-white font-mono"
+            placeholder="10XXXXXXXX"
+            dir="ltr"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] font-bold text-slate-500 block mb-1">
+            تاريخ الميلاد / الجنسية
+          </label>
+          <div className="flex gap-1">
+            <input
+              type="text"
+              value={heir.birthDate}
+              onChange={(e) => updateHeir(index, "birthDate", e.target.value)}
+              className="w-2/3 p-2 text-xs border border-amber-200 rounded-lg outline-none focus:border-amber-500 bg-white"
+              placeholder="التاريخ"
+            />
+            <input
+              type="text"
+              value={heir.nationality}
+              onChange={(e) => updateHeir(index, "nationality", e.target.value)}
+              className="w-1/3 p-2 text-xs border border-amber-200 rounded-lg outline-none focus:border-amber-500 bg-white text-center"
+              placeholder="سعودي"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const WIZARD_STEPS = [
   { id: 1, label: "طريقة الإنشاء" },
@@ -173,6 +329,9 @@ const CreateClientWizard = ({ onComplete }) => {
 
   const [profilePicture, setProfilePicture] = useState(null);
   const [documents, setDocuments] = useState([]);
+  // 👈 حالات أداة الضبط اليدوي للصورة
+  const [showPicControls, setShowPicControls] = useState(false);
+  const [picConfig, setPicConfig] = useState({ scale: 1, x: 0, y: 0 });
 
   const [formData, setFormData] = useState({
     documentType: "هوية شخصية",
@@ -187,6 +346,7 @@ const CreateClientWizard = ({ onComplete }) => {
       grandEn: "",
       familyEn: "",
     },
+    heirs: [], // مصفوفة الورثة
     contact: {
       mobile: "",
       email: "",
@@ -469,6 +629,7 @@ const CreateClientWizard = ({ onComplete }) => {
   });
 
   const handleFinalSave = () => {
+    const isHeirs = formData.type === "ورثة";
     const officialNameAr =
       `${formData.name.firstAr} ${formData.name.fatherAr} ${formData.name.grandAr} ${formData.name.familyAr}`
         .replace(/\s+/g, " ")
@@ -484,6 +645,12 @@ const CreateClientWizard = ({ onComplete }) => {
       (!isMobileUnavailable && !formData.contact.mobile)
     ) {
       toast.error("يرجى التأكد من إدخال الاسم الأول، رقم الهوية، ورقم الجوال!");
+      return;
+    }
+
+    // التحقق الإضافي للورثة
+    if (isHeirs && formData.heirs.length === 0) {
+      toast.error("يرجى إضافة وريث واحد على الأقل أو تغيير نوع العميل!");
       return;
     }
 
@@ -516,6 +683,9 @@ const CreateClientWizard = ({ onComplete }) => {
       "representative",
       JSON.stringify(formData.representative),
     );
+    if (isHeirs) {
+      formDataToSend.append("heirs", JSON.stringify(formData.heirs));
+    }
     formDataToSend.append("isActive", true);
 
     // نرفع الصورة الشخصية فقط إذا تم رفعها يدوياً. إذا كانت مأخوذة من الهوية لن نرفعها كملف منفصل لتوفير المساحة.
@@ -929,7 +1099,6 @@ const CreateClientWizard = ({ onComplete }) => {
 
       case 2:
         return (
-          // (نفس الكود السابق للخطوة 2 بدون تغيير)
           <div className="bg-white rounded-xl p-6 mb-6 shadow-sm min-h-[400px]">
             <h3 className="text-lg font-bold mb-6 text-slate-800">
               اختر نوع العميل
@@ -952,6 +1121,12 @@ const CreateClientWizard = ({ onComplete }) => {
                   icon: Building,
                   color: "cyan",
                 },
+                {
+                  id: "وقف",
+                  label: "وقف (نظارة)",
+                  icon: Landmark,
+                  color: "teal",
+                }, // 👈 إضافة نوع الوقف
               ].map((type) => {
                 const isSelected = formData.type === type.id;
                 const colors = {
@@ -979,7 +1154,12 @@ const CreateClientWizard = ({ onComplete }) => {
                     bg: "bg-cyan-50 text-cyan-500",
                     border: "border-cyan-500 ring-cyan-50",
                   },
+                  teal: {
+                    bg: "bg-teal-50 text-teal-500",
+                    border: "border-teal-500 ring-teal-50",
+                  }, // 👈 لون الوقف
                 }[type.color];
+
                 return (
                   <div
                     key={type.id}
@@ -1001,20 +1181,47 @@ const CreateClientWizard = ({ onComplete }) => {
           </div>
         );
 
+      // ==========================================
+      // 👈 الخطوة 3: معالجة (وقف) و (ورثة) بديناميكية
+      // ==========================================
       case 3:
         const currentAge = formData.identification.age
           ? parseInt(formData.identification.age)
           : null;
         const isWarningAge =
           currentAge !== null && (currentAge > 85 || currentAge < 18);
-        const isCompany = ["شركة", "جهة حكومية", "مكتب هندسي"].includes(
+
+        // المتغيرات الذكية للتحكم بالواجهة
+        const isWaqf = formData.type === "وقف";
+        const isHeirs = formData.type === "ورثة";
+        const isCompany = ["شركة", "جهة حكومية", "مكتب هندسي", "وقف"].includes(
           formData.type,
         );
+
+        // ضبط مسميات الحقول بناءً على النوع
+        const labelNameAr1 = isWaqf
+          ? "اسم الوقف *"
+          : isHeirs
+            ? "اسم المورث (المتوفى) *"
+            : "الاسم الأول / الشركة *";
+        const labelNameEn1 = isWaqf
+          ? "Waqf Name *"
+          : isHeirs
+            ? "Deceased Name *"
+            : "First Name / Company *";
+
+        const labelNameAr2 = isWaqf ? "اسم الناظر (الأول)" : "اسم الأب";
+        const labelNameAr3 = isWaqf ? "اسم الناظر (الأب)" : "اسم الجد";
+        const labelNameAr4 = isWaqf ? "عائلة الناظر" : "اسم العائلة *";
 
         return (
           <div className="bg-white rounded-xl p-6 mb-6 shadow-sm min-h-[400px]">
             <h3 className="text-lg font-bold mb-4 text-slate-800">
-              البيانات الأساسية
+              {isWaqf
+                ? "بيانات الوقف والناظر"
+                : isHeirs
+                  ? "بيانات المورث والورثة"
+                  : "البيانات الأساسية"}
             </h3>
 
             {aiResults && (
@@ -1028,61 +1235,182 @@ const CreateClientWizard = ({ onComplete }) => {
             )}
 
             <div className="flex flex-col md:flex-row gap-6 mb-6">
-              {/* 👈 تحديث مربع الصورة حسب نوع العميل ومصدر الذكاء الاصطناعي */}
-              <div className="flex-shrink-0 md:w-32">
-                <label className="block text-[13px] font-bold mb-2 text-slate-700">
+              {/* صورة الملف */}
+              <div className="flex-shrink-0 flex flex-col items-center">
+                <label className="block text-[13px] font-bold mb-2 text-slate-700 w-full text-right">
                   {isCompany ? "شعار المنشأة" : "صورة العميل"}
                 </label>
-                <div
-                  onClick={() => profilePicRef.current?.click()}
-                  className="w-[120px] h-[140px] rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors overflow-hidden relative group"
-                >
-                  {profilePicture ? (
-                    <>
-                      <img
-                        src={profilePicture.preview}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Upload className="w-6 h-6 text-white mb-1" />
-                        <span className="text-[10px] text-white font-bold">
-                          تغيير الصورة
+
+                <div className="relative">
+                  <div className="w-[120px] h-[140px] rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center overflow-hidden relative group shadow-inner">
+                    {profilePicture ? (
+                      <>
+                        <img
+                          src={profilePicture.preview}
+                          alt="Profile"
+                          className="w-full h-full origin-center"
+                          style={{
+                            objectFit: "cover",
+                            transform: `scale(${picConfig.scale}) translate(${picConfig.x}px, ${picConfig.y}px)`,
+                            transition: showPicControls
+                              ? "none"
+                              : "transform 0.2s ease-out",
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowPicControls(!showPicControls);
+                            }}
+                            className="px-3 py-1.5 bg-violet-500 hover:bg-violet-600 rounded-lg text-[11px] text-white font-bold transition-colors flex items-center gap-1"
+                          >
+                            ✂️ ضبط الصورة
+                          </button>
+                          <button
+                            onClick={() => profilePicRef.current?.click()}
+                            className="px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-[11px] text-white font-bold transition-colors flex items-center gap-1"
+                          >
+                            <Upload className="w-3 h-3" /> تغيير
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div
+                        onClick={() => profilePicRef.current?.click()}
+                        className="flex flex-col items-center justify-center w-full h-full cursor-pointer hover:bg-slate-100 transition-colors"
+                      >
+                        {isCompany ? (
+                          <Building className="w-8 h-8 text-slate-300 mb-2" />
+                        ) : (
+                          <ImageIcon className="w-8 h-8 text-slate-300 mb-2" />
+                        )}
+                        <span className="text-[11px] text-slate-500 font-bold text-center px-2">
+                          {isCompany
+                            ? "رفع الشعار (اختياري)"
+                            : "لقطة من الهوية"}
                         </span>
                       </div>
-                    </>
-                  ) : (
-                    <>
-                      {isCompany ? (
-                        <Building className="w-8 h-8 text-slate-300 mb-2" />
-                      ) : (
-                        <ImageIcon className="w-8 h-8 text-slate-300 mb-2" />
-                      )}
-                      <span className="text-[11px] text-slate-500 font-bold text-center px-2">
-                        {isCompany ? "رفع الشعار (اختياري)" : "لقطة من الهوية"}
-                      </span>
-                    </>
+                    )}
+                    <input
+                      type="file"
+                      ref={profilePicRef}
+                      className="hidden"
+                      accept="image/png, image/jpeg"
+                      onChange={(e) => {
+                        handleProfilePicUpload(e);
+                        setPicConfig({ scale: 1, x: 0, y: 0 });
+                        setShowPicControls(true);
+                      }}
+                    />
+                  </div>
+
+                  {profilePicture && showPicControls && (
+                    <div className="absolute top-[150px] right-[-40px] w-[200px] bg-white border border-slate-200 rounded-xl shadow-xl p-3 z-50 animate-in fade-in zoom-in-95">
+                      <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-100">
+                        <span className="text-[10px] font-bold text-slate-700">
+                          أبعاد الصورة
+                        </span>
+                        <button
+                          onClick={() => setPicConfig({ scale: 1, x: 0, y: 0 })}
+                          className="text-[9px] text-blue-600 hover:underline font-bold"
+                        >
+                          إعادة تعيين
+                        </button>
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex justify-between text-[9px] text-slate-500 mb-1">
+                            <span>تكبير/تصغير</span>
+                            <span>{picConfig.scale}x</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="1"
+                            max="4"
+                            step="0.1"
+                            value={picConfig.scale}
+                            onChange={(e) =>
+                              setPicConfig((p) => ({
+                                ...p,
+                                scale: parseFloat(e.target.value),
+                              }))
+                            }
+                            className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-[9px] text-slate-500 mb-1">
+                            <span>ارتفاع (عمودي)</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-100"
+                            max="100"
+                            value={picConfig.y}
+                            onChange={(e) =>
+                              setPicConfig((p) => ({
+                                ...p,
+                                y: parseInt(e.target.value),
+                              }))
+                            }
+                            className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-[9px] text-slate-500 mb-1">
+                            <span>إزاحة (أفقي)</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-100"
+                            max="100"
+                            value={picConfig.x}
+                            onChange={(e) =>
+                              setPicConfig((p) => ({
+                                ...p,
+                                x: parseInt(e.target.value),
+                              }))
+                            }
+                            className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowPicControls(false)}
+                        className="w-full mt-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold transition-colors"
+                      >
+                        تم الضبط
+                      </button>
+                    </div>
                   )}
-                  <input
-                    type="file"
-                    ref={profilePicRef}
-                    className="hidden"
-                    accept="image/png, image/jpeg"
-                    onChange={handleProfilePicUpload}
-                  />
                 </div>
               </div>
 
+              {/* حقول الاسم الديناميكية */}
               <div className="flex-1 space-y-3">
-                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-2 mb-2">
-                  <User className="w-4 h-4 text-slate-500" />
-                  <span className="text-xs font-bold text-slate-700">
-                    الاسم الرباعي — عربي / إنجليزي
+                <div
+                  className={`p-2.5 rounded-lg flex items-center gap-2 mb-2 ${isWaqf ? "bg-teal-50 border border-teal-200 text-teal-800" : isHeirs ? "bg-amber-50 border border-amber-200 text-amber-800" : "bg-slate-50 border border-slate-200 text-slate-700"}`}
+                >
+                  {isWaqf ? (
+                    <Landmark className="w-4 h-4" />
+                  ) : isHeirs ? (
+                    <UsersRound className="w-4 h-4" />
+                  ) : (
+                    <User className="w-4 h-4" />
+                  )}
+                  <span className="text-xs font-bold">
+                    {isWaqf
+                      ? "البيانات الرئيسية للوقف"
+                      : isHeirs
+                        ? "بيانات المورث (صاحب التركة)"
+                        : "الاسم الرباعي — عربي / إنجليزي"}
                   </span>
                 </div>
+
                 <DualInputWithAI
-                  labelAr="الاسم الأول / الشركة *"
-                  labelEn="First Name / Company *"
+                  labelAr={labelNameAr1}
+                  labelEn={labelNameEn1}
                   valAr={formData.name.firstAr}
                   valEn={formData.name.firstEn}
                   onChangeAr={(v) => handleChange("name", "firstAr", v)}
@@ -1091,46 +1419,57 @@ const CreateClientWizard = ({ onComplete }) => {
                     aiResults?.firstAr ? aiResults.confidence : null
                   }
                 />
-                <DualInputWithAI
-                  labelAr="اسم الأب"
-                  labelEn="Father Name"
-                  valAr={formData.name.fatherAr}
-                  valEn={formData.name.fatherEn}
-                  onChangeAr={(v) => handleChange("name", "fatherAr", v)}
-                  onChangeEn={(v) => handleChange("name", "fatherEn", v)}
-                  aiConfidence={
-                    aiResults?.fatherAr ? aiResults.confidence : null
-                  }
-                />
-                <DualInputWithAI
-                  labelAr="اسم الجد"
-                  labelEn="Grandfather"
-                  valAr={formData.name.grandAr}
-                  valEn={formData.name.grandEn}
-                  onChangeAr={(v) => handleChange("name", "grandAr", v)}
-                  onChangeEn={(v) => handleChange("name", "grandEn", v)}
-                  aiConfidence={
-                    aiResults?.grandAr ? aiResults.confidence : null
-                  }
-                />
-                <DualInputWithAI
-                  labelAr="اسم العائلة *"
-                  labelEn="Family Name *"
-                  valAr={formData.name.familyAr}
-                  valEn={formData.name.familyEn}
-                  onChangeAr={(v) => handleChange("name", "familyAr", v)}
-                  onChangeEn={(v) => handleChange("name", "familyEn", v)}
-                  aiConfidence={
-                    aiResults?.familyAr ? aiResults.confidence : null
-                  }
-                />
+
+                {/* إخفاء باقي الأسماء في حالة الورثة فقط */}
+                {!isHeirs && (
+                  <>
+                    <DualInputWithAI
+                      labelAr={labelNameAr2}
+                      labelEn="Father Name"
+                      valAr={formData.name.fatherAr}
+                      valEn={formData.name.fatherEn}
+                      onChangeAr={(v) => handleChange("name", "fatherAr", v)}
+                      onChangeEn={(v) => handleChange("name", "fatherEn", v)}
+                      aiConfidence={
+                        aiResults?.fatherAr ? aiResults.confidence : null
+                      }
+                    />
+                    <DualInputWithAI
+                      labelAr={labelNameAr3}
+                      labelEn="Grandfather"
+                      valAr={formData.name.grandAr}
+                      valEn={formData.name.grandEn}
+                      onChangeAr={(v) => handleChange("name", "grandAr", v)}
+                      onChangeEn={(v) => handleChange("name", "grandEn", v)}
+                      aiConfidence={
+                        aiResults?.grandAr ? aiResults.confidence : null
+                      }
+                    />
+                    <DualInputWithAI
+                      labelAr={labelNameAr4}
+                      labelEn="Family Name *"
+                      valAr={formData.name.familyAr}
+                      valEn={formData.name.familyEn}
+                      onChangeAr={(v) => handleChange("name", "familyAr", v)}
+                      onChangeEn={(v) => handleChange("name", "familyEn", v)}
+                      aiConfidence={
+                        aiResults?.familyAr ? aiResults.confidence : null
+                      }
+                    />
+                  </>
+                )}
               </div>
             </div>
 
+            {/* قسم الهوية الرئيسي للملف */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 pt-5 mb-5">
               <div>
                 <label className="text-xs font-bold mb-1.5 block text-slate-700">
-                  رقم الهوية/السجل *
+                  {isWaqf
+                    ? "رقم صك الوقفية / السجل *"
+                    : isHeirs
+                      ? "رقم هوية المورث *"
+                      : "رقم الهوية/السجل *"}
                 </label>
                 <input
                   type="text"
@@ -1160,7 +1499,7 @@ const CreateClientWizard = ({ onComplete }) => {
               </div>
               <div>
                 <label className="text-xs font-bold mb-1.5 block text-slate-700">
-                  مكان الميلاد
+                  مكان الميلاد / التأسيس
                 </label>
                 <div className="relative">
                   <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -1181,12 +1520,12 @@ const CreateClientWizard = ({ onComplete }) => {
               </div>
             </div>
 
-            {/* مربع تاريخ الميلاد وحساب العمر */}
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+            {/* مربع التاريخ والعمر الرئيسي */}
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-6 items-center mb-6">
               <div className="md:col-span-2 space-y-3">
                 <div>
                   <label className="text-xs font-bold mb-1.5 flex items-center gap-2 text-slate-700">
-                    تاريخ الميلاد (هجري)
+                    تاريخ الميلاد (هجري) {isHeirs && "للمتوفى"}
                   </label>
                   <input
                     type="text"
@@ -1205,7 +1544,7 @@ const CreateClientWizard = ({ onComplete }) => {
                 </div>
                 <div>
                   <label className="text-xs font-bold mb-1.5 flex items-center gap-2 text-slate-700">
-                    تاريخ الميلاد (ميلادي)
+                    تاريخ الميلاد (ميلادي) {isHeirs && "للمتوفى"}
                   </label>
                   <input
                     type="text"
@@ -1223,7 +1562,6 @@ const CreateClientWizard = ({ onComplete }) => {
                   />
                 </div>
               </div>
-
               <div className="md:col-span-1 h-full">
                 <div
                   className={`h-full p-3 rounded-xl border-2 flex flex-col items-center justify-center text-center transition-colors ${isWarningAge ? "bg-red-50 border-red-200" : currentAge !== null ? "bg-white border-violet-200 shadow-sm" : "bg-slate-100 border-slate-200 opacity-50"}`}
@@ -1249,6 +1587,77 @@ const CreateClientWizard = ({ onComplete }) => {
                 </div>
               </div>
             </div>
+
+            {/* 👈 قسم إضافة الورثة الديناميكي يظهر فقط إذا كان النوع "ورثة" */}
+            {isHeirs && (
+              <div className="mt-8 border-t-2 border-amber-100 pt-6 animate-in slide-in-from-bottom-4">
+                <div className="flex justify-between items-center mb-5">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-amber-100 rounded-lg">
+                      <UsersRound className="w-5 h-5 text-amber-700" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-amber-900">
+                        سجل الورثة المستفيدين
+                      </h4>
+                      <p className="text-[10px] text-amber-700 font-bold mt-0.5">
+                        يمكنك إضافة أي عدد من الورثة واستخراج بيانات هوياتهم
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const newHeirs = [
+                        ...formData.heirs,
+                        {
+                          name: "",
+                          idNumber: "",
+                          nationality: "سعودي",
+                          birthDate: "",
+                          documentType: "هوية شخصية",
+                        },
+                      ];
+                      handleChange(null, "heirs", newHeirs);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-md transition-colors"
+                  >
+                    <UserPlus className="w-4 h-4" /> إضافة وريث جديد
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {formData.heirs.length === 0 ? (
+                    <div className="text-center py-10 bg-amber-50/50 border border-dashed border-amber-200 rounded-xl">
+                      <UsersRound className="w-10 h-10 text-amber-300 mx-auto mb-2" />
+                      <p className="text-xs font-bold text-amber-600">
+                        لم يتم إضافة أي ورثة بعد. اضغط على الزر أعلاه للبدء.
+                      </p>
+                    </div>
+                  ) : (
+                    formData.heirs.map((heir, index) => (
+                      <HeirCard
+                        key={index}
+                        heir={heir}
+                        index={index}
+                        updateHeir={(idx, fld, val) => {
+                          const newHeirs = [...formData.heirs];
+                          newHeirs[idx][fld] = val;
+                          handleChange(null, "heirs", newHeirs);
+                        }}
+                        removeHeir={(idx) => {
+                          const newHeirs = formData.heirs.filter(
+                            (_, i) => i !== idx,
+                          );
+                          handleChange(null, "heirs", newHeirs);
+                        }}
+                        addDocumentToState={addDocumentToState}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         );
 
