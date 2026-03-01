@@ -23,9 +23,11 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
-  const login = async (email, password) => {
+  // 👈 1. تغيير المعامل من email إلى identifier
+  const login = async (identifier, password) => {
     try {
-      const response = await api.post('/auth/login', { email, password });
+      // 👈 2. إرسال identifier في الـ payload بدلاً من email
+      const response = await api.post('/auth/login', { identifier, password });
       const { token, user } = response.data;
 
       // حفظ البيانات

@@ -32,23 +32,59 @@ import {
   CreditCard,
   KeyRound,
   Settings2,
-  Trash,
   Layers,
   AlertCircle,
+  CheckSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 
+// ==========================================
+// ثوابت القوائم المنسدلة
+// ==========================================
+const DEPARTMENTS = [
+  "الإدارة العليا",
+  "الشؤون الهندسية والتصميم",
+  "الإشراف والمواقع",
+  "المبيعات والتسويق",
+  "المالية والمحاسبة",
+  "الموارد البشرية",
+  "تقنية المعلومات",
+  "خدمة العملاء",
+];
+
+const POSITIONS = [
+  "مدير عام",
+  "مدير مشروع",
+  "مهندس معماري",
+  "مهندس مدني / إنشائي",
+  "مهندس كهرباء",
+  "مهندس ميكانيكا",
+  "رسام هندسي (أوتوكاد)",
+  "مساح",
+  "محاسب",
+  "أخصائي موارد بشرية",
+  "موظف استقبال",
+  "مدخل بيانات",
+];
+
+// توليد الأرقام الوظيفية من 1001 إلى 1100
+const EMPLOYEE_CODES = Array.from({ length: 100 }, (_, i) =>
+  (1001 + i).toString(),
+);
+
 const initialEmpData = {
+  employeeCode: "", // الرقم الوظيفي من القائمة
   name: "",
   email: "",
   password: "",
   nationalId: "",
   phone: "",
-  position: "",
-  department: "",
+  position: "", // قائمة منسدلة
+  qiwaPosition: "", // 👈 حقل مسمى قوى الجديد
+  department: "", // قائمة منسدلة
   hireDate: new Date().toISOString().split("T")[0],
   type: "full-time",
-  roleId: "",
+  roleIds: [], // 👈 تحولت لمصفوفة لتدعم أكثر من دور
   status: "active",
 };
 
@@ -58,18 +94,16 @@ const EmployeesManagement = () => {
   // ==========================================
   // States
   // ==========================================
-  const [activeTab, setActiveTab] = useState("employees"); // 'employees' | 'roles'
+  const [activeTab, setActiveTab] = useState("employees");
   const [searchTerm, setSearchTerm] = useState("");
   const [roleSearchTerm, setRoleSearchTerm] = useState("");
 
-  // حالات الموظفين (إضافة / تعديل)
   const [empModal, setEmpModal] = useState({
     isOpen: false,
     mode: "create",
     data: initialEmpData,
   });
 
-  // حالات الأدوار (إضافة / تعديل)
   const [roleModal, setRoleModal] = useState({
     isOpen: false,
     mode: "create",
@@ -84,13 +118,20 @@ const EmployeesManagement = () => {
     queryKey: ["employees"],
     queryFn: getEmployees,
   });
+
   const { data: roles = [], isLoading: isLoadingRoles } = useQuery({
     queryKey: ["roles"],
     queryFn: getRoles,
   });
 
+  // 👈 استخراج الأرقام الوظيفية المستخدمة حالياً لقفلها في القائمة
+  const usedEmployeeCodes = useMemo(() => {
+    if (!Array.isArray(employees)) return [];
+    return employees.map((emp) => emp.employeeCode?.toString()).filter(Boolean);
+  }, [employees]);
+
   // ==========================================
-  // Mutations (الموظفين)
+  // Mutations
   // ==========================================
   const empMutation = useMutation({
     mutationFn: (payload) =>
@@ -107,7 +148,10 @@ const EmployeesManagement = () => {
       setEmpModal({ isOpen: false, mode: "create", data: initialEmpData });
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message || "حدث خطأ في العملية"),
+      toast.error(
+        err.response?.data?.message ||
+          "حدث خطأ في العملية. تأكد من عدم تكرار الإيميل أو الجوال.",
+      ),
   });
 
   const deleteEmpMutation = useMutation({
@@ -118,10 +162,8 @@ const EmployeesManagement = () => {
     },
   });
 
-  // ==========================================
-  // Mutations (الأدوار والصلاحيات)
-  // ==========================================
   const roleMutation = useMutation({
+    // ... (كود الأدوار كما هو)
     mutationFn: (payload) =>
       roleModal.mode === "create"
         ? createRole(payload)
@@ -158,15 +200,12 @@ const EmployeesManagement = () => {
     onSuccess: () => {
       toast.success("تم إزالة الصلاحية من الدور");
       queryClient.invalidateQueries(["roles"]);
-      // تحديث الدور المحدد محلياً لتنعكس النتيجة فوراً
-      if (selectedRole) {
-        queryClient.refetchQueries(["roles"]);
-      }
+      if (selectedRole) queryClient.refetchQueries(["roles"]);
     },
   });
 
   // ==========================================
-  // Logic & Handlers
+  // Handlers
   // ==========================================
   const filteredEmployees = useMemo(() => {
     if (!Array.isArray(employees)) return [];
@@ -174,7 +213,8 @@ const EmployeesManagement = () => {
       (emp) =>
         emp.name?.includes(searchTerm) ||
         emp.employeeCode?.toString().includes(searchTerm) ||
-        emp.nationalId?.includes(searchTerm),
+        emp.nationalId?.includes(searchTerm) ||
+        emp.phone?.includes(searchTerm),
     );
   }, [employees, searchTerm]);
 
@@ -192,7 +232,6 @@ const EmployeesManagement = () => {
     [employees],
   );
 
-  // تحديث بيانات الدور المعروض عند إعادة جلب البيانات
   useMemo(() => {
     if (selectedRole) {
       const updated = roles.find((r) => r.id === selectedRole.id);
@@ -202,6 +241,12 @@ const EmployeesManagement = () => {
 
   const handleEmpSubmit = (e) => {
     e.preventDefault();
+    if (empModal.data.roleIds.length === 0) {
+      return toast.error("يرجى تحديد دور وظيفي واحد على الأقل للموظف");
+    }
+    if (!empModal.data.employeeCode) {
+      return toast.error("يرجى تحديد الرقم الوظيفي");
+    }
     empMutation.mutate(empModal.data);
   };
 
@@ -218,16 +263,37 @@ const EmployeesManagement = () => {
       data: {
         ...emp,
         password: "",
-        // 👈 استخراج الـ roleId من مصفوفة الأدوار لكي يظهر الدور الحالي في القائمة المنسدلة
-        roleId: emp.roles && emp.roles.length > 0 ? emp.roles[0].id : "",
-        // 👈 تنسيق التاريخ ليقرأه الـ input date بشكل صحيح
+        qiwaPosition: emp.qiwaPosition || "", // ضمان وجود الحقل
+        roleIds: emp.roles ? emp.roles.map((r) => r.id) : [], // 👈 جلب معرفات كل الأدوار
         hireDate: emp.hireDate
           ? new Date(emp.hireDate).toISOString().split("T")[0]
           : "",
       },
     });
+
   const openEditRole = (role) =>
     setRoleModal({ isOpen: true, mode: "edit", data: role });
+
+  // 👈 دالة للتعامل مع الشيك بوكس الخاص بالأدوار
+  const handleRoleToggle = (roleId) => {
+    setEmpModal((prev) => {
+      const currentRoles = prev.data.roleIds;
+      if (currentRoles.includes(roleId)) {
+        return {
+          ...prev,
+          data: {
+            ...prev.data,
+            roleIds: currentRoles.filter((id) => id !== roleId),
+          },
+        };
+      } else {
+        return {
+          ...prev,
+          data: { ...prev.data, roleIds: [...currentRoles, roleId] },
+        };
+      }
+    });
+  };
 
   // ==========================================
   // Renders
@@ -237,6 +303,7 @@ const EmployeesManagement = () => {
     <div className="space-y-6 animate-in fade-in duration-300 p-6">
       {/* الإحصائيات */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* ... (نفس الإحصائيات السابقة) ... */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="text-slate-500 text-xs font-bold mb-1">
             إجمالي الموظفين
@@ -277,7 +344,7 @@ const EmployeesManagement = () => {
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="ابحث بالاسم، الرقم الوظيفي، الهوية..."
+              placeholder="ابحث بالاسم، الرقم الوظيفي، الهوية، الجوال..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-4 pr-10 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:border-blue-500"
@@ -289,10 +356,10 @@ const EmployeesManagement = () => {
           <table className="w-full text-right text-sm whitespace-nowrap">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
               <tr>
-                <th className="p-4 font-bold">رقم</th>
-                <th className="p-4 font-bold">الموظف</th>
-                <th className="p-4 font-bold">المسمى والقسم</th>
-                <th className="p-4 font-bold">الدور الوظيفي</th>
+                <th className="p-4 font-bold">الرقم الوظيفي</th>
+                <th className="p-4 font-bold">الموظف / الدخول</th>
+                <th className="p-4 font-bold">المسمى (الداخلي / قوى)</th>
+                <th className="p-4 font-bold">الأدوار والصلاحيات</th>
                 <th className="p-4 font-bold text-center">الحالة</th>
                 <th className="p-4 font-bold text-center">إجراءات</th>
               </tr>
@@ -321,7 +388,7 @@ const EmployeesManagement = () => {
                   >
                     <td className="p-4">
                       <span className="font-mono text-sm font-black text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
-                        #{emp.employeeCode}
+                        {emp.employeeCode ? `#${emp.employeeCode}` : "غير محدد"}
                       </span>
                     </td>
                     <td className="p-4">
@@ -333,8 +400,8 @@ const EmployeesManagement = () => {
                           <div className="font-bold text-slate-800">
                             {emp.name}
                           </div>
-                          <div className="text-[11px] text-slate-500 font-mono">
-                            {emp.phone}
+                          <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                            {emp.email} | {emp.phone}
                           </div>
                         </div>
                       </div>
@@ -343,15 +410,31 @@ const EmployeesManagement = () => {
                       <div className="font-bold text-slate-700">
                         {emp.position}
                       </div>
-                      <div className="text-xs text-slate-500">
-                        {emp.department}
+                      <div className="text-[10px] text-slate-400 mt-0.5">
+                        قوى:{" "}
+                        <span className="text-slate-500">
+                          {emp.qiwaPosition || "غير مسجل"}
+                        </span>{" "}
+                        | {emp.department}
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-xs font-bold">
-                        <Shield className="w-3.5 h-3.5" />{" "}
-                        {emp.roles?.[0]?.nameAr || "بدون صلاحيات"}
-                      </span>
+                      <div className="flex flex-wrap gap-1 max-w-[200px]">
+                        {emp.roles && emp.roles.length > 0 ? (
+                          emp.roles.map((r) => (
+                            <span
+                              key={r.id}
+                              className="inline-flex items-center px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 rounded text-[10px] font-bold"
+                            >
+                              {r.nameAr}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-slate-400">
+                            بدون صلاحيات
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-4 text-center">
                       <span
@@ -392,6 +475,7 @@ const EmployeesManagement = () => {
   );
 
   const renderRolesTab = () => (
+    // ... (نفس كود تبويب الأدوار السابق بدون تغيير) ...
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-300 h-[calc(100vh-220px)] p-6">
       {/* 1. قائمة الأدوار */}
       <div className="lg:col-span-4 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden">
@@ -447,7 +531,6 @@ const EmployeesManagement = () => {
                       {role.description || "بدون وصف"}
                     </div>
                   </button>
-                  {/* أزرار الإجراءات السريعة للدور */}
                   <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity px-1">
                     <button
                       onClick={() => openEditRole(role)}
@@ -471,7 +554,7 @@ const EmployeesManagement = () => {
         </div>
       </div>
 
-      {/* 2. تفاصيل الصلاحيات (للعرض والإلغاء فقط) */}
+      {/* 2. تفاصيل الصلاحيات */}
       <div className="lg:col-span-8 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden">
         {selectedRole ? (
           <>
@@ -604,186 +687,321 @@ const EmployeesManagement = () => {
       {/* Modal: الموظفين */}
       {empModal.isOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95">
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
-              <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
-                <Users className="w-5 h-5 text-blue-600" />{" "}
-                {empModal.mode === "create"
-                  ? "إضافة موظف جديد"
-                  : "تعديل بيانات الموظف"}
-              </h3>
+          <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[95vh] animate-in zoom-in-95">
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0 rounded-t-2xl">
+              <div>
+                <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-blue-600" />{" "}
+                  {empModal.mode === "create"
+                    ? "إضافة موظف جديد"
+                    : "تعديل بيانات الموظف"}
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  ملاحظة: يمكن للموظف تسجيل الدخول باستخدام (الإيميل، رقم
+                  الجوال، أو الرقم الوظيفي)
+                </p>
+              </div>
               <button
                 onClick={() => setEmpModal({ ...empModal, isOpen: false })}
+                className="p-2 bg-slate-200 hover:bg-slate-300 rounded-full transition-colors"
               >
-                <X className="w-5 h-5 text-slate-400 hover:text-slate-700" />
+                <X className="w-4 h-4 text-slate-600" />
               </button>
             </div>
-            <div className="overflow-y-auto p-6">
+
+            <div className="overflow-y-auto p-6 custom-scrollbar">
               <form
                 id="empForm"
                 onSubmit={handleEmpSubmit}
-                className="space-y-4"
+                className="space-y-5"
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold mb-1.5">
-                      الاسم الكامل *
-                    </label>
-                    <input
-                      required
-                      value={empModal.data.name}
-                      onChange={(e) =>
-                        setEmpModal({
-                          ...empModal,
-                          data: { ...empModal.data, name: e.target.value },
-                        })
-                      }
-                      className="w-full p-2.5 border rounded-xl text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1.5">
-                      الهوية *
-                    </label>
-                    <input
-                      required
-                      dir="ltr"
-                      value={empModal.data.nationalId}
-                      onChange={(e) =>
-                        setEmpModal({
-                          ...empModal,
-                          data: {
-                            ...empModal.data,
-                            nationalId: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full p-2.5 border rounded-xl text-sm text-left font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1.5">
-                      البريد الإلكتروني *
-                    </label>
-                    <input
-                      required
-                      type="email"
-                      dir="ltr"
-                      value={empModal.data.email}
-                      onChange={(e) =>
-                        setEmpModal({
-                          ...empModal,
-                          data: { ...empModal.data, email: e.target.value },
-                        })
-                      }
-                      className="w-full p-2.5 border rounded-xl text-sm text-left"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1.5">
-                      رقم الجوال *
-                    </label>
-                    <input
-                      required
-                      dir="ltr"
-                      value={empModal.data.phone}
-                      onChange={(e) =>
-                        setEmpModal({
-                          ...empModal,
-                          data: { ...empModal.data, phone: e.target.value },
-                        })
-                      }
-                      className="w-full p-2.5 border rounded-xl text-sm text-left font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1.5">
-                      المسمى الوظيفي *
-                    </label>
-                    <input
-                      required
-                      value={empModal.data.position}
-                      onChange={(e) =>
-                        setEmpModal({
-                          ...empModal,
-                          data: { ...empModal.data, position: e.target.value },
-                        })
-                      }
-                      className="w-full p-2.5 border rounded-xl text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1.5">
-                      القسم *
-                    </label>
-                    <input
-                      required
-                      value={empModal.data.department}
-                      onChange={(e) =>
-                        setEmpModal({
-                          ...empModal,
-                          data: {
-                            ...empModal.data,
-                            department: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full p-2.5 border rounded-xl text-sm"
-                    />
+                {/* القسم الأول: بيانات الدخول والأساسيات */}
+                <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                  <h4 className="text-sm font-black text-slate-700 mb-3 flex items-center gap-2">
+                    <User className="w-4 h-4 text-blue-500" /> البيانات الأساسية
+                    وبيانات الدخول
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-1">
+                      <label className="block text-[11px] font-bold mb-1.5 text-slate-600">
+                        الرقم الوظيفي (للدخول) *
+                      </label>
+                      <select
+                        required
+                        value={empModal.data.employeeCode}
+                        onChange={(e) =>
+                          setEmpModal({
+                            ...empModal,
+                            data: {
+                              ...empModal.data,
+                              employeeCode: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white font-mono focus:border-blue-500 outline-none"
+                      >
+                        <option value="">-- اختر رقم --</option>
+                        {EMPLOYEE_CODES.map((code) => {
+                          // تحقق هل الرقم مستخدم من موظف آخر
+                          const isUsed =
+                            usedEmployeeCodes.includes(code) &&
+                            empModal.data.employeeCode !== code;
+                          return (
+                            <option
+                              key={code}
+                              value={code}
+                              disabled={isUsed}
+                              className={
+                                isUsed ? "text-slate-300" : "text-slate-800"
+                              }
+                            >
+                              {code} {isUsed ? "(غير متاح)" : ""}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-[11px] font-bold mb-1.5 text-slate-600">
+                        الاسم الكامل *
+                      </label>
+                      <input
+                        required
+                        value={empModal.data.name}
+                        onChange={(e) =>
+                          setEmpModal({
+                            ...empModal,
+                            data: { ...empModal.data, name: e.target.value },
+                          })
+                        }
+                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:border-blue-500 outline-none"
+                        placeholder="الاسم الرباعي"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold mb-1.5 text-slate-600">
+                        البريد الإلكتروني (للدخول) *
+                      </label>
+                      <input
+                        required
+                        type="email"
+                        dir="ltr"
+                        value={empModal.data.email}
+                        onChange={(e) =>
+                          setEmpModal({
+                            ...empModal,
+                            data: { ...empModal.data, email: e.target.value },
+                          })
+                        }
+                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm text-left focus:border-blue-500 outline-none"
+                        placeholder="email@example.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold mb-1.5 text-slate-600">
+                        رقم الجوال (للدخول) *
+                      </label>
+                      <input
+                        required
+                        dir="ltr"
+                        value={empModal.data.phone}
+                        onChange={(e) =>
+                          setEmpModal({
+                            ...empModal,
+                            data: { ...empModal.data, phone: e.target.value },
+                          })
+                        }
+                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm text-left font-mono focus:border-blue-500 outline-none"
+                        placeholder="9665XXXXXXXX"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold mb-1.5 text-slate-600">
+                        كلمة المرور{" "}
+                        {empModal.mode === "edit" && (
+                          <span className="text-slate-400 font-normal">
+                            (اتركها فارغة لعدم التغيير)
+                          </span>
+                        )}
+                      </label>
+                      <input
+                        type="text"
+                        dir="ltr"
+                        required={empModal.mode === "create"}
+                        value={empModal.data.password}
+                        onChange={(e) =>
+                          setEmpModal({
+                            ...empModal,
+                            data: {
+                              ...empModal.data,
+                              password: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm text-left font-mono focus:border-blue-500 outline-none"
+                        placeholder="********"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-                  <div>
-                    <label className="block text-xs font-bold mb-1.5">
-                      كلمة المرور{" "}
-                      {empModal.mode === "edit" &&
-                        "(اتركها فارغة لعدم التغيير)"}
-                    </label>
-                    <input
-                      type="text"
-                      dir="ltr"
-                      required={empModal.mode === "create"}
-                      value={empModal.data.password}
-                      onChange={(e) =>
-                        setEmpModal({
-                          ...empModal,
-                          data: { ...empModal.data, password: e.target.value },
-                        })
-                      }
-                      className="w-full p-2.5 border rounded-xl text-sm text-left font-mono"
-                    />
+
+                {/* القسم الثاني: بيانات العمل */}
+                <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                  <h4 className="text-sm font-black text-slate-700 mb-3 flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-emerald-500" /> التسكين
+                    الوظيفي
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-bold mb-1.5 text-slate-600">
+                        رقم الهوية الوطنية / الإقامة *
+                      </label>
+                      <input
+                        required
+                        dir="ltr"
+                        value={empModal.data.nationalId}
+                        onChange={(e) =>
+                          setEmpModal({
+                            ...empModal,
+                            data: {
+                              ...empModal.data,
+                              nationalId: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm text-left font-mono focus:border-emerald-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold mb-1.5 text-slate-600">
+                        القسم / الإدارة *
+                      </label>
+                      <select
+                        required
+                        value={empModal.data.department}
+                        onChange={(e) =>
+                          setEmpModal({
+                            ...empModal,
+                            data: {
+                              ...empModal.data,
+                              department: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white focus:border-emerald-500 outline-none"
+                      >
+                        <option value="">-- اختر القسم --</option>
+                        {DEPARTMENTS.map((dept) => (
+                          <option key={dept} value={dept}>
+                            {dept}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold mb-1.5 text-slate-600">
+                        المسمى الوظيفي (الداخلي) *
+                      </label>
+                      <select
+                        required
+                        value={empModal.data.position}
+                        onChange={(e) =>
+                          setEmpModal({
+                            ...empModal,
+                            data: {
+                              ...empModal.data,
+                              position: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white focus:border-emerald-500 outline-none"
+                      >
+                        <option value="">-- اختر المسمى --</option>
+                        {POSITIONS.map((pos) => (
+                          <option key={pos} value={pos}>
+                            {pos}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="md:col-span-3">
+                      <label className="block text-[11px] font-bold mb-1.5 text-slate-600">
+                        المسمى الوظيفي في منصة (قوى){" "}
+                        <span className="text-slate-400 font-normal">
+                          اختياري
+                        </span>
+                      </label>
+                      <input
+                        value={empModal.data.qiwaPosition}
+                        onChange={(e) =>
+                          setEmpModal({
+                            ...empModal,
+                            data: {
+                              ...empModal.data,
+                              qiwaPosition: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:border-emerald-500 outline-none"
+                        placeholder="المسمى كما هو مسجل في العقود الحكومية..."
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1.5">
-                      الدور الوظيفي *
-                    </label>
-                    <select
-                      required
-                      value={empModal.data.roleId}
-                      onChange={(e) =>
-                        setEmpModal({
-                          ...empModal,
-                          data: { ...empModal.data, roleId: e.target.value },
-                        })
-                      }
-                      className="w-full p-2.5 border rounded-xl text-sm bg-white"
-                    >
-                      <option value="">-- اختر الدور --</option>
-                      {roles.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.nameAr}
-                        </option>
-                      ))}
-                    </select>
+                </div>
+
+                {/* القسم الثالث: الصلاحيات المتعددة */}
+                <div className="bg-purple-50/30 p-4 rounded-xl border border-purple-100">
+                  <h4 className="text-sm font-black text-purple-800 mb-2 flex items-center gap-2">
+                    <KeyRound className="w-4 h-4 text-purple-600" /> الأدوار
+                    والصلاحيات بالنظام *
+                  </h4>
+                  <p className="text-[10px] text-purple-600/80 mb-3">
+                    يمكنك اختيار أكثر من دور وظيفي للموظف الواحد. الصلاحيات
+                    ستكون تراكمية.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 bg-white p-3 rounded-lg border border-purple-100 max-h-40 overflow-y-auto custom-scrollbar">
+                    {roles.map((r) => (
+                      <label
+                        key={r.id}
+                        className={`flex items-start gap-2 p-2 rounded-lg cursor-pointer transition-colors border ${empModal.data.roleIds.includes(r.id) ? "bg-purple-50 border-purple-300" : "hover:bg-slate-50 border-transparent"}`}
+                      >
+                        <div className="pt-0.5">
+                          <input
+                            type="checkbox"
+                            checked={empModal.data.roleIds.includes(r.id)}
+                            onChange={() => handleRoleToggle(r.id)}
+                            className="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500 cursor-pointer"
+                          />
+                        </div>
+                        <div>
+                          <div
+                            className={`text-xs font-bold ${empModal.data.roleIds.includes(r.id) ? "text-purple-800" : "text-slate-700"}`}
+                          >
+                            {r.nameAr}
+                          </div>
+                          <div className="text-[9px] text-slate-500 leading-tight mt-0.5 line-clamp-2">
+                            {r.description}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
                   </div>
+                  {empModal.data.roleIds.length === 0 && (
+                    <div className="text-[10px] text-red-500 mt-2 font-bold">
+                      ⚠️ يجب اختيار دور واحد على الأقل
+                    </div>
+                  )}
                 </div>
               </form>
             </div>
-            <div className="p-5 border-t border-slate-100 bg-slate-50 flex gap-3 shrink-0">
+
+            <div className="p-5 border-t border-slate-100 bg-slate-50 flex gap-3 shrink-0 rounded-b-2xl">
               <button
                 type="button"
                 onClick={() => setEmpModal({ ...empModal, isOpen: false })}
-                className="px-6 py-2.5 bg-slate-200 text-slate-700 rounded-xl font-bold"
+                className="px-6 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl font-bold hover:bg-slate-100 transition-colors"
               >
                 إلغاء
               </button>
@@ -791,21 +1009,21 @@ const EmployeesManagement = () => {
                 type="submit"
                 form="empForm"
                 disabled={empMutation.isPending}
-                className="flex-1 bg-blue-600 text-white rounded-xl font-bold flex justify-center items-center gap-2"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex justify-center items-center gap-2 transition-colors shadow-md"
               >
                 {empMutation.isPending ? (
                   <Loader2 className="animate-spin w-5 h-5" />
                 ) : (
                   <CheckCircle className="w-5 h-5" />
-                )}{" "}
-                حفظ
+                )}
+                حفظ بيانات الموظف
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal: الأدوار */}
+      {/* Modal: الأدوار (لم يتغير) */}
       {roleModal.isOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95">

@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Building2, Lock, Mail, Loader2 } from "lucide-react";
+import { Building2, Lock, User, Loader2 } from "lucide-react"; // 👈 استبدال Mail بـ User
 
 const Login = () => {
-  const [email, setEmail] = useState("");
+  // 👈 تغيير الاسم لـ identifier ليعبر عن أي طريقة دخول
+  const [identifier, setIdentifier] = useState(""); 
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -15,8 +16,8 @@ const Login = () => {
     setError("");
     setIsSubmitting(true);
 
-    // محاكاة تأخير الشبكة (أو استبدلها بـ login الفعلي)
-    const result = await login(email, password);
+    // 👈 إرسال الـ identifier بدلاً من الإيميل
+    const result = await login(identifier, password);
 
     if (!result.success) {
       setError(result.message);
@@ -54,30 +55,32 @@ const Login = () => {
         <div className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 text-center">
+              <div className="p-3 bg-red-50 text-red-600 text-sm font-bold rounded-lg border border-red-100 text-center">
                 {error}
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 block text-right">
-                البريد الإلكتروني
+              {/* 👈 تحديث الوصف ليعكس الخيارات الجديدة */}
+              <label className="text-sm font-bold text-gray-700 block text-right">
+                بيانات الدخول (الرقم الوظيفي، الجوال، الإيميل)
               </label>
               <div className="relative">
-                <Mail className="absolute right-3 top-3 w-5 h-5 text-gray-400" />
+                <User className="absolute right-3 top-3 w-5 h-5 text-gray-400" />
                 <input
-                  type="email"
+                  type="text" // 👈 تحويله من email إلى text ليقبل أرقام وحروف
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pr-10 pl-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                  placeholder="name@company.com"
+                  dir="ltr" // 👈 جعله LTR لسهولة كتابة الأرقام والإنجليزية
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  className="w-full pr-10 pl-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-left font-mono text-sm"
+                  placeholder="EMP-1001 أو 05XXXXXXXX"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 block text-right">
+              <label className="text-sm font-bold text-gray-700 block text-right">
                 كلمة المرور
               </label>
               <div className="relative">
@@ -85,9 +88,10 @@ const Login = () => {
                 <input
                   type="password"
                   required
+                  dir="ltr"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pr-10 pl-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  className="w-full pr-10 pl-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-left font-mono"
                   placeholder="••••••••"
                 />
               </div>
@@ -109,7 +113,7 @@ const Login = () => {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-gray-400">
+          <div className="mt-6 text-center text-xs text-gray-400 font-bold">
             الإصدار 2.0.0 - جميع الحقوق محفوظة
           </div>
         </div>
