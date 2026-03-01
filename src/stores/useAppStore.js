@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-// تعريف الشاشات الرئيسية للنظام
+// تعريف الشاشات المبرمجة والمعروفة مسبقاً
 export const SCREENS = {
   DASH: {
     id: "DASH",
@@ -50,17 +50,27 @@ export const useAppStore = create((set, get) => ({
     ],
     300: [
       {
-        id: "DASHBOARD_CLIENTS", // 👈 تعديل هذا السطر
+        id: "DASHBOARD_CLIENTS",
         title: "لوحة العملاء",
         type: "dashboard",
         closable: false,
       },
     ],
     310: [
-      { id: "DASHBOARD_TAB", title: "لوحة الملكيات", type: "dashboard", closable: false },
+      {
+        id: "DASHBOARD_TAB",
+        title: "لوحة الملكيات",
+        type: "dashboard",
+        closable: false,
+      },
     ],
     815: [
-      { id: "QUOTATIONS_DASH", title: "لوحة عروض الأسعار", type: "dashboard", closable: false },
+      {
+        id: "QUOTATIONS_DASH",
+        title: "لوحة عروض الأسعار",
+        type: "dashboard",
+        closable: false,
+      },
     ],
     942: [
       {
@@ -71,7 +81,12 @@ export const useAppStore = create((set, get) => ({
       },
     ],
     SET: [
-      { id: "SET-SERVER", title: "حالة السيرفر", type: "wrapper", closable: false },
+      {
+        id: "SET-SERVER",
+        title: "حالة السيرفر",
+        type: "wrapper",
+        closable: false,
+      },
     ],
   },
 
@@ -89,11 +104,14 @@ export const useAppStore = create((set, get) => ({
   // 3. Actions (الوظائف والأوامر)
   // ==========================================
 
-  // فتح شاشة من السايد بار الرئيسي (تم التحديث لإنشاء تاب افتراضي ديناميكياً)
-  openScreen: (screenId) =>
+  // 👈 تم التحديث: نقبل dynamicTitle من السايدبار لفتح الشاشات غير المبرمجة
+  openScreen: (screenId, dynamicTitle = "شاشة جديدة") =>
     set((state) => {
-      const screenConfig = SCREENS[screenId];
-      if (!screenConfig) return {}; // تجاهل إذا كانت الشاشة غير معرفة
+      // 1. إذا كانت الشاشة في ثوابت النظام خذها، وإلا اصنع لها إعداداً وهمياً باسمها الحقيقي
+      const screenConfig = SCREENS[screenId] || {
+        id: screenId,
+        title: dynamicTitle,
+      };
 
       const isAlreadyOpen = state.openScreens.find((s) => s.id === screenId);
 
@@ -107,14 +125,14 @@ export const useAppStore = create((set, get) => ({
       const hasExistingTabs = !!state.screenTabs[screenId];
 
       return {
-        // 1. إضافتها للشريط العلوي
+        // إضافتها للشريط العلوي
         openScreens: [
           ...state.openScreens,
           { id: screenId, title: screenConfig.title, isClosable: true },
         ],
         activeScreenId: screenId,
 
-        // 2. تهيئة التاب الداخلي الأساسي لها إذا لم يكن موجوداً
+        // تهيئة التاب الداخلي الأساسي لها إذا لم يكن موجوداً
         screenTabs: {
           ...state.screenTabs,
           ...(hasExistingTabs
@@ -148,7 +166,6 @@ export const useAppStore = create((set, get) => ({
           newScreens.length > 0 ? newScreens[newScreens.length - 1].id : "DASH";
       }
 
-      // (اختياري) يمكننا مسح تابات الشاشة المغلقة لتنظيف الذاكرة، لكن تركها يسمح بالاحتفاظ بحالتها إذا أعاد فتحها
       return { openScreens: newScreens, activeScreenId: newActiveId };
     }),
 

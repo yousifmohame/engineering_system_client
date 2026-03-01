@@ -1,18 +1,35 @@
 import React, { useState, useEffect } from "react";
 import { usePermissionBuilder } from "../context/PermissionBuilderContext";
+import { useAuth } from "../context/AuthContext"; // 👈 1. استيراد سياق المصادقة
 import { ShieldAlert, X } from "lucide-react";
 import api from "../api/axios";
 
 const PermissionBuilderToolbar = () => {
   const { isBuilderMode, setIsBuilderMode, activeRoleId, setActiveRoleId } = usePermissionBuilder();
   const [roles, setRoles] = useState([]);
+  
+  // 👈 2. جلب بيانات المستخدم الحالي
+  const { user } = useAuth(); 
+
+  // 👈 3. تحديد المدير العام بناءً على الإيميل (نفس الإيميل الذي استخدمناه في السايدبار)
+  const isSuperAdmin = user?.email === "admin@wms.com"; // ⚠️ ضع إيميلك الحقيقي هنا
 
   // جلب الأدوار لملء القائمة المنسدلة
   useEffect(() => {
-    if (isBuilderMode) {
+    // أضفنا شرط isSuperAdmin هنا لعدم استهلاك السيرفر بطلبات من موظفين عاديين
+    if (isBuilderMode && isSuperAdmin) {
       api.get("/roles").then(res => setRoles(res.data)).catch(console.error);
     }
-  }, [isBuilderMode]);
+  }, [isBuilderMode, isSuperAdmin]);
+
+  // 👈 4. السطر السحري الحامي: إذا لم يكن المدير، لا ترسم أي شيء إطلاقاً!
+  if (!isSuperAdmin) {
+    return null;
+  }
+
+  // ==========================================
+  // من هنا ورايح، الأكواد لن تنفذ ولن تظهر إلا للمدير العام
+  // ==========================================
 
   // الزر العائم لتفعيل وضع البناء
   if (!isBuilderMode) {
