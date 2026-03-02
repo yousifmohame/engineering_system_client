@@ -74,6 +74,7 @@ import {
   User,
   Columns2,
   List,
+  Trash2
 } from "lucide-react";
 
 import { QRCodeSVG } from "qrcode.react";
@@ -1415,24 +1416,49 @@ const NodeClientsTab = ({ selectedType, selectedNode }) => {
 };
 
 // ==========================================
-
-// 🛣️ تاب الشوارع (Streets) - حقيقي
-
+// 🛣️ تاب الشوارع (Streets)
 // ==========================================
+// 💡 أضفنا setStreetModal كـ prop لنتمكن من فتح نافذة الإضافة/التعديل من هنا
+const NodeStreetsTab = ({ selectedType, selectedNode, setStreetModal }) => {
+  const queryClient = useQueryClient();
 
-const NodeStreetsTab = ({ selectedType, selectedNode }) => {
+  // 1. جلب الشوارع
   const { data: streets, isLoading } = useQuery({
     queryKey: ["node-details", selectedType, selectedNode?.id, "streets"],
-
     queryFn: async () =>
       (
         await api.get(
           `/riyadh-streets/details/${selectedType}/${selectedNode.id}/streets`,
         )
       ).data,
-
     enabled: !!selectedNode,
   });
+
+  // 2. دالة حذف الشارع (حقيقية)
+  const deleteMutation = useMutation({
+    // تأكد أن المسار يطابق مسار الحذف في الباك إند لديك
+    mutationFn: async (id) => await api.delete(`/riyadh-streets/${id}`),
+    onSuccess: () => {
+      toast.success("تم حذف الشارع بنجاح");
+      // تحديث الجدول والشجرة فوراً بعد الحذف
+      queryClient.invalidateQueries([
+        "node-details",
+        selectedType,
+        selectedNode?.id,
+        "streets",
+      ]);
+      queryClient.invalidateQueries(["riyadh-tree"]);
+    },
+    onError: () => toast.error("حدث خطأ أثناء محاولة حذف الشارع"),
+  });
+
+  const handleDeleteStreet = (id, name) => {
+    if (
+      window.confirm(`هل أنت متأكد من رغبتك في حذف الشارع (${name}) نهائياً؟`)
+    ) {
+      deleteMutation.mutate(id);
+    }
+  };
 
   if (isLoading)
     return (
@@ -1443,44 +1469,85 @@ const NodeStreetsTab = ({ selectedType, selectedNode }) => {
 
   return (
     <div className="space-y-3 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between">
-        <h4 className="text-[13px] text-stone-700 font-bold flex items-center gap-1.5">
-          <Route className="w-4 h-4 text-orange-500" /> قائمة الشوارع الموثقة
-        </h4>
+      {/* الهيدر مع زر الإضافة */}
+      <div className="flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-200">
+        <div className="flex items-center gap-3">
+          <h4 className="text-[13px] text-stone-700 font-bold flex items-center gap-1.5">
+            <Route className="w-4 h-4 text-orange-500" /> قائمة الشوارع الموثقة
+          </h4>
+          <span className="text-[10px] text-stone-400 bg-white px-2 py-1 rounded-md font-bold border border-stone-200">
+            {streets?.length || 0} شارع
+          </span>
+        </div>
 
-        <span className="text-[10px] text-stone-400 bg-stone-100 px-2 py-1 rounded-md font-bold">
-          {streets?.length || 0} شارع
-        </span>
+        {/* 👈 زر إضافة شارع جديد */}
+        <button
+          onClick={() => {
+            // نحدد هل نحن نضيف الشارع للقطاع أم لحي مباشر
+            const sectorId =
+              selectedType === "sector"
+                ? selectedNode.id
+                : selectedNode.sectorId;
+            const districtId =
+              selectedType === "neighborhood" ? selectedNode.id : null;
+
+            setStreetModal({
+              isOpen: true,
+              mode: "create", // وضع الإنشاء
+              sectorId,
+              districtId,
+              data: {
+                name: "",
+                width: "",
+                length: "",
+                lanes: "2",
+                type: "normal",
+                lighting: true,
+                sidewalks: true,
+              },
+            });
+          }}
+          className="px-3 py-1.5 text-[11px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-1.5 font-bold shadow-sm transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" /> إضافة شارع
+        </button>
       </div>
 
+      {/* جدول الشوارع */}
       <div className="border border-stone-200 rounded-xl overflow-hidden shadow-sm bg-white">
         <div className="overflow-x-auto custom-scrollbar-slim max-h-[450px]">
           <table className="w-full text-[11px] whitespace-nowrap text-right">
             <thead className="sticky top-0 z-20 bg-stone-800 text-white shadow-sm">
               <tr>
+                <th className="py-2.5 px-3 w-10 text-center">#</th>
                 <th className="py-2.5 px-3">اسم الشارع</th>
-
                 <th className="py-2.5 px-3 text-center">النوع</th>
-
                 <th className="py-2.5 px-3 text-center">العرض</th>
-
                 <th className="py-2.5 px-3 text-center">الطول</th>
-
                 <th className="py-2.5 px-3 text-center">
                   حالة الإنارة/الأرصفة
                 </th>
+                <th className="py-2.5 px-3 text-center w-24">إجراءات</th>{" "}
+                {/* 👈 عمود الإجراءات */}
               </tr>
             </thead>
 
             <tbody className="divide-y divide-stone-100">
               {streets?.length > 0 ? (
-                streets.map((st) => (
+                streets.map((st, idx) => (
                   <tr
                     key={st.id}
                     className="hover:bg-orange-50/50 transition-colors"
                   >
-                    <td className="py-2.5 px-3 font-bold text-stone-800 flex items-center gap-1.5">
-                      <Route className="w-3.5 h-3.5 text-stone-400" /> {st.name}
+                    <td className="py-2.5 px-3 text-stone-400 font-mono text-center">
+                      {idx + 1}
+                    </td>
+
+                    <td className="py-2.5 px-3 font-bold text-stone-800">
+                      <div className="flex items-center gap-1.5">
+                        <Route className="w-3.5 h-3.5 text-stone-400" />{" "}
+                        {st.name}
+                      </div>
                     </td>
 
                     <td className="py-2.5 px-3 text-center">
@@ -1489,7 +1556,7 @@ const NodeStreetsTab = ({ selectedType, selectedNode }) => {
                           طريق محوري
                         </span>
                       ) : (
-                        <span className="text-stone-500 text-[10px] bg-stone-100 px-2 py-1 rounded">
+                        <span className="text-stone-500 text-[10px] bg-stone-100 px-2 py-1 rounded border border-stone-200">
                           شارع داخلي
                         </span>
                       )}
@@ -1524,15 +1591,53 @@ const NodeStreetsTab = ({ selectedType, selectedNode }) => {
                         )}
                       </div>
                     </td>
+
+                    {/* 👈 أزرار التعديل والحذف */}
+                    <td className="py-2.5 px-3 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => {
+                            setStreetModal({
+                              isOpen: true,
+                              mode: "edit", // وضع التعديل
+                              sectorId: st.sectorId,
+                              districtId: st.districtId,
+                              data: {
+                                id: st.id,
+                                name: st.name,
+                                width: st.width,
+                                length: st.length || "",
+                                lanes: st.lanes || "2",
+                                type: st.type,
+                                lighting: st.lighting,
+                                sidewalks: st.sidewalks,
+                              },
+                            });
+                          }}
+                          className="p-1.5 rounded-md text-stone-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          title="تعديل الشارع"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStreet(st.id, st.name)}
+                          disabled={deleteMutation.isPending}
+                          className="p-1.5 rounded-md text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                          title="حذف الشارع"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td
-                    colSpan="5"
-                    className="text-center py-6 text-stone-500 font-bold"
+                    colSpan="7"
+                    className="text-center py-8 text-stone-400 font-bold bg-stone-50/50"
                   >
-                    لا توجد شوارع مرتبطة
+                    لا توجد شوارع مرتبطة بهذا النطاق
                   </td>
                 </tr>
               )}
@@ -3424,6 +3529,7 @@ const RiyadhDivisionScreen = () => {
                       <NodeStreetsTab
                         selectedType={selectedType}
                         selectedNode={selectedNode}
+                        setStreetModal={setStreetModal}
                       />
                     )}
 
