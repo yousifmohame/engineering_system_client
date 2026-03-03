@@ -23,6 +23,7 @@ import EmployeesManagement from "./pages/employees/EmployeesManagement";
 import RiyadhDivisionScreen from "./pages/Riyadh/RiyadhDivisionScreen";
 import Screen40_Sectors from "./pages/Riyadh/Screen40_Sectors";
 import Screen41_Districts from "./pages/Riyadh/Screen41_Districts";
+import ContractsScreen from "./pages/Contracts/ContractsScreen";
 
 // --- Icons & Context ---
 import { Wrench } from "lucide-react"; // 👈 استيراد أيقونة شاشة الصيانة
@@ -81,7 +82,7 @@ const AppContent = () => {
   }
 
   // 👈 قائمة بأكواد الشاشات التي قمت ببرمجتها بالفعل
-  const implementedScreens = ["DASH", "055", "300", "310", "817", "815", "942", "SET", "39", "40", "41"];
+  const implementedScreens = ["DASH", "055", "300", "310", "817", "815", "942", "SET", "39", "40", "41", "222"];
   // فحص هل الشاشة المطلوبة مبرمجة أم لا
   const isImplemented = implementedScreens.includes(activeScreenId);
 
@@ -120,6 +121,7 @@ const AppContent = () => {
             <div className={activeScreenId === "39" ? "block h-full" : "hidden"}><RiyadhDivisionScreen /></div>
             <div className={activeScreenId === "40" ? "block h-full" : "hidden"}><Screen40_Sectors /></div>
             <div className={activeScreenId === "41" ? "block h-full" : "hidden"}><Screen41_Districts /></div>
+            <div className={activeScreenId === "222" ? "block h-full" : "hidden"}><ContractsScreen /></div>
             {/* --- 👈 السحر هنا: شاشة Fallback لأي كود غير مبرمج --- */}
             {!isImplemented && (
               <div className="block h-full">

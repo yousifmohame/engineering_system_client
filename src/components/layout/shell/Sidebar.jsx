@@ -36,6 +36,7 @@ const MENU_CATEGORIES = [
       { id: "300", label: "العملاء", code: "SCREEN_300_VIEW" },
       { id: "310", label: "ملفات الملكية", code: "SCREEN_310_VIEW" },
       { id: "07", label: "الصكوك", code: "SCR_07_VIEW" },
+      { id: "222", label: "تعاقدات العملاء", code: "SCR_222_VIEW" },
       { id: "08", label: "الهويات", code: "SCR_08_VIEW" },
       { id: "09", label: "الرخص", code: "SCR_09_VIEW" },
     ],
