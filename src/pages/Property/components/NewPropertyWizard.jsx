@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { analyzeDeedWithAI, createDeed } from "../../../api/propertyApi";
 import { getSimpleClients } from "../../../api/clientApi";
 import { toast } from "sonner";
+import api from "../../../api/axios";
 import {
   Upload,
   Brain,
@@ -28,6 +29,7 @@ import {
   MapIcon,
   Info,
   FileText,
+  AlertTriangle
 } from "lucide-react";
 
 // ==========================================
@@ -314,6 +316,37 @@ const NewPropertyWizard = ({ onComplete }) => {
   const [aiResult, setAiResult] = useState(null);
   const [selectedPlotForBounds, setSelectedPlotForBounds] = useState(null);
 
+  // === حالات تقسيم الرياض (السحر الجديد) ===
+  const [isDistrictNotFound, setIsDistrictNotFound] = useState(false);
+  const [isAddDistrictModalOpen, setIsAddDistrictModalOpen] = useState(false);
+  const [newDistrictSectorId, setNewDistrictSectorId] = useState("");
+
+  // جلب القطاعات والأحياء من الباك إند
+  const { data: riyadhZones = [], refetch: refetchZones } = useQuery({
+    queryKey: ["riyadhZones"],
+    queryFn: async () => {
+      const res = await api.get("/riyadh-zones"); // تأكد من مسار الـ API الخاص بك
+      return res.data?.data || [];
+    },
+  });
+
+  // إضافة حي جديد
+  const addDistrictMutation = useMutation({
+    mutationFn: async (payload) => {
+      const res = await api.post("/riyadh-zones/districts", payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success("تم تسجيل الحي الجديد وربطه بالقطاع بنجاح!");
+      refetchZones(); // تحديث القائمة
+      setIsAddDistrictModalOpen(false);
+      // إعادة تقييم الحي المدخل لربطه فوراً
+      checkDistrictMatch(formData.district, riyadhZones);
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "حدث خطأ أثناء إضافة الحي"),
+  });
+
   const { data: clientsList = [] } = useQuery({
     queryKey: ["clients", "simple"],
     queryFn: async () => {
@@ -340,6 +373,9 @@ const NewPropertyWizard = ({ onComplete }) => {
     plots: [],
     boundaries: [],
     documents: [],
+    sectorId: "",
+    sectorName: "",
+    districtId: "",
   });
 
   useEffect(() => {
@@ -425,6 +461,94 @@ const NewPropertyWizard = ({ onComplete }) => {
     setUploadedFiles((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  // دالة لتنظيف اسم الحي (إزالة كلمة "حي" أو "ال" أو المسافات للمطابقة الدقيقة)
+  const cleanDistrictName = (name) => {
+    if (!name) return "";
+    return name
+      .replace(/^(حي\s+|ال)/g, "") // يزيل كلمة "حي " أو "ال" من البداية
+      .replace(/\s+/g, " ") // يزيل المسافات الزائدة
+      .trim();
+  };
+
+  // دالة مطابقة الحي وجلب القطاع
+  const checkDistrictMatch = (districtName, zonesList) => {
+    // إذا لم يكن هناك اسم حي، أو قائمة القطاعات فارغة، لا تفعل شيئاً
+    if (!districtName || !zonesList || zonesList.length === 0) {
+      setFormData((prev) => ({
+        ...prev,
+        sectorId: "",
+        sectorName: "",
+        districtId: "",
+      }));
+      setIsDistrictNotFound(false); // لا تظهر رسالة الخطأ إذا كان الحقل فارغاً
+      return;
+    }
+
+    const cleanedInput = cleanDistrictName(districtName);
+    let matchedSector = null;
+    let matchedDistrict = null;
+
+    // البحث في جميع القطاعات وأحيائها
+    for (const sector of zonesList) {
+      const found = sector.districts.find((d) => {
+        const dbDistrictClean = cleanDistrictName(d.name);
+        // مطابقة مرنة: إما تطابق تام، أو واحد يحتوي على الآخر
+        return (
+          dbDistrictClean === cleanedInput ||
+          dbDistrictClean.includes(cleanedInput) ||
+          cleanedInput.includes(dbDistrictClean)
+        );
+      });
+
+      if (found) {
+        matchedSector = sector;
+        matchedDistrict = found;
+        break; // توقف عن البحث بمجرد إيجاد تطابق
+      }
+    }
+
+    if (matchedSector && matchedDistrict) {
+      // تم إيجاد الحي!
+      setFormData((prev) => ({
+        ...prev,
+        sectorId: matchedSector.id,
+        sectorName: matchedSector.name,
+        districtId: matchedDistrict.id,
+      }));
+      setIsDistrictNotFound(false);
+    } else {
+      // لم يتم إيجاد الحي
+      setFormData((prev) => ({
+        ...prev,
+        sectorId: "",
+        sectorName: "",
+        districtId: "",
+      }));
+      setIsDistrictNotFound(true);
+    }
+  };
+
+  // مراقبة أي تغيير في اسم الحي (formData.district) أو عند تحميل القطاعات (riyadhZones)
+  useEffect(() => {
+    // يتم التفعيل فقط إذا كنا في الخطوة 3 (بيانات الملكية) وهناك اسم حي مكتوب
+    if (currentStep === 3 && formData.district) {
+      const timer = setTimeout(() => {
+        checkDistrictMatch(formData.district, riyadhZones);
+      }, 600); // 600 مللي ثانية (Debounce) لكي لا يبحث مع كل حرف فوراً
+
+      return () => clearTimeout(timer);
+    } else if (!formData.district) {
+      // إذا قام المستخدم بمسح اسم الحي، إخفاء التحذير وتفريغ القطاع
+      setIsDistrictNotFound(false);
+      setFormData((prev) => ({
+        ...prev,
+        sectorId: "",
+        sectorName: "",
+        districtId: "",
+      }));
+    }
+  }, [formData.district, riyadhZones, currentStep]);
+
   const handleAiExtraction = async () => {
     if (uploadedFiles.length === 0) return toast.error("ارفع ملفاً أولاً");
     try {
@@ -483,6 +607,12 @@ const NewPropertyWizard = ({ onComplete }) => {
           },
         ],
       }));
+
+      // 👈 Move the code here, inside the try block
+      const extractedDistrict = extracted.locationInfo?.district || "";
+      if (extractedDistrict) {
+        checkDistrictMatch(extractedDistrict, riyadhZones); // المطابقة التلقائية بعد AI
+      }
 
       if (newPlots.length > 0) setSelectedPlotForBounds(newPlots[0].id);
 
@@ -747,31 +877,77 @@ const NewPropertyWizard = ({ onComplete }) => {
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-600 block mb-1.5">
-                  المدينة
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-5 border-t border-slate-100 pt-5 mt-2">
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1.5">
+                    المدينة
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      value={formData.city}
+                      onChange={(e) => handleChange("city", e.target.value)}
+                      className="w-full p-3 pr-10 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1.5 flex justify-between">
+                    الحي
+                    {formData.districtId && (
+                      <span className="text-[9px] text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> مربوط
+                      </span>
+                    )}
+                  </label>
                   <input
                     type="text"
-                    value={formData.city}
-                    onChange={(e) => handleChange("city", e.target.value)}
-                    className="w-full p-3 pr-10 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-bold"
+                    value={formData.district}
+                    onChange={(e) => handleChange("district", e.target.value)}
+                    placeholder="اكتب اسم الحي (مثال: الملقا)"
+                    className={`w-full p-3 border rounded-lg outline-none transition-all font-bold ${isDistrictNotFound ? "border-amber-400 focus:ring-amber-100 bg-amber-50" : formData.districtId ? "border-emerald-300 focus:ring-emerald-100 bg-emerald-50 text-emerald-800" : "border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"}`}
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-600 block mb-1.5">
-                  الحي
-                </label>
-                <input
-                  type="text"
-                  value={formData.district}
-                  onChange={(e) => handleChange("district", e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-bold"
-                />
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1.5">
+                    القطاع التابع له
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={formData.sectorName || "---"}
+                    placeholder="يتم تحديده تلقائياً"
+                    className="w-full p-3 border border-slate-200 bg-slate-100 text-slate-500 rounded-lg outline-none font-bold cursor-not-allowed"
+                  />
+                </div>
+
+                {/* 👈 التنبيه إذا كان الحي غير موجود */}
+                {isDistrictNotFound && formData.district && (
+                  <div className="md:col-span-3 flex items-center justify-between p-3 bg-amber-100 border border-amber-200 rounded-xl animate-in slide-in-from-top-2">
+                    <div className="flex items-center gap-3 text-amber-800">
+                      <AlertTriangle className="w-5 h-5 shrink-0" />
+                      <div>
+                        <div className="text-sm font-bold">
+                          الحي "{formData.district}" غير مسجل في التقسيم
+                          الإداري!
+                        </div>
+                        <div className="text-[10px] mt-0.5 opacity-80">
+                          لن تتمكن من الاستفادة من إحصائيات القطاعات إلا إذا قمت
+                          بربطه.
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setIsAddDistrictModalOpen(true)}
+                      className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm"
+                    >
+                      + إضافة الحي للتقسيم
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -1341,6 +1517,75 @@ const NewPropertyWizard = ({ onComplete }) => {
           </button>
         </div>
       </div>
+      {/* مودال إضافة حي جديد لتقسيم الرياض */}
+      {isAddDistrictModalOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={() => setIsAddDistrictModalOpen(false)}
+          ></div>
+          <div className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-black text-slate-800 mb-2 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-blue-600" /> إضافة حي جديد للتقسيم
+            </h3>
+            <p className="text-xs text-slate-500 mb-5">
+              سيتم إضافة حي{" "}
+              <span className="font-bold text-slate-800">
+                "{formData.district}"
+              </span>{" "}
+              وتوفيره لجميع المعاملات القادمة.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  اختر القطاع الذي يتبعه هذا الحي *
+                </label>
+                <select
+                  value={newDistrictSectorId}
+                  onChange={(e) => setNewDistrictSectorId(e.target.value)}
+                  className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-blue-500 bg-slate-50 font-bold"
+                >
+                  <option value="">-- اختر القطاع --</option>
+                  {riyadhZones.map((sector) => (
+                    <option key={sector.id} value={sector.id}>
+                      {sector.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-2 pt-2 border-t border-slate-100">
+                <button
+                  onClick={() => setIsAddDistrictModalOpen(false)}
+                  className="flex-1 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={() =>
+                    addDistrictMutation.mutate({
+                      name: formData.district,
+                      sectorId: newDistrictSectorId,
+                    })
+                  }
+                  disabled={
+                    !newDistrictSectorId || addDistrictMutation.isPending
+                  }
+                  className="flex-[2] py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {addDistrictMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4" />
+                  )}
+                  اعتماد الحي
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
