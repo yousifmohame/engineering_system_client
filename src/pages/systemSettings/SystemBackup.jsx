@@ -1,18 +1,54 @@
 import React from "react";
 import { toast } from "sonner";
+import api from "../../api/axios";
 import { Database, FolderArchive, AlertTriangle, Download, Server } from "lucide-react";
 
 export default function SystemBackup() {
-  const baseURL = import.meta.env.VITE_API_BASE_URL;
 
-  const handleDbBackup = () => {
-    toast.success("جاري تجهيز وتنزيل قاعدة البيانات...");
-    window.open(`${baseURL}/server/backup`, "_blank");
+  const handleDbBackup = async () => {
+    toast.info("جاري تجهيز وتنزيل قاعدة البيانات، يرجى الانتظار...");
+    try {
+      // استخدام Axios لتحميل الملف مع الـ Token
+      const response = await api.get("/server/backup", { responseType: "blob" });
+      
+      // إنشاء رابط وهمي لتحميل الملف في المتصفح
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `database_backup_${new Date().toISOString().split('T')[0]}.sql`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove(); // تنظيف
+      
+      toast.success("تم تحميل قاعدة البيانات بنجاح!");
+    } catch (error) {
+      toast.error("فشل في تحميل قاعدة البيانات. تأكد من صلاحياتك.");
+    }
   };
 
-  const handleUploadsBackup = () => {
-    toast.success("جاري ضغط مجلد المرفقات (قد يستغرق بعض الوقت)...");
-    window.open(`${baseURL}/server/backup-uploads`, "_blank");
+  const handleUploadsBackup = async () => {
+    toast.info("جاري ضغط وتنزيل المرفقات... قد يستغرق هذا عدة دقائق.");
+    try {
+      // استخدام Axios مع تحديد responseType: 'blob'
+      const response = await api.get("/server/backup-uploads", { responseType: "blob" });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `uploads_backup_${new Date().toISOString().split('T')[0]}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      toast.success("تم تحميل مجلد المرفقات بنجاح!");
+    } catch (error) {
+      // إذا كان الخطأ 404 (المجلد غير موجود)
+      if (error.response && error.response.status === 404) {
+        toast.error("مجلد المرفقات غير موجود على السيرفر!");
+      } else {
+        toast.error("فشل في تحميل المرفقات. حجم الملف قد يكون كبيراً جداً.");
+      }
+    }
   };
 
   return (
