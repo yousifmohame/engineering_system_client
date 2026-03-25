@@ -9,7 +9,6 @@ import Sidebar from "./components/layout/shell/Sidebar";
 import GlobalScreenTabs from "./components/layout/shell/GlobalScreenTabs";
 import ScreenHeader from "./components/layout/shell/ScreenHeader";
 import SystemFooter from "./components/layout/shell/SystemFooter";
-import ServerSettings from "./components/ServerSettings";
 
 // --- Pages / Screens ---
 import Login from "./pages/Login";
@@ -27,6 +26,9 @@ import ContractsScreen from "./pages/Contracts/ContractsScreen";
 import {Screen860IntermediaryOffices} from "./pages/intermediaryOfficesPage";
 import BrokersPage from "./pages/BrokersPage";
 import PartnersPage from "./pages/PartnersPage";
+import HardwareMonitor from "./pages/systemSettings/HardwareMonitor";
+import SystemBackup from "./pages/systemSettings/SystemBackup";
+import SystemSettings from "./pages/systemSettings/SystemSettings";
 
 // --- Icons & Context ---
 import { Wrench } from "lucide-react"; // 👈 استيراد أيقونة شاشة الصيانة
@@ -85,7 +87,7 @@ const AppContent = () => {
   }
 
   // 👈 قائمة بأكواد الشاشات التي قمت ببرمجتها بالفعل
-  const implementedScreens = ["DASH", "055", "300", "310", "817", "815", "942", "SET", "39", "40", "41", "222", "30", "31", "32"];
+  const implementedScreens = ["DASH", "055", "300", "310", "817", "815", "942", "SET", "39", "40", "41", "222", "30", "31", "32", "71", "73", "74"];
   // فحص هل الشاشة المطلوبة مبرمجة أم لا
   const isImplemented = implementedScreens.includes(activeScreenId);
 
@@ -120,7 +122,6 @@ const AppContent = () => {
             <div className={activeScreenId === "817" ? "block h-full" : "hidden"}><EmployeesManagement /></div>
             <div className={activeScreenId === "815" ? "block h-full" : "hidden"}><QuotationsScreenWrapper /></div>
             <div className={activeScreenId === "942" ? "block h-full" : "hidden"}><Screen942_DocumentTypes /></div>
-            <div className={activeScreenId === "SET" ? "block h-full" : "hidden"}><ServerSettings /></div>
             <div className={activeScreenId === "39" ? "block h-full" : "hidden"}><RiyadhDivisionScreen /></div>
             <div className={activeScreenId === "40" ? "block h-full" : "hidden"}><Screen40_Sectors /></div>
             <div className={activeScreenId === "41" ? "block h-full" : "hidden"}><Screen41_Districts /></div>
@@ -128,6 +129,9 @@ const AppContent = () => {
             <div className={activeScreenId === "30" ? "block h-full" : "hidden"}><BrokersPage /></div>
             <div className={activeScreenId === "31" ? "block h-full" : "hidden"}><Screen860IntermediaryOffices /></div>
             <div className={activeScreenId === "32" ? "block h-full" : "hidden"}><PartnersPage /></div>
+            <div className={activeScreenId === "71" ? "block h-full" : "hidden"}><SystemSettings /></div>
+            <div className={activeScreenId === "73" ? "block h-full" : "hidden"}><SystemBackup /></div>
+            <div className={activeScreenId === "74" ? "block h-full" : "hidden"}><HardwareMonitor /></div>
             {/* --- 👈 السحر هنا: شاشة Fallback لأي كود غير مبرمج --- */}
             {!isImplemented && (
               <div className="block h-full">
