@@ -29,6 +29,7 @@ import PartnersPage from "./pages/PartnersPage";
 import HardwareMonitor from "./pages/systemSettings/HardwareMonitor";
 import SystemBackup from "./pages/systemSettings/SystemBackup";
 import SystemSettings from "./pages/systemSettings/SystemSettings";
+import BuildingPermitsRegistry from "./pages/Permits/BuildingPermitsRegistry";
 
 // --- Icons & Context ---
 import { Wrench } from "lucide-react"; // 👈 استيراد أيقونة شاشة الصيانة
@@ -87,7 +88,7 @@ const AppContent = () => {
   }
 
   // 👈 قائمة بأكواد الشاشات التي قمت ببرمجتها بالفعل
-  const implementedScreens = ["DASH", "055", "300", "310", "817", "815", "942", "SET", "39", "40", "41", "222", "30", "31", "32", "71", "73", "74"];
+  const implementedScreens = ["DASH", "055", "300", "310", "817", "815", "942", "SET", "39", "40", "41", "222", "30", "31", "32", "71", "73", "74", "09"];
   // فحص هل الشاشة المطلوبة مبرمجة أم لا
   const isImplemented = implementedScreens.includes(activeScreenId);
 
@@ -132,6 +133,7 @@ const AppContent = () => {
             <div className={activeScreenId === "71" ? "block h-full" : "hidden"}><SystemSettings /></div>
             <div className={activeScreenId === "73" ? "block h-full" : "hidden"}><SystemBackup /></div>
             <div className={activeScreenId === "74" ? "block h-full" : "hidden"}><HardwareMonitor /></div>
+            <div className={activeScreenId === "09" ? "block h-full" : "hidden"}><BuildingPermitsRegistry /></div>
             {/* --- 👈 السحر هنا: شاشة Fallback لأي كود غير مبرمج --- */}
             {!isImplemented && (
               <div className="block h-full">
