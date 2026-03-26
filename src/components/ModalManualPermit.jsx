@@ -12,10 +12,20 @@ import {
   Plus,
   CheckCircle2,
   AlertTriangle,
+  Copy, // 👈 أيقونة النسخ
 } from "lucide-react";
 
 // ==========================================
-// 💡 مكون الحقل الذكي للربط (نفس المستخدم في الذكاء الاصطناعي)
+// 💡 دالة مساعدة للنسخ (Clipboard)
+// ==========================================
+const copyToClipboard = (text) => {
+  if (!text) return toast.error("الحقل فارغ لا يوجد شيء لنسخه!");
+  navigator.clipboard.writeText(text);
+  toast.success("تم النسخ بنجاح! 📋");
+};
+
+// ==========================================
+// 💡 مكون الحقل الذكي للربط (مضاف إليه زر النسخ)
 // ==========================================
 const SmartLinkedField = ({
   label,
@@ -36,7 +46,17 @@ const SmartLinkedField = ({
   return (
     <div className="flex flex-col gap-1 w-full">
       <div className="flex items-center justify-between mb-0.5">
-        <label className="text-[11px] font-bold text-slate-500">{label}</label>
+        <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
+          {label}
+          {/* 💡 زر النسخ الموحد */}
+          <button
+            onClick={() => copyToClipboard(value)}
+            className="text-slate-400 hover:text-blue-600 transition-colors"
+            title="نسخ المحتوى"
+          >
+            <Copy size={12} />
+          </button>
+        </label>
         {value &&
           value.trim() !== "" &&
           (isLinked ? (
@@ -53,7 +73,6 @@ const SmartLinkedField = ({
                   onClick={onQuickAdd}
                   disabled={isAdding}
                   className="text-[9px] bg-blue-600 text-white hover:bg-blue-700 px-2 py-0.5 rounded font-bold flex items-center gap-1 transition-all shadow-sm disabled:opacity-50"
-                  title="إضافة سريعة للنظام"
                 >
                   {isAdding ? (
                     <Loader2 size={10} className="animate-spin" />
@@ -71,11 +90,7 @@ const SmartLinkedField = ({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`w-full px-3 py-2 bg-slate-50 border rounded-lg text-[11px] font-bold text-slate-700 outline-none transition-all ${
-            value && isLinked
-              ? "border-emerald-300 focus:ring-1 focus:ring-emerald-400 bg-white"
-              : "border-slate-200 focus:ring-1 focus:ring-blue-400 focus:bg-white"
-          }`}
+          className={`w-full px-3 py-2 bg-slate-50 border rounded-lg text-[11px] font-bold text-slate-700 outline-none transition-all ${value && isLinked ? "border-emerald-300 focus:ring-1 focus:ring-emerald-400 bg-white" : "border-slate-200 focus:ring-1 focus:ring-blue-400 focus:bg-white"}`}
           placeholder={placeholder}
           list={listId}
         />
@@ -90,6 +105,43 @@ const SmartLinkedField = ({
 };
 
 // ==========================================
+// 💡 مكون لحقل إدخال عادي مع زر النسخ
+// ==========================================
+const CopyableInput = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  dir = "rtl",
+  style = {},
+}) => (
+  <div className="space-y-1">
+    <div className="flex items-center justify-between mb-0.5">
+      <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
+        {label}
+        <button
+          onClick={() => copyToClipboard(value)}
+          className="text-slate-400 hover:text-blue-600 transition-colors"
+          title="نسخ المحتوى"
+        >
+          <Copy size={12} />
+        </button>
+      </label>
+    </div>
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      dir={dir}
+      style={style}
+      className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-700 outline-none focus:ring-1 focus:ring-blue-400 focus:bg-white"
+    />
+  </div>
+);
+
+// ==========================================
 // 💡 المودل الرئيسي للإضافة اليدوية
 // ==========================================
 export function ModalManualPermit({
@@ -101,75 +153,77 @@ export function ModalManualPermit({
   const fileInputRef = useRef(null);
 
   // ==========================================
-  // 💡 1. جلب البيانات للدروب داون والتحقق (نفس لوجيك الـ AI)
+  // 💡 1. جلب البيانات للدروب داون
   // ==========================================
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-simple"],
     queryFn: async () => (await api.get("/clients/simple")).data || [],
   });
-
   const { data: offices = [] } = useQuery({
     queryKey: ["offices-list"],
     queryFn: async () =>
       (await api.get("/intermediary-offices")).data?.data || [],
   });
-
   const { data: districtsTree = [], isLoading: loadingDistricts } = useQuery({
     queryKey: ["districts-tree-list"],
     queryFn: async () => (await api.get("/riyadh-streets/tree")).data || [],
   });
-
   const { data: sectors = [] } = useQuery({
     queryKey: ["sectors-list"],
     queryFn: async () => (await api.get("/riyadh-streets/sectors")).data || [],
   });
 
-  // تفكيك الأحياء
+  // 💡 جلب المخططات (Plans) لدعم الحقل الذكي الجديد
+  const { data: plans = [] } = useQuery({
+    queryKey: ["plans-list"],
+    queryFn: async () => (await api.get("/riyadh-streets/plans")).data || [],
+  });
+
   const flatDistricts = useMemo(() => {
     let all = [];
     districtsTree.forEach((s) => {
-      if (s.neighborhoods) {
-        const mapped = s.neighborhoods.map((n) => ({
-          ...n,
-          sectorName: s.name,
-        }));
-        all = [...all, ...mapped];
-      }
+      if (s.neighborhoods)
+        all = [
+          ...all,
+          ...s.neighborhoods.map((n) => ({ ...n, sectorName: s.name })),
+        ];
     });
     return all;
   }, [districtsTree]);
 
   // ==========================================
-  // 💡 2. عمليات الإضافة السريعة (Mutations)
+  // 💡 2. الإضافة السريعة (Mutations)
   // ==========================================
   const quickAddClient = useMutation({
-    mutationFn: async (clientData) => await api.post("/clients", clientData),
+    mutationFn: async (data) => await api.post("/clients", data),
     onSuccess: () => {
       toast.success("تمت إضافة العميل بنجاح!");
       queryClient.invalidateQueries(["clients-simple"]);
     },
-    onError: (err) =>
-      toast.error(err.response?.data?.message || "فشل إضافة العميل."),
   });
-
   const quickAddDistrict = useMutation({
-    mutationFn: async (districtData) =>
-      await api.post("/riyadh-streets/districts", districtData),
+    mutationFn: async (data) =>
+      await api.post("/riyadh-streets/districts", data),
     onSuccess: () => {
       toast.success("تمت إضافة الحي بنجاح!");
       queryClient.invalidateQueries(["districts-tree-list"]);
     },
-    onError: () => toast.error("فشل إضافة الحي."),
   });
-
   const quickAddOffice = useMutation({
-    mutationFn: async (officeData) =>
-      await api.post("/intermediary-offices", officeData),
+    mutationFn: async (data) => await api.post("/intermediary-offices", data),
     onSuccess: () => {
       toast.success("تمت إضافة المكتب بنجاح!");
       queryClient.invalidateQueries(["offices-list"]);
     },
-    onError: () => toast.error("فشل إضافة المكتب."),
+  });
+
+  // 💡 إضافة المخطط السريعة
+  const quickAddPlan = useMutation({
+    mutationFn: async (data) => await api.post("/riyadh-streets/plans", data),
+    onSuccess: () => {
+      toast.success("تمت إضافة المخطط بنجاح!");
+      queryClient.invalidateQueries(["plans-list"]);
+    },
   });
 
   // ==========================================
@@ -177,7 +231,7 @@ export function ModalManualPermit({
   // ==========================================
   const [formData, setFormData] = useState({
     permitNumber: "",
-    year: "1446",
+    year: "1446", // سيتم التعامل معه كمدخل نصي
     type: "بناء جديد",
     form: "يدوي",
     ownerName: "",
@@ -187,7 +241,8 @@ export function ModalManualPermit({
     plotNumber: "",
     planNumber: "",
     landArea: "",
-    usage: "سكني",
+    mainUsage: "سكني", // 👈 التصنيف الرئيسي
+    subUsage: "", // 👈 التصنيف الفرعي
     engineeringOffice: "",
     source: "يدوي",
     notes: "",
@@ -198,6 +253,8 @@ export function ModalManualPermit({
     if (mode === "edit" && permitData) {
       setFormData({
         ...permitData,
+        mainUsage: permitData.mainUsage || permitData.usage || "سكني", // التوافق مع القديم
+        subUsage: permitData.subUsage || "",
         landArea: permitData.landArea || "",
         notes: permitData.notes || "",
         file: null,
@@ -205,7 +262,6 @@ export function ModalManualPermit({
     }
   }, [mode, permitData]);
 
-  // تحديث القطاع تلقائياً عند تغيير الحي
   useEffect(() => {
     if (formData.district && flatDistricts.length > 0) {
       const found = flatDistricts.find((d) => d.name === formData.district);
@@ -230,15 +286,14 @@ export function ModalManualPermit({
           fd.append(key, data[key]);
       });
 
-      if (mode === "edit") {
+      if (mode === "edit")
         return await api.put(`/permits/${permitData.id}`, fd, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-      } else {
+      else
         return await api.post("/permits", fd, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-      }
     },
     onSuccess: () => {
       toast.success(
@@ -255,7 +310,7 @@ export function ModalManualPermit({
 
   const handleSubmit = () => {
     if (!formData.permitNumber || !formData.ownerName)
-      return toast.error("يرجى إدخال رقم الرخصة واسم المالك");
+      return toast.error("يرجى إدخال رقم الرخصة واسم المالك كحد أدنى");
     saveMutation.mutate(formData);
   };
 
@@ -264,7 +319,7 @@ export function ModalManualPermit({
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 animate-in fade-in"
       dir="rtl"
     >
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-5xl w-full mx-4 max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 rounded-t-xl bg-blue-600 shrink-0">
           <div className="flex items-center gap-2 text-white">
@@ -284,7 +339,6 @@ export function ModalManualPermit({
         {/* Content */}
         <div className="flex-1 overflow-auto p-6 custom-scrollbar-slim bg-[#fafbfc]">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {/* 💡 الحقل الذكي للعميل (المالك) */}
             <div className="lg:col-span-2">
               <SmartLinkedField
                 label="اسم المالك (العميل) *"
@@ -298,99 +352,53 @@ export function ModalManualPermit({
                   opt.idNumber === formData.idNumber
                 }
                 isAdding={quickAddClient.isPending}
-                onQuickAdd={() => {
-                  const randomMobile = `0500${Math.floor(100000 + Math.random() * 900000)}`;
-                  const randomId = `TMP-${Math.floor(10000 + Math.random() * 90000)}`;
+                onQuickAdd={() =>
                   quickAddClient.mutate({
                     name: JSON.stringify({ ar: formData.ownerName }),
                     officialNameAr: formData.ownerName,
-                    idNumber: formData.idNumber || randomId,
+                    idNumber: formData.idNumber || `TMP-${Date.now()}`,
                     type: "individual",
-                    mobile: randomMobile,
-                  });
-                }}
+                    mobile: "0500000000",
+                  })
+                }
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-500 block">
-                رقم الهوية
-              </label>
-              <input
-                type="text"
-                value={formData.idNumber}
-                onChange={(e) =>
-                  setFormData({ ...formData, idNumber: e.target.value })
-                }
-                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-700 outline-none focus:ring-1 focus:ring-blue-400 focus:bg-white"
-                placeholder="10 أرقام"
-                dir="ltr"
-                style={{ textAlign: "right" }}
-              />
-            </div>
+            <CopyableInput
+              label="رقم الهوية"
+              value={formData.idNumber}
+              onChange={(val) => setFormData({ ...formData, idNumber: val })}
+              placeholder="10 أرقام"
+              dir="ltr"
+              style={{ textAlign: "right" }}
+            />
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-500 block">
-                رقم الرخصة *
-              </label>
-              <input
-                type="text"
-                value={formData.permitNumber}
-                onChange={(e) =>
-                  setFormData({ ...formData, permitNumber: e.target.value })
-                }
-                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-700 outline-none focus:ring-1 focus:ring-blue-400 focus:bg-white"
-                placeholder="مثال: 1445/1234"
-              />
-            </div>
+            <CopyableInput
+              label="رقم الرخصة *"
+              value={formData.permitNumber}
+              onChange={(val) =>
+                setFormData({ ...formData, permitNumber: val })
+              }
+              placeholder="مثال: 1445/1234"
+            />
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-500 block">
-                سنة الرخصة
-              </label>
-              <select
-                value={formData.year}
-                onChange={(e) =>
-                  setFormData({ ...formData, year: e.target.value })
-                }
-                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-700 outline-none focus:ring-1 focus:ring-blue-400 focus:bg-white"
-              >
-                {[1446, 1445, 1444, 1443, 1442, 1441, 1440].map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* 💡 حقل السنة أصبح نصياً حراً مع زر نسخ */}
+            <CopyableInput
+              label="سنة الرخصة"
+              type="text"
+              value={formData.year}
+              onChange={(val) => setFormData({ ...formData, year: val })}
+              placeholder="مثال: 1447"
+            />
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-500 block">
-                نوع الرخصة
-              </label>
-              <select
-                value={formData.type}
-                onChange={(e) =>
-                  setFormData({ ...formData, type: e.target.value })
-                }
-                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-700 outline-none focus:ring-1 focus:ring-blue-400 focus:bg-white"
-              >
-                {[
-                  "بناء جديد",
-                  "ترميم",
-                  "إضافة",
-                  "هدم وإعادة بناء",
-                  "تعديل",
-                  "سور",
-                  "تمديد",
-                ].map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* 💡 الحقل الذكي للحي */}
+            {/* 💡 القطاع والحي */}
+            <CopyableInput
+              label="القطاع (تلقائي)"
+              value={formData.sector}
+              onChange={() => {}}
+              placeholder="يحدد تلقائياً حسب الحي"
+              style={{ backgroundColor: "#f1f5f9", cursor: "not-allowed" }}
+            />
             <div>
               <SmartLinkedField
                 label="الحي"
@@ -405,32 +413,102 @@ export function ModalManualPermit({
                   opt.name?.trim() === val?.trim() || opt.name?.includes(val)
                 }
                 isAdding={quickAddDistrict.isPending}
-                onQuickAdd={() => {
-                  const fallbackSector = sectors[0]?.id;
-                  if (!fallbackSector)
-                    return toast.error("لا توجد قطاعات مسجلة!");
+                onQuickAdd={() =>
                   quickAddDistrict.mutate({
                     name: formData.district,
-                    sectorId: fallbackSector,
-                  });
-                }}
+                    sectorId: sectors[0]?.id,
+                  })
+                }
+              />
+            </div>
+
+            {/* 💡 الحقل الذكي لرقم المخطط */}
+            <div>
+              <SmartLinkedField
+                label="رقم المخطط"
+                value={formData.planNumber}
+                onChange={(val) =>
+                  setFormData({ ...formData, planNumber: val })
+                }
+                options={plans}
+                listId="manualPlansList"
+                placeholder="ابحث أو اكتب رقم المخطط..."
+                matchFn={(opt, val) =>
+                  opt.name?.trim() === val?.trim() ||
+                  opt.planNumber?.includes(val)
+                }
+                isAdding={quickAddPlan.isPending}
+                onQuickAdd={() =>
+                  quickAddPlan.mutate({
+                    name: formData.planNumber,
+                    planNumber: formData.planNumber,
+                  })
+                }
+              />
+            </div>
+
+            <CopyableInput
+              label="رقم القطعة"
+              value={formData.plotNumber}
+              onChange={(val) => setFormData({ ...formData, plotNumber: val })}
+              placeholder="رقم القطعة"
+            />
+            <CopyableInput
+              label="مساحة الأرض (م²)"
+              type="number"
+              value={formData.landArea}
+              onChange={(val) => setFormData({ ...formData, landArea: val })}
+              placeholder="المساحة"
+            />
+
+            {/* 💡 تقسيم الاستخدام إلى رئيسي وفرعي مع زر نسخ مدمج */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between mb-0.5">
+                <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
+                  التصنيف الرئيسي
+                  <button
+                    onClick={() => copyToClipboard(formData.mainUsage)}
+                    className="text-slate-400 hover:text-blue-600 transition-colors"
+                  >
+                    <Copy size={12} />
+                  </button>
+                </label>
+              </div>
+              <input
+                type="text"
+                value={formData.mainUsage}
+                onChange={(e) =>
+                  setFormData({ ...formData, mainUsage: e.target.value })
+                }
+                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 outline-none focus:ring-1 focus:ring-blue-400"
+                placeholder="مثال: سكني، تجاري"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-500 block">
-                القطاع (تلقائي)
-              </label>
+              <div className="flex items-center justify-between mb-0.5">
+                <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
+                  التصنيف الفرعي
+                  <button
+                    onClick={() => copyToClipboard(formData.subUsage)}
+                    className="text-slate-400 hover:text-blue-600 transition-colors"
+                  >
+                    <Copy size={12} />
+                  </button>
+                </label>
+              </div>
               <input
                 type="text"
-                value={formData.sector}
-                readOnly
-                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-100 text-slate-500 cursor-not-allowed"
-                placeholder="يحدد تلقائياً حسب الحي"
+                value={formData.subUsage}
+                onChange={(e) =>
+                  setFormData({ ...formData, subUsage: e.target.value })
+                }
+                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 outline-none focus:ring-1 focus:ring-blue-400"
+                placeholder="مثال: مستودعات، مكتبي، فيلا"
               />
             </div>
 
-            {/* 💡 الحقل الذكي للمكتب الهندسي */}
+            {/* 💡 حقل ذكي للمكتب الهندسي */}
             <div>
               <SmartLinkedField
                 label="المكتب الهندسي"
@@ -445,7 +523,7 @@ export function ModalManualPermit({
                   opt.nameAr?.includes(val) || opt.nameEn?.includes(val)
                 }
                 isAdding={quickAddOffice.isPending}
-                onQuickAdd={() => {
+                onQuickAdd={() =>
                   quickAddOffice.mutate({
                     nameAr: formData.engineeringOffice,
                     nameEn: formData.engineeringOffice,
@@ -453,83 +531,12 @@ export function ModalManualPermit({
                     commercialRegister: "0000000000",
                     city: "الرياض",
                     status: "نشط",
-                  });
-                }}
+                  })
+                }
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-500 block">
-                رقم القطعة
-              </label>
-              <input
-                type="text"
-                value={formData.plotNumber}
-                onChange={(e) =>
-                  setFormData({ ...formData, plotNumber: e.target.value })
-                }
-                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-700 outline-none focus:ring-1 focus:ring-blue-400 focus:bg-white"
-                placeholder="رقم القطعة"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-500 block">
-                رقم المخطط
-              </label>
-              <input
-                type="text"
-                value={formData.planNumber}
-                onChange={(e) =>
-                  setFormData({ ...formData, planNumber: e.target.value })
-                }
-                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-700 outline-none focus:ring-1 focus:ring-blue-400 focus:bg-white"
-                placeholder="رقم المخطط"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-500 block">
-                مساحة الأرض (م²)
-              </label>
-              <input
-                type="number"
-                value={formData.landArea}
-                onChange={(e) =>
-                  setFormData({ ...formData, landArea: e.target.value })
-                }
-                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-700 outline-none focus:ring-1 focus:ring-blue-400 focus:bg-white"
-                placeholder="المساحة"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-500 block">
-                الاستخدام
-              </label>
-              <select
-                value={formData.usage}
-                onChange={(e) =>
-                  setFormData({ ...formData, usage: e.target.value })
-                }
-                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-700 outline-none focus:ring-1 focus:ring-blue-400 focus:bg-white"
-              >
-                {[
-                  "سكني",
-                  "تجاري",
-                  "سكني تجاري",
-                  "مكتبي",
-                  "صناعي",
-                  "تعليمي",
-                  "صحي",
-                ].map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-
+            {/* باقي الحقول (Select) */}
             <div className="space-y-1">
               <label className="text-[11px] font-bold text-slate-500 block">
                 شكل الرخصة
@@ -539,7 +546,7 @@ export function ModalManualPermit({
                 onChange={(e) =>
                   setFormData({ ...formData, form: e.target.value })
                 }
-                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-700 outline-none focus:ring-1 focus:ring-blue-400 focus:bg-white"
+                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50"
               >
                 {["يدوي", "أصفر", "أخضر"].map((t) => (
                   <option key={t} value={t}>
@@ -558,7 +565,7 @@ export function ModalManualPermit({
                 onChange={(e) =>
                   setFormData({ ...formData, source: e.target.value })
                 }
-                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-700 outline-none focus:ring-1 focus:ring-blue-400 focus:bg-white"
+                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50"
               >
                 {[
                   "نظام المعاملات",
@@ -575,21 +582,16 @@ export function ModalManualPermit({
             </div>
 
             <div className="lg:col-span-3 space-y-1 mt-2">
-              <label className="text-[11px] font-bold text-slate-500 block">
-                ملاحظات
-              </label>
-              <textarea
-                rows={2}
+              <CopyableInput
+                label="ملاحظات"
                 value={formData.notes}
-                onChange={(e) =>
-                  setFormData({ ...formData, notes: e.target.value })
-                }
-                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-700 outline-none focus:ring-1 focus:ring-blue-400 focus:bg-white"
+                onChange={(val) => setFormData({ ...formData, notes: val })}
                 placeholder="ملاحظات إضافية (اختياري)"
-              ></textarea>
+              />
             </div>
           </div>
 
+          {/* 💡 منطقة رفع الملف */}
           <div className="mt-6 border-t border-slate-200 pt-5">
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-700 flex items-center gap-2">

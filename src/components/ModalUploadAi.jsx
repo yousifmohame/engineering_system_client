@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import api from "../api/axios";
 import { toast } from "sonner";
 import {
@@ -18,10 +18,20 @@ import {
   CheckCircle2,
   AlertTriangle,
   Plus,
+  Copy,
 } from "lucide-react";
 
 // ==========================================
-// 💡 مكون الحقل الذكي للربط (Smart Linked Field)
+// 💡 دالة مساعدة للنسخ (Clipboard)
+// ==========================================
+const copyToClipboard = (text) => {
+  if (!text) return toast.error("الحقل فارغ لا يوجد شيء لنسخه!");
+  navigator.clipboard.writeText(text);
+  toast.success("تم النسخ بنجاح! 📋");
+};
+
+// ==========================================
+// 💡 مكون الحقل الذكي للربط
 // ==========================================
 const SmartLinkedField = ({
   label,
@@ -34,21 +44,29 @@ const SmartLinkedField = ({
   placeholder,
   listId,
 }) => {
-  // التحقق هل القيمة المدخلة موجودة في الخيارات المجلوبة من الباك إند
   const isLinked = useMemo(() => {
     if (!value || value.trim() === "") return false;
     return options.some((opt) => matchFn(opt, value));
   }, [value, options, matchFn]);
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 w-full">
       <div className="flex items-center justify-between mb-0.5">
-        <label className="text-[10px] font-bold text-slate-500">{label}</label>
+        <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
+          {label}
+          <button
+            onClick={() => copyToClipboard(value)}
+            className="text-slate-400 hover:text-blue-600 transition-colors"
+            title="نسخ المحتوى"
+          >
+            <Copy size={12} />
+          </button>
+        </label>
         {value &&
           value.trim() !== "" &&
           (isLinked ? (
             <span className="flex items-center gap-1 text-[9px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-bold shadow-sm">
-              <CheckCircle2 size={10} /> مسجل بالنظام
+              <CheckCircle2 size={10} /> مسجل
             </span>
           ) : (
             <div className="flex items-center gap-1.5">
@@ -60,14 +78,14 @@ const SmartLinkedField = ({
                   onClick={onQuickAdd}
                   disabled={isAdding}
                   className="text-[9px] bg-blue-600 text-white hover:bg-blue-700 px-2 py-0.5 rounded font-bold flex items-center gap-1 transition-all shadow-sm disabled:opacity-50"
-                  title="إضافة إلى قاعدة البيانات"
+                  title="إضافة سريعة للنظام"
                 >
                   {isAdding ? (
                     <Loader2 size={10} className="animate-spin" />
                   ) : (
                     <Plus size={10} />
-                  )}
-                  إضافة سريعة
+                  )}{" "}
+                  إضافة
                 </button>
               )}
             </div>
@@ -78,15 +96,10 @@ const SmartLinkedField = ({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`w-full px-3 py-2 bg-slate-50 border rounded-lg text-[13px] font-bold outline-none transition-all ${
-            value && isLinked
-              ? "border-emerald-300 focus:ring-2 focus:ring-emerald-200"
-              : "border-slate-200 focus:ring-2 focus:ring-purple-200"
-          }`}
+          className={`w-full px-3 py-2 bg-slate-50 border rounded-lg text-[11px] font-bold text-slate-700 outline-none transition-all ${value && isLinked ? "border-emerald-300 focus:ring-1 focus:ring-emerald-400 bg-white" : "border-slate-200 focus:ring-1 focus:ring-blue-400 focus:bg-white"}`}
           placeholder={placeholder}
           list={listId}
         />
-        {/* قائمة اقتراحات تلقائية (Autocomplete) من البيانات المسجلة */}
         <datalist id={listId}>
           {options.map((opt, idx) => (
             <option key={idx} value={opt.name || opt.nameAr || opt.label} />
@@ -98,15 +111,51 @@ const SmartLinkedField = ({
 };
 
 // ==========================================
-// 💡 المودل الرئيسي
+// 💡 مكون الإدخال القابل للنسخ
+// ==========================================
+const CopyableInput = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  dir = "rtl",
+  style = {},
+}) => (
+  <div className="space-y-1">
+    <div className="flex items-center justify-between mb-0.5">
+      <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
+        {label}
+        <button
+          onClick={() => copyToClipboard(value)}
+          className="text-slate-400 hover:text-blue-600 transition-colors"
+          title="نسخ المحتوى"
+        >
+          <Copy size={12} />
+        </button>
+      </label>
+    </div>
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      dir={dir}
+      style={style}
+      className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-700 outline-none focus:ring-1 focus:ring-blue-400 focus:bg-white"
+    />
+  </div>
+);
+
+// ==========================================
+// 💡 المودل الرئيسي للذكاء الاصطناعي
 // ==========================================
 export function ModalUploadAi({ onClose }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
 
-  const [step, setStep] = useState(1); // 1: Upload, 2: Review
+  const [step, setStep] = useState(1);
   const [file, setFile] = useState(null);
-
   const [permits, setPermits] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -117,63 +166,74 @@ export function ModalUploadAi({ onClose }) {
     queryKey: ["clients-simple"],
     queryFn: async () => (await api.get("/clients/simple")).data || [],
   });
-
   const { data: offices = [] } = useQuery({
     queryKey: ["offices-list"],
     queryFn: async () =>
       (await api.get("/intermediary-offices")).data?.data || [],
   });
-
-  const { data: districtsTree = [] } = useQuery({
-    queryKey: ["riyadh-tree"],
+  const { data: districtsTree = [], isLoading: loadingDistricts } = useQuery({
+    queryKey: ["districts-tree-list"],
     queryFn: async () => (await api.get("/riyadh-streets/tree")).data || [],
   });
-
   const { data: sectors = [] } = useQuery({
     queryKey: ["sectors-list"],
     queryFn: async () => (await api.get("/riyadh-streets/sectors")).data || [],
   });
+  const { data: plans = [] } = useQuery({
+    queryKey: ["plans-list"],
+    queryFn: async () => (await api.get("/riyadh-streets/plans")).data || [],
+  });
 
-  // تفكيك شجرة الأحياء لتسهيل البحث
   const flatDistricts = useMemo(() => {
     let all = [];
     districtsTree.forEach((s) => {
-      if (s.neighborhoods) all = [...all, ...s.neighborhoods];
+      if (s.neighborhoods) {
+        const mapped = s.neighborhoods.map((n) => ({
+          ...n,
+          sectorName: s.name,
+        }));
+        all = [...all, ...mapped];
+      }
     });
     return all;
   }, [districtsTree]);
 
   // ==========================================
-  // 💡 عمليات (Mutations) الإضافة السريعة
+  // 💡 عمليات الإضافة السريعة (Mutations)
   // ==========================================
   const quickAddClient = useMutation({
-    mutationFn: async (clientData) => await api.post("/clients", clientData),
+    mutationFn: async (data) => await api.post("/clients", data),
     onSuccess: () => {
-      toast.success("تمت إضافة العميل بنجاح");
-      queryClient.invalidateQueries(["clients-list"]);
+      toast.success("تمت إضافة العميل بنجاح!");
+      queryClient.invalidateQueries(["clients-simple"]);
     },
-    onError: () =>
-      toast.error("فشل إضافة العميل، قد يكون مسجلاً أو البيانات ناقصة"),
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "فشل الإضافة."),
   });
-
   const quickAddDistrict = useMutation({
-    mutationFn: async (districtData) =>
-      await api.post("/riyadh-streets/districts", districtData),
+    mutationFn: async (data) =>
+      await api.post("/riyadh-streets/districts", data),
     onSuccess: () => {
-      toast.success("تمت إضافة الحي بنجاح");
-      queryClient.invalidateQueries(["riyadh-tree"]);
+      toast.success("تمت إضافة الحي بنجاح!");
+      queryClient.invalidateQueries(["districts-tree-list"]);
     },
-    onError: () => toast.error("فشل إضافة الحي"),
+    onError: () => toast.error("فشل الإضافة."),
   });
-
   const quickAddOffice = useMutation({
-    mutationFn: async (officeData) =>
-      await api.post("/intermediary-offices", officeData),
+    mutationFn: async (data) => await api.post("/intermediary-offices", data),
     onSuccess: () => {
-      toast.success("تمت إضافة المكتب بنجاح");
+      toast.success("تمت إضافة المكتب بنجاح!");
       queryClient.invalidateQueries(["offices-list"]);
     },
-    onError: () => toast.error("فشل إضافة المكتب"),
+    onError: () => toast.error("فشل الإضافة."),
+  });
+  const quickAddPlan = useMutation({
+    mutationFn: async (data) => await api.post("/riyadh-streets/plans", data),
+    onSuccess: () => {
+      toast.success("تمت إضافة المخطط بنجاح!");
+      queryClient.invalidateQueries(["plans-list"]);
+    },
+    onError: () => toast.error("فشل الإضافة."),
   });
 
   // ==========================================
@@ -209,9 +269,11 @@ export function ModalUploadAi({ onClose }) {
         plotNumber: p.plotNumber || "",
         planNumber: p.planNumber || "",
         landArea: p.landArea || "",
-        usage: p.usage || "",
+        mainUsage: p.mainUsage || p.usage || "سكني",
+        subUsage: p.subUsage || "",
         engineeringOffice: p.engineeringOffice || "",
-        notes: p.notes || "تمت الأرشفة باستخدام الذكاء الاصطناعي",
+        notes: p.notes || "",
+        detailedReport: p.detailedReport || "", // 👈 استقبال التقرير
         componentsData: p.componentsData || [],
         boundariesData: p.boundariesData || [],
         source: "رفع يدوي (AI)",
@@ -255,12 +317,14 @@ export function ModalUploadAi({ onClose }) {
       const failed = results.filter((r) => r.status === "rejected");
 
       if (succeeded.length > 0) {
-        toast.success(`تم حفظ ${succeeded.length} رخصة بنجاح!`);
+        toast.success(`تم حفظ واعتماد ${succeeded.length} رخصة بنجاح!`);
         queryClient.invalidateQueries(["building-permits"]);
       }
       if (failed.length > 0) {
         failed.forEach((f) =>
-          toast.error(f.reason?.response?.data?.message || "فشل حفظ رخصة"),
+          toast.error(
+            f.reason?.response?.data?.message || "فشل الحفظ لبعض السجلات",
+          ),
         );
       }
       if (failed.length === 0) onClose();
@@ -269,11 +333,10 @@ export function ModalUploadAi({ onClose }) {
 
   const handleFinalSave = () => {
     const hasErrors = permits.some((p) => !p.permitNumber || !p.ownerName);
-    if (hasErrors) {
+    if (hasErrors)
       return toast.error(
         "يرجى التأكد من إدخال رقم الرخصة واسم المالك كحد أدنى.",
       );
-    }
     saveMutation.mutate();
   };
 
@@ -312,8 +375,8 @@ export function ModalUploadAi({ onClose }) {
             استخراج البيانات بذكاء
           </h3>
           <p className="text-sm text-slate-500 font-semibold mb-6 px-4">
-            ارفع ملف الرخصة (PDF/صورة) وسنقوم بتفريغ الحقول والتحقق من ارتباطها
-            بقاعدة البيانات.
+            ارفع ملف الرخصة (PDF/صورة) وسنقوم بتفريغ كل الحقول والجداول بدقة
+            متناهية.
           </p>
 
           <div
@@ -433,64 +496,153 @@ export function ModalUploadAi({ onClose }) {
             </h4>
 
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-5">
-              {/* 💡 حقل ذكي: اسم المالك (العميل) */}
-              {/* 💡 حقل ذكي: اسم المالك (العميل) */}
               <div className="lg:col-span-2">
                 <SmartLinkedField
                   label="اسم المالك (العميل) *"
                   value={current.ownerName}
                   onChange={(val) => updateCurrentPermit("ownerName", val)}
                   options={clients}
-                  listId="clientsList"
-                  // 💡 نستخدم fullNameRaw القادم من راوت simple لأنه نص صريح وليس كائن JSON
+                  listId="aiClientsList"
+                  placeholder="ابحث أو اكتب اسم العميل..."
                   matchFn={(opt, val) =>
                     opt.fullNameRaw?.includes(val) ||
                     opt.idNumber === current.idNumber
                   }
                   isAdding={quickAddClient.isPending}
-                  onQuickAdd={() => {
-                    // 💡 توليد رقم جوال مؤقت عشوائي لتجنب خطأ التكرار (Unique Constraint) لعدة عملاء
-                    const randomMobile = `0500${Math.floor(100000 + Math.random() * 900000)}`;
-                    const randomId = `TMP-${Math.floor(10000 + Math.random() * 90000)}`;
-
+                  onQuickAdd={() =>
                     quickAddClient.mutate({
                       name: JSON.stringify({ ar: current.ownerName }),
                       officialNameAr: current.ownerName,
-                      idNumber: current.idNumber || randomId,
+                      idNumber: current.idNumber || `TMP-${Date.now()}`,
                       type: "individual",
-                      mobile: randomMobile, // 👈 رقم عشوائي
-                    });
-                  }}
+                      mobile: `0500${Math.floor(100000 + Math.random() * 900000)}`,
+                    })
+                  }
                 />
               </div>
 
-              {/* 💡 حقل ذكي: الحي */}
+              <CopyableInput
+                label="رقم الهوية"
+                value={current.idNumber}
+                onChange={(val) => updateCurrentPermit("idNumber", val)}
+                placeholder="10 أرقام"
+                dir="ltr"
+                style={{ textAlign: "right" }}
+              />
+              <CopyableInput
+                label="رقم الرخصة *"
+                value={current.permitNumber}
+                onChange={(val) => updateCurrentPermit("permitNumber", val)}
+                placeholder="مثال: 1445/1234"
+              />
+              <CopyableInput
+                label="تاريخ الإصدار"
+                value={current.issueDate}
+                onChange={(val) => updateCurrentPermit("issueDate", val)}
+              />
+              <CopyableInput
+                label="تاريخ الانتهاء"
+                value={current.expiryDate}
+                onChange={(val) => updateCurrentPermit("expiryDate", val)}
+              />
+
+              {/* السنة */}
+              <CopyableInput
+                label="سنة الرخصة (للفلترة)"
+                value={current.year}
+                onChange={(val) => updateCurrentPermit("year", val)}
+              />
+
+              {/* الحقول الذكية (حي ومخطط) */}
               <div>
                 <SmartLinkedField
                   label="الحي"
                   value={current.district}
                   onChange={(val) => updateCurrentPermit("district", val)}
                   options={flatDistricts}
-                  listId="districtsList"
+                  listId="aiDistrictsList"
+                  placeholder={
+                    loadingDistricts ? "جاري التحميل..." : "ابحث أو اكتب..."
+                  }
                   matchFn={(opt, val) =>
                     opt.name?.trim() === val?.trim() || opt.name?.includes(val)
                   }
                   isAdding={quickAddDistrict.isPending}
-                  onQuickAdd={() => {
-                    // اختيار أول قطاع كافتراضي للسرعة
-                    const fallbackSector = sectors[0]?.id;
-                    if (!fallbackSector)
-                      return toast.error("لا توجد قطاعات مسجلة لإضافة الحي");
+                  onQuickAdd={() =>
                     quickAddDistrict.mutate({
                       name: current.district,
-                      sectorId: fallbackSector,
-                    });
-                  }}
+                      sectorId: sectors[0]?.id,
+                    })
+                  }
                 />
               </div>
 
-              {/* 💡 حقل ذكي: المكتب الهندسي */}
               <div>
+                <SmartLinkedField
+                  label="رقم المخطط"
+                  value={current.planNumber}
+                  onChange={(val) => updateCurrentPermit("planNumber", val)}
+                  options={plans}
+                  listId="aiPlansList"
+                  placeholder="ابحث أو اكتب رقم المخطط..."
+                  matchFn={(opt, val) =>
+                    opt.name?.trim() === val?.trim() ||
+                    opt.planNumber?.includes(val)
+                  }
+                  isAdding={quickAddPlan.isPending}
+                  onQuickAdd={() =>
+                    quickAddPlan.mutate({
+                      name: current.planNumber,
+                      planNumber: current.planNumber,
+                    })
+                  }
+                />
+              </div>
+
+              <CopyableInput
+                label="القطاع / البلدية"
+                value={current.sector}
+                onChange={(val) => updateCurrentPermit("sector", val)}
+              />
+              <CopyableInput
+                label="رقم القطعة"
+                value={current.plotNumber}
+                onChange={(val) => updateCurrentPermit("plotNumber", val)}
+              />
+              <CopyableInput
+                label="مساحة الأرض (م²)"
+                type="number"
+                value={current.landArea}
+                onChange={(val) => updateCurrentPermit("landArea", val)}
+              />
+
+              {/* الاستخدام مقسم */}
+              <CopyableInput
+                label="التصنيف الرئيسي"
+                value={current.mainUsage}
+                onChange={(val) => updateCurrentPermit("mainUsage", val)}
+                placeholder="مثال: سكني"
+              />
+              <CopyableInput
+                label="التصنيف الفرعي"
+                value={current.subUsage}
+                onChange={(val) => updateCurrentPermit("subUsage", val)}
+                placeholder="مثال: فيلا"
+              />
+
+              <CopyableInput
+                label="نوع الطلب"
+                value={current.type}
+                onChange={(val) => updateCurrentPermit("type", val)}
+              />
+              <CopyableInput
+                label="شكل الرخصة (تلقائي)"
+                value={current.form}
+                onChange={() => {}}
+                style={{ backgroundColor: "#f1f5f9", cursor: "not-allowed" }}
+              />
+
+              <div className="md:col-span-2">
                 <SmartLinkedField
                   label="المكتب الهندسي"
                   value={current.engineeringOffice}
@@ -498,136 +650,43 @@ export function ModalUploadAi({ onClose }) {
                     updateCurrentPermit("engineeringOffice", val)
                   }
                   options={offices}
-                  listId="officesList"
+                  listId="aiOfficesList"
+                  placeholder="ابحث أو اكتب المكتب..."
                   matchFn={(opt, val) =>
                     opt.nameAr?.includes(val) || opt.nameEn?.includes(val)
                   }
                   isAdding={quickAddOffice.isPending}
-                  onQuickAdd={() => {
-                    // 💡 إرسال البيانات بأسماء الحقول المطابقة لقاعدة البيانات
+                  onQuickAdd={() =>
                     quickAddOffice.mutate({
                       nameAr: current.engineeringOffice,
                       nameEn: current.engineeringOffice,
-                      phone: "0500000000", // 👈 استخدمنا phone
-                      commercialRegister: "0000000000", // 👈 حقل إجباري
-                      city: "الرياض", // 👈 حقل إجباري
+                      phone: "0500000000",
+                      commercialRegister: "0000000000",
+                      city: "الرياض",
                       status: "نشط",
-                    });
-                  }}
+                    })
+                  }
                 />
               </div>
 
-              {/* باقي الحقول العادية */}
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1">
-                  رقم الرخصة *
-                </label>
-                <input
-                  type="text"
-                  value={current.permitNumber}
-                  onChange={(e) =>
-                    updateCurrentPermit("permitNumber", e.target.value)
-                  }
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] font-bold outline-none focus:ring-1 focus:ring-purple-400"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1">
-                  رقم الهوية
-                </label>
-                <input
-                  type="text"
-                  value={current.idNumber}
-                  onChange={(e) =>
-                    updateCurrentPermit("idNumber", e.target.value)
-                  }
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] font-bold outline-none focus:ring-1 focus:ring-purple-400 text-left"
-                  dir="ltr"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1">
-                  السنة
-                </label>
-                <input
-                  type="text"
-                  value={current.year}
-                  onChange={(e) => updateCurrentPermit("year", e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] font-bold outline-none focus:ring-1 focus:ring-purple-400"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1">
-                  القطاع / البلدية
-                </label>
-                <input
-                  type="text"
-                  value={current.sector}
-                  onChange={(e) =>
-                    updateCurrentPermit("sector", e.target.value)
-                  }
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] font-bold outline-none focus:ring-1 focus:ring-purple-400"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1">
-                  رقم القطعة / المخطط
-                </label>
-                <div className="flex gap-1">
-                  <input
-                    type="text"
-                    value={current.plotNumber}
-                    onChange={(e) =>
-                      updateCurrentPermit("plotNumber", e.target.value)
-                    }
-                    placeholder="قطعة"
-                    className="w-1/2 px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:ring-1 focus:ring-purple-400"
-                  />
-                  <input
-                    type="text"
-                    value={current.planNumber}
-                    onChange={(e) =>
-                      updateCurrentPermit("planNumber", e.target.value)
-                    }
-                    placeholder="مخطط"
-                    className="w-1/2 px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:ring-1 focus:ring-purple-400"
-                  />
+              <div className="md:col-span-4">
+                <div className="flex items-center justify-between mb-0.5">
+                  <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
+                    ملاحظات / اشتراطات
+                    <button
+                      onClick={() => copyToClipboard(current.notes)}
+                      className="text-slate-400 hover:text-blue-600"
+                    >
+                      <Copy size={12} />
+                    </button>
+                  </label>
                 </div>
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1">
-                  مساحة الأرض
-                </label>
-                <input
-                  type="text"
-                  value={current.landArea}
-                  onChange={(e) =>
-                    updateCurrentPermit("landArea", e.target.value)
-                  }
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] font-bold outline-none focus:ring-1 focus:ring-purple-400 font-mono"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1">
-                  الاستخدام
-                </label>
-                <input
-                  type="text"
-                  value={current.usage}
-                  onChange={(e) => updateCurrentPermit("usage", e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] font-bold outline-none focus:ring-1 focus:ring-purple-400"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1">
-                  شكل الرخصة المستنتج
-                </label>
-                <input
-                  type="text"
-                  value={current.form}
-                  readOnly
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-[13px] font-bold text-slate-500 cursor-not-allowed"
-                />
+                <textarea
+                  rows={2}
+                  value={current.notes}
+                  onChange={(e) => updateCurrentPermit("notes", e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] font-bold outline-none focus:ring-1 focus:ring-purple-400 leading-relaxed"
+                ></textarea>
               </div>
             </div>
           </div>
@@ -636,17 +695,22 @@ export function ModalUploadAi({ onClose }) {
             {/* 2. جدول المكونات */}
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
               <h4 className="text-xs font-black text-slate-800 mb-3 flex items-center gap-2">
-                <Layers className="w-4 h-4 text-emerald-500" /> مكونات المبنى
+                <Layers className="w-4 h-4 text-emerald-500" /> تفاصيل المكونات
               </h4>
               <div className="border border-slate-200 rounded-lg overflow-hidden">
-                <table className="w-full text-xs text-right">
+                <table className="w-full text-[11px] text-right">
                   <thead className="bg-slate-50 text-slate-500">
                     <tr>
-                      <th className="p-2 border-b border-slate-200">المكون</th>
-                      <th className="p-2 border-b border-slate-200 w-16">
+                      <th className="p-2 border-b border-slate-200 w-1/3">
+                        المكون
+                      </th>
+                      <th className="p-2 border-b border-slate-200 w-1/4">
+                        الاستخدام
+                      </th>
+                      <th className="p-2 border-b border-slate-200 w-1/4">
                         المساحة
                       </th>
-                      <th className="p-2 border-b border-slate-200 w-16">
+                      <th className="p-2 border-b border-slate-200 w-1/6">
                         الوحدات
                       </th>
                     </tr>
@@ -665,6 +729,20 @@ export function ModalUploadAi({ onClose }) {
                                 "componentsData",
                                 i,
                                 "name",
+                                e.target.value,
+                              )
+                            }
+                            className="w-full p-1.5 border border-transparent hover:border-slate-200 focus:border-purple-400 rounded outline-none font-bold text-slate-700 bg-transparent"
+                          />
+                        </td>
+                        <td className="p-1">
+                          <input
+                            value={comp.usage || ""}
+                            onChange={(e) =>
+                              updateTableData(
+                                "componentsData",
+                                i,
+                                "usage",
                                 e.target.value,
                               )
                             }
@@ -701,16 +779,6 @@ export function ModalUploadAi({ onClose }) {
                         </td>
                       </tr>
                     ))}
-                    {current.componentsData.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan="3"
-                          className="p-4 text-center text-slate-400 text-xs"
-                        >
-                          لم يتم العثور على مكونات
-                        </td>
-                      </tr>
-                    )}
                   </tbody>
                 </table>
               </div>
@@ -719,19 +787,21 @@ export function ModalUploadAi({ onClose }) {
             {/* 3. جدول الحدود */}
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
               <h4 className="text-xs font-black text-slate-800 mb-3 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-orange-500" /> الأبعاد والحدود
+                <MapPin className="w-4 h-4 text-orange-500" /> الحدود والأبعاد
               </h4>
               <div className="border border-slate-200 rounded-lg overflow-hidden">
-                <table className="w-full text-xs text-right">
+                <table className="w-full text-[11px] text-right">
                   <thead className="bg-slate-50 text-slate-500">
                     <tr>
-                      <th className="p-2 border-b border-slate-200 w-16">
+                      <th className="p-2 border-b border-slate-200 w-24">
                         الاتجاه
                       </th>
-                      <th className="p-2 border-b border-slate-200 w-16">
-                        الطول
+                      <th className="p-2 border-b border-slate-200 w-20">
+                        الطول (م)
                       </th>
-                      <th className="p-2 border-b border-slate-200">يحدها</th>
+                      <th className="p-2 border-b border-slate-200">
+                        يحدها / الشارع
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -784,16 +854,6 @@ export function ModalUploadAi({ onClose }) {
                         </td>
                       </tr>
                     ))}
-                    {current.boundariesData.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan="3"
-                          className="p-4 text-center text-slate-400 text-xs"
-                        >
-                          لم يتم العثور على حدود
-                        </td>
-                      </tr>
-                    )}
                   </tbody>
                 </table>
               </div>
@@ -822,8 +882,8 @@ export function ModalUploadAi({ onClose }) {
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Save className="w-4 h-4" />
-              )}
-              حفظ واعتماد السجلات
+              )}{" "}
+              اعتماد وحفظ السجلات
             </button>
           </div>
         </div>
