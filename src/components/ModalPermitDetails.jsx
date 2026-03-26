@@ -43,13 +43,20 @@ const copyToClipboard = (text) => {
 };
 
 // دالة لتصحيح رابط الملف (أضف رابط السيرفر إذا كان المسار نسبياً)
+// دالة لتصحيح الرابط وإجباره على المرور عبر الـ API
 const getFullUrl = (url) => {
   if (!url) return null;
   if (url.startsWith("http")) return url;
-  // استبدل هذا برابط السيرفر الفعلي إذا كان مختلفاً
-  const baseUrl =
-    api.defaults.baseURL?.replace("/api", "") || "http://localhost:5001";
-  return `${baseUrl}${url}`;
+  
+  // 💡 الخدعة هنا: إضافة /api قبل /uploads لكي يمر الطلب من Nginx إلى الباك إند مباشرة
+  let fixedUrl = url;
+  if (url.startsWith("/uploads/")) {
+    fixedUrl = `/api${url}`;
+  }
+
+  // استخدم الـ IP الخاص بك
+  const baseUrl = "http://95.216.73.243";
+  return `${baseUrl}${fixedUrl}`;
 };
 
 // ==========================================
