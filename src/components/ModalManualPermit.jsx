@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../api/axios";
 import { toast } from "sonner";
+import moment from "moment-hijri"; // 👈 مكتبة التقويم الهجري والميلادي
 import {
   Edit3,
   X,
@@ -12,12 +13,48 @@ import {
   Plus,
   CheckCircle2,
   AlertTriangle,
-  Copy, // 👈 أيقونة النسخ
+  Copy,
+  Search,
+  ChevronLeft,
+  CalendarDays,
+  Clock,
 } from "lucide-react";
 
 // ==========================================
-// 💡 دالة مساعدة للنسخ (Clipboard)
+// 💡 دوال المعالجة الذكية (Advanced Normalization)
 // ==========================================
+const toEnglishNumbers = (str) => {
+  if (str === null || str === undefined) return "";
+  return String(str).replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+};
+
+const normalizeArabicText = (str) => {
+  if (!str) return "";
+  return toEnglishNumbers(str)
+    .replace(/(^|\s)(حي|مخطط|رقم)(\s+|$)/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ي/g, "ى")
+    .replace(/[\s\-_]/g, "")
+    .toLowerCase();
+};
+
+// 💡 توحيد أرقام المخططات المتقدم (أب/222 = 222\اب = 222 مخطط أب)
+const normalizePlan = (str) => {
+  if (!str) return "";
+  let cleaned = toEnglishNumbers(str)
+    .replace(/(^|\s)(مخطط|رقم)(\s+|$)/g, "") // إزالة الكلمات الزائدة
+    .replace(/[أإآ]/g, "ا") // توحيد الألف
+    .replace(/[\s\\_\-]/g, "/") // تحويل كل المسافات والفواصل إلى سلاش
+    .replace(/\/+/g, "/"); // إزالة السلاش المكرر
+
+  // فصل الأجزاء، ترتيبها أبجدياً، ثم دمجها لكي تتطابق بغض النظر عن الترتيب
+  if (cleaned.includes("/")) {
+    cleaned = cleaned.split("/").filter(Boolean).sort().join("/");
+  }
+  return cleaned.toLowerCase();
+};
+
 const copyToClipboard = (text) => {
   if (!text) return toast.error("الحقل فارغ لا يوجد شيء لنسخه!");
   navigator.clipboard.writeText(text);
@@ -25,7 +62,118 @@ const copyToClipboard = (text) => {
 };
 
 // ==========================================
-// 💡 مكون الحقل الذكي للربط (مضاف إليه زر النسخ)
+// 💡 القائمة الذكية القابلة للبحث (Searchable Dropdown)
+// ==========================================
+const SearchableDropdown = ({
+  options,
+  value,
+  onChange,
+  placeholder,
+  isAdding,
+  onQuickAdd,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target))
+        setIsOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = useMemo(() => {
+    if (!searchTerm) return options;
+    return options.filter((opt) =>
+      opt.label.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+  }, [options, searchTerm]);
+
+  const selectedOption = options.find((opt) => opt.value === value);
+
+  return (
+    <div className="relative w-full" ref={wrapperRef}>
+      <div className="flex gap-2">
+        <div
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 cursor-pointer flex items-center justify-between hover:border-blue-400 focus:ring-1 focus:ring-blue-400 focus:bg-white transition-all"
+        >
+          <span>{selectedOption ? selectedOption.label : placeholder}</span>
+          <ChevronLeft
+            size={14}
+            className={`text-slate-400 transition-transform ${isOpen ? "-rotate-90" : ""}`}
+          />
+        </div>
+        {onQuickAdd && (
+          <button
+            onClick={onQuickAdd}
+            disabled={isAdding}
+            className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 disabled:opacity-50 transition-colors"
+            title="إضافة سريعة"
+          >
+            {isAdding ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Plus size={16} />
+            )}
+          </button>
+        )}
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-[100] w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
+          <div className="p-2 border-b border-slate-100 bg-slate-50 sticky top-0">
+            <div className="relative">
+              <Search
+                size={14}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                type="text"
+                className="w-full pl-3 pr-8 py-2 text-[11px] font-bold border border-slate-200 rounded-lg outline-none focus:border-blue-400"
+                placeholder="اكتب للبحث..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                autoFocus
+              />
+            </div>
+          </div>
+          <div className="overflow-y-auto p-1 custom-scrollbar-slim">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((opt) => (
+                <div
+                  key={opt.value}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                    setSearchTerm("");
+                  }}
+                  className={`px-3 py-2 text-[11px] font-bold rounded-lg cursor-pointer transition-colors ${
+                    value === opt.value
+                      ? "bg-blue-50 text-blue-700"
+                      : "text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  {opt.label}
+                </div>
+              ))
+            ) : (
+              <div className="p-4 text-center text-[11px] text-slate-400 font-bold">
+                لا توجد نتائج مطابقة
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==========================================
+// 💡 مكون الحقل الذكي للربط (مدعوم بالقائمة البحثية)
 // ==========================================
 const SmartLinkedField = ({
   label,
@@ -36,19 +184,25 @@ const SmartLinkedField = ({
   onQuickAdd,
   isAdding,
   placeholder,
-  listId,
 }) => {
   const isLinked = useMemo(() => {
     if (!value || value.trim() === "") return false;
     return options.some((opt) => matchFn(opt, value));
   }, [value, options, matchFn]);
 
+  // تحويل الخيارات لشكل يدعمه SearchableDropdown
+  const dropdownOptions = useMemo(() => {
+    return options.map((opt) => ({
+      label: opt.name || opt.nameAr || opt.label || opt.planNumber,
+      value: opt.name || opt.nameAr || opt.label || opt.planNumber,
+    }));
+  }, [options]);
+
   return (
     <div className="flex flex-col gap-1 w-full">
       <div className="flex items-center justify-between mb-0.5">
         <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
           {label}
-          {/* 💡 زر النسخ الموحد */}
           <button
             onClick={() => copyToClipboard(value)}
             className="text-slate-400 hover:text-blue-600 transition-colors"
@@ -68,44 +222,23 @@ const SmartLinkedField = ({
               <span className="text-[9px] text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-bold flex items-center gap-0.5 shadow-sm">
                 <AlertTriangle size={10} /> غير مسجل
               </span>
-              {onQuickAdd && (
-                <button
-                  onClick={onQuickAdd}
-                  disabled={isAdding}
-                  className="text-[9px] bg-blue-600 text-white hover:bg-blue-700 px-2 py-0.5 rounded font-bold flex items-center gap-1 transition-all shadow-sm disabled:opacity-50"
-                >
-                  {isAdding ? (
-                    <Loader2 size={10} className="animate-spin" />
-                  ) : (
-                    <Plus size={10} />
-                  )}{" "}
-                  إضافة
-                </button>
-              )}
             </div>
           ))}
       </div>
-      <div className="relative">
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className={`w-full px-3 py-2 bg-slate-50 border rounded-lg text-[11px] font-bold text-slate-700 outline-none transition-all ${value && isLinked ? "border-emerald-300 focus:ring-1 focus:ring-emerald-400 bg-white" : "border-slate-200 focus:ring-1 focus:ring-blue-400 focus:bg-white"}`}
-          placeholder={placeholder}
-          list={listId}
-        />
-        <datalist id={listId}>
-          {options.map((opt, idx) => (
-            <option key={idx} value={opt.name || opt.nameAr || opt.label} />
-          ))}
-        </datalist>
-      </div>
+      <SearchableDropdown
+        options={dropdownOptions}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        isAdding={isAdding}
+        onQuickAdd={!isLinked ? onQuickAdd : null}
+      />
     </div>
   );
 };
 
 // ==========================================
-// 💡 مكون لحقل إدخال عادي مع زر النسخ
+// 💡 مكون الإدخال العادي القابل للنسخ
 // ==========================================
 const CopyableInput = ({
   label,
@@ -115,11 +248,17 @@ const CopyableInput = ({
   type = "text",
   dir = "rtl",
   style = {},
+  isDuplicate = false,
 }) => (
   <div className="space-y-1">
     <div className="flex items-center justify-between mb-0.5">
       <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
         {label}
+        {isDuplicate && (
+          <span className="flex items-center gap-1 bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[9px] border border-amber-300 shadow-sm animate-pulse">
+            <AlertTriangle size={10} /> مكرر
+          </span>
+        )}
         <button
           onClick={() => copyToClipboard(value)}
           className="text-slate-400 hover:text-blue-600 transition-colors"
@@ -136,7 +275,7 @@ const CopyableInput = ({
       placeholder={placeholder}
       dir={dir}
       style={style}
-      className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-700 outline-none focus:ring-1 focus:ring-blue-400 focus:bg-white"
+      className={`w-full text-[11px] font-bold border rounded-lg px-3 py-2 outline-none focus:ring-1 transition-colors ${isDuplicate ? "bg-amber-50 border-amber-300 focus:ring-amber-400 text-amber-900" : "bg-slate-50 border-slate-200 text-slate-700 focus:ring-blue-400 focus:bg-white"}`}
     />
   </div>
 );
@@ -152,9 +291,6 @@ export function ModalManualPermit({
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
 
-  // ==========================================
-  // 💡 1. جلب البيانات للدروب داون
-  // ==========================================
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-simple"],
     queryFn: async () => (await api.get("/clients/simple")).data || [],
@@ -172,11 +308,15 @@ export function ModalManualPermit({
     queryKey: ["sectors-list"],
     queryFn: async () => (await api.get("/riyadh-streets/sectors")).data || [],
   });
-
-  // 💡 جلب المخططات (Plans) لدعم الحقل الذكي الجديد
   const { data: plans = [] } = useQuery({
     queryKey: ["plans-list"],
     queryFn: async () => (await api.get("/riyadh-streets/plans")).data || [],
+  });
+
+  // 💡 جلب الرخص لمعرفة التكرار
+  const { data: existingPermits = [] } = useQuery({
+    queryKey: ["building-permits"],
+    queryFn: async () => (await api.get("/permits")).data?.data || [],
   });
 
   const flatDistricts = useMemo(() => {
@@ -191,9 +331,6 @@ export function ModalManualPermit({
     return all;
   }, [districtsTree]);
 
-  // ==========================================
-  // 💡 2. الإضافة السريعة (Mutations)
-  // ==========================================
   const quickAddClient = useMutation({
     mutationFn: async (data) => await api.post("/clients", data),
     onSuccess: () => {
@@ -216,8 +353,6 @@ export function ModalManualPermit({
       queryClient.invalidateQueries(["offices-list"]);
     },
   });
-
-  // 💡 إضافة المخطط السريعة
   const quickAddPlan = useMutation({
     mutationFn: async (data) => await api.post("/riyadh-streets/plans", data),
     onSuccess: () => {
@@ -226,12 +361,9 @@ export function ModalManualPermit({
     },
   });
 
-  // ==========================================
-  // 💡 3. حالة الفورم (Form State)
-  // ==========================================
   const [formData, setFormData] = useState({
     permitNumber: "",
-    year: "1446", // سيتم التعامل معه كمدخل نصي
+    year: "1446",
     type: "بناء جديد",
     form: "يدوي",
     ownerName: "",
@@ -241,11 +373,13 @@ export function ModalManualPermit({
     plotNumber: "",
     planNumber: "",
     landArea: "",
-    mainUsage: "سكني", // 👈 التصنيف الرئيسي
-    subUsage: "", // 👈 التصنيف الفرعي
+    mainUsage: "سكني",
+    subUsage: "",
     engineeringOffice: "",
     source: "يدوي",
     notes: "",
+    issueDate: "",
+    expiryDate: "", // 👈 إضافة تاريخ الانتهاء الهجري
     file: null,
   });
 
@@ -253,10 +387,11 @@ export function ModalManualPermit({
     if (mode === "edit" && permitData) {
       setFormData({
         ...permitData,
-        mainUsage: permitData.mainUsage || permitData.usage || "سكني", // التوافق مع القديم
+        mainUsage: permitData.mainUsage || permitData.usage || "سكني",
         subUsage: permitData.subUsage || "",
         landArea: permitData.landArea || "",
         notes: permitData.notes || "",
+        expiryDate: permitData.expiryDate || "",
         file: null,
       });
     }
@@ -274,16 +409,98 @@ export function ModalManualPermit({
     }
   }, [formData.district, flatDistricts]);
 
-  // ==========================================
-  // 💡 4. الحفظ النهائي (Submit)
-  // ==========================================
+  // 💡 فحص التكرار (رقم الرخصة + السنة الهجرية + رقم الهوية) - لا يمنع الحفظ
+  const isDuplicate = useMemo(() => {
+    if (!formData.permitNumber || !formData.year || !formData.idNumber)
+      return false;
+    // استثناء الرخصة الحالية من الفحص إذا كنا في وضع التعديل
+    const others =
+      mode === "edit"
+        ? existingPermits.filter((p) => p.id !== permitData.id)
+        : existingPermits;
+
+    return others.some(
+      (p) =>
+        String(p.permitNumber) === String(formData.permitNumber) &&
+        String(p.year) === String(formData.year) &&
+        String(p.idNumber) === String(formData.idNumber),
+    );
+  }, [
+    formData.permitNumber,
+    formData.year,
+    formData.idNumber,
+    existingPermits,
+    mode,
+    permitData,
+  ]);
+
+  // 💡 حسابات التواريخ الذكية
+  const expiryInfo = useMemo(() => {
+    if (!formData.expiryDate) return null;
+
+    try {
+      // تحويل التاريخ الهجري (YYYY/MM/DD) إلى ميلادي
+      const gregorianDate = moment(
+        toEnglishNumbers(formData.expiryDate),
+        "iYYYY/iM/iD",
+      ).format("YYYY-MM-DD");
+      if (gregorianDate === "Invalid date") return null;
+
+      const end = new Date(gregorianDate);
+      const now = new Date();
+
+      // تفريغ الوقت للمقارنة الدقيقة للأيام
+      end.setHours(0, 0, 0, 0);
+      now.setHours(0, 0, 0, 0);
+
+      const diffTime = end - now;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      return {
+        gregorian: gregorianDate,
+        diffDays: diffDays,
+        isValid: diffDays >= 0,
+      };
+    } catch (e) {
+      return null;
+    }
+  }, [formData.expiryDate]);
+
+  const issueInfo = useMemo(() => {
+    if (!formData.year || formData.year.length !== 4) return null;
+    const currentHijriYear = moment().iYear();
+    const parsedYear = parseInt(toEnglishNumbers(formData.year));
+    if (isNaN(parsedYear)) return null;
+
+    const diff = currentHijriYear - parsedYear;
+    return diff >= 0 ? diff : 0;
+  }, [formData.year]);
+
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       const fd = new FormData();
       Object.keys(data).forEach((key) => {
+        // حماية البيانات وتحويل الأرقام قبل الحفظ
+        let safeValue = data[key];
+        if (
+          key === "permitNumber" ||
+          key === "idNumber" ||
+          key === "plotNumber" ||
+          key === "planNumber" ||
+          key === "landArea" ||
+          key === "year" ||
+          key === "expiryDate"
+        ) {
+          safeValue = toEnglishNumbers(data[key]);
+        }
+
         if (key === "file" && data.file) fd.append("file", data.file);
-        else if (key !== "file" && data[key] !== null)
-          fd.append(key, data[key]);
+        else if (
+          key !== "file" &&
+          safeValue !== null &&
+          safeValue !== undefined
+        )
+          fd.append(key, safeValue);
       });
 
       if (mode === "edit")
@@ -348,7 +565,8 @@ export function ModalManualPermit({
                 listId="manualClientsList"
                 placeholder="ابحث أو اكتب اسم العميل..."
                 matchFn={(opt, val) =>
-                  opt.fullNameRaw?.includes(val) ||
+                  normalizeArabicText(opt.fullNameRaw) ===
+                    normalizeArabicText(val) ||
                   opt.idNumber === formData.idNumber
                 }
                 isAdding={quickAddClient.isPending}
@@ -373,6 +591,7 @@ export function ModalManualPermit({
               style={{ textAlign: "right" }}
             />
 
+            {/* 💡 رقم الرخصة (مع التنبيه) */}
             <CopyableInput
               label="رقم الرخصة *"
               value={formData.permitNumber}
@@ -380,18 +599,53 @@ export function ModalManualPermit({
                 setFormData({ ...formData, permitNumber: val })
               }
               placeholder="مثال: 1445/1234"
+              isDuplicate={isDuplicate}
             />
 
-            {/* 💡 حقل السنة أصبح نصياً حراً مع زر نسخ */}
-            <CopyableInput
-              label="سنة الرخصة"
-              type="text"
-              value={formData.year}
-              onChange={(val) => setFormData({ ...formData, year: val })}
-              placeholder="مثال: 1447"
-            />
+            {/* 💡 التواريخ الذكية */}
+            <div className="space-y-1">
+              <CopyableInput
+                label="سنة الرخصة"
+                type="text"
+                value={formData.year}
+                onChange={(val) => setFormData({ ...formData, year: val })}
+                placeholder="مثال: 1447"
+              />
+              {issueInfo !== null && (
+                <div className="text-[9px] text-slate-500 font-bold flex items-center gap-1">
+                  <Clock size={10} /> صُدرت منذ {issueInfo} سنة
+                </div>
+              )}
+            </div>
 
-            {/* 💡 القطاع والحي */}
+            <div className="space-y-1">
+              <CopyableInput
+                label="تاريخ الانتهاء (هجري)"
+                type="text"
+                value={formData.expiryDate}
+                onChange={(val) =>
+                  setFormData({ ...formData, expiryDate: val })
+                }
+                placeholder="يوم/شهر/سنة (مثال: 1445/05/12)"
+              />
+              {expiryInfo && (
+                <div className="flex flex-col gap-0.5 mt-1">
+                  <div className="text-[9px] font-bold text-slate-500 flex items-center gap-1">
+                    <CalendarDays size={10} /> الميلادي:{" "}
+                    <span dir="ltr">{expiryInfo.gregorian}</span>
+                  </div>
+                  <div
+                    className={`text-[9px] font-bold flex items-center gap-1 ${expiryInfo.isValid ? "text-emerald-600" : "text-red-600"}`}
+                  >
+                    <Clock size={10} />{" "}
+                    {expiryInfo.isValid
+                      ? `سارية المفعول (متبقي ${expiryInfo.diffDays} يوم)`
+                      : `منتهية (منذ ${Math.abs(expiryInfo.diffDays)} يوم)`}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <CopyableInput
               label="القطاع (تلقائي)"
               value={formData.sector}
@@ -399,6 +653,7 @@ export function ModalManualPermit({
               placeholder="يحدد تلقائياً حسب الحي"
               style={{ backgroundColor: "#f1f5f9", cursor: "not-allowed" }}
             />
+
             <div>
               <SmartLinkedField
                 label="الحي"
@@ -410,7 +665,12 @@ export function ModalManualPermit({
                   loadingDistricts ? "جاري التحميل..." : "ابحث أو اكتب الحي..."
                 }
                 matchFn={(opt, val) =>
-                  opt.name?.trim() === val?.trim() || opt.name?.includes(val)
+                  normalizeArabicText(opt.name).includes(
+                    normalizeArabicText(val),
+                  ) ||
+                  normalizeArabicText(val).includes(
+                    normalizeArabicText(opt.name),
+                  )
                 }
                 isAdding={quickAddDistrict.isPending}
                 onQuickAdd={() =>
@@ -422,7 +682,7 @@ export function ModalManualPermit({
               />
             </div>
 
-            {/* 💡 الحقل الذكي لرقم المخطط */}
+            {/* 💡 الحقل الذكي لرقم المخطط (مع الفلترة القوية) */}
             <div>
               <SmartLinkedField
                 label="رقم المخطط"
@@ -434,8 +694,8 @@ export function ModalManualPermit({
                 listId="manualPlansList"
                 placeholder="ابحث أو اكتب رقم المخطط..."
                 matchFn={(opt, val) =>
-                  opt.name?.trim() === val?.trim() ||
-                  opt.planNumber?.includes(val)
+                  normalizePlan(opt.name) === normalizePlan(val) ||
+                  normalizePlan(opt.planNumber) === normalizePlan(val)
                 }
                 isAdding={quickAddPlan.isPending}
                 onQuickAdd={() =>
@@ -455,17 +715,16 @@ export function ModalManualPermit({
             />
             <CopyableInput
               label="مساحة الأرض (م²)"
-              type="number"
+              type="text"
               value={formData.landArea}
               onChange={(val) => setFormData({ ...formData, landArea: val })}
               placeholder="المساحة"
             />
 
-            {/* 💡 تقسيم الاستخدام إلى رئيسي وفرعي مع زر نسخ مدمج */}
             <div className="space-y-1">
               <div className="flex items-center justify-between mb-0.5">
                 <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
-                  التصنيف الرئيسي
+                  التصنيف الرئيسي{" "}
                   <button
                     onClick={() => copyToClipboard(formData.mainUsage)}
                     className="text-slate-400 hover:text-blue-600 transition-colors"
@@ -488,7 +747,7 @@ export function ModalManualPermit({
             <div className="space-y-1">
               <div className="flex items-center justify-between mb-0.5">
                 <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
-                  التصنيف الفرعي
+                  التصنيف الفرعي{" "}
                   <button
                     onClick={() => copyToClipboard(formData.subUsage)}
                     className="text-slate-400 hover:text-blue-600 transition-colors"
@@ -508,7 +767,6 @@ export function ModalManualPermit({
               />
             </div>
 
-            {/* 💡 حقل ذكي للمكتب الهندسي */}
             <div>
               <SmartLinkedField
                 label="المكتب الهندسي"
@@ -520,7 +778,12 @@ export function ModalManualPermit({
                 listId="manualOfficesList"
                 placeholder="ابحث أو اكتب المكتب..."
                 matchFn={(opt, val) =>
-                  opt.nameAr?.includes(val) || opt.nameEn?.includes(val)
+                  normalizeArabicText(opt.nameAr).includes(
+                    normalizeArabicText(val),
+                  ) ||
+                  normalizeArabicText(opt.nameEn).includes(
+                    normalizeArabicText(val),
+                  )
                 }
                 isAdding={quickAddOffice.isPending}
                 onQuickAdd={() =>
@@ -536,7 +799,6 @@ export function ModalManualPermit({
               />
             </div>
 
-            {/* باقي الحقول (Select) */}
             <div className="space-y-1">
               <label className="text-[11px] font-bold text-slate-500 block">
                 شكل الرخصة
@@ -591,7 +853,6 @@ export function ModalManualPermit({
             </div>
           </div>
 
-          {/* 💡 منطقة رفع الملف */}
           <div className="mt-6 border-t border-slate-200 pt-5">
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-700 flex items-center gap-2">

@@ -49,6 +49,7 @@ import {
   Calendar,
   ExternalLink,
   SquarePen,
+  ScanSearch
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../api/axios";
@@ -87,6 +88,48 @@ const maskId = (id) => {
   return id.slice(0, 3) + "****" + id.slice(-3);
 };
 
+// دالة مساعدة لحساب الوقت المتبقي للوكالة
+const getRemainingTime = (expiryDateString) => {
+  if (!expiryDateString) return null;
+  const expiryDate = new Date(expiryDateString);
+  if (isNaN(expiryDate)) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const diffTime = expiryDate - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0)
+    return {
+      expired: true,
+      text: "منتهية الصلاحية",
+      color: "bg-red-50 border-red-200 text-red-700",
+    };
+  if (diffDays === 0)
+    return {
+      expired: false,
+      text: "تنتهي اليوم!",
+      color: "bg-orange-50 border-orange-200 text-orange-700",
+    };
+
+  const years = Math.floor(diffDays / 365);
+  const months = Math.floor((diffDays % 365) / 30);
+  const days = (diffDays % 365) % 30;
+
+  let textParts = [];
+  if (years > 0) textParts.push(`${years} سنة`);
+  if (months > 0) textParts.push(`${months} شهر`);
+  if (days > 0) textParts.push(`${days} يوم`);
+
+  const color =
+    diffDays < 30
+      ? "bg-orange-50 border-orange-200 text-orange-700"
+      : "bg-emerald-50 border-emerald-200 text-emerald-700";
+
+  return { expired: false, text: textParts.join(" و "), color };
+};
+
 const ClientFileView = ({ clientId, onBack }) => {
   // ==========================================
   // حالات التعديل لتاب البيانات الأساسية
@@ -94,9 +137,14 @@ const ClientFileView = ({ clientId, onBack }) => {
   const [isEditingBasicInfo, setIsEditingBasicInfo] = useState(false);
   const [editFormData, setEditFormData] = useState({});
 
+  // 💡 متغيرات وحالات الذكاء الاصطناعي للوكيل في التعديل
+  const repIdRef = useRef(null);
+  const repAuthRef = useRef(null);
+  const [isAnalyzingRepId, setIsAnalyzingRepId] = useState(false);
+  const [isAnalyzingRepAuth, setIsAnalyzingRepAuth] = useState(false);
+
   // تفعيل التعديل وتعبئة البيانات من الداتابيز
   const handleStartEdit = () => {
-    // 👈 قراءة التفاصيل من كائن details إن وجد
     const nameDetails = client.name?.details || client.name || {};
 
     setEditFormData({
@@ -105,12 +153,11 @@ const ClientFileView = ({ clientId, onBack }) => {
       mobile: client.mobile || client.contact?.mobile || "",
       email: client.email || client.contact?.email || "",
 
-      // 👈 استخدام nameDetails
       firstAr: nameDetails.firstAr || nameDetails.firstName || "",
       firstEn: nameDetails.firstEn || nameDetails.englishName || "",
       fatherAr: nameDetails.fatherAr || nameDetails.fatherName || "",
       fatherEn: nameDetails.fatherEn || "",
-      grandAr: nameDetails.grandAr || nameDetails.grandFatherName || "", // أضفنا الجد
+      grandAr: nameDetails.grandAr || nameDetails.grandFatherName || "",
       grandEn: nameDetails.grandEn || "",
       familyAr: nameDetails.familyAr || nameDetails.familyName || "",
       familyEn: nameDetails.familyEn || "",
@@ -124,6 +171,15 @@ const ClientFileView = ({ clientId, onBack }) => {
       taxNumber: client.taxNumber || "",
       occupation: client.occupation || "",
       nationality: client.nationality || "سعودي",
+
+      // 💡 بيانات الوكيل المضافة للتعديل
+      repName: client.representative?.name || "",
+      repIdNumber: client.representative?.idNumber || "",
+      repIdExpiry: client.representative?.idExpiry || "",
+      repMobile: client.representative?.mobile || "",
+      repAuthNumber: client.representative?.authNumber || "",
+      repAuthExpiry: client.representative?.authExpiry || "",
+      repPowersScope: client.representative?.powersScope || "",
     });
     setIsEditingBasicInfo(true);
   };
@@ -169,12 +225,20 @@ const ClientFileView = ({ clientId, onBack }) => {
       "غير محدد";
 
     // تحديث أسلوب التعامل
+    // 💡 تحديث بيانات الوكيل بشكل كامل بناءً على التعديلات
     let updatedRep = { ...client.representative };
     if (editFormData.handlingMethod === "عن نفسه") {
       updatedRep.hasRepresentative = false;
     } else {
       updatedRep.hasRepresentative = true;
       updatedRep.type = editFormData.handlingMethod;
+      updatedRep.name = editFormData.repName;
+      updatedRep.idNumber = editFormData.repIdNumber;
+      updatedRep.idExpiry = editFormData.repIdExpiry;
+      updatedRep.mobile = editFormData.repMobile;
+      updatedRep.authNumber = editFormData.repAuthNumber;
+      updatedRep.authExpiry = editFormData.repAuthExpiry;
+      updatedRep.powersScope = editFormData.repPowersScope;
     }
 
     const payload = {
@@ -247,9 +311,6 @@ const ClientFileView = ({ clientId, onBack }) => {
     enabled: !!clientId,
   });
 
-  // ==========================================
-  // 👈 دالة رفع الوثيقة (Mutation)
-  // ==========================================
   // ==========================================
   // دوال الرفع والمعاينة والتحميل (تم التصحيح)
   // ==========================================
@@ -339,6 +400,58 @@ const ClientFileView = ({ clientId, onBack }) => {
     } catch (error) {
       toast.error("فشل تحميل الملف");
     }
+  };
+
+  // 💡 دالة رفع وثائق الممثل واستخراجها بالذكاء الاصطناعي أثناء التعديل
+  const handleRepDocUpload = (e, type, isAuthDoc) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    if (isAuthDoc) setIsAnalyzingRepAuth(true);
+    else setIsAnalyzingRepId(true);
+
+    reader.onload = async () => {
+      const base64Data = reader.result;
+
+      // 1. رفع المرفق فوراً لملف العميل في الخلفية
+      const docFormData = new FormData();
+      docFormData.append("file", file);
+      docFormData.append("name", type);
+      uploadDocMutation.mutate(docFormData);
+
+      // 2. تحليل المرفق
+      try {
+        const response = await api.post("/clients/analyze-representative", {
+          imageBase64: base64Data,
+          docType: isAuthDoc ? "وكالة" : "هوية",
+        });
+
+        if (response.data?.success) {
+          const data = response.data.data;
+          if (isAuthDoc) {
+            if (data.authNumber)
+              handleEditChange("repAuthNumber", data.authNumber);
+            if (data.authExpiry)
+              handleEditChange("repAuthExpiry", data.authExpiry);
+            if (data.powersScope)
+              handleEditChange("repPowersScope", data.powersScope);
+          } else {
+            if (data.agentName) handleEditChange("repName", data.agentName);
+            if (data.agentIdNumber)
+              handleEditChange("repIdNumber", data.agentIdNumber);
+            if (data.idExpiry) handleEditChange("repIdExpiry", data.idExpiry);
+          }
+          toast.success(`تم استخراج بيانات ${type} بنجاح!`);
+        }
+      } catch (error) {
+        toast.error(`فشل في استخراج البيانات من ${type}`);
+      } finally {
+        if (isAuthDoc) setIsAnalyzingRepAuth(false);
+        else setIsAnalyzingRepId(false);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   // ==========================================
@@ -1019,9 +1132,9 @@ const ClientFileView = ({ clientId, onBack }) => {
                 })}
               </div>
 
-              {/* بيانات المفوض/الوكيل إن وجد */}
+              {/* 💡 بيانات المفوض/الوكيل في حالة العرض */}
               {hasRep && !isEditingBasicInfo && (
-                <div className="mt-3 p-3 bg-purple-50/50 rounded-xl border border-purple-200">
+                <div className="mt-3 p-3 bg-purple-50/50 rounded-xl border border-purple-200 animate-in fade-in">
                   <div className="font-bold text-purple-700 mb-2 text-xs flex items-center gap-1.5">
                     <UsersRound className="w-4 h-4" /> بيانات {rep.type}{" "}
                     الافتراضي
@@ -1029,12 +1142,14 @@ const ClientFileView = ({ clientId, onBack }) => {
                   <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-[11px]">
                     <div>
                       <span className="text-slate-500">الاسم:</span>{" "}
-                      <strong className="text-slate-800">{rep.name}</strong>
+                      <strong className="text-slate-800">
+                        {rep.name || "—"}
+                      </strong>
                     </div>
                     <div>
                       <span className="text-slate-500">الهوية:</span>{" "}
                       <strong className="text-slate-800 font-mono">
-                        {rep.idNumber}
+                        {rep.idNumber || "—"}
                       </strong>
                     </div>
                     <div>
@@ -1046,12 +1161,246 @@ const ClientFileView = ({ clientId, onBack }) => {
                     <div>
                       <span className="text-slate-500">رقم المستند:</span>{" "}
                       <strong className="text-purple-700 font-mono">
-                        {rep.authNumber}
+                        {rep.authNumber || "—"}
                       </strong>
                     </div>
+                    {rep.authExpiry && (
+                      <div className="col-span-2 mt-1">
+                        <span className="text-slate-500">صلاحية التوثيق:</span>{" "}
+                        <strong className="font-mono">
+                          {formatDate(rep.authExpiry)}
+                        </strong>
+                      </div>
+                    )}
+                    {rep.powersScope && (
+                      <div className="col-span-2 mt-1">
+                        <span className="text-slate-500">نطاق الصلاحيات:</span>{" "}
+                        <p className="text-slate-700 mt-1 p-2 bg-white rounded border border-purple-100">
+                          {rep.powersScope}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
+
+              {/* 💡 بيانات المفوض/الوكيل في حالة التعديل (تصميم تفاعلي مطابق لإنشاء العميل) */}
+              {isEditingBasicInfo &&
+                editFormData.handlingMethod !== "عن نفسه" && (
+                  <div className="mt-4 bg-white rounded-xl border-2 border-blue-200 shadow-sm overflow-hidden animate-in slide-in-from-top-2">
+                    <div className="w-full flex items-center justify-between p-3.5 bg-gradient-to-l from-blue-50 to-indigo-50 border-b border-blue-200">
+                      <div className="flex items-center gap-2.5">
+                        <Shield className="w-5 h-5 text-blue-600" />
+                        <div className="text-sm font-bold text-blue-900">
+                          تعديل بيانات {editFormData.handlingMethod}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 space-y-6">
+                      {/* قسم مستند التفويض/الوكالة واستخراج الـ AI */}
+                      <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-200 space-y-4">
+                        <div className="flex items-center justify-between border-b border-indigo-100 pb-3">
+                          <div className="flex items-center gap-2 text-sm font-bold text-indigo-900">
+                            <FileCheck className="w-4 h-4" /> وثيقة{" "}
+                            {editFormData.handlingMethod === "وكيل"
+                              ? "الوكالة"
+                              : "التفويض"}
+                          </div>
+                          <button
+                            onClick={() => repAuthRef.current?.click()}
+                            disabled={isAnalyzingRepAuth}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-lg text-xs font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-70"
+                          >
+                            {isAnalyzingRepAuth ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <ScanSearch className="w-3.5 h-3.5" />
+                            )}
+                            استخراج بالـ AI
+                          </button>
+                          <input
+                            type="file"
+                            ref={repAuthRef}
+                            className="hidden"
+                            accept=".pdf,image/*"
+                            onChange={(e) =>
+                              handleRepDocUpload(
+                                e,
+                                `مستند ${editFormData.handlingMethod}`,
+                                true,
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1">
+                              رقم المستند *
+                            </label>
+                            <input
+                              type="text"
+                              value={editFormData.repAuthNumber}
+                              onChange={(e) =>
+                                handleEditChange(
+                                  "repAuthNumber",
+                                  e.target.value,
+                                )
+                              }
+                              className="w-full h-10 px-3 text-sm border-2 border-slate-200 rounded-lg outline-none font-mono focus:border-indigo-500 bg-white"
+                              dir="ltr"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1">
+                              تاريخ الانتهاء (ميلادي) *
+                            </label>
+                            <div className="flex gap-2 h-10">
+                              <input
+                                type="date"
+                                value={editFormData.repAuthExpiry}
+                                onChange={(e) =>
+                                  handleEditChange(
+                                    "repAuthExpiry",
+                                    e.target.value,
+                                  )
+                                }
+                                className="flex-1 px-3 text-sm border-2 border-slate-200 rounded-lg outline-none focus:border-indigo-500 bg-white"
+                                dir="ltr"
+                              />
+                              {getRemainingTime(editFormData.repAuthExpiry) && (
+                                <div
+                                  className={`px-3 flex items-center justify-center gap-1.5 rounded-lg border-2 text-[10px] font-bold whitespace-nowrap ${getRemainingTime(editFormData.repAuthExpiry).color}`}
+                                >
+                                  {getRemainingTime(editFormData.repAuthExpiry)
+                                    .expired ? (
+                                    <AlertTriangle className="w-3.5 h-3.5" />
+                                  ) : (
+                                    <Clock className="w-3.5 h-3.5" />
+                                  )}
+                                  {
+                                    getRemainingTime(editFormData.repAuthExpiry)
+                                      .text
+                                  }
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1">
+                              نطاق الصلاحيات والبنود
+                            </label>
+                            <textarea
+                              value={editFormData.repPowersScope}
+                              onChange={(e) =>
+                                handleEditChange(
+                                  "repPowersScope",
+                                  e.target.value,
+                                )
+                              }
+                              className="w-full h-20 px-3 py-2 text-xs border-2 border-slate-200 rounded-lg outline-none resize-none focus:border-indigo-500 leading-relaxed bg-white"
+                              placeholder="أدخل ملخص الصلاحيات..."
+                            ></textarea>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* قسم بيانات الشخص وهوية AI */}
+                      <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                          <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
+                            <User className="w-4 h-4 text-slate-500" /> البيانات
+                            الشخصية للـ{editFormData.handlingMethod}
+                          </div>
+                          <button
+                            onClick={() => repIdRef.current?.click()}
+                            disabled={isAnalyzingRepId}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-100 transition-all disabled:opacity-70 shadow-sm"
+                          >
+                            {isAnalyzingRepId ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <ScanSearch className="w-3.5 h-3.5" />
+                            )}
+                            قراءة الهوية (AI)
+                          </button>
+                          <input
+                            type="file"
+                            ref={repIdRef}
+                            className="hidden"
+                            accept=".pdf,image/*"
+                            onChange={(e) =>
+                              handleRepDocUpload(
+                                e,
+                                `هوية ${editFormData.handlingMethod}`,
+                                false,
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="col-span-2 md:col-span-1">
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1">
+                              الاسم الكامل *
+                            </label>
+                            <input
+                              type="text"
+                              value={editFormData.repName}
+                              onChange={(e) =>
+                                handleEditChange("repName", e.target.value)
+                              }
+                              className="w-full h-10 px-3 text-sm border-2 border-slate-200 rounded-lg focus:border-blue-500 outline-none bg-white"
+                            />
+                          </div>
+                          <div className="col-span-2 md:col-span-1">
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1">
+                              رقم الهوية *
+                            </label>
+                            <input
+                              type="text"
+                              value={editFormData.repIdNumber}
+                              onChange={(e) =>
+                                handleEditChange("repIdNumber", e.target.value)
+                              }
+                              className="w-full h-10 px-3 text-sm border-2 border-slate-200 rounded-lg focus:border-blue-500 outline-none font-mono bg-white"
+                              dir="ltr"
+                            />
+                          </div>
+                          <div className="col-span-2 md:col-span-1">
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1">
+                              انتهاء الهوية
+                            </label>
+                            <input
+                              type="date"
+                              value={editFormData.repIdExpiry}
+                              onChange={(e) =>
+                                handleEditChange("repIdExpiry", e.target.value)
+                              }
+                              className="w-full h-10 px-3 text-sm border-2 border-slate-200 rounded-lg focus:border-blue-500 outline-none bg-white"
+                              dir="ltr"
+                            />
+                          </div>
+                          <div className="col-span-2 md:col-span-1">
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1">
+                              رقم الجوال
+                            </label>
+                            <input
+                              type="tel"
+                              value={editFormData.repMobile}
+                              onChange={(e) =>
+                                handleEditChange("repMobile", e.target.value)
+                              }
+                              className="w-full h-10 px-3 text-sm border-2 border-slate-200 rounded-lg focus:border-blue-500 outline-none font-mono bg-white"
+                              dir="ltr"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
             </div>
           </div>
         </div>

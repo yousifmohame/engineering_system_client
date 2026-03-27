@@ -22,8 +22,35 @@ import {
 } from "lucide-react";
 
 // ==========================================
-// 💡 دالة مساعدة للنسخ (Clipboard)
+// 💡 دوال المعالجة الذكية (Enterprise Normalization)
 // ==========================================
+
+const toEnglishNumbers = (str) => {
+  if (str === null || str === undefined) return "";
+  return String(str).replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+};
+
+const normalizeArabicText = (str) => {
+  if (!str) return "";
+  return toEnglishNumbers(str)
+    .replace(/(^|\s)(حي|مخطط|رقم)(\s+|$)/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ي/g, "ى")
+    .replace(/[\s\-_]/g, "")
+    .toLowerCase();
+};
+
+const normalizePlan = (str) => {
+  if (!str) return "";
+  let cleaned = toEnglishNumbers(str).replace(/\s+/g, "").replace(/\\/g, "/");
+
+  if (cleaned.includes("/")) {
+    cleaned = cleaned.split("/").sort().join("/");
+  }
+  return cleaned.toLowerCase();
+};
+
 const copyToClipboard = (text) => {
   if (!text) return toast.error("الحقل فارغ لا يوجد شيء لنسخه!");
   navigator.clipboard.writeText(text);
@@ -31,7 +58,7 @@ const copyToClipboard = (text) => {
 };
 
 // ==========================================
-// 💡 مكون الحقل الذكي للربط
+// 💡 مكون الحقل الذكي للربط (مدعوم بقرارات الذكاء الاصطناعي)
 // ==========================================
 const SmartLinkedField = ({
   label,
@@ -43,11 +70,16 @@ const SmartLinkedField = ({
   isAdding,
   placeholder,
   listId,
+  linkedId, // 👈 استقبال الـ ID القادم من الذكاء الاصطناعي في الباك إند
 }) => {
   const isLinked = useMemo(() => {
+    // إذا كان الذكاء الاصطناعي قد ربط الحقل بالفعل، نعتبره "مسجل" فوراً
+    if (linkedId) return true;
+
+    // المطابقة النصية العادية (كخطة بديلة)
     if (!value || value.trim() === "") return false;
     return options.some((opt) => matchFn(opt, value));
-  }, [value, options, matchFn]);
+  }, [value, options, matchFn, linkedId]);
 
   return (
     <div className="flex flex-col gap-1 w-full">
@@ -110,9 +142,6 @@ const SmartLinkedField = ({
   );
 };
 
-// ==========================================
-// 💡 مكون الإدخال القابل للنسخ
-// ==========================================
 const CopyableInput = ({
   label,
   value,
@@ -121,6 +150,7 @@ const CopyableInput = ({
   type = "text",
   dir = "rtl",
   style = {},
+  warning = null,
 }) => (
   <div className="space-y-1">
     <div className="flex items-center justify-between mb-0.5">
@@ -142,13 +172,19 @@ const CopyableInput = ({
       placeholder={placeholder}
       dir={dir}
       style={style}
-      className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 text-slate-700 outline-none focus:ring-1 focus:ring-blue-400 focus:bg-white"
+      className={`w-full text-[11px] font-bold border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:bg-white transition-colors ${warning ? "border-amber-400 bg-amber-50 focus:ring-amber-500 text-amber-900" : "border-slate-200 bg-slate-50 text-slate-700 focus:ring-blue-400"}`}
     />
+    {warning && (
+      <div className="text-[10px] text-amber-600 font-bold flex items-start gap-1 mt-1 leading-tight">
+        <AlertTriangle size={12} className="shrink-0 mt-0.5" />
+        <span>{warning}</span>
+      </div>
+    )}
   </div>
 );
 
 // ==========================================
-// 💡 المودل الرئيسي للذكاء الاصطناعي
+// 💡 المودل الرئيسي
 // ==========================================
 export function ModalUploadAi({ onClose }) {
   const queryClient = useQueryClient();
@@ -159,9 +195,6 @@ export function ModalUploadAi({ onClose }) {
   const [permits, setPermits] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // ==========================================
-  // 💡 جلب البيانات الأساسية للتحقق والربط
-  // ==========================================
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-simple"],
     queryFn: async () => (await api.get("/clients/simple")).data || [],
@@ -183,32 +216,30 @@ export function ModalUploadAi({ onClose }) {
     queryKey: ["plans-list"],
     queryFn: async () => (await api.get("/riyadh-streets/plans")).data || [],
   });
+  const { data: existingPermits = [] } = useQuery({
+    queryKey: ["building-permits"],
+    queryFn: async () => (await api.get("/permits")).data?.data || [],
+  });
 
   const flatDistricts = useMemo(() => {
     let all = [];
     districtsTree.forEach((s) => {
       if (s.neighborhoods) {
-        const mapped = s.neighborhoods.map((n) => ({
-          ...n,
-          sectorName: s.name,
-        }));
-        all = [...all, ...mapped];
+        all = [
+          ...all,
+          ...s.neighborhoods.map((n) => ({ ...n, sectorName: s.name })),
+        ];
       }
     });
     return all;
   }, [districtsTree]);
 
-  // ==========================================
-  // 💡 عمليات الإضافة السريعة (Mutations)
-  // ==========================================
   const quickAddClient = useMutation({
     mutationFn: async (data) => await api.post("/clients", data),
     onSuccess: () => {
       toast.success("تمت إضافة العميل بنجاح!");
       queryClient.invalidateQueries(["clients-simple"]);
     },
-    onError: (err) =>
-      toast.error(err.response?.data?.message || "فشل الإضافة."),
   });
   const quickAddDistrict = useMutation({
     mutationFn: async (data) =>
@@ -217,7 +248,6 @@ export function ModalUploadAi({ onClose }) {
       toast.success("تمت إضافة الحي بنجاح!");
       queryClient.invalidateQueries(["districts-tree-list"]);
     },
-    onError: () => toast.error("فشل الإضافة."),
   });
   const quickAddOffice = useMutation({
     mutationFn: async (data) => await api.post("/intermediary-offices", data),
@@ -225,7 +255,6 @@ export function ModalUploadAi({ onClose }) {
       toast.success("تمت إضافة المكتب بنجاح!");
       queryClient.invalidateQueries(["offices-list"]);
     },
-    onError: () => toast.error("فشل الإضافة."),
   });
   const quickAddPlan = useMutation({
     mutationFn: async (data) => await api.post("/riyadh-streets/plans", data),
@@ -233,11 +262,10 @@ export function ModalUploadAi({ onClose }) {
       toast.success("تمت إضافة المخطط بنجاح!");
       queryClient.invalidateQueries(["plans-list"]);
     },
-    onError: () => toast.error("فشل الإضافة."),
   });
 
   // ==========================================
-  // 1. تحليل الرخصة
+  // 1. التحليل واستقبال قرارات الذكاء الاصطناعي
   // ==========================================
   const analyzeMutation = useMutation({
     mutationFn: async (selectedFile) => {
@@ -252,31 +280,39 @@ export function ModalUploadAi({ onClose }) {
       if (aiPermits.length === 0)
         return toast.error("لم يتم العثور على أي رخص صالحة في الملف.");
 
-      toast.success(`تم استخراج بيانات ${aiPermits.length} رخصة بنجاح!`);
+      toast.success(
+        `تم استخراج ومطابقة بيانات ${aiPermits.length} رخصة بنجاح!`,
+      );
 
       const mappedPermits = aiPermits.map((p) => ({
         ...p,
-        permitNumber: p.permitNumber || "",
-        issueDate: p.issueDate || "",
-        expiryDate: p.expiryDate || "",
-        year: p.year || new Date().getFullYear(),
+        permitNumber: toEnglishNumbers(p.permitNumber || ""),
+        issueDate: toEnglishNumbers(p.issueDate || ""),
+        expiryDate: toEnglishNumbers(p.expiryDate || ""),
+        year: toEnglishNumbers(p.year || new Date().getFullYear()),
         type: p.type || "غير محدد",
         form: p.form || "أخضر",
         ownerName: p.ownerName || "",
-        idNumber: p.idNumber || "",
+        idNumber: toEnglishNumbers(p.idNumber || ""),
         district: p.district || "",
         sector: p.sector || "",
-        plotNumber: p.plotNumber || "",
-        planNumber: p.planNumber || "",
-        landArea: p.landArea || "",
+        plotNumber: toEnglishNumbers(p.plotNumber || ""),
+        planNumber: toEnglishNumbers(p.planNumber || ""),
+        landArea: toEnglishNumbers(p.landArea || ""),
         mainUsage: p.mainUsage || p.usage || "سكني",
         subUsage: p.subUsage || "",
         engineeringOffice: p.engineeringOffice || "",
         notes: p.notes || "",
-        detailedReport: p.detailedReport || "", // 👈 استقبال التقرير
+        detailedReport: p.detailedReport || "",
         componentsData: p.componentsData || [],
         boundariesData: p.boundariesData || [],
         source: "رفع يدوي (AI)",
+
+        // 💡 الاحتفاظ بقرارات الربط القادمة من الذكاء الاصطناعي
+        linkedClientId: p.linkedClientId || null,
+        linkedOfficeId: p.linkedOfficeId || null,
+        linkedDistrictId: p.linkedDistrictId || null,
+        linkedPlanId: p.linkedPlanId || null,
       }));
 
       setPermits(mappedPermits);
@@ -291,7 +327,7 @@ export function ModalUploadAi({ onClose }) {
   });
 
   // ==========================================
-  // 2. الحفظ النهائي
+  // 2. الحفظ النهائي (مع إرسال الارتباطات)
   // ==========================================
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -300,7 +336,8 @@ export function ModalUploadAi({ onClose }) {
         Object.keys(permit).forEach((key) => {
           if (key === "componentsData" || key === "boundariesData") {
             fd.append(key, JSON.stringify(permit[key]));
-          } else {
+          } else if (permit[key] !== null && permit[key] !== undefined) {
+            // تجاهل القيم الفارغة لعدم إرسال السلسلة النصية "null" للباك إند
             fd.append(key, permit[key]);
           }
         });
@@ -332,29 +369,32 @@ export function ModalUploadAi({ onClose }) {
   });
 
   const handleFinalSave = () => {
-    const hasErrors = permits.some((p) => !p.permitNumber || !p.ownerName);
-    if (hasErrors)
+    if (permits.some((p) => !p.permitNumber || !p.ownerName))
       return toast.error(
         "يرجى التأكد من إدخال رقم الرخصة واسم المالك كحد أدنى.",
       );
     saveMutation.mutate();
   };
 
-  const updateCurrentPermit = (field, value) => {
+  // 💡 تحديث الحقول الذكية: إذا قام المستخدم بتعديل النص، نقوم بفك الارتباط الذكي (linkedFieldToClear)
+  const updateCurrentPermit = (field, value, linkedFieldToClear = null) => {
     const updated = [...permits];
-    updated[currentIndex][field] = value;
+    updated[currentIndex][field] = toEnglishNumbers(value);
+
+    // إذا قام المستخدم بتعديل يدوي للحقل، نلغي تطابق الـ AI لكي نعتمد على بحث الواجهة
+    if (linkedFieldToClear) {
+      updated[currentIndex][linkedFieldToClear] = null;
+    }
+
     setPermits(updated);
   };
 
   const updateTableData = (table, index, field, value) => {
     const updated = [...permits];
-    updated[currentIndex][table][index][field] = value;
+    updated[currentIndex][table][index][field] = toEnglishNumbers(value);
     setPermits(updated);
   };
 
-  // ==========================================
-  // Render: Step 1 (Upload)
-  // ==========================================
   if (step === 1) {
     return (
       <div
@@ -375,8 +415,8 @@ export function ModalUploadAi({ onClose }) {
             استخراج البيانات بذكاء
           </h3>
           <p className="text-sm text-slate-500 font-semibold mb-6 px-4">
-            ارفع ملف الرخصة (PDF/صورة) وسنقوم بتفريغ كل الحقول والجداول بدقة
-            متناهية.
+            ارفع ملف الرخصة وسنقوم بتفريغ كل الحقول والجداول بدقة متناهية
+            ومطابقتها مع النظام.
           </p>
 
           <div
@@ -424,7 +464,7 @@ export function ModalUploadAi({ onClose }) {
               ) : (
                 <Sparkles className="w-5 h-5" />
               )}{" "}
-              بدء التحليل
+              بدء التحليل والمطابقة
             </button>
           </div>
         </div>
@@ -432,10 +472,12 @@ export function ModalUploadAi({ onClose }) {
     );
   }
 
-  // ==========================================
-  // Render: Step 2 (Review)
-  // ==========================================
   const current = permits[currentIndex];
+  const isDuplicatePermit = existingPermits.some(
+    (p) =>
+      String(p.permitNumber) === String(current.permitNumber) &&
+      String(p.year) === String(current.year),
+  );
 
   return (
     <div
@@ -443,16 +485,16 @@ export function ModalUploadAi({ onClose }) {
       dir="rtl"
     >
       <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full flex flex-col border border-purple-200 max-h-[95vh]">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-purple-100 bg-purple-50 rounded-t-2xl shrink-0">
           <div className="flex items-center gap-3">
             <Brain className="w-6 h-6 text-purple-600" />
             <div>
               <h3 className="font-black text-purple-900 text-base">
-                المراجعة والربط التلقائي
+                المراجعة والربط الذكي
               </h3>
               <p className="text-[11px] text-purple-600 font-bold mt-0.5">
-                تأكد من البيانات وأضف السجلات غير الموجودة بنقرة زر
+                اللون الأخضر يعني أن الذكاء الاصطناعي وجد تطابقاً في قاعدة
+                البيانات!
               </p>
             </div>
           </div>
@@ -486,9 +528,7 @@ export function ModalUploadAi({ onClose }) {
           </button>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-[#fafbfc] custom-scrollbar-slim space-y-6">
-          {/* 1. البيانات الأساسية والحقول الذكية */}
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
             <h4 className="text-sm font-black text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Edit3 className="w-4 h-4 text-blue-500" /> المعلومات الأساسية
@@ -500,12 +540,16 @@ export function ModalUploadAi({ onClose }) {
                 <SmartLinkedField
                   label="اسم المالك (العميل) *"
                   value={current.ownerName}
-                  onChange={(val) => updateCurrentPermit("ownerName", val)}
+                  linkedId={current.linkedClientId} // 👈 تمرير الـ ID الذكي
+                  onChange={(val) =>
+                    updateCurrentPermit("ownerName", val, "linkedClientId")
+                  } // 👈 فك الارتباط عند التعديل اليدوي
                   options={clients}
                   listId="aiClientsList"
                   placeholder="ابحث أو اكتب اسم العميل..."
                   matchFn={(opt, val) =>
-                    opt.fullNameRaw?.includes(val) ||
+                    normalizeArabicText(opt.fullNameRaw) ===
+                      normalizeArabicText(val) ||
                     opt.idNumber === current.idNumber
                   }
                   isAdding={quickAddClient.isPending}
@@ -534,6 +578,11 @@ export function ModalUploadAi({ onClose }) {
                 value={current.permitNumber}
                 onChange={(val) => updateCurrentPermit("permitNumber", val)}
                 placeholder="مثال: 1445/1234"
+                warning={
+                  isDuplicatePermit
+                    ? "تنبيه: هذا الرقم مسجل مسبقاً بنفس السنة في النظام."
+                    : null
+                }
               />
               <CopyableInput
                 label="تاريخ الإصدار"
@@ -545,27 +594,32 @@ export function ModalUploadAi({ onClose }) {
                 value={current.expiryDate}
                 onChange={(val) => updateCurrentPermit("expiryDate", val)}
               />
-
-              {/* السنة */}
               <CopyableInput
                 label="سنة الرخصة (للفلترة)"
                 value={current.year}
                 onChange={(val) => updateCurrentPermit("year", val)}
               />
 
-              {/* الحقول الذكية (حي ومخطط) */}
               <div>
                 <SmartLinkedField
                   label="الحي"
                   value={current.district}
-                  onChange={(val) => updateCurrentPermit("district", val)}
+                  linkedId={current.linkedDistrictId} // 👈
+                  onChange={(val) =>
+                    updateCurrentPermit("district", val, "linkedDistrictId")
+                  }
                   options={flatDistricts}
                   listId="aiDistrictsList"
                   placeholder={
                     loadingDistricts ? "جاري التحميل..." : "ابحث أو اكتب..."
                   }
                   matchFn={(opt, val) =>
-                    opt.name?.trim() === val?.trim() || opt.name?.includes(val)
+                    normalizeArabicText(opt.name).includes(
+                      normalizeArabicText(val),
+                    ) ||
+                    normalizeArabicText(val).includes(
+                      normalizeArabicText(opt.name),
+                    )
                   }
                   isAdding={quickAddDistrict.isPending}
                   onQuickAdd={() =>
@@ -581,13 +635,16 @@ export function ModalUploadAi({ onClose }) {
                 <SmartLinkedField
                   label="رقم المخطط"
                   value={current.planNumber}
-                  onChange={(val) => updateCurrentPermit("planNumber", val)}
+                  linkedId={current.linkedPlanId} // 👈
+                  onChange={(val) =>
+                    updateCurrentPermit("planNumber", val, "linkedPlanId")
+                  }
                   options={plans}
                   listId="aiPlansList"
                   placeholder="ابحث أو اكتب رقم المخطط..."
                   matchFn={(opt, val) =>
-                    opt.name?.trim() === val?.trim() ||
-                    opt.planNumber?.includes(val)
+                    normalizePlan(opt.name) === normalizePlan(val) ||
+                    normalizePlan(opt.planNumber) === normalizePlan(val)
                   }
                   isAdding={quickAddPlan.isPending}
                   onQuickAdd={() =>
@@ -611,12 +668,10 @@ export function ModalUploadAi({ onClose }) {
               />
               <CopyableInput
                 label="مساحة الأرض (م²)"
-                type="number"
+                type="text"
                 value={current.landArea}
                 onChange={(val) => updateCurrentPermit("landArea", val)}
               />
-
-              {/* الاستخدام مقسم */}
               <CopyableInput
                 label="التصنيف الرئيسي"
                 value={current.mainUsage}
@@ -629,7 +684,6 @@ export function ModalUploadAi({ onClose }) {
                 onChange={(val) => updateCurrentPermit("subUsage", val)}
                 placeholder="مثال: فيلا"
               />
-
               <CopyableInput
                 label="نوع الطلب"
                 value={current.type}
@@ -646,14 +700,24 @@ export function ModalUploadAi({ onClose }) {
                 <SmartLinkedField
                   label="المكتب الهندسي"
                   value={current.engineeringOffice}
+                  linkedId={current.linkedOfficeId} // 👈
                   onChange={(val) =>
-                    updateCurrentPermit("engineeringOffice", val)
+                    updateCurrentPermit(
+                      "engineeringOffice",
+                      val,
+                      "linkedOfficeId",
+                    )
                   }
                   options={offices}
                   listId="aiOfficesList"
                   placeholder="ابحث أو اكتب المكتب..."
                   matchFn={(opt, val) =>
-                    opt.nameAr?.includes(val) || opt.nameEn?.includes(val)
+                    normalizeArabicText(opt.nameAr).includes(
+                      normalizeArabicText(val),
+                    ) ||
+                    normalizeArabicText(opt.nameEn).includes(
+                      normalizeArabicText(val),
+                    )
                   }
                   isAdding={quickAddOffice.isPending}
                   onQuickAdd={() =>
@@ -672,7 +736,7 @@ export function ModalUploadAi({ onClose }) {
               <div className="md:col-span-4">
                 <div className="flex items-center justify-between mb-0.5">
                   <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
-                    ملاحظات / اشتراطات
+                    ملاحظات / اشتراطات{" "}
                     <button
                       onClick={() => copyToClipboard(current.notes)}
                       className="text-slate-400 hover:text-blue-600"
@@ -692,7 +756,6 @@ export function ModalUploadAi({ onClose }) {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* 2. جدول المكونات */}
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
               <h4 className="text-xs font-black text-slate-800 mb-3 flex items-center gap-2">
                 <Layers className="w-4 h-4 text-emerald-500" /> تفاصيل المكونات
@@ -784,7 +847,6 @@ export function ModalUploadAi({ onClose }) {
               </div>
             </div>
 
-            {/* 3. جدول الحدود */}
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
               <h4 className="text-xs font-black text-slate-800 mb-3 flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-orange-500" /> الحدود والأبعاد
@@ -861,7 +923,6 @@ export function ModalUploadAi({ onClose }) {
           </div>
         </div>
 
-        {/* Footer Actions */}
         <div className="p-4 bg-white border-t border-slate-200 rounded-b-2xl flex items-center justify-between shrink-0">
           <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
             رخصة {currentIndex + 1} من {permits.length} جاهزة للاعتماد
