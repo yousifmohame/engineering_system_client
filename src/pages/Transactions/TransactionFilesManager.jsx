@@ -28,32 +28,24 @@ import {
   Plus,
   Building2,
   User,
-  FileSignature,
   CheckSquare,
   ChevronRight,
   Download,
   Eye,
   ArrowLeft,
   Home,
-  Send,
-  Mail,
-  MessageSquare,
-  Share2,
-  Link2,
   Copy,
-  ArrowUp,
-  ArrowDown,
   LayoutGrid,
   Loader2,
-  ArrowRight,
-  ChevronLeft
+  Save,
+  ArrowRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "../../api/axios"; // 💡 تأكد من مسار API الخاص بك
+import api from "../../api/axios"; // 💡 تأكد من المسار الصحيح للـ API الخاص بك
 
 // ============================================================================
-// 💡 DEFAULTS
+// 💡 DEFAULTS (في حال لم يكن هناك داتا في الباك إند بعد)
 // ============================================================================
 
 const DEFAULT_CATEGORIES = [
@@ -111,22 +103,6 @@ function getFileColor(type) {
   return "#64748b";
 }
 
-function getDaysAgo(dateString) {
-  if (!dateString) return "اليوم";
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return "اليوم";
-  if (diffDays === 1) return "أمس";
-  if (diffDays === 2) return "منذ يومين";
-  if (diffDays < 7) return `منذ ${diffDays} أيام`;
-  if (diffDays < 30) return `منذ ${Math.floor(diffDays / 7)} أسبوع`;
-  if (diffDays < 365) return `منذ ${Math.floor(diffDays / 30)} شهر`;
-  return `منذ ${Math.floor(diffDays / 365)} سنة`;
-}
-
 const getFullUrl = (url) => {
   if (!url) return null;
   if (url.startsWith("http")) return url;
@@ -170,7 +146,7 @@ function CopyableCell({ text, className = "", label = "" }) {
 // 💡 MODALS
 // ============================================================================
 
-function FolderCategoriesModal({ categories, onSave, onClose }) {
+function FolderCategoriesModal({ categories, onSave, isSaving, onClose }) {
   const [localCategories, setLocalCategories] = useState(categories);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryIcon, setNewCategoryIcon] = useState("📁");
@@ -187,18 +163,16 @@ function FolderCategoriesModal({ categories, onSave, onClose }) {
     };
     setLocalCategories([...localCategories, newCategory]);
     setNewCategoryName("");
-    toast.success("تم إضافة التصنيف");
+    toast.success("تم إضافة التصنيف محلياً");
   };
 
   const handleDeleteCategory = (id) => {
     setLocalCategories(localCategories.filter((c) => c.id !== id));
-    toast.success("تم حذف التصنيف");
+    toast.success("تم إزالة التصنيف محلياً");
   };
 
   const handleSave = () => {
     onSave(localCategories);
-    onClose();
-    toast.success("تم حفظ الإعدادات");
   };
 
   return (
@@ -296,9 +270,11 @@ function FolderCategoriesModal({ categories, onSave, onClose }) {
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+            disabled={isSaving}
+            className="px-6 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
           >
-            <Save size={16} /> حفظ الإعدادات
+            {isSaving ? <Loader2 size={16} className="animate-spin"/> : <Save size={16} />} 
+            حفظ الإعدادات
           </button>
         </div>
       </div>
@@ -485,7 +461,6 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
 
-  // pathStack يدير التنقل بين المجلدات (Breadcrumb)، يبدأ بـ null للمسار الرئيسي للمعاملة
   const [pathStack, setPathStack] = useState([{ id: null, name: "الرئيسية" }]);
   const currentFolderId = pathStack[pathStack.length - 1].id;
 
@@ -500,7 +475,6 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
     type: null,
   });
 
-  // Upload Manager State
   const [activeUploads, setActiveUploads] = useState({});
   const [showUploadManager, setShowUploadManager] = useState(false);
 
@@ -515,7 +489,7 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
     },
   });
 
-  // 2. إنشاء المجلد (Real Backend Call)
+  // 2. إنشاء المجلد
   const createFolderMutation = useMutation({
     mutationFn: async (data) =>
       await api.post("/files/folder", {
@@ -536,7 +510,7 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
       toast.error(err.response?.data?.message || "خطأ في إنشاء المجلد"),
   });
 
-  // 3. الرفع الفعلي مع متابعة سرعة الشبكة (Axios onUploadProgress)
+  // 3. الرفع الفعلي
   const handleFilesSelection = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -557,7 +531,7 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
     }));
 
     const fd = new FormData();
-    files.forEach((f) => fd.append("files", f)); // يجب أن يكون متطابق مع multer في الباك إند
+    files.forEach((f) => fd.append("files", f)); 
     fd.append("transactionId", transaction.transactionId);
     if (currentFolderId) fd.append("folderId", currentFolderId);
     fd.append("uploadedBy", "مدير النظام");
@@ -636,7 +610,7 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // 4. الحذف الحقيقي
+  // 4. الحذف החقيقي
   const deleteMutation = useMutation({
     mutationFn: async (payload) => await api.post("/files/delete", payload),
     onSuccess: () => {
@@ -669,7 +643,6 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
     deleteMutation.mutate({ folderIds, fileIds });
   };
 
-  // ==================== Interactions ====================
   const handleItemDoubleClick = (item, type) => {
     if (type === "folder") {
       setPathStack([...pathStack, { id: item.id, name: item.name }]);
@@ -710,14 +683,13 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
     if (!selectedItems.has(item.id)) setSelectedItems(new Set([item.id]));
   };
 
-  // 💡 🚀 أضف هذه الدالة هنا (هذا هو الحل السحري)
   const closeContextMenu = () => {
     setContextMenu({ show: false, x: 0, y: 0, item: null, type: null });
   };
 
   const handleBgClick = () => {
     setSelectedItems(new Set());
-    setContextMenu({ show: false, x: 0, y: 0, item: null, type: null });
+    closeContextMenu();
   };
 
   const handleSelectAll = () => {
@@ -879,7 +851,6 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
             </div>
           ) : viewMode === "grid" ? (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-4 content-start">
-              {/* Folders */}
               {contents.folders.map((folder) => (
                 <div
                   key={folder.id}
@@ -919,7 +890,6 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
                 </div>
               ))}
 
-              {/* Files */}
               {contents.files.map((file) => {
                 const Icon = getFileIcon(file.extension);
                 const color = getFileColor(file.extension);
@@ -974,7 +944,7 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
                 <tr>
                   <th className="p-3 border-b border-gray-200">الاسم</th>
                   <th className="p-3 border-b border-gray-200">
-                    تاريخ الإنشاء
+                    تاريخ التعديل
                   </th>
                   <th className="p-3 border-b border-gray-200">النوع</th>
                   <th className="p-3 border-b border-gray-200">الحجم</th>
@@ -1057,8 +1027,15 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
                             />
                           )}
                         </div>
-                        <Icon size={20} color={color} className="shrink-0" />
-                        <span className="font-bold text-gray-800" dir="ltr">
+                        <Icon
+                          size={20}
+                          color={color}
+                          className="shrink-0"
+                        />
+                        <span
+                          className="font-bold text-gray-800"
+                          dir="ltr"
+                        >
                           {file.name || file.originalName}
                         </span>
                       </td>
@@ -1071,7 +1048,9 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
                       <td className="p-3 text-gray-500 font-mono">
                         {formatFileSize(file.size)}
                       </td>
-                      <td className="p-3 text-gray-500">{file.uploadedBy}</td>
+                      <td className="p-3 text-gray-500">
+                        {file.uploadedBy}
+                      </td>
                     </tr>
                   );
                 })}
@@ -1092,12 +1071,12 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
               }}
             />
             <div
-              className="fixed z-[310] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] border border-gray-200 py-1 min-w-[200px]"
+              className="fixed z-[310] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] border border-gray-200 py-1.5 min-w-[200px] font-bold"
               style={{ top: contextMenu.y, left: contextMenu.x }}
             >
               <div className="px-4 py-2 border-b border-gray-100 mb-1 bg-gray-50/50">
                 <p
-                  className="text-xs font-bold text-gray-800 truncate"
+                  className="text-xs text-gray-800 truncate"
                   title={contextMenu.item.name || contextMenu.item.originalName}
                 >
                   {contextMenu.item.name || contextMenu.item.originalName}
@@ -1111,7 +1090,7 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
                       handleItemDoubleClick(contextMenu.item, "file");
                       closeContextMenu();
                     }}
-                    className="w-full text-right px-4 py-2.5 hover:bg-blue-50 flex items-center gap-3 text-blue-600 text-[11px] font-bold transition-colors"
+                    className="w-full text-right px-4 py-2.5 hover:bg-blue-50 flex items-center gap-3 text-blue-600 text-[11px] transition-colors"
                   >
                     <Eye size={16} /> عرض وفتح
                   </button>
@@ -1120,7 +1099,7 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
                       window.open(getFullUrl(contextMenu.item.url), "_blank");
                       closeContextMenu();
                     }}
-                    className="w-full text-right px-4 py-2.5 hover:bg-green-50 flex items-center gap-3 text-green-600 text-[11px] font-bold transition-colors"
+                    className="w-full text-right px-4 py-2.5 hover:bg-green-50 flex items-center gap-3 text-green-600 text-[11px] transition-colors"
                   >
                     <Download size={16} /> تحميل الملف
                   </button>
@@ -1134,7 +1113,7 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
                       handleItemDoubleClick(contextMenu.item, "folder");
                       closeContextMenu();
                     }}
-                    className="w-full text-right px-4 py-2.5 hover:bg-blue-50 flex items-center gap-3 text-blue-600 text-[11px] font-bold transition-colors"
+                    className="w-full text-right px-4 py-2.5 hover:bg-blue-50 flex items-center gap-3 text-blue-600 text-[11px] transition-colors"
                   >
                     <FolderOpen size={16} /> فتح المجلد
                   </button>
@@ -1150,7 +1129,7 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
                   );
                   closeContextMenu();
                 }}
-                className="w-full text-right px-4 py-2.5 hover:bg-gray-50 flex items-center gap-3 text-gray-700 text-[11px] font-bold transition-colors"
+                className="w-full text-right px-4 py-2.5 hover:bg-gray-50 flex items-center gap-3 text-gray-700 text-[11px] transition-colors"
               >
                 <Copy size={16} className="text-gray-500" /> نسخ الاسم
               </button>
@@ -1162,15 +1141,16 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
                   handleDeleteSelected();
                   closeContextMenu();
                 }}
-                className="w-full text-right px-4 py-2.5 hover:bg-red-50 flex items-center gap-3 text-red-600 text-[11px] font-bold transition-colors"
+                className="w-full text-right px-4 py-2.5 hover:bg-red-50 flex items-center gap-3 text-red-600 text-[11px] transition-colors"
               >
-                <Trash2 size={16} /> حذف
+                <Trash2 size={16} /> حذف{" "}
+                {contextMenu.type === "folder" ? "المجلد" : "الملف"}
               </button>
             </div>
           </>
         )}
 
-        {/* ── Upload Manager Widget (The Wow Factor) ── */}
+        {/* ── Upload Manager Widget ── */}
         {showUploadManager && Object.keys(activeUploads).length > 0 && (
           <div className="absolute bottom-4 left-4 w-80 bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] border border-gray-200 overflow-hidden z-[200] animate-in slide-in-from-bottom-4">
             <div className="bg-slate-800 px-4 py-3 flex justify-between items-center">
@@ -1211,8 +1191,7 @@ function FolderViewerWindow({ transaction, categories, onClose }) {
         <div className="px-6 py-3 bg-white border-t border-gray-200 text-[11px] font-bold text-gray-500 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-4">
             <span className="bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200">
-              {contents.folders.length + contents.files.length} عناصر في هذا
-              المجلد
+              {contents.folders.length + contents.files.length} عناصر في هذا المجلد
             </span>
             {selectedItems.size > 0 && (
               <span className="text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
@@ -1267,7 +1246,7 @@ function EnhancedListItem({
     <div
       onClick={isLocked ? undefined : onClick}
       onDoubleClick={isLocked ? undefined : onDoubleClick}
-      onContextMenu={onContextMenu}
+      onContextMenu={(e) => onContextMenu(e, transaction)}
       className={`
         grid gap-3 items-center px-4 py-3 cursor-pointer transition-all border-b border-gray-200 relative bg-white
         ${isSelected && !isLocked ? "bg-blue-50 border-l-4 border-l-blue-600 shadow-sm z-10" : "hover:bg-gray-50 border-l-4 border-l-transparent"}
@@ -1403,7 +1382,9 @@ function EnhancedListItem({
 // ============================================================================
 
 export function TransactionFilesManager({ onClose }) {
-  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+  // 💡 إضافة استدعاء الـ QueryClient
+  const queryClient = useQueryClient();
+
   const [deletedItems, setDeletedItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest");
@@ -1412,6 +1393,14 @@ export function TransactionFilesManager({ onClose }) {
 
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
   const [showTrashModal, setShowTrashModal] = useState(false);
+
+  // 💡 State الخاصة بالكليك يمين في القائمة الرئيسية
+  const [mainContextMenu, setMainContextMenu] = useState({
+    show: false,
+    x: 0,
+    y: 0,
+    transaction: null,
+  });
 
   // 1. 💡 جلب المعاملات الحقيقية من الباك إند
   const { data: rawTransactions = [], isLoading: txLoading } = useQuery({
@@ -1422,7 +1411,35 @@ export function TransactionFilesManager({ onClose }) {
     },
   });
 
-  // 2. 💡 تحويل المعاملات الحقيقية لشكل يناسب مستكشف الملفات
+  // 2. 💡 جلب تصنيفات المجلدات من الباك إند
+  const { data: categories = DEFAULT_CATEGORIES } = useQuery({
+    queryKey: ["folder-categories"],
+    queryFn: async () => {
+      try {
+        const res = await api.get("/files/categories");
+        return res.data?.data?.length > 0 ? res.data.data : DEFAULT_CATEGORIES;
+      } catch (e) {
+        return DEFAULT_CATEGORIES;
+      }
+    },
+  });
+
+  // 3. 💡 حفظ التصنيفات في الباك إند
+  const saveCategoriesMutation = useMutation({
+    mutationFn: async (cats) =>
+      await api.post("/files/categories", { categories: cats }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["folder-categories"]);
+      toast.success("تم حفظ الإعدادات في السيرفر بنجاح");
+      setShowCategoriesModal(false);
+    },
+    onError: () => {
+      toast.error("حدث خطأ أثناء الحفظ في السيرفر (تم الحفظ محلياً)");
+      setShowCategoriesModal(false);
+    },
+  });
+
+  // تحويل المعاملات الحقيقية لشكل يناسب مستكشف الملفات
   const transactions = useMemo(() => {
     return rawTransactions.map((tx) => ({
       id: tx.id,
@@ -1449,7 +1466,6 @@ export function TransactionFilesManager({ onClose }) {
             ? "cancelled"
             : "in-progress",
       locked: tx.locked || false,
-      // نوفر معلومات وهمية للمجلد الجذري لكي تكتمل الواجهة
       rootFolder: {
         id: null,
         name: "الرئيسية",
@@ -1494,6 +1510,7 @@ export function TransactionFilesManager({ onClose }) {
     return result;
   }, [transactions, searchQuery, sortBy]);
 
+  // 💡 دوال الكليك والكليك يمين في القائمة الرئيسية
   const handleItemClick = (id, e) => {
     if (e.ctrlKey || e.metaKey) {
       const newSet = new Set(selectedItems);
@@ -1509,10 +1526,34 @@ export function TransactionFilesManager({ onClose }) {
     toast.success(`تم تحديد ${filteredTransactions.length} مجلد`);
   };
 
+  const handleMainContextMenu = (e, transaction) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMainContextMenu({ show: true, x: e.clientX, y: e.clientY, transaction });
+    if (!selectedItems.has(transaction.transactionId)) {
+      setSelectedItems(new Set([transaction.transactionId]));
+    }
+  };
+
+  const closeMainContextMenu = () => {
+    setMainContextMenu({ show: false, x: 0, y: 0, transaction: null });
+  };
+
   return (
-    <div className="flex flex-col h-full bg-gray-50 font-[Tajawal]" dir="rtl">
+    <div 
+      className="flex flex-col h-full bg-gray-50 font-[Tajawal]" 
+      dir="rtl"
+      onClick={() => {
+        setSelectedItems(new Set());
+        closeMainContextMenu();
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        closeMainContextMenu();
+      }}
+    >
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shadow-sm shrink-0 z-10">
+      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shadow-sm shrink-0 z-10" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-3">
           <div className="bg-orange-100 p-2.5 rounded-xl">
             <FolderOpen size={24} className="text-orange-600" />
@@ -1556,7 +1597,7 @@ export function TransactionFilesManager({ onClose }) {
       </div>
 
       {/* ── Toolbar ── */}
-      <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200 shrink-0 z-10">
+      <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200 shrink-0 z-10" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-3 w-1/2 max-w-lg">
           <div className="relative w-full">
             <Search
@@ -1608,9 +1649,9 @@ export function TransactionFilesManager({ onClose }) {
       </div>
 
       {/* ── Table Header ── */}
-      <div className="px-6 pt-6 shrink-0 z-10">
+      <div className="px-6 pt-6 shrink-0 z-10" onClick={e => e.stopPropagation()}>
         <div
-          className="grid gap-3 px-4 py-3 bg-slate-800 text-white rounded-t-xl text-[11px] font-bold shadow-md sticky top-0"
+          className="grid gap-3 px-4 py-3 bg-slate-800 text-white rounded-t-xl text-[11px] font-bold shadow-md"
           style={{
             gridTemplateColumns:
               "50px 350px 90px 90px 90px 80px 90px 80px 100px 100px 80px 60px 50px",
@@ -1633,7 +1674,7 @@ export function TransactionFilesManager({ onClose }) {
       </div>
 
       {/* ── Table Body ── */}
-      <div className="flex-1 overflow-auto px-6 pb-6 custom-scrollbar-slim relative z-0">
+      <div className="flex-1 overflow-auto px-6 pb-6 custom-scrollbar-slim relative z-0" onClick={e => e.stopPropagation()}>
         <div className="bg-white border-x border-b border-gray-200 rounded-b-xl shadow-sm overflow-hidden min-h-[500px]">
           {txLoading ? (
             <div className="flex justify-center items-center h-[400px]">
@@ -1662,12 +1703,76 @@ export function TransactionFilesManager({ onClose }) {
                 isSelected={selectedItems.has(tx.transactionId)}
                 onClick={(e) => handleItemClick(tx.transactionId, e)}
                 onDoubleClick={() => setOpenedTransaction(tx)}
-                onContextMenu={(e) => e.preventDefault()}
+                onContextMenu={handleMainContextMenu} // 💡 🚀 ربطنا الكليك يمين هنا
               />
             ))
           )}
         </div>
       </div>
+
+      {/* ── Main Context Menu ── */}
+      {mainContextMenu.show && mainContextMenu.transaction && (
+        <>
+          <div className="fixed inset-0 z-[300]" onClick={closeMainContextMenu} onContextMenu={(e) => { e.preventDefault(); closeMainContextMenu(); }} />
+          <div
+            className="fixed z-[310] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] border border-gray-200 py-1.5 min-w-[200px] font-bold animate-in fade-in"
+            style={{ top: mainContextMenu.y, left: mainContextMenu.x }}
+          >
+            <div className="px-4 py-2 border-b border-gray-100 mb-1 bg-blue-50/50">
+              <p className="text-xs text-blue-800 truncate" title={mainContextMenu.transaction.transactionCode}>
+                مجلد المعاملة: {mainContextMenu.transaction.transactionCode}
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                if(!mainContextMenu.transaction.locked) {
+                  setOpenedTransaction(mainContextMenu.transaction);
+                } else {
+                  toast.error("المعاملة مقفلة ولا يمكن فتحها");
+                }
+                closeMainContextMenu();
+              }}
+              className="w-full text-right px-4 py-2.5 hover:bg-blue-50 flex items-center gap-3 text-blue-600 text-[11px] transition-colors"
+            >
+              <FolderOpen size={16} /> <span>فتح المجلد</span>
+            </button>
+
+            <div className="border-t border-gray-100 my-1" />
+
+            <button
+              onClick={() => {
+                copyToClipboard(mainContextMenu.transaction.transactionCode, "رقم المعاملة");
+                closeMainContextMenu();
+              }}
+              className="w-full text-right px-4 py-2.5 hover:bg-gray-50 flex items-center gap-3 text-gray-700 text-[11px] transition-colors"
+            >
+              <Copy size={16} className="text-gray-500" /> <span>نسخ رقم المعاملة</span>
+            </button>
+            <button
+              onClick={() => {
+                copyToClipboard(`${mainContextMenu.transaction.ownerFirstName} ${mainContextMenu.transaction.ownerLastName}`, "اسم المالك");
+                closeMainContextMenu();
+              }}
+              className="w-full text-right px-4 py-2.5 hover:bg-gray-50 flex items-center gap-3 text-gray-700 text-[11px] transition-colors"
+            >
+              <User size={16} className="text-gray-500" /> <span>نسخ اسم المالك</span>
+            </button>
+
+            <div className="border-t border-gray-100 my-1" />
+
+            <button
+              onClick={() => {
+                toast.info("حذف مجلدات المعاملات يتم من شاشة سجل المعاملات لأغراض أمنية");
+                closeMainContextMenu();
+              }}
+              className="w-full text-right px-4 py-2.5 hover:bg-red-50 flex items-center gap-3 text-red-600 text-[11px] transition-colors"
+            >
+              <Trash2 size={16} /> <span>حذف المجلد</span>
+            </button>
+          </div>
+        </>
+      )}
 
       {/* ── Sub Modals ── */}
       {openedTransaction && (
@@ -1681,7 +1786,8 @@ export function TransactionFilesManager({ onClose }) {
       {showCategoriesModal && (
         <FolderCategoriesModal
           categories={categories}
-          onSave={setCategories}
+          isSaving={saveCategoriesMutation.isPending}
+          onSave={(cats) => saveCategoriesMutation.mutate(cats)}
           onClose={() => setShowCategoriesModal(false)}
         />
       )}
