@@ -38,7 +38,8 @@ const MENU_CATEGORIES = [
       { id: "07", label: "الصكوك", code: "SCR_07_VIEW" },
       { id: "222", label: "تعاقدات العملاء", code: "SCR_222_VIEW" },
       { id: "08", label: "الهويات", code: "SCR_08_VIEW" },
-      { id: "09", label: "الرخص", code: "SCR_09_VIEW" },
+      { id: "09", label: "سجلات الرخص الخارجية", code: "SCR_09_VIEW" },
+      { id: "0010", label: "سجلات رخص مكتبنا", code: "SCR_0010_VIEW" },
     ],
   },
   {

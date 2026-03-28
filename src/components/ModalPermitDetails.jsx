@@ -999,93 +999,26 @@ function TabAiReport({ permit }) {
 }
 
 // ─── 6. التاب الجديد: المعاملات والارتباطات ───
-function TabLinkedRecords({ permit }) {
-  const queryClient = useQueryClient();
-  const [linkingMode, setLinkingMode] = useState(null);
-  const [selectedValue, setSelectedValue] = useState("");
-
-  const [localLinks, setLocalLinks] = useState({
-    linkedClientId: permit.linkedClientId || null,
-    linkedOfficeId: permit.linkedOfficeId || null,
-    linkedOwnershipId: permit.linkedOwnershipId || null,
-    linkedTransactionId: permit.linkedTransactionId || null,
-  });
-
-  const { data: autoLinkedTransactions = [], isLoading: loadingAuto } =
-    useQuery({
-      queryKey: ["linked-transactions", permit.permitNumber, permit.year],
-      queryFn: async () => {
-        const res = await api.get(
-          `/private-transactions?permitNumber=${permit.permitNumber}&year=${permit.year}`,
-        );
-        return res.data?.data || [];
-      },
-      enabled: !!permit.permitNumber && !!permit.year,
-    });
-
-  const { data: clients = [] } = useQuery({
-    queryKey: ["clients-simple"],
-    queryFn: async () => (await api.get("/clients/simple")).data || [],
-  });
-  const { data: offices = [] } = useQuery({
-    queryKey: ["offices-list"],
-    queryFn: async () =>
-      (await api.get("/intermediary-offices")).data?.data || [],
-  });
-  const { data: ownerships = [] } = useQuery({
-    queryKey: ["properties-list"],
-    queryFn: async () => (await api.get("/properties")).data?.data || [],
-  });
-  const { data: privateTransactions = [] } = useQuery({
-    queryKey: ["private-transactions-list"],
-    queryFn: async () =>
-      (await api.get("/private-transactions")).data?.data || [],
-  });
-
-  const linkMutation = useMutation({
-    mutationFn: async (payload) =>
-      await api.put(`/permits/${permit.id}`, payload),
-    onSuccess: (data, variables) => {
-      toast.success("تم تحديث الارتباط بنجاح!");
-      queryClient.invalidateQueries(["building-permits"]);
-      setLocalLinks((prev) => ({ ...prev, ...variables }));
-      setLinkingMode(null);
-      setSelectedValue("");
-    },
-    onError: () => toast.error("حدث خطأ أثناء الربط"),
-  });
-
-  const handleSaveLink = () => {
-    if (!selectedValue) return toast.error("يرجى اختيار السجل من القائمة");
-    const payload = {};
-    if (linkingMode === "client") payload.linkedClientId = selectedValue;
-    if (linkingMode === "office") payload.linkedOfficeId = selectedValue;
-    if (linkingMode === "ownership") payload.linkedOwnershipId = selectedValue;
-    if (linkingMode === "privateTransaction")
-      payload.linkedTransactionId = selectedValue;
-    linkMutation.mutate(payload);
-  };
-
-  const handleUnlink = (field) => linkMutation.mutate({ [field]: null });
-
-  const getOptions = (mode) => {
-    if (mode === "client")
-      return clients.map((c) => ({ label: c.name, value: c.id }));
-    if (mode === "office")
-      return offices.map((o) => ({ label: o.nameAr || o.name, value: o.id }));
-    if (mode === "ownership")
-      return ownerships.map((o) => ({
-        label: `صك رقم: ${o.deedNumber || o.id}`,
-        value: o.id,
-      }));
-    if (mode === "privateTransaction")
-      return privateTransactions.map((t) => ({
-        label: `رقم: ${t.ref || t.id} - ${t.client}`,
-        value: t.id,
-      }));
-    return [];
-  };
-
+// ─── 6. التاب الجديد: المعاملات والارتباطات ───
+function TabLinkedRecords({
+  permit,
+  localLinks,
+  setLocalLinks,
+  linkingMode,
+  setLinkingMode,
+  selectedValue,
+  setSelectedValue,
+  handleSaveLink,
+  handleUnlink,
+  getOptions,
+  linkMutation,
+  autoLinkedTransactions,
+  loadingAuto,
+  clients,
+  offices,
+  ownerships,
+  privateTransactions,
+}) {
   return (
     <div className="p-5 animate-in fade-in space-y-6">
       {/* القسم الأول: الربط التلقائي */}
@@ -1134,13 +1067,110 @@ function TabLinkedRecords({ permit }) {
         )}
       </div>
 
-      {/* القسم الثاني: الربط اليدوي */}
+      {/* القسم الثاني: السجلات المرتبطة يدوياً */}
       <div className="space-y-4">
         <h4 className="text-[12px] font-black text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-2 mt-6">
-          <Link size={16} className="text-emerald-500" /> لوحة الربط اليدوي
+          <Link size={16} className="text-emerald-500" /> السجلات المرتبطة
+          يدوياً
         </h4>
 
-        {/* السجلات المرتبطة بالفعل */}
+        {/* 💡 أزرار إضافة ارتباط جديد (نفس تصميم الهيدر) */}
+        <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm mb-4">
+          <div className="flex flex-wrap gap-2">
+            {!localLinks.linkedClientId && (
+              <button
+                onClick={() => {
+                  setLinkingMode("client");
+                  setSelectedValue("");
+                }}
+                className={`flex-1 min-w-[120px] p-3 border rounded-xl flex flex-col items-center gap-2 transition-all ${linkingMode === "client" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md scale-105" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
+              >
+                <User size={20} />{" "}
+                <span className="text-[10px] font-black">ربط بعميل</span>
+              </button>
+            )}
+            {!localLinks.linkedOfficeId && (
+              <button
+                onClick={() => {
+                  setLinkingMode("office");
+                  setSelectedValue("");
+                }}
+                className={`flex-1 min-w-[120px] p-3 border rounded-xl flex flex-col items-center gap-2 transition-all ${linkingMode === "office" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md scale-105" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
+              >
+                <Briefcase size={20} />{" "}
+                <span className="text-[10px] font-black">ربط بمكتب</span>
+              </button>
+            )}
+            {!localLinks.linkedOwnershipId && (
+              <button
+                onClick={() => {
+                  setLinkingMode("ownership");
+                  setSelectedValue("");
+                }}
+                className={`flex-1 min-w-[120px] p-3 border rounded-xl flex flex-col items-center gap-2 transition-all ${linkingMode === "ownership" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md scale-105" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
+              >
+                <Building size={20} />{" "}
+                <span className="text-[10px] font-black">ربط بملكية</span>
+              </button>
+            )}
+            {!localLinks.linkedTransactionId && (
+              <button
+                onClick={() => {
+                  setLinkingMode("privateTransaction");
+                  setSelectedValue("");
+                }}
+                className={`flex-1 min-w-[120px] p-3 border rounded-xl flex flex-col items-center gap-2 transition-all ${linkingMode === "privateTransaction" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md scale-105" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
+              >
+                <FileSignature size={20} />{" "}
+                <span className="text-[10px] font-black">
+                  ربط بمعاملة (ن. فرعي)
+                </span>
+              </button>
+            )}
+            <button className="flex-1 min-w-[120px] p-3 border border-slate-200 bg-slate-50 text-slate-400 rounded-xl flex flex-col items-center gap-2 opacity-50 cursor-not-allowed">
+              <FileSignature size={20} />{" "}
+              <span className="text-[10px] font-black">
+                معاملة (رئيسي) - قريباً
+              </span>
+            </button>
+          </div>
+
+          {/* 💡 منطقة البحث العائمة (تظهر عند تحديد نوع الربط) */}
+          {linkingMode && (
+            <div className="mt-4 p-4 bg-blue-50/50 border border-blue-100 rounded-xl flex flex-col md:flex-row items-center gap-3 animate-in slide-in-from-top-2">
+              <div className="flex-1 w-full">
+                <SearchableDropdown
+                  options={getOptions(linkingMode)}
+                  value={selectedValue}
+                  onChange={(val) => setSelectedValue(val)}
+                  placeholder={`ابحث واختر ${linkingMode === "client" ? "العميل" : linkingMode === "office" ? "المكتب" : linkingMode === "ownership" ? "الملكية" : "المعاملة"}...`}
+                />
+              </div>
+              <div className="flex gap-2 w-full md:w-auto">
+                <button
+                  onClick={handleSaveLink}
+                  disabled={linkMutation.isPending}
+                  className="flex-1 md:flex-none px-6 py-2.5 bg-blue-600 text-white text-[11px] font-black rounded-xl hover:bg-blue-700 shadow-md transition-colors flex items-center justify-center gap-2"
+                >
+                  {linkMutation.isPending ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Save size={14} />
+                  )}{" "}
+                  تأكيد الربط
+                </button>
+                <button
+                  onClick={() => setLinkingMode(null)}
+                  className="px-4 py-2.5 bg-white text-slate-500 border border-slate-200 text-[11px] font-black rounded-xl hover:bg-slate-50 transition-colors"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 💡 السجلات المرتبطة بالفعل */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
           {localLinks.linkedClientId && (
             <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 p-3 rounded-xl shadow-sm">
@@ -1203,107 +1233,24 @@ function TabLinkedRecords({ permit }) {
               </button>
             </div>
           )}
-        </div>
 
-        {/* أزرار الربط */}
-        <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
-          <div className="flex flex-wrap gap-2 mb-4">
-            {!localLinks.linkedClientId && (
-              <button
-                onClick={() => {
-                  setLinkingMode("client");
-                  setSelectedValue("");
-                }}
-                className={`flex-1 min-w-[120px] p-3 border rounded-xl flex flex-col items-center gap-2 transition-all ${linkingMode === "client" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md scale-105" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
-              >
-                <User size={20} />{" "}
-                <span className="text-[10px] font-black">ربط بعميل</span>
-              </button>
-            )}
-            {!localLinks.linkedOfficeId && (
-              <button
-                onClick={() => {
-                  setLinkingMode("office");
-                  setSelectedValue("");
-                }}
-                className={`flex-1 min-w-[120px] p-3 border rounded-xl flex flex-col items-center gap-2 transition-all ${linkingMode === "office" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md scale-105" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
-              >
-                <Briefcase size={20} />{" "}
-                <span className="text-[10px] font-black">ربط بمكتب</span>
-              </button>
-            )}
-            {!localLinks.linkedOwnershipId && (
-              <button
-                onClick={() => {
-                  setLinkingMode("ownership");
-                  setSelectedValue("");
-                }}
-                className={`flex-1 min-w-[120px] p-3 border rounded-xl flex flex-col items-center gap-2 transition-all ${linkingMode === "ownership" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md scale-105" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
-              >
-                <Building size={20} />{" "}
-                <span className="text-[10px] font-black">ربط بملكية</span>
-              </button>
-            )}
-            {!localLinks.linkedTransactionId && (
-              <button
-                onClick={() => {
-                  setLinkingMode("privateTransaction");
-                  setSelectedValue("");
-                }}
-                className={`flex-1 min-w-[120px] p-3 border rounded-xl flex flex-col items-center gap-2 transition-all ${linkingMode === "privateTransaction" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md scale-105" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
-              >
-                <FileSignature size={20} />{" "}
-                <span className="text-[10px] font-black">
-                  ربط بمعاملة (ن. فرعي)
+          {!localLinks.linkedClientId &&
+            !localLinks.linkedOfficeId &&
+            !localLinks.linkedOwnershipId &&
+            !localLinks.linkedTransactionId && (
+              <div className="col-span-1 md:col-span-2 text-center p-6 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-slate-400">
+                <span className="text-[11px] font-bold">
+                  لا توجد سجلات مرتبطة يدوياً. استخدم الأزرار أعلاه لربط سجل
+                  جديد.
                 </span>
-              </button>
+              </div>
             )}
-            <button className="flex-1 min-w-[120px] p-3 border border-slate-200 bg-slate-50 text-slate-400 rounded-xl flex flex-col items-center gap-2 opacity-50 cursor-not-allowed">
-              <FileSignature size={20} />{" "}
-              <span className="text-[10px] font-black">
-                معاملة (رئيسي) - قريباً
-              </span>
-            </button>
-          </div>
-
-          {/* منطقة البحث */}
-          {linkingMode && (
-            <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl flex flex-col md:flex-row items-center gap-3 animate-in slide-in-from-top-2">
-              <div className="flex-1 w-full">
-                <SearchableDropdown
-                  options={getOptions(linkingMode)}
-                  value={selectedValue}
-                  onChange={(val) => setSelectedValue(val)}
-                  placeholder={`ابحث واختر ${linkingMode === "client" ? "العميل" : linkingMode === "office" ? "المكتب" : linkingMode === "ownership" ? "الملكية" : "المعاملة"}...`}
-                />
-              </div>
-              <div className="flex gap-2 w-full md:w-auto">
-                <button
-                  onClick={handleSaveLink}
-                  disabled={linkMutation.isPending}
-                  className="flex-1 md:flex-none px-6 py-2.5 bg-blue-600 text-white text-[11px] font-black rounded-xl hover:bg-blue-700 shadow-md transition-colors flex items-center justify-center gap-2"
-                >
-                  {linkMutation.isPending ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Save size={14} />
-                  )}{" "}
-                  حفظ الربط
-                </button>
-                <button
-                  onClick={() => setLinkingMode(null)}
-                  className="px-4 py-2.5 bg-white text-slate-500 border border-slate-200 text-[11px] font-black rounded-xl hover:bg-slate-50 transition-colors"
-                >
-                  إلغاء
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
   );
 }
+
 // ==========================================
 // ─── 7. تاب المرفقات الأخرى ───
 // ==========================================
@@ -2288,7 +2235,95 @@ export function ModalUploadAi({ onClose }) {
 // 💡 المكون الرئيسي للنافذة (Modal) المجمع
 // ==========================================
 export function ModalPermitDetails({ permit, onClose }) {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState(0);
+
+  // 💡 التعديل الأهم: رفعنا حالة الربط هنا لتكون متاحة للهيدر والتاب معاً
+  const [linkingMode, setLinkingMode] = useState(null);
+  const [selectedValue, setSelectedValue] = useState("");
+
+  const [localLinks, setLocalLinks] = useState({
+    linkedClientId: permit.linkedClientId || null,
+    linkedOfficeId: permit.linkedOfficeId || null,
+    linkedOwnershipId: permit.linkedOwnershipId || null,
+    linkedTransactionId: permit.linkedTransactionId || null,
+  });
+
+  const { data: autoLinkedTransactions = [], isLoading: loadingAuto } =
+    useQuery({
+      queryKey: ["linked-transactions", permit.permitNumber, permit.year],
+      queryFn: async () => {
+        const res = await api.get(
+          `/private-transactions?permitNumber=${permit.permitNumber}&year=${permit.year}`,
+        );
+        return res.data?.data || [];
+      },
+      enabled: !!permit.permitNumber && !!permit.year,
+    });
+
+  const { data: clients = [] } = useQuery({
+    queryKey: ["clients-simple"],
+    queryFn: async () => (await api.get("/clients/simple")).data || [],
+  });
+  const { data: offices = [] } = useQuery({
+    queryKey: ["offices-list"],
+    queryFn: async () =>
+      (await api.get("/intermediary-offices")).data?.data || [],
+  });
+  const { data: ownerships = [] } = useQuery({
+    queryKey: ["properties-list"],
+    queryFn: async () => (await api.get("/properties")).data?.data || [],
+  });
+  const { data: privateTransactions = [] } = useQuery({
+    queryKey: ["private-transactions-list"],
+    queryFn: async () =>
+      (await api.get("/private-transactions")).data?.data || [],
+  });
+
+  const linkMutation = useMutation({
+    mutationFn: async (payload) =>
+      await api.put(`/permits/${permit.id}`, payload),
+    onSuccess: (data, variables) => {
+      toast.success("تم تحديث الارتباط بنجاح!");
+      queryClient.invalidateQueries(["building-permits"]);
+      setLocalLinks((prev) => ({ ...prev, ...variables }));
+      setLinkingMode(null);
+      setSelectedValue("");
+    },
+    onError: () => toast.error("حدث خطأ أثناء الربط"),
+  });
+
+  const handleSaveLink = () => {
+    if (!selectedValue) return toast.error("يرجى اختيار السجل من القائمة");
+    const payload = {};
+    if (linkingMode === "client") payload.linkedClientId = selectedValue;
+    if (linkingMode === "office") payload.linkedOfficeId = selectedValue;
+    if (linkingMode === "ownership") payload.linkedOwnershipId = selectedValue;
+    if (linkingMode === "privateTransaction")
+      payload.linkedTransactionId = selectedValue;
+    linkMutation.mutate(payload);
+  };
+
+  const handleUnlink = (field) => linkMutation.mutate({ [field]: null });
+
+  const getOptions = (mode) => {
+    if (mode === "client")
+      return clients.map((c) => ({ label: c.name, value: c.id }));
+    if (mode === "office")
+      return offices.map((o) => ({ label: o.nameAr || o.name, value: o.id }));
+    if (mode === "ownership")
+      return ownerships.map((o) => ({
+        label: `صك رقم: ${o.deedNumber || o.id}`,
+        value: o.id,
+      }));
+    if (mode === "privateTransaction")
+      return privateTransactions.map((t) => ({
+        label: `رقم: ${t.ref || t.id} - ${t.client}`,
+        value: t.id,
+      }));
+    return [];
+  };
+
   const tabs = [
     { label: "المستند", icon: <FileText size={12} /> },
     { label: "البيانات", icon: <Edit3 size={12} /> },
@@ -2308,27 +2343,121 @@ export function ModalPermitDetails({ permit, onClose }) {
     >
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-4xl flex flex-col overflow-hidden max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-slate-50 border-b border-slate-200 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 text-blue-600 rounded-lg shadow-sm">
-              <FileText size={20} />
+        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 shrink-0">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 text-blue-600 rounded-lg shadow-sm">
+                <FileText size={20} />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                  رخصة رقم {permit.permitNumber || "—"}
+                  <AiBadge status={permit.aiStatus} />
+                </h2>
+                <p className="text-[11px] font-bold text-slate-500 mt-0.5">
+                  تفاصيل، مكونات، ومرفقات الرخصة
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                رخصة رقم {permit.permitNumber || "—"}
-                <AiBadge status={permit.aiStatus} />
-              </h2>
-              <p className="text-[11px] font-bold text-slate-500 mt-0.5">
-                تفاصيل، مكونات، ومرفقات الرخصة
-              </p>
-            </div>
+            <button
+              onClick={onClose}
+              className="p-2 bg-white hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors border border-slate-200 text-slate-400 shadow-sm"
+            >
+              <X size={18} />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 bg-white hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors border border-slate-200 text-slate-400 shadow-sm"
-          >
-            <X size={18} />
-          </button>
+
+          {/* 💡 أزرار الربط في الهيدر */}
+          <div className="bg-white p-3 border border-slate-200 rounded-xl shadow-sm relative">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-bold text-slate-500 ml-2">
+                <Link size={14} className="inline mr-1 text-blue-500" /> ربط
+                السجل الحالي:
+              </span>
+              {!localLinks.linkedClientId && (
+                <button
+                  onClick={() => {
+                    setLinkingMode("client");
+                    setSelectedValue("");
+                  }}
+                  className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "client" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
+                >
+                  <User size={14} />{" "}
+                  <span className="text-[9px] font-black">ربط بعميل</span>
+                </button>
+              )}
+              {!localLinks.linkedOfficeId && (
+                <button
+                  onClick={() => {
+                    setLinkingMode("office");
+                    setSelectedValue("");
+                  }}
+                  className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "office" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
+                >
+                  <Briefcase size={14} />{" "}
+                  <span className="text-[9px] font-black">ربط بمكتب</span>
+                </button>
+              )}
+              {!localLinks.linkedOwnershipId && (
+                <button
+                  onClick={() => {
+                    setLinkingMode("ownership");
+                    setSelectedValue("");
+                  }}
+                  className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "ownership" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
+                >
+                  <Building size={14} />{" "}
+                  <span className="text-[9px] font-black">ربط بملكية</span>
+                </button>
+              )}
+              {!localLinks.linkedTransactionId && (
+                <button
+                  onClick={() => {
+                    setLinkingMode("privateTransaction");
+                    setSelectedValue("");
+                  }}
+                  className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "privateTransaction" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
+                >
+                  <FileSignature size={14} />{" "}
+                  <span className="text-[9px] font-black">ربط بمعاملة</span>
+                </button>
+              )}
+            </div>
+
+            {/* منطقة البحث العائمة في الهيدر */}
+            {linkingMode && (
+              <div className="absolute top-[110%] left-0 right-0 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3 z-[250] shadow-xl animate-in slide-in-from-top-2">
+                <div className="flex-1">
+                  <SearchableDropdown
+                    options={getOptions(linkingMode)}
+                    value={selectedValue}
+                    onChange={(val) => setSelectedValue(val)}
+                    placeholder={`ابحث واختر ${linkingMode === "client" ? "العميل" : linkingMode === "office" ? "المكتب" : linkingMode === "ownership" ? "الملكية" : "المعاملة"}...`}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveLink}
+                    disabled={linkMutation.isPending}
+                    className="px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 shadow-sm transition-colors flex items-center gap-1.5"
+                  >
+                    {linkMutation.isPending ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <Save size={12} />
+                    )}
+                    تأكيد الربط
+                  </button>
+                  <button
+                    onClick={() => setLinkingMode(null)}
+                    className="px-3 py-2 bg-white text-slate-500 border border-slate-200 text-[10px] font-black rounded-lg hover:bg-slate-50 transition-colors"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Quick Info Bar */}
@@ -2405,7 +2534,27 @@ export function ModalPermitDetails({ permit, onClose }) {
           {activeTab === 1 && <TabExtractedData permit={permit} />}
           {activeTab === 2 && <TabComponents permit={permit} />}
           {activeTab === 3 && <TabBoundaries permit={permit} />}
-          {activeTab === 4 && <TabLinkedRecords permit={permit} />}
+          {activeTab === 4 && (
+            <TabLinkedRecords
+              permit={permit}
+              localLinks={localLinks}
+              setLocalLinks={setLocalLinks}
+              linkingMode={linkingMode}
+              setLinkingMode={setLinkingMode}
+              selectedValue={selectedValue}
+              setSelectedValue={setSelectedValue}
+              handleSaveLink={handleSaveLink}
+              handleUnlink={handleUnlink}
+              getOptions={getOptions}
+              linkMutation={linkMutation}
+              autoLinkedTransactions={autoLinkedTransactions}
+              loadingAuto={loadingAuto}
+              clients={clients}
+              offices={offices}
+              ownerships={ownerships}
+              privateTransactions={privateTransactions}
+            />
+          )}
           {activeTab === 5 && <TabExtraAttachments permit={permit} />}
           {activeTab === 6 && <TabAiReport permit={permit} />}
         </div>

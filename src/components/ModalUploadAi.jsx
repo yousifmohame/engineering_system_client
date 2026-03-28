@@ -1,30 +1,34 @@
-import React, { useState, useRef, useMemo } from "react";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../api/axios";
 import { toast } from "sonner";
+import moment from "moment-hijri"; // 👈 مكتبة التقويم الهجري والميلادي
 import {
-  Brain,
+  Edit3,
+  X,
   CloudUpload,
   Loader2,
-  Sparkles,
-  X,
-  Edit3,
+  Check,
   Save,
-  FileText,
-  ChevronRight,
-  ChevronLeft,
-  MapPin,
-  Layers,
+  Plus,
   CheckCircle2,
   AlertTriangle,
-  Plus,
   Copy,
+  Search,
+  ChevronLeft,
+  CalendarDays,
+  Clock,
+  Brain,
+  Sparkles,
+  FileText,
+  MapPin,
+  Layers,
+  ChevronRight,
 } from "lucide-react";
 
 // ==========================================
-// 💡 دوال المعالجة الذكية (Enterprise Normalization)
+// 💡 دوال المعالجة الذكية (Advanced Normalization)
 // ==========================================
-
 const toEnglishNumbers = (str) => {
   if (str === null || str === undefined) return "";
   return String(str).replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
@@ -41,12 +45,17 @@ const normalizeArabicText = (str) => {
     .toLowerCase();
 };
 
+// 💡 توحيد أرقام المخططات المتقدم
 const normalizePlan = (str) => {
   if (!str) return "";
-  let cleaned = toEnglishNumbers(str).replace(/\s+/g, "").replace(/\\/g, "/");
+  let cleaned = toEnglishNumbers(str)
+    .replace(/(^|\s)(مخطط|رقم)(\s+|$)/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/[\s\\_\-]/g, "/")
+    .replace(/\/+/g, "/");
 
   if (cleaned.includes("/")) {
-    cleaned = cleaned.split("/").sort().join("/");
+    cleaned = cleaned.split("/").filter(Boolean).sort().join("/");
   }
   return cleaned.toLowerCase();
 };
@@ -57,8 +66,131 @@ const copyToClipboard = (text) => {
   toast.success("تم النسخ بنجاح! 📋");
 };
 
+// 💡 دالة معالجة مسار الملفات للحصول على الرابط الكامل
+const getFullUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  let fixedUrl = url;
+  if (url.startsWith("/uploads/")) {
+    fixedUrl = `/api${url}`;
+  }
+  const baseUrl = "http://95.216.73.243";
+  return `${baseUrl}${fixedUrl}`;
+};
+
 // ==========================================
-// 💡 مكون الحقل الذكي للربط (مدعوم بقرارات الذكاء الاصطناعي)
+// 💡 القائمة الذكية القابلة للبحث (Searchable Dropdown)
+// ==========================================
+const SearchableDropdown = ({
+  options,
+  value,
+  onChange,
+  placeholder,
+  isAdding,
+  onQuickAdd,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target))
+        setIsOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = useMemo(() => {
+    if (!searchTerm) return options;
+    return options.filter((opt) =>
+      opt.label.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+  }, [options, searchTerm]);
+
+  const selectedOption = options.find((opt) => opt.value === value);
+
+  return (
+    <div className="relative w-full" ref={wrapperRef}>
+      <div className="flex gap-2">
+        <div
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 cursor-pointer flex items-center justify-between hover:border-blue-400 focus:ring-1 focus:ring-blue-400 focus:bg-white transition-all"
+        >
+          <span>{selectedOption ? selectedOption.label : placeholder}</span>
+          <ChevronLeft
+            size={14}
+            className={`text-slate-400 transition-transform ${isOpen ? "-rotate-90" : ""}`}
+          />
+        </div>
+        {onQuickAdd && (
+          <button
+            onClick={onQuickAdd}
+            disabled={isAdding}
+            className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 disabled:opacity-50 transition-colors"
+            title="إضافة سريعة"
+          >
+            {isAdding ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Plus size={16} />
+            )}
+          </button>
+        )}
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-[100] w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
+          <div className="p-2 border-b border-slate-100 bg-slate-50 sticky top-0">
+            <div className="relative">
+              <Search
+                size={14}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                type="text"
+                className="w-full pl-3 pr-8 py-2 text-[11px] font-bold border border-slate-200 rounded-lg outline-none focus:border-blue-400"
+                placeholder="اكتب للبحث..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                autoFocus
+              />
+            </div>
+          </div>
+          <div className="overflow-y-auto p-1 custom-scrollbar-slim">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((opt) => (
+                <div
+                  key={opt.value}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                    setSearchTerm("");
+                  }}
+                  className={`px-3 py-2 text-[11px] font-bold rounded-lg cursor-pointer transition-colors ${
+                    value === opt.value
+                      ? "bg-blue-50 text-blue-700"
+                      : "text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  {opt.label}
+                </div>
+              ))
+            ) : (
+              <div className="p-4 text-center text-[11px] text-slate-400 font-bold">
+                لا توجد نتائج مطابقة
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==========================================
+// 💡 مكون الحقل الذكي للربط
 // ==========================================
 const SmartLinkedField = ({
   label,
@@ -70,16 +202,20 @@ const SmartLinkedField = ({
   isAdding,
   placeholder,
   listId,
-  linkedId, // 👈 استقبال الـ ID القادم من الذكاء الاصطناعي في الباك إند
+  linkedId,
 }) => {
   const isLinked = useMemo(() => {
-    // إذا كان الذكاء الاصطناعي قد ربط الحقل بالفعل، نعتبره "مسجل" فوراً
     if (linkedId) return true;
-
-    // المطابقة النصية العادية (كخطة بديلة)
     if (!value || value.trim() === "") return false;
     return options.some((opt) => matchFn(opt, value));
   }, [value, options, matchFn, linkedId]);
+
+  const dropdownOptions = useMemo(() => {
+    return options.map((opt) => ({
+      label: opt.name || opt.nameAr || opt.label || opt.planNumber,
+      value: opt.name || opt.nameAr || opt.label || opt.planNumber,
+    }));
+  }, [options]);
 
   return (
     <div className="flex flex-col gap-1 w-full">
@@ -105,43 +241,24 @@ const SmartLinkedField = ({
               <span className="text-[9px] text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-bold flex items-center gap-0.5 shadow-sm">
                 <AlertTriangle size={10} /> غير مسجل
               </span>
-              {onQuickAdd && (
-                <button
-                  onClick={onQuickAdd}
-                  disabled={isAdding}
-                  className="text-[9px] bg-blue-600 text-white hover:bg-blue-700 px-2 py-0.5 rounded font-bold flex items-center gap-1 transition-all shadow-sm disabled:opacity-50"
-                  title="إضافة سريعة للنظام"
-                >
-                  {isAdding ? (
-                    <Loader2 size={10} className="animate-spin" />
-                  ) : (
-                    <Plus size={10} />
-                  )}{" "}
-                  إضافة
-                </button>
-              )}
             </div>
           ))}
       </div>
-      <div className="relative">
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className={`w-full px-3 py-2 bg-slate-50 border rounded-lg text-[11px] font-bold text-slate-700 outline-none transition-all ${value && isLinked ? "border-emerald-300 focus:ring-1 focus:ring-emerald-400 bg-white" : "border-slate-200 focus:ring-1 focus:ring-blue-400 focus:bg-white"}`}
-          placeholder={placeholder}
-          list={listId}
-        />
-        <datalist id={listId}>
-          {options.map((opt, idx) => (
-            <option key={idx} value={opt.name || opt.nameAr || opt.label} />
-          ))}
-        </datalist>
-      </div>
+      <SearchableDropdown
+        options={dropdownOptions}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        isAdding={isAdding}
+        onQuickAdd={!isLinked ? onQuickAdd : null}
+      />
     </div>
   );
 };
 
+// ==========================================
+// 💡 مكون الإدخال العادي القابل للنسخ
+// ==========================================
 const CopyableInput = ({
   label,
   value,
@@ -156,6 +273,11 @@ const CopyableInput = ({
     <div className="flex items-center justify-between mb-0.5">
       <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
         {label}
+        {warning && (
+          <span className="flex items-center gap-1 bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[9px] border border-amber-300 shadow-sm animate-pulse">
+            <AlertTriangle size={10} /> مكرر
+          </span>
+        )}
         <button
           onClick={() => copyToClipboard(value)}
           className="text-slate-400 hover:text-blue-600 transition-colors"
@@ -172,19 +294,13 @@ const CopyableInput = ({
       placeholder={placeholder}
       dir={dir}
       style={style}
-      className={`w-full text-[11px] font-bold border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:bg-white transition-colors ${warning ? "border-amber-400 bg-amber-50 focus:ring-amber-500 text-amber-900" : "border-slate-200 bg-slate-50 text-slate-700 focus:ring-blue-400"}`}
+      className={`w-full text-[11px] font-bold border rounded-lg px-3 py-2 outline-none focus:ring-1 transition-colors ${warning ? "bg-amber-50 border-amber-300 focus:ring-amber-400 text-amber-900" : "bg-slate-50 border-slate-200 text-slate-700 focus:ring-blue-400 focus:bg-white"}`}
     />
-    {warning && (
-      <div className="text-[10px] text-amber-600 font-bold flex items-start gap-1 mt-1 leading-tight">
-        <AlertTriangle size={12} className="shrink-0 mt-0.5" />
-        <span>{warning}</span>
-      </div>
-    )}
   </div>
 );
 
 // ==========================================
-// 💡 المودل الرئيسي
+// 💡 المودل الرئيسي للذكاء الاصطناعي (ModalUploadAi)
 // ==========================================
 export function ModalUploadAi({ onClose }) {
   const queryClient = useQueryClient();
@@ -308,7 +424,6 @@ export function ModalUploadAi({ onClose }) {
         boundariesData: p.boundariesData || [],
         source: "رفع يدوي (AI)",
 
-        // 💡 الاحتفاظ بقرارات الربط القادمة من الذكاء الاصطناعي
         linkedClientId: p.linkedClientId || null,
         linkedOfficeId: p.linkedOfficeId || null,
         linkedDistrictId: p.linkedDistrictId || null,
@@ -327,7 +442,7 @@ export function ModalUploadAi({ onClose }) {
   });
 
   // ==========================================
-  // 2. الحفظ النهائي (مع إرسال الارتباطات)
+  // 2. الحفظ النهائي
   // ==========================================
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -337,7 +452,6 @@ export function ModalUploadAi({ onClose }) {
           if (key === "componentsData" || key === "boundariesData") {
             fd.append(key, JSON.stringify(permit[key]));
           } else if (permit[key] !== null && permit[key] !== undefined) {
-            // تجاهل القيم الفارغة لعدم إرسال السلسلة النصية "null" للباك إند
             fd.append(key, permit[key]);
           }
         });
@@ -376,12 +490,10 @@ export function ModalUploadAi({ onClose }) {
     saveMutation.mutate();
   };
 
-  // 💡 تحديث الحقول الذكية: إذا قام المستخدم بتعديل النص، نقوم بفك الارتباط الذكي (linkedFieldToClear)
   const updateCurrentPermit = (field, value, linkedFieldToClear = null) => {
     const updated = [...permits];
     updated[currentIndex][field] = toEnglishNumbers(value);
 
-    // إذا قام المستخدم بتعديل يدوي للحقل، نلغي تطابق الـ AI لكي نعتمد على بحث الواجهة
     if (linkedFieldToClear) {
       updated[currentIndex][linkedFieldToClear] = null;
     }
@@ -473,6 +585,8 @@ export function ModalUploadAi({ onClose }) {
   }
 
   const current = permits[currentIndex];
+
+  // فحص التكرار اللحظي (في مودال AI)
   const isDuplicatePermit = existingPermits.some(
     (p) =>
       String(p.permitNumber) === String(current.permitNumber) &&
@@ -540,10 +654,10 @@ export function ModalUploadAi({ onClose }) {
                 <SmartLinkedField
                   label="اسم المالك (العميل) *"
                   value={current.ownerName}
-                  linkedId={current.linkedClientId} // 👈 تمرير الـ ID الذكي
+                  linkedId={current.linkedClientId}
                   onChange={(val) =>
                     updateCurrentPermit("ownerName", val, "linkedClientId")
-                  } // 👈 فك الارتباط عند التعديل اليدوي
+                  }
                   options={clients}
                   listId="aiClientsList"
                   placeholder="ابحث أو اكتب اسم العميل..."
@@ -578,11 +692,7 @@ export function ModalUploadAi({ onClose }) {
                 value={current.permitNumber}
                 onChange={(val) => updateCurrentPermit("permitNumber", val)}
                 placeholder="مثال: 1445/1234"
-                warning={
-                  isDuplicatePermit
-                    ? "تنبيه: هذا الرقم مسجل مسبقاً بنفس السنة في النظام."
-                    : null
-                }
+                warning={isDuplicatePermit ? "تنبيه: مكرر في النظام" : null}
               />
               <CopyableInput
                 label="تاريخ الإصدار"
@@ -604,7 +714,7 @@ export function ModalUploadAi({ onClose }) {
                 <SmartLinkedField
                   label="الحي"
                   value={current.district}
-                  linkedId={current.linkedDistrictId} // 👈
+                  linkedId={current.linkedDistrictId}
                   onChange={(val) =>
                     updateCurrentPermit("district", val, "linkedDistrictId")
                   }
@@ -635,7 +745,7 @@ export function ModalUploadAi({ onClose }) {
                 <SmartLinkedField
                   label="رقم المخطط"
                   value={current.planNumber}
-                  linkedId={current.linkedPlanId} // 👈
+                  linkedId={current.linkedPlanId}
                   onChange={(val) =>
                     updateCurrentPermit("planNumber", val, "linkedPlanId")
                   }
@@ -700,7 +810,7 @@ export function ModalUploadAi({ onClose }) {
                 <SmartLinkedField
                   label="المكتب الهندسي"
                   value={current.engineeringOffice}
-                  linkedId={current.linkedOfficeId} // 👈
+                  linkedId={current.linkedOfficeId}
                   onChange={(val) =>
                     updateCurrentPermit(
                       "engineeringOffice",
@@ -756,6 +866,7 @@ export function ModalUploadAi({ onClose }) {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* ... Components Data Table ... */}
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
               <h4 className="text-xs font-black text-slate-800 mb-3 flex items-center gap-2">
                 <Layers className="w-4 h-4 text-emerald-500" /> تفاصيل المكونات
@@ -847,6 +958,7 @@ export function ModalUploadAi({ onClose }) {
               </div>
             </div>
 
+            {/* ... Boundaries Data Table ... */}
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
               <h4 className="text-xs font-black text-slate-800 mb-3 flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-orange-500" /> الحدود والأبعاد

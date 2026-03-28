@@ -25,6 +25,10 @@ import {
   Minus,
   Sparkles,
   Loader2,
+  BellRing,
+  Files,
+  ChevronRight,
+  RefreshCw,
 } from "lucide-react";
 
 import { SmartDropdownButton } from "../../components/SmartDropdownButton";
@@ -47,6 +51,17 @@ const COLUMNS = [
   { key: "aiStatus", label: "حالة التحليل (AI)", width: 105 },
   { key: "archiveDate", label: "تاريخ الأرشفة", width: 100 },
 ];
+// ==========================================
+// 💡 مكونات ودوال مساعدة
+// ==========================================
+const formatDate = (dateString) => {
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleDateString("en-GB", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+};
 
 // ==========================================
 // 💡 مكونات Badges المساعدة للجدول
@@ -98,7 +113,7 @@ function FormBadge({ form }) {
 
   return (
     <span
-      className={`px-1.5 py-0.5 rounded text-[10px] ${config.bg} ${config.text}`}
+      className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${config.bg} ${config.text}`}
     >
       {form || "—"}
     </span>
@@ -114,11 +129,10 @@ export default function BuildingPermitsRegistry() {
   const [searchText, setSearchText] = useState("");
   const [filterSource, setFilterSource] = useState("");
   const [filterForm, setFilterForm] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
   const [hiddenCols, setHiddenCols] = useState(new Set());
   const [sort, setSort] = useState({ key: "archiveDate", dir: "desc" });
 
-  const [selectedPermit, setSelectedPermit] = useState(null); // 👈 للمعاينة ModalPermitDetails
+  const [selectedPermit, setSelectedPermit] = useState(null);
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [colWidths, setColWidths] = useState(COLUMNS.map((c) => c.width));
   const [activeModal, setActiveModal] = useState(null);
@@ -126,6 +140,12 @@ export default function BuildingPermitsRegistry() {
   const [editingPermit, setEditingPermit] = useState(null);
   const [chipFilter, setChipFilter] = useState("");
   const [copiedId, setCopiedId] = useState(null);
+
+  // 💡 حالات فحص التكرارات (Duplicate Scanner)
+  const [showDuplicatesPanel, setShowDuplicatesPanel] = useState(false);
+  const [isScanningDuplicates, setIsScanningDuplicates] = useState(false);
+  const [duplicateGroups, setDuplicateGroups] = useState([]);
+
   const tableRef = useRef(null);
 
   // 💡 جلب البيانات
@@ -143,6 +163,8 @@ export default function BuildingPermitsRegistry() {
       toast.success("تم حذف الرخصة بنجاح");
       queryClient.invalidateQueries(["building-permits"]);
       if (selectedPermit) setSelectedPermit(null);
+      // تحديث فحص التكرارات إذا كان مفتوحاً
+      if (showDuplicatesPanel) scanForDuplicates();
     },
     onError: (err) =>
       toast.error(err.response?.data?.message || "حدث خطأ أثناء الحذف"),
@@ -224,7 +246,110 @@ export default function BuildingPermitsRegistry() {
     setTimeout(() => setCopiedId(null), 1500);
   };
 
+  // 💡 محرك الذكاء الاصطناعي لاكتشاف التكرارات (Duplicate Scanner Engine)
+  const scanForDuplicates = useCallback(() => {
+    setIsScanningDuplicates(true);
+
+    // محاكاة عملية فحص ذكية (تأخير بسيط ليعطي شعور بوجود معالجة للبيانات)
+    setTimeout(() => {
+      const groups = [];
+      const processedIds = new Set();
+
+      serverPermits.forEach((permit1) => {
+        if (processedIds.has(permit1.id)) return;
+
+        // نبحث عن الرخص المشابهة لهذه الرخصة
+        const similarPermits = serverPermits.filter((permit2) => {
+          if (permit1.id === permit2.id) return false;
+
+          // 1. تطابق تام في رقم الرخصة
+          const isExactPermitMatch =
+            permit1.permitNumber &&
+            permit1.permitNumber === permit2.permitNumber;
+
+          // 2. تطابق في الهوية ورقم المخطط (احتمال كبير لتكرار نفس المشروع)
+          const isIdAndPlanMatch =
+            permit1.idNumber &&
+            permit2.idNumber &&
+            permit1.planNumber &&
+            permit2.planNumber &&
+            permit1.idNumber === permit2.idNumber &&
+            permit1.planNumber === permit2.planNumber;
+
+          // 3. تطابق في رقم القطعة واسم الحي
+          const isPlotAndDistrictMatch =
+            permit1.plotNumber &&
+            permit2.plotNumber &&
+            permit1.district &&
+            permit2.district &&
+            permit1.plotNumber === permit2.plotNumber &&
+            permit1.district === permit2.district;
+
+          return (
+            isExactPermitMatch || isIdAndPlanMatch || isPlotAndDistrictMatch
+          );
+        });
+
+        if (similarPermits.length > 0) {
+          // إضافة الرخصة الأساسية والشبيهات لها في مجموعة واحدة
+          const groupMembers = [permit1, ...similarPermits];
+
+          // تحديد سبب التشابه
+          let reason = "تشابه محتمل";
+          let type = "warning";
+
+          if (
+            similarPermits.some((p) => p.permitNumber === permit1.permitNumber)
+          ) {
+            reason = "تطابق تام في رقم الرخصة";
+            type = "danger";
+          } else if (
+            similarPermits.some(
+              (p) =>
+                p.idNumber === permit1.idNumber &&
+                p.planNumber === permit1.planNumber,
+            )
+          ) {
+            reason = "تطابق في هوية المالك ورقم المخطط";
+            type = "warning";
+          } else {
+            reason = "تطابق في رقم القطعة والحي";
+            type = "info";
+          }
+
+          groups.push({
+            id: `group-${permit1.id}`,
+            reason,
+            type,
+            members: groupMembers,
+          });
+
+          // تعليم هذه الرخص كمعالجة حتى لا يتم تكرار الفحص عليها
+          groupMembers.forEach((p) => processedIds.add(p.id));
+        }
+      });
+
+      setDuplicateGroups(groups.sort((a, b) => (a.type === "danger" ? -1 : 1)));
+      setIsScanningDuplicates(false);
+
+      if (groups.length === 0) {
+        toast.success("السجل سليم! لا توجد أي تكرارات أو تشابهات.", {
+          icon: "✨",
+        });
+      } else {
+        toast.warning(`تم اكتشاف ${groups.length} حالة تشابه تحتاج للمراجعة.`);
+      }
+    }, 800); // 800ms delay for UX
+  }, [serverPermits]);
+
+  // 💡 حساب الإحصائيات (مضاف إليها التكرارات المحتملة)
   const stats = useMemo(() => {
+    // حساب مبدئي سريع للتكرارات في رقم الرخصة لعرضه في البادج
+    const permitNumbers = serverPermits
+      .map((p) => p.permitNumber)
+      .filter(Boolean);
+    const duplicatesCount = permitNumbers.length - new Set(permitNumbers).size;
+
     return {
       total: serverPermits.length,
       fromTransactions: serverPermits.filter(
@@ -232,6 +357,7 @@ export default function BuildingPermitsRegistry() {
       ).length,
       fromAI: serverPermits.filter((p) => p.source === "رفع يدوي (AI)").length,
       greenPermits: serverPermits.filter((p) => p.form === "أخضر").length,
+      potentialDuplicates: duplicatesCount,
     };
   }, [serverPermits]);
 
@@ -269,6 +395,15 @@ export default function BuildingPermitsRegistry() {
       bg = "rgba(59, 130, 246, 0.08)";
       borderLeft = "3px solid #3b82f6";
     }
+
+    // 💡 تظليل الصف باللون الأحمر الخفيف إذا كان موجوداً ضمن مجموعات التكرار (و اللوحة مغلقة)
+    if (
+      !showDuplicatesPanel &&
+      duplicateGroups.some((g) => g.members.some((m) => m.id === permit.id))
+    ) {
+      bg = "rgba(239, 68, 68, 0.05)";
+    }
+
     return { backgroundColor: bg, borderRight: borderLeft };
   };
 
@@ -356,7 +491,7 @@ export default function BuildingPermitsRegistry() {
       </div>
 
       {/* ── Header Bar ── */}
-      <div className="shrink-0 bg-white border-b border-slate-200">
+      <div className="shrink-0 bg-white border-b border-slate-200 relative z-20">
         <div className="flex items-center justify-between px-4 py-2">
           <div className="flex items-center gap-2">
             <Layers size={18} className="text-blue-600" />
@@ -368,7 +503,38 @@ export default function BuildingPermitsRegistry() {
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* 💡 زر التنبيهات واكتشاف التكرارات */}
+            <button
+              onClick={() => {
+                if (!showDuplicatesPanel) scanForDuplicates();
+                setShowDuplicatesPanel(!showDuplicatesPanel);
+              }}
+              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all shadow-sm ${showDuplicatesPanel ? "bg-orange-50 border-orange-300 text-orange-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+              title="فحص واكتشاف التكرارات"
+            >
+              {isScanningDuplicates ? (
+                <Loader2 size={14} className="animate-spin text-orange-500" />
+              ) : (
+                <BellRing
+                  size={14}
+                  className={
+                    stats.potentialDuplicates > 0
+                      ? "text-orange-500 animate-pulse"
+                      : "text-slate-400"
+                  }
+                />
+              )}
+              <span className="text-xs font-bold">فحص التكرارات</span>
+              {stats.potentialDuplicates > 0 && !showDuplicatesPanel && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full animate-bounce">
+                  {stats.potentialDuplicates}
+                </span>
+              )}
+            </button>
+
+            <div className="w-px h-6 bg-slate-200 mx-1"></div>
+
             <SmartDropdownButton
               label="إضافه رخصة"
               icon={<Plus size={14} />}
@@ -427,7 +593,7 @@ export default function BuildingPermitsRegistry() {
 
         {/* Search Row */}
         <div className="flex items-center gap-2 px-4 py-2 border-t border-slate-100 bg-slate-50/50">
-          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5 flex-1 max-w-md shadow-sm">
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5 flex-1 max-w-md shadow-sm focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-100 transition-all">
             <Search size={14} className="text-slate-400 shrink-0" />
             <input
               type="text"
@@ -442,14 +608,8 @@ export default function BuildingPermitsRegistry() {
               </button>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* ── Content Area: Table ── */}
-      <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 flex flex-col overflow-hidden bg-white relative">
-          {/* Quick Filter Chips */}
-          <div className="shrink-0 flex items-center gap-2 px-4 py-2 bg-white border-b border-slate-100">
+          <div className="flex items-center gap-2 mr-auto">
             <span className="text-[10px] font-bold text-slate-400 shrink-0">
               تصنيفات سريعة:
             </span>
@@ -482,7 +642,157 @@ export default function BuildingPermitsRegistry() {
               );
             })}
           </div>
+        </div>
+      </div>
 
+      {/* ── Content Area: Table & Duplicates Panel ── */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* 💡 لوحة اكتشاف التكرارات (Duplicates Panel) */}
+        {showDuplicatesPanel && (
+          <div className="w-[380px] bg-white border-l border-slate-200 flex flex-col shadow-xl z-10 shrink-0 animate-in slide-in-from-right-4 duration-300">
+            <div className="p-4 border-b border-slate-100 bg-orange-50/30 flex justify-between items-center">
+              <div className="flex items-center gap-2 text-orange-800">
+                <Files size={18} className="text-orange-500" />
+                <h3 className="font-black text-sm">
+                  مراجعة التكرارات والتشابهات
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowDuplicatesPanel(false)}
+                className="p-1.5 text-slate-400 hover:bg-white hover:text-slate-700 rounded-lg border border-transparent hover:border-slate-200 transition-colors"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+
+            <div className="p-3 border-b border-slate-100 flex justify-between items-center bg-white">
+              <span className="text-xs font-bold text-slate-600">
+                نتائج الفحص الذكي:
+              </span>
+              <button
+                onClick={scanForDuplicates}
+                disabled={isScanningDuplicates}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition-colors"
+              >
+                <RefreshCw
+                  size={12}
+                  className={isScanningDuplicates ? "animate-spin" : ""}
+                />{" "}
+                إعادة الفحص
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar-slim bg-slate-50/50">
+              {isScanningDuplicates ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <Brain
+                    size={40}
+                    className="text-orange-300 animate-pulse mb-4"
+                  />
+                  <p className="text-sm font-bold text-slate-600 mb-1">
+                    جاري فحص وتدقيق السجلات...
+                  </p>
+                  <p className="text-[10px] text-slate-400">
+                    نبحث عن أي تطابق في أرقام الرخص، الهويات، أو المواقع
+                  </p>
+                </div>
+              ) : duplicateGroups.length > 0 ? (
+                <div className="space-y-4">
+                  {duplicateGroups.map((group, idx) => {
+                    const isDanger = group.type === "danger";
+                    const colors = isDanger
+                      ? {
+                          bg: "bg-red-50",
+                          border: "border-red-200",
+                          text: "text-red-800",
+                          badge: "bg-red-100 text-red-700 border-red-200",
+                        }
+                      : {
+                          bg: "bg-orange-50",
+                          border: "border-orange-200",
+                          text: "text-orange-800",
+                          badge:
+                            "bg-orange-100 text-orange-700 border-orange-200",
+                        };
+
+                    return (
+                      <div
+                        key={group.id}
+                        className={`rounded-xl border ${colors.bg} ${colors.border} overflow-hidden shadow-sm`}
+                      >
+                        <div
+                          className={`px-3 py-2 border-b ${colors.border} flex justify-between items-center bg-white/50`}
+                        >
+                          <span
+                            className={`text-[11px] font-black ${colors.text} flex items-center gap-1.5`}
+                          >
+                            {isDanger ? (
+                              <AlertTriangle size={12} />
+                            ) : (
+                              <Files size={12} />
+                            )}
+                            {group.reason}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold border ${colors.badge}`}
+                          >
+                            {group.members.length} سجلات
+                          </span>
+                        </div>
+                        <div className="p-2 space-y-1.5">
+                          {group.members.map((member, mIdx) => (
+                            <div
+                              key={member.id}
+                              onClick={() => setSelectedPermit(member)}
+                              className="bg-white border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-400 hover:shadow-md transition-all group/item"
+                            >
+                              <div className="flex justify-between items-start mb-1.5">
+                                <span className="font-mono text-xs font-bold text-blue-700 group-hover/item:underline">
+                                  {member.permitNumber || "بدون رقم"}
+                                </span>
+                                <span className="text-[9px] text-slate-400 bg-slate-100 px-1.5 rounded">
+                                  {formatDate(member.archiveDate)}
+                                </span>
+                              </div>
+                              <div
+                                className="text-[11px] font-bold text-slate-700 truncate mb-1"
+                                title={member.ownerName}
+                              >
+                                {member.ownerName || "—"}
+                              </div>
+                              <div className="flex justify-between items-center text-[10px] text-slate-500">
+                                <span>{member.district || "—"}</span>
+                                <span className="font-mono bg-slate-50 border border-slate-100 px-1 rounded">
+                                  {member.idNumber || "—"}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="w-16 h-16 bg-emerald-50 border-2 border-emerald-100 rounded-full flex items-center justify-center mb-4">
+                    <CheckCircle2 size={24} className="text-emerald-500" />
+                  </div>
+                  <h4 className="text-sm font-black text-slate-700 mb-1">
+                    السجل سليم تماماً!
+                  </h4>
+                  <p className="text-xs text-slate-500 max-w-[200px]">
+                    لم يكتشف الذكاء الاصطناعي أي تكرارات أو تشابهات مريبة في
+                    الرخص المسجلة.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 💡 الجدول (Main Table) */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-white relative">
           <div
             className="flex-1 overflow-auto custom-scrollbar-slim"
             ref={tableRef}
@@ -581,7 +891,7 @@ export default function BuildingPermitsRegistry() {
                             {col.key === "permitNumber" ||
                             col.key === "idNumber" ? (
                               <span className="flex items-center gap-1 group/copy">
-                                <span className="font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                                <span className="font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100/50">
                                   {String(permit[col.key] || "—")}
                                 </span>
                                 <button
@@ -592,7 +902,7 @@ export default function BuildingPermitsRegistry() {
                                       `${permit.id}-${col.key}`,
                                     );
                                   }}
-                                  className="opacity-0 group-hover/copy:opacity-100 text-slate-400 hover:text-blue-600"
+                                  className="opacity-0 group-hover/copy:opacity-100 text-slate-400 hover:text-blue-600 transition-opacity"
                                 >
                                   {copiedId === `${permit.id}-${col.key}` ? (
                                     <Check
@@ -618,7 +928,7 @@ export default function BuildingPermitsRegistry() {
                             <button
                               onClick={() => setSelectedPermit(permit)}
                               title="معاينة التفاصيل"
-                              className="p-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg text-blue-600 transition-colors"
+                              className="p-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-lg text-blue-600 transition-colors"
                             >
                               <Eye size={14} />
                             </button>
@@ -629,17 +939,21 @@ export default function BuildingPermitsRegistry() {
                                 setActiveModal("manual");
                               }}
                               title="تعديل الرخصة"
-                              className="p-1.5 bg-amber-50 hover:bg-amber-100 rounded-lg text-amber-600 transition-colors"
+                              className="p-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-100 rounded-lg text-amber-600 transition-colors"
                             >
                               <Edit3 size={14} />
                             </button>
                             <button
                               onClick={() => {
-                                if (window.confirm("حذف الرخصة؟"))
+                                if (
+                                  window.confirm(
+                                    "حذف الرخصة نهائياً؟ لا يمكن التراجع عن هذا الإجراء.",
+                                  )
+                                )
                                   deleteMutation.mutate(permit.id);
                               }}
                               title="حذف الرخصة"
-                              className="p-1.5 bg-red-50 hover:bg-red-100 rounded-lg text-red-600 transition-colors"
+                              className="p-1.5 bg-red-50 hover:bg-red-100 border border-red-100 rounded-lg text-red-500 transition-colors"
                             >
                               <Trash2 size={14} />
                             </button>
@@ -651,6 +965,19 @@ export default function BuildingPermitsRegistry() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Footer Bar */}
+          <div className="bg-slate-50 border-t border-slate-200 p-2 text-[11px] text-slate-500 font-bold flex justify-between items-center shrink-0">
+            <span>
+              تم عرض {sorted.length} من أصل {serverPermits.length} رخصة
+            </span>
+            {showDuplicatesPanel && duplicateGroups.length > 0 && (
+              <span className="text-red-500 flex items-center gap-1">
+                <AlertTriangle size={12} /> يرجى مراجعة التشابهات المكتشفة
+                باللوحة الجانبية
+              </span>
+            )}
           </div>
         </div>
       </div>

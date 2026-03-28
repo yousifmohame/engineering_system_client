@@ -283,6 +283,9 @@ const CopyableInput = ({
 // ==========================================
 // 💡 المودل الرئيسي للإضافة اليدوية
 // ==========================================
+// ==========================================
+// 💡 المودل الرئيسي للإضافة اليدوية (مع ميزة فحص التكرار اللحظي)
+// ==========================================
 export function ModalManualPermit({
   mode = "add",
   permitData = null,
@@ -409,37 +412,42 @@ export function ModalManualPermit({
     }
   }, [formData.district, flatDistricts]);
 
-  // 💡 فحص التكرار (رقم الرخصة + السنة الهجرية + رقم الهوية) - لا يمنع الحفظ
-  const isDuplicate = useMemo(() => {
-    if (!formData.permitNumber || !formData.year || !formData.idNumber)
-      return false;
+  // ==========================================
+  // 💡 فحص التكرار اللحظي المتقدم (Real-time Duplicate Check)
+  // ==========================================
+  const duplicateWarning = useMemo(() => {
+    if (!formData.permitNumber || formData.permitNumber.trim() === "")
+      return null;
+
     // استثناء الرخصة الحالية من الفحص إذا كنا في وضع التعديل
     const others =
       mode === "edit"
         ? existingPermits.filter((p) => p.id !== permitData.id)
         : existingPermits;
 
-    return others.some(
+    // البحث عن رخصة تحمل نفس الرقم
+    const duplicatePermit = others.find(
       (p) =>
-        String(p.permitNumber) === String(formData.permitNumber) &&
-        String(p.year) === String(formData.year) &&
-        String(p.idNumber) === String(formData.idNumber),
+        String(p.permitNumber) ===
+        String(toEnglishNumbers(formData.permitNumber)),
     );
-  }, [
-    formData.permitNumber,
-    formData.year,
-    formData.idNumber,
-    existingPermits,
-    mode,
-    permitData,
-  ]);
+
+    if (duplicatePermit) {
+      return {
+        ownerName: duplicatePermit.ownerName || "غير محدد",
+        year: duplicatePermit.year || "غير محدد",
+        idNumber: duplicatePermit.idNumber || "غير محدد",
+      };
+    }
+
+    return null;
+  }, [formData.permitNumber, existingPermits, mode, permitData]);
 
   // 💡 حسابات التواريخ الذكية
   const expiryInfo = useMemo(() => {
     if (!formData.expiryDate) return null;
 
     try {
-      // تحويل التاريخ الهجري (YYYY/MM/DD) إلى ميلادي
       const gregorianDate = moment(
         toEnglishNumbers(formData.expiryDate),
         "iYYYY/iM/iD",
@@ -449,7 +457,6 @@ export function ModalManualPermit({
       const end = new Date(gregorianDate);
       const now = new Date();
 
-      // تفريغ الوقت للمقارنة الدقيقة للأيام
       end.setHours(0, 0, 0, 0);
       now.setHours(0, 0, 0, 0);
 
@@ -480,7 +487,6 @@ export function ModalManualPermit({
     mutationFn: async (data) => {
       const fd = new FormData();
       Object.keys(data).forEach((key) => {
-        // حماية البيانات وتحويل الأرقام قبل الحفظ
         let safeValue = data[key];
         if (
           key === "permitNumber" ||
@@ -591,16 +597,71 @@ export function ModalManualPermit({
               style={{ textAlign: "right" }}
             />
 
-            {/* 💡 رقم الرخصة (مع التنبيه) */}
-            <CopyableInput
-              label="رقم الرخصة *"
-              value={formData.permitNumber}
-              onChange={(val) =>
-                setFormData({ ...formData, permitNumber: val })
-              }
-              placeholder="مثال: 1445/1234"
-              isDuplicate={isDuplicate}
-            />
+            {/* 💡 رقم الرخصة (مع التنبيه اللحظي المتقدم) */}
+            <div className="space-y-1 relative">
+              <div className="flex items-center justify-between mb-0.5">
+                <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
+                  رقم الرخصة *
+                  {duplicateWarning && (
+                    <span className="flex items-center gap-1 bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded text-[9px] border border-amber-300 shadow-sm animate-pulse">
+                      <AlertTriangle size={10} /> تنبيه: مكرر
+                    </span>
+                  )}
+                  <button
+                    onClick={() => copyToClipboard(formData.permitNumber)}
+                    className="text-slate-400 hover:text-blue-600 transition-colors"
+                    title="نسخ المحتوى"
+                  >
+                    <Copy size={12} />
+                  </button>
+                </label>
+              </div>
+              <input
+                type="text"
+                value={formData.permitNumber}
+                onChange={(e) =>
+                  setFormData({ ...formData, permitNumber: e.target.value })
+                }
+                placeholder="مثال: 1445/1234"
+                dir="rtl"
+                className={`w-full text-[11px] font-bold border rounded-lg px-3 py-2 outline-none focus:ring-1 transition-colors ${duplicateWarning ? "bg-amber-50 border-amber-300 focus:ring-amber-400 text-amber-900" : "bg-slate-50 border-slate-200 text-slate-700 focus:ring-blue-400 focus:bg-white"}`}
+              />
+              {/* 👈 رسالة التنبيه العائمة أسفل الحقل المكرر */}
+              {duplicateWarning && (
+                <div className="absolute top-[100%] left-0 right-0 mt-1 z-10 bg-amber-50 border border-amber-200 rounded-lg p-2.5 shadow-lg text-[10px] leading-relaxed animate-in fade-in zoom-in-95">
+                  <div className="font-bold text-amber-800 mb-1 flex items-center gap-1">
+                    <AlertTriangle size={12} className="text-amber-600" /> هذا
+                    الرقم مسجل في النظام مسبقاً!
+                  </div>
+                  <div className="text-amber-700 font-semibold space-y-0.5">
+                    <div>
+                      المالك السابق:{" "}
+                      <span className="font-bold">
+                        {duplicateWarning.ownerName}
+                      </span>
+                    </div>
+                    <div className="flex gap-3">
+                      <span>
+                        السنة:{" "}
+                        <span className="font-bold">
+                          {duplicateWarning.year}
+                        </span>
+                      </span>
+                      <span>
+                        الهوية:{" "}
+                        <span className="font-bold">
+                          {duplicateWarning.idNumber}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-1.5 pt-1.5 border-t border-amber-200/60 text-amber-600 font-bold italic">
+                    ملاحظة: يمكنك المتابعة وحفظ الرخصة في حال كان هذا الإجراء
+                    عبارة عن (تجديد/تعديل) لنفس الرخصة.
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* 💡 التواريخ الذكية */}
             <div className="space-y-1">
@@ -682,7 +743,6 @@ export function ModalManualPermit({
               />
             </div>
 
-            {/* 💡 الحقل الذكي لرقم المخطط (مع الفلترة القوية) */}
             <div>
               <SmartLinkedField
                 label="رقم المخطط"
