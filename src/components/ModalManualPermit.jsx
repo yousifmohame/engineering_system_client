@@ -1,28 +1,52 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "../api/axios";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import moment from "moment-hijri"; // 👈 مكتبة التقويم الهجري والميلادي
+import api from "../api/axios";
+import moment from "moment-hijri";
 import {
-  Edit3,
   X,
-  CloudUpload,
-  Loader2,
-  Check,
-  Save,
   Plus,
+  FileText,
+  User,
+  Calculator,
+  Briefcase,
+  MapPin,
+  Trash2,
+  Paperclip,
   CheckCircle2,
+  EyeOff,
+  Search,
+  ChevronDown,
+  Loader2,
   AlertTriangle,
   Copy,
-  Search,
   ChevronLeft,
+  Building,
+  FileSignature,
+  Link,
+  Save,
+  CloudUpload,
   CalendarDays,
   Clock,
+  Edit3,
+  Check
 } from "lucide-react";
 
-// ==========================================
-// 💡 دوال المعالجة الذكية (Advanced Normalization)
-// ==========================================
+// ============================================================================
+// 💡 Helpers
+// ============================================================================
+const formatNumberWithCommas = (val) => {
+  if (!val) return "";
+  const numStr = val.toString().replace(/,/g, "");
+  if (isNaN(numStr)) return val;
+  return Number(numStr).toLocaleString("en-US");
+};
+
+const parseNumber = (val) => {
+  if (!val) return 0;
+  return Number(val.toString().replace(/,/g, ""));
+};
+
 const toEnglishNumbers = (str) => {
   if (str === null || str === undefined) return "";
   return String(str).replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
@@ -39,16 +63,14 @@ const normalizeArabicText = (str) => {
     .toLowerCase();
 };
 
-// 💡 توحيد أرقام المخططات المتقدم (أب/222 = 222\اب = 222 مخطط أب)
 const normalizePlan = (str) => {
   if (!str) return "";
   let cleaned = toEnglishNumbers(str)
-    .replace(/(^|\s)(مخطط|رقم)(\s+|$)/g, "") // إزالة الكلمات الزائدة
-    .replace(/[أإآ]/g, "ا") // توحيد الألف
-    .replace(/[\s\\_\-]/g, "/") // تحويل كل المسافات والفواصل إلى سلاش
-    .replace(/\/+/g, "/"); // إزالة السلاش المكرر
+    .replace(/(^|\s)(مخطط|رقم)(\s+|$)/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/[\s\\_\-]/g, "/")
+    .replace(/\/+/g, "/");
 
-  // فصل الأجزاء، ترتيبها أبجدياً، ثم دمجها لكي تتطابق بغض النظر عن الترتيب
   if (cleaned.includes("/")) {
     cleaned = cleaned.split("/").filter(Boolean).sort().join("/");
   }
@@ -61,9 +83,22 @@ const copyToClipboard = (text) => {
   toast.success("تم النسخ بنجاح! 📋");
 };
 
-// ==========================================
-// 💡 القائمة الذكية القابلة للبحث (Searchable Dropdown)
-// ==========================================
+const initialOwnerState = {
+  isNewClient: false,
+  clientId: "",
+  ownerName: "",
+  newClient: {
+    type: "فرد سعودي",
+    first: "",
+    last: "",
+    companyName: "",
+    idNumber: "",
+  },
+};
+
+// ============================================================================
+// 💡 القائمة الذكية القابلة للبحث
+// ============================================================================
 const SearchableDropdown = ({
   options,
   value,
@@ -172,8 +207,94 @@ const SearchableDropdown = ({
   );
 };
 
+// ============================================================================
+// 💡 مكون مساعد: قائمة منسدلة قابلة للبحث (Searchable Select) - للاستخدامات القديمة
+// ============================================================================
+const SearchableSelect = ({
+  options,
+  value,
+  onChange,
+  placeholder,
+  disabled,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target))
+        setIsOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = useMemo(() => {
+    return options.filter((opt) =>
+      opt.label.toLowerCase().includes(toEnglishNumbers(search).toLowerCase()),
+    );
+  }, [options, search]);
+
+  const selectedLabel = options.find((o) => o.value === value)?.label || "";
+
+  return (
+    <div className="relative w-full" ref={wrapperRef}>
+      <div
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className={`w-full border rounded-lg px-3 py-2.5 text-sm font-bold flex items-center justify-between cursor-pointer transition-colors ${disabled ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed" : "bg-gray-50 border-gray-300 focus-within:border-blue-500 focus-within:bg-white"}`}
+      >
+        <span className={selectedLabel ? "text-gray-800" : "text-gray-400"}>
+          {selectedLabel || placeholder}
+        </span>
+        <ChevronDown className="w-4 h-4 text-gray-400" />
+      </div>
+
+      {isOpen && !disabled && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-hidden flex flex-col">
+          <div className="p-2 border-b border-gray-100 bg-gray-50 sticky top-0">
+            <div className="relative">
+              <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+              <input
+                autoFocus
+                type="text"
+                placeholder="اكتب للبحث..."
+                value={search}
+                onChange={(e) => setSearch(toEnglishNumbers(e.target.value))}
+                className="w-full pl-2 pr-7 py-1.5 text-xs font-bold border border-gray-300 rounded outline-none focus:border-blue-500"
+              />
+            </div>
+          </div>
+          <div className="overflow-y-auto custom-scrollbar-slim">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((opt) => (
+                <div
+                  key={opt.value}
+                  onClick={() => {
+                    onChange(opt.value, opt);
+                    setIsOpen(false);
+                    setSearch("");
+                  }}
+                  className="px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer border-b border-gray-50 last:border-0 font-bold"
+                >
+                  {opt.label}
+                </div>
+              ))
+            ) : (
+              <div className="p-3 text-center text-xs text-gray-400">
+                لا توجد نتائج مطابقة
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ==========================================
-// 💡 مكون الحقل الذكي للربط (مدعوم بالقائمة البحثية)
+// 💡 مكون الحقل الذكي الهجين (Hybrid Smart Field)
+// يدمج بين إمكانية الكتابة الحرة والبحث من الداتاليست والبحث السريع
 // ==========================================
 const SmartLinkedField = ({
   label,
@@ -184,19 +305,15 @@ const SmartLinkedField = ({
   onQuickAdd,
   isAdding,
   placeholder,
+  listId,
+  linkedId,
+  disabled = false,
 }) => {
   const isLinked = useMemo(() => {
+    if (linkedId) return true;
     if (!value || value.trim() === "") return false;
     return options.some((opt) => matchFn(opt, value));
-  }, [value, options, matchFn]);
-
-  // تحويل الخيارات لشكل يدعمه SearchableDropdown
-  const dropdownOptions = useMemo(() => {
-    return options.map((opt) => ({
-      label: opt.name || opt.nameAr || opt.label || opt.planNumber,
-      value: opt.name || opt.nameAr || opt.label || opt.planNumber,
-    }));
-  }, [options]);
+  }, [value, options, matchFn, linkedId]);
 
   return (
     <div className="flex flex-col gap-1 w-full">
@@ -211,7 +328,8 @@ const SmartLinkedField = ({
             <Copy size={12} />
           </button>
         </label>
-        {value &&
+        {!disabled &&
+          value &&
           value.trim() !== "" &&
           (isLinked ? (
             <span className="flex items-center gap-1 text-[9px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-bold shadow-sm">
@@ -222,17 +340,51 @@ const SmartLinkedField = ({
               <span className="text-[9px] text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-bold flex items-center gap-0.5 shadow-sm">
                 <AlertTriangle size={10} /> غير مسجل
               </span>
+              {onQuickAdd && (
+                <button
+                  onClick={onQuickAdd}
+                  disabled={isAdding}
+                  className="text-[9px] bg-blue-600 text-white hover:bg-blue-700 px-2 py-0.5 rounded font-bold flex items-center gap-1 transition-all shadow-sm disabled:opacity-50"
+                  title="إضافة سريعة للنظام"
+                >
+                  {isAdding ? (
+                    <Loader2 size={10} className="animate-spin" />
+                  ) : (
+                    <Plus size={10} />
+                  )}{" "}
+                  إضافة
+                </button>
+              )}
             </div>
           ))}
       </div>
-      <SearchableDropdown
-        options={dropdownOptions}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        isAdding={isAdding}
-        onQuickAdd={!isLinked ? onQuickAdd : null}
-      />
+      <div className="relative">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(toEnglishNumbers(e.target.value))}
+          disabled={disabled}
+          className={`w-full px-3 py-2 border rounded-lg text-[11px] font-bold outline-none transition-all ${
+            disabled
+              ? "bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed"
+              : value && isLinked
+                ? "border-emerald-300 focus:ring-1 focus:ring-emerald-400 bg-white text-slate-700"
+                : "bg-slate-50 border-slate-200 focus:ring-1 focus:ring-blue-400 focus:bg-white text-slate-700"
+          }`}
+          placeholder={placeholder}
+          list={listId}
+        />
+        {!disabled && (
+          <datalist id={listId}>
+            {options.map((opt, idx) => (
+              <option
+                key={idx}
+                value={opt.name || opt.nameAr || opt.label || opt.planNumber}
+              />
+            ))}
+          </datalist>
+        )}
+      </div>
     </div>
   );
 };
@@ -248,15 +400,16 @@ const CopyableInput = ({
   type = "text",
   dir = "rtl",
   style = {},
-  isDuplicate = false,
+  warning = null,
+  disabled = false,
 }) => (
   <div className="space-y-1">
     <div className="flex items-center justify-between mb-0.5">
       <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
         {label}
-        {isDuplicate && (
+        {warning && (
           <span className="flex items-center gap-1 bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[9px] border border-amber-300 shadow-sm animate-pulse">
-            <AlertTriangle size={10} /> مكرر
+            <AlertTriangle size={10} /> {warning}
           </span>
         )}
         <button
@@ -271,11 +424,12 @@ const CopyableInput = ({
     <input
       type={type}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => onChange(toEnglishNumbers(e.target.value))}
       placeholder={placeholder}
       dir={dir}
       style={style}
-      className={`w-full text-[11px] font-bold border rounded-lg px-3 py-2 outline-none focus:ring-1 transition-colors ${isDuplicate ? "bg-amber-50 border-amber-300 focus:ring-amber-400 text-amber-900" : "bg-slate-50 border-slate-200 text-slate-700 focus:ring-blue-400 focus:bg-white"}`}
+      disabled={disabled}
+      className={`w-full text-[11px] font-bold border rounded-lg px-3 py-2 outline-none transition-colors ${disabled ? "bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed" : warning ? "border-amber-400 bg-amber-50 focus:ring-amber-500 text-amber-900" : "border-slate-200 bg-slate-50 text-slate-700 focus:ring-blue-400 focus:bg-white"}`}
     />
   </div>
 );
@@ -283,13 +437,11 @@ const CopyableInput = ({
 // ==========================================
 // 💡 المودل الرئيسي للإضافة اليدوية
 // ==========================================
-// ==========================================
-// 💡 المودل الرئيسي للإضافة اليدوية (مع ميزة فحص التكرار اللحظي)
-// ==========================================
 export function ModalManualPermit({
   mode = "add",
   permitData = null,
   onClose,
+  fixedOffice, // 👈 نستقبل اسم المكتب الافتراضي
 }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
@@ -315,8 +467,15 @@ export function ModalManualPermit({
     queryKey: ["plans-list"],
     queryFn: async () => (await api.get("/riyadh-streets/plans")).data || [],
   });
-
-  // 💡 جلب الرخص لمعرفة التكرار
+  const { data: ownerships = [] } = useQuery({
+    queryKey: ["properties-list"],
+    queryFn: async () => (await api.get("/properties")).data?.data || [],
+  });
+  const { data: privateTransactions = [] } = useQuery({
+    queryKey: ["private-transactions-list"],
+    queryFn: async () =>
+      (await api.get("/private-transactions")).data?.data || [],
+  });
   const { data: existingPermits = [] } = useQuery({
     queryKey: ["building-permits"],
     queryFn: async () => (await api.get("/permits")).data?.data || [],
@@ -364,6 +523,10 @@ export function ModalManualPermit({
     },
   });
 
+  // 💡 إضافة الـ State لعملية الربط في الهيدر/لوحة التحكم العلوية
+  const [linkingMode, setLinkingMode] = useState(null);
+  const [selectedValue, setSelectedValue] = useState("");
+
   const [formData, setFormData] = useState({
     permitNumber: "",
     year: "1446",
@@ -378,12 +541,18 @@ export function ModalManualPermit({
     landArea: "",
     mainUsage: "سكني",
     subUsage: "",
-    engineeringOffice: "",
+    engineeringOffice: fixedOffice || "",
     source: "يدوي",
     notes: "",
     issueDate: "",
-    expiryDate: "", // 👈 إضافة تاريخ الانتهاء الهجري
+    expiryDate: "",
     file: null,
+
+    // 💡 حقول الربط المباشر
+    linkedClientId: "",
+    linkedOfficeId: "",
+    linkedOwnershipId: "",
+    linkedTransactionId: "",
   });
 
   useEffect(() => {
@@ -395,10 +564,15 @@ export function ModalManualPermit({
         landArea: permitData.landArea || "",
         notes: permitData.notes || "",
         expiryDate: permitData.expiryDate || "",
+        engineeringOffice: fixedOffice || permitData.engineeringOffice || "",
+        linkedClientId: permitData.linkedClientId || "",
+        linkedOfficeId: permitData.linkedOfficeId || "",
+        linkedOwnershipId: permitData.linkedOwnershipId || "",
+        linkedTransactionId: permitData.linkedTransactionId || "",
         file: null,
       });
     }
-  }, [mode, permitData]);
+  }, [mode, permitData, fixedOffice]);
 
   useEffect(() => {
     if (formData.district && flatDistricts.length > 0) {
@@ -413,25 +587,20 @@ export function ModalManualPermit({
   }, [formData.district, flatDistricts]);
 
   // ==========================================
-  // 💡 فحص التكرار اللحظي المتقدم (Real-time Duplicate Check)
+  // 💡 فحص التكرار اللحظي המتقدم
   // ==========================================
   const duplicateWarning = useMemo(() => {
     if (!formData.permitNumber || formData.permitNumber.trim() === "")
       return null;
-
-    // استثناء الرخصة الحالية من الفحص إذا كنا في وضع التعديل
     const others =
       mode === "edit"
         ? existingPermits.filter((p) => p.id !== permitData.id)
         : existingPermits;
-
-    // البحث عن رخصة تحمل نفس الرقم
     const duplicatePermit = others.find(
       (p) =>
         String(p.permitNumber) ===
         String(toEnglishNumbers(formData.permitNumber)),
     );
-
     if (duplicatePermit) {
       return {
         ownerName: duplicatePermit.ownerName || "غير محدد",
@@ -439,30 +608,23 @@ export function ModalManualPermit({
         idNumber: duplicatePermit.idNumber || "غير محدد",
       };
     }
-
     return null;
   }, [formData.permitNumber, existingPermits, mode, permitData]);
 
-  // 💡 حسابات التواريخ الذكية
   const expiryInfo = useMemo(() => {
     if (!formData.expiryDate) return null;
-
     try {
       const gregorianDate = moment(
         toEnglishNumbers(formData.expiryDate),
         "iYYYY/iM/iD",
       ).format("YYYY-MM-DD");
       if (gregorianDate === "Invalid date") return null;
-
       const end = new Date(gregorianDate);
       const now = new Date();
-
       end.setHours(0, 0, 0, 0);
       now.setHours(0, 0, 0, 0);
-
       const diffTime = end - now;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
       return {
         gregorian: gregorianDate,
         diffDays: diffDays,
@@ -478,7 +640,6 @@ export function ModalManualPermit({
     const currentHijriYear = moment().iYear();
     const parsedYear = parseInt(toEnglishNumbers(formData.year));
     if (isNaN(parsedYear)) return null;
-
     const diff = currentHijriYear - parsedYear;
     return diff >= 0 ? diff : 0;
   }, [formData.year]);
@@ -489,22 +650,24 @@ export function ModalManualPermit({
       Object.keys(data).forEach((key) => {
         let safeValue = data[key];
         if (
-          key === "permitNumber" ||
-          key === "idNumber" ||
-          key === "plotNumber" ||
-          key === "planNumber" ||
-          key === "landArea" ||
-          key === "year" ||
-          key === "expiryDate"
+          [
+            "permitNumber",
+            "idNumber",
+            "plotNumber",
+            "planNumber",
+            "landArea",
+            "year",
+            "expiryDate",
+          ].includes(key)
         ) {
           safeValue = toEnglishNumbers(data[key]);
         }
-
         if (key === "file" && data.file) fd.append("file", data.file);
         else if (
           key !== "file" &&
           safeValue !== null &&
-          safeValue !== undefined
+          safeValue !== undefined &&
+          safeValue !== ""
         )
           fd.append(key, safeValue);
       });
@@ -537,6 +700,42 @@ export function ModalManualPermit({
     saveMutation.mutate(formData);
   };
 
+  // 💡 دوال الربط
+  const handleApplyLink = () => {
+    if (!selectedValue) return toast.error("يرجى اختيار السجل من القائمة");
+
+    if (linkingMode === "client")
+      setFormData({ ...formData, linkedClientId: selectedValue });
+    if (linkingMode === "office")
+      setFormData({ ...formData, linkedOfficeId: selectedValue });
+    if (linkingMode === "ownership")
+      setFormData({ ...formData, linkedOwnershipId: selectedValue });
+    if (linkingMode === "privateTransaction")
+      setFormData({ ...formData, linkedTransactionId: selectedValue });
+
+    setLinkingMode(null);
+    setSelectedValue("");
+    toast.success("تم تحديد السجل للربط، سيتم حفظه مع الرخصة.");
+  };
+
+  const getOptions = (mode) => {
+    if (mode === "client")
+      return clients.map((c) => ({ label: c.name, value: c.id }));
+    if (mode === "office")
+      return offices.map((o) => ({ label: o.nameAr || o.name, value: o.id }));
+    if (mode === "ownership")
+      return ownerships.map((o) => ({
+        label: `صك رقم: ${o.deedNumber || o.id}`,
+        value: o.id,
+      }));
+    if (mode === "privateTransaction")
+      return privateTransactions.map((t) => ({
+        label: `رقم: ${t.ref || t.id} - ${t.client}`,
+        value: t.id,
+      }));
+    return [];
+  };
+
   return (
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 animate-in fade-in"
@@ -548,7 +747,7 @@ export function ModalManualPermit({
           <div className="flex items-center gap-2 text-white">
             <Edit3 className="w-5 h-5" />
             <span className="text-base font-bold">
-              {mode === "add" ? "إضافة رخصة يدوية ذكية" : "تعديل بيانات الرخصة"}
+              {mode === "add" ? "إضافة رخصة يدوية" : "تعديل بيانات الرخصة"}
             </span>
           </div>
           <button
@@ -559,17 +758,182 @@ export function ModalManualPermit({
           </button>
         </div>
 
+        {/* 💡 أزرار الربط في أعلى النموذج */}
+        <div className="bg-slate-50 p-4 border-b border-slate-200 shrink-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-bold text-slate-600 ml-2">
+              <Link size={14} className="inline mr-1 text-blue-500" /> إضافة
+              ارتباط للرخصة:
+            </span>
+            {!formData.linkedClientId && (
+              <button
+                onClick={() => {
+                  setLinkingMode("client");
+                  setSelectedValue("");
+                }}
+                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "client" ? "border-blue-500 bg-blue-100 text-blue-700 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"}`}
+              >
+                <User size={14} />{" "}
+                <span className="text-[10px] font-black">بعميل</span>
+              </button>
+            )}
+            {!formData.linkedOfficeId && (
+              <button
+                onClick={() => {
+                  setLinkingMode("office");
+                  setSelectedValue("");
+                }}
+                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "office" ? "border-blue-500 bg-blue-100 text-blue-700 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"}`}
+              >
+                <Briefcase size={14} />{" "}
+                <span className="text-[10px] font-black">بمكتب</span>
+              </button>
+            )}
+            {!formData.linkedOwnershipId && (
+              <button
+                onClick={() => {
+                  setLinkingMode("ownership");
+                  setSelectedValue("");
+                }}
+                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "ownership" ? "border-blue-500 bg-blue-100 text-blue-700 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"}`}
+              >
+                <Building size={14} />{" "}
+                <span className="text-[10px] font-black">بملكية</span>
+              </button>
+            )}
+            {!formData.linkedTransactionId && (
+              <button
+                onClick={() => {
+                  setLinkingMode("privateTransaction");
+                  setSelectedValue("");
+                }}
+                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "privateTransaction" ? "border-blue-500 bg-blue-100 text-blue-700 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"}`}
+              >
+                <FileSignature size={14} />{" "}
+                <span className="text-[10px] font-black">بمعاملة فرعية</span>
+              </button>
+            )}
+          </div>
+
+          {/* منطقة البحث المنسدلة للربط */}
+          {linkingMode && (
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2">
+              <div className="flex-1">
+                <SearchableDropdown
+                  options={getOptions(linkingMode)}
+                  value={selectedValue}
+                  onChange={(val) => setSelectedValue(val)}
+                  placeholder={`ابحث واختر ${linkingMode === "client" ? "العميل" : linkingMode === "office" ? "المكتب" : linkingMode === "ownership" ? "الملكية" : "المعاملة"}...`}
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleApplyLink}
+                  className="px-4 py-2.5 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 shadow-sm transition-colors"
+                >
+                  اختيار وربط
+                </button>
+                <button
+                  onClick={() => setLinkingMode(null)}
+                  className="px-3 py-2.5 bg-white text-slate-500 border border-slate-200 text-[10px] font-black rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* استعراض السجلات المربوطة */}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {formData.linkedClientId && (
+              <span className="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-emerald-200">
+                <User size={12} /> عميل:{" "}
+                {clients.find((c) => c.id === formData.linkedClientId)?.name ||
+                  "مربوط"}
+                <button
+                  onClick={() =>
+                    setFormData({ ...formData, linkedClientId: "" })
+                  }
+                  className="text-emerald-500 hover:text-red-500 ml-1"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {formData.linkedOfficeId && (
+              <span className="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-emerald-200">
+                <Briefcase size={12} /> مكتب:{" "}
+                {offices.find((o) => o.id === formData.linkedOfficeId)
+                  ?.nameAr || "مربوط"}
+                <button
+                  onClick={() =>
+                    setFormData({ ...formData, linkedOfficeId: "" })
+                  }
+                  className="text-emerald-500 hover:text-red-500 ml-1"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {formData.linkedOwnershipId && (
+              <span className="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-emerald-200">
+                <Building size={12} /> ملكية:{" "}
+                {ownerships.find((o) => o.id === formData.linkedOwnershipId)
+                  ?.deedNumber || "مربوط"}
+                <button
+                  onClick={() =>
+                    setFormData({ ...formData, linkedOwnershipId: "" })
+                  }
+                  className="text-emerald-500 hover:text-red-500 ml-1"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {formData.linkedTransactionId && (
+              <span className="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-emerald-200">
+                <FileSignature size={12} /> معاملة:{" "}
+                {privateTransactions.find(
+                  (t) => t.id === formData.linkedTransactionId,
+                )?.ref || "مربوط"}
+                <button
+                  onClick={() =>
+                    setFormData({ ...formData, linkedTransactionId: "" })
+                  }
+                  className="text-emerald-500 hover:text-red-500 ml-1"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+          </div>
+        </div>
+
         {/* Content */}
-        <div className="flex-1 overflow-auto p-6 custom-scrollbar-slim bg-[#fafbfc]">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="flex-1 overflow-auto p-6 custom-scrollbar-slim bg-[#fafbfc] space-y-6">
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="lg:col-span-3 pb-2 border-b border-slate-100 mb-1 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-blue-500" />
+              <h4 className="font-bold text-slate-800 text-sm">
+                المعلومات الأساسية للرخصة
+              </h4>
+            </div>
+
             <div className="lg:col-span-2">
               <SmartLinkedField
                 label="اسم المالك (العميل) *"
                 value={formData.ownerName}
-                onChange={(val) => setFormData({ ...formData, ownerName: val })}
+                linkedId={formData.linkedClientId}
+                onChange={(val) =>
+                  setFormData({
+                    ...formData,
+                    ownerName: val,
+                    linkedClientId: "",
+                  })
+                } // 👈 عند الكتابة يتم فك الربط المباشر
                 options={clients}
                 listId="manualClientsList"
-                placeholder="ابحث أو اكتب اسم العميل..."
+                placeholder="اكتب اسم العميل..."
                 matchFn={(opt, val) =>
                   normalizeArabicText(opt.fullNameRaw) ===
                     normalizeArabicText(val) ||
@@ -597,7 +961,6 @@ export function ModalManualPermit({
               style={{ textAlign: "right" }}
             />
 
-            {/* 💡 رقم الرخصة (مع التنبيه اللحظي المتقدم) */}
             <div className="space-y-1 relative">
               <div className="flex items-center justify-between mb-0.5">
                 <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
@@ -626,7 +989,6 @@ export function ModalManualPermit({
                 dir="rtl"
                 className={`w-full text-[11px] font-bold border rounded-lg px-3 py-2 outline-none focus:ring-1 transition-colors ${duplicateWarning ? "bg-amber-50 border-amber-300 focus:ring-amber-400 text-amber-900" : "bg-slate-50 border-slate-200 text-slate-700 focus:ring-blue-400 focus:bg-white"}`}
               />
-              {/* 👈 رسالة التنبيه العائمة أسفل الحقل المكرر */}
               {duplicateWarning && (
                 <div className="absolute top-[100%] left-0 right-0 mt-1 z-10 bg-amber-50 border border-amber-200 rounded-lg p-2.5 shadow-lg text-[10px] leading-relaxed animate-in fade-in zoom-in-95">
                   <div className="font-bold text-amber-800 mb-1 flex items-center gap-1">
@@ -655,15 +1017,10 @@ export function ModalManualPermit({
                       </span>
                     </div>
                   </div>
-                  <div className="mt-1.5 pt-1.5 border-t border-amber-200/60 text-amber-600 font-bold italic">
-                    ملاحظة: يمكنك المتابعة وحفظ الرخصة في حال كان هذا الإجراء
-                    عبارة عن (تجديد/تعديل) لنفس الرخصة.
-                  </div>
                 </div>
               )}
             </div>
 
-            {/* 💡 التواريخ الذكية */}
             <div className="space-y-1">
               <CopyableInput
                 label="سنة الرخصة"
@@ -712,7 +1069,7 @@ export function ModalManualPermit({
               value={formData.sector}
               onChange={() => {}}
               placeholder="يحدد تلقائياً حسب الحي"
-              style={{ backgroundColor: "#f1f5f9", cursor: "not-allowed" }}
+              disabled={true}
             />
 
             <div>
@@ -742,7 +1099,6 @@ export function ModalManualPermit({
                 }
               />
             </div>
-
             <div>
               <SmartLinkedField
                 label="رقم المخطط"
@@ -766,7 +1122,6 @@ export function ModalManualPermit({
                 }
               />
             </div>
-
             <CopyableInput
               label="رقم القطعة"
               value={formData.plotNumber}
@@ -803,7 +1158,6 @@ export function ModalManualPermit({
                 placeholder="مثال: سكني، تجاري"
               />
             </div>
-
             <div className="space-y-1">
               <div className="flex items-center justify-between mb-0.5">
                 <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
@@ -831,8 +1185,14 @@ export function ModalManualPermit({
               <SmartLinkedField
                 label="المكتب الهندسي"
                 value={formData.engineeringOffice}
+                disabled={!!fixedOffice}
+                linkedId={formData.linkedOfficeId}
                 onChange={(val) =>
-                  setFormData({ ...formData, engineeringOffice: val })
+                  setFormData({
+                    ...formData,
+                    engineeringOffice: val,
+                    linkedOfficeId: "",
+                  })
                 }
                 options={offices}
                 listId="manualOfficesList"
@@ -877,7 +1237,6 @@ export function ModalManualPermit({
                 ))}
               </select>
             </div>
-
             <div className="space-y-1">
               <label className="text-[11px] font-bold text-slate-500 block">
                 المصدر
@@ -902,7 +1261,6 @@ export function ModalManualPermit({
                 ))}
               </select>
             </div>
-
             <div className="lg:col-span-3 space-y-1 mt-2">
               <CopyableInput
                 label="ملاحظات"
@@ -917,25 +1275,25 @@ export function ModalManualPermit({
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-700 flex items-center gap-2">
                 <CloudUpload className="w-4 h-4 text-blue-500" /> إرفاق مستند
-                الرخصة
+                الرخصة الأصلي
                 <span className="text-[10px] text-slate-400 font-normal">
                   {mode === "edit"
                     ? "(ارفع ملفاً جديداً لاستبدال القديم)"
-                    : "(اختياري)"}
+                    : "(اختياري ولكن محبذ)"}
                 </span>
               </label>
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-colors cursor-pointer bg-white shadow-sm"
+                className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-colors cursor-pointer bg-slate-50 shadow-sm"
               >
-                <CloudUpload className="w-8 h-8 mx-auto text-blue-400 mb-2" />
-                <div className="text-[12px] font-bold text-slate-700">
+                <CloudUpload className="w-10 h-10 mx-auto text-blue-400 mb-3" />
+                <div className="text-[13px] font-bold text-slate-700">
                   {formData.file
                     ? formData.file.name
                     : "اسحب الملف هنا أو اضغط للاختيار"}
                 </div>
-                <div className="text-[10px] font-bold text-slate-400 mt-1">
-                  يدعم PDF, JPG, PNG - حد أقصى 25MB
+                <div className="text-[10px] font-bold text-slate-400 mt-1.5">
+                  يدعم صيغ PDF, JPG, PNG بحجم أقصى 25MB
                 </div>
                 <input
                   ref={fileInputRef}
@@ -951,7 +1309,7 @@ export function ModalManualPermit({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-slate-200 bg-white rounded-b-xl shrink-0">
+        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-slate-200 bg-white rounded-b-xl shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
           <button
             onClick={onClose}
             className="px-6 text-xs font-bold bg-slate-100 text-slate-600 rounded-xl py-2.5 hover:bg-slate-200 transition-colors"

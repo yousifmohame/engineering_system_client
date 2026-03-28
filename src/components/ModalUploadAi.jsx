@@ -24,6 +24,11 @@ import {
   MapPin,
   Layers,
   ChevronRight,
+  Link,
+  Building,
+  FileSignature,
+  User,
+  Briefcase
 } from "lucide-react";
 
 // ==========================================
@@ -302,7 +307,10 @@ const CopyableInput = ({
 // ==========================================
 // 💡 المودل الرئيسي للذكاء الاصطناعي (ModalUploadAi)
 // ==========================================
-export function ModalUploadAi({ onClose }) {
+// ==========================================
+// 💡 المودل الرئيسي لرفع الذكاء الاصطناعي (محدث ليدعم الربط الكامل)
+// ==========================================
+export function ModalUploadAi({ onClose, fixedOffice }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
 
@@ -310,6 +318,10 @@ export function ModalUploadAi({ onClose }) {
   const [file, setFile] = useState(null);
   const [permits, setPermits] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  // 💡 State الخاصة بأزرار ولوحة الربط العلوية
+  const [linkingMode, setLinkingMode] = useState(null);
+  const [selectedValue, setSelectedValue] = useState("");
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-simple"],
@@ -331,6 +343,15 @@ export function ModalUploadAi({ onClose }) {
   const { data: plans = [] } = useQuery({
     queryKey: ["plans-list"],
     queryFn: async () => (await api.get("/riyadh-streets/plans")).data || [],
+  });
+  const { data: ownerships = [] } = useQuery({
+    queryKey: ["properties-list"],
+    queryFn: async () => (await api.get("/properties")).data?.data || [],
+  });
+  const { data: privateTransactions = [] } = useQuery({
+    queryKey: ["private-transactions-list"],
+    queryFn: async () =>
+      (await api.get("/private-transactions")).data?.data || [],
   });
   const { data: existingPermits = [] } = useQuery({
     queryKey: ["building-permits"],
@@ -380,9 +401,6 @@ export function ModalUploadAi({ onClose }) {
     },
   });
 
-  // ==========================================
-  // 1. التحليل واستقبال قرارات الذكاء الاصطناعي
-  // ==========================================
   const analyzeMutation = useMutation({
     mutationFn: async (selectedFile) => {
       const fd = new FormData();
@@ -417,17 +435,23 @@ export function ModalUploadAi({ onClose }) {
         landArea: toEnglishNumbers(p.landArea || ""),
         mainUsage: p.mainUsage || p.usage || "سكني",
         subUsage: p.subUsage || "",
-        engineeringOffice: p.engineeringOffice || "",
+        // 💡 إجبار المكتب الافتراضي لو كان fixedOffice موجوداً
+        engineeringOffice: fixedOffice || p.engineeringOffice || "",
         notes: p.notes || "",
         detailedReport: p.detailedReport || "",
         componentsData: p.componentsData || [],
         boundariesData: p.boundariesData || [],
         source: "رفع يدوي (AI)",
 
-        linkedClientId: p.linkedClientId || null,
-        linkedOfficeId: p.linkedOfficeId || null,
-        linkedDistrictId: p.linkedDistrictId || null,
-        linkedPlanId: p.linkedPlanId || null,
+        // 💡 الاحتفاظ بقرارات الربط القادمة من الـ AI
+        linkedClientId: p.linkedClientId || "",
+        linkedOfficeId: p.linkedOfficeId || "",
+        linkedDistrictId: p.linkedDistrictId || "",
+        linkedPlanId: p.linkedPlanId || "",
+
+        // 💡 حقول ربط فارغة افتراضياً لدعم الإضافة اليدوية اللاحقة
+        linkedOwnershipId: "",
+        linkedTransactionId: "",
       }));
 
       setPermits(mappedPermits);
@@ -441,9 +465,6 @@ export function ModalUploadAi({ onClose }) {
     },
   });
 
-  // ==========================================
-  // 2. الحفظ النهائي
-  // ==========================================
   const saveMutation = useMutation({
     mutationFn: async () => {
       const promises = permits.map((permit) => {
@@ -451,7 +472,11 @@ export function ModalUploadAi({ onClose }) {
         Object.keys(permit).forEach((key) => {
           if (key === "componentsData" || key === "boundariesData") {
             fd.append(key, JSON.stringify(permit[key]));
-          } else if (permit[key] !== null && permit[key] !== undefined) {
+          } else if (
+            permit[key] !== null &&
+            permit[key] !== undefined &&
+            permit[key] !== ""
+          ) {
             fd.append(key, permit[key]);
           }
         });
@@ -466,7 +491,6 @@ export function ModalUploadAi({ onClose }) {
     onSuccess: (results) => {
       const succeeded = results.filter((r) => r.status === "fulfilled");
       const failed = results.filter((r) => r.status === "rejected");
-
       if (succeeded.length > 0) {
         toast.success(`تم حفظ واعتماد ${succeeded.length} رخصة بنجاح!`);
         queryClient.invalidateQueries(["building-permits"]);
@@ -490,14 +514,15 @@ export function ModalUploadAi({ onClose }) {
     saveMutation.mutate();
   };
 
+  // 💡 تحديث الحقل المكتوب يدوياً وفك الربط التلقائي
   const updateCurrentPermit = (field, value, linkedFieldToClear = null) => {
     const updated = [...permits];
     updated[currentIndex][field] = toEnglishNumbers(value);
 
+    // إذا قام المستخدم بكتابة شيء جديد، نزيل الربط التلقائي القديم لكي نعتمد على بحث الواجهة
     if (linkedFieldToClear) {
-      updated[currentIndex][linkedFieldToClear] = null;
+      updated[currentIndex][linkedFieldToClear] = "";
     }
-
     setPermits(updated);
   };
 
@@ -505,6 +530,44 @@ export function ModalUploadAi({ onClose }) {
     const updated = [...permits];
     updated[currentIndex][table][index][field] = toEnglishNumbers(value);
     setPermits(updated);
+  };
+
+  // 💡 دوال لوحة الربط المباشرة في الأعلى
+  const handleApplyLink = () => {
+    if (!selectedValue) return toast.error("يرجى اختيار السجل من القائمة");
+
+    const updated = [...permits];
+    if (linkingMode === "client")
+      updated[currentIndex].linkedClientId = selectedValue;
+    if (linkingMode === "office")
+      updated[currentIndex].linkedOfficeId = selectedValue;
+    if (linkingMode === "ownership")
+      updated[currentIndex].linkedOwnershipId = selectedValue;
+    if (linkingMode === "privateTransaction")
+      updated[currentIndex].linkedTransactionId = selectedValue;
+
+    setPermits(updated);
+    setLinkingMode(null);
+    setSelectedValue("");
+    toast.success("تم تحديد السجل للربط، سيتم حفظه مع الرخصة.");
+  };
+
+  const getOptions = (mode) => {
+    if (mode === "client")
+      return clients.map((c) => ({ label: c.name, value: c.id }));
+    if (mode === "office")
+      return offices.map((o) => ({ label: o.nameAr || o.name, value: o.id }));
+    if (mode === "ownership")
+      return ownerships.map((o) => ({
+        label: `صك رقم: ${o.deedNumber || o.id}`,
+        value: o.id,
+      }));
+    if (mode === "privateTransaction")
+      return privateTransactions.map((t) => ({
+        label: `رقم: ${t.ref || t.id} - ${t.client}`,
+        value: t.id,
+      }));
+    return [];
   };
 
   if (step === 1) {
@@ -530,7 +593,6 @@ export function ModalUploadAi({ onClose }) {
             ارفع ملف الرخصة وسنقوم بتفريغ كل الحقول والجداول بدقة متناهية
             ومطابقتها مع النظام.
           </p>
-
           <div
             onClick={() => fileInputRef.current?.click()}
             className={`w-full border-2 border-dashed rounded-xl p-8 mb-6 cursor-pointer transition-colors ${file ? "border-emerald-300 bg-emerald-50" : "border-purple-200 bg-slate-50 hover:bg-purple-50"}`}
@@ -558,7 +620,6 @@ export function ModalUploadAi({ onClose }) {
               onChange={(e) => setFile(e.target.files[0])}
             />
           </div>
-
           <div className="flex gap-3 w-full">
             <button
               onClick={onClose}
@@ -586,7 +647,7 @@ export function ModalUploadAi({ onClose }) {
 
   const current = permits[currentIndex];
 
-  // فحص التكرار اللحظي (في مودال AI)
+  // فحص التكرار اللحظي
   const isDuplicatePermit = existingPermits.some(
     (p) =>
       String(p.permitNumber) === String(current.permitNumber) &&
@@ -599,6 +660,7 @@ export function ModalUploadAi({ onClose }) {
       dir="rtl"
     >
       <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full flex flex-col border border-purple-200 max-h-[95vh]">
+        {/* Header Title */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-purple-100 bg-purple-50 rounded-t-2xl shrink-0">
           <div className="flex items-center gap-3">
             <Brain className="w-6 h-6 text-purple-600" />
@@ -612,7 +674,6 @@ export function ModalUploadAi({ onClose }) {
               </p>
             </div>
           </div>
-
           {permits.length > 1 && (
             <div className="flex items-center gap-4 bg-white px-3 py-1.5 rounded-lg border border-purple-200 shadow-sm">
               <button
@@ -642,6 +703,150 @@ export function ModalUploadAi({ onClose }) {
           </button>
         </div>
 
+        {/* 💡 أزرار الربط في أعلى النموذج */}
+        <div className="bg-slate-50 p-4 border-b border-slate-200 shrink-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-bold text-slate-600 ml-2">
+              <Link size={14} className="inline mr-1 text-blue-500" /> إضافة
+              ارتباط للرخصة:
+            </span>
+            {!current.linkedClientId && (
+              <button
+                onClick={() => {
+                  setLinkingMode("client");
+                  setSelectedValue("");
+                }}
+                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "client" ? "border-blue-500 bg-blue-100 text-blue-700 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"}`}
+              >
+                <User size={14} />{" "}
+                <span className="text-[10px] font-black">بعميل</span>
+              </button>
+            )}
+            {!current.linkedOfficeId && (
+              <button
+                onClick={() => {
+                  setLinkingMode("office");
+                  setSelectedValue("");
+                }}
+                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "office" ? "border-blue-500 bg-blue-100 text-blue-700 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"}`}
+              >
+                <Briefcase size={14} />{" "}
+                <span className="text-[10px] font-black">بمكتب</span>
+              </button>
+            )}
+            {!current.linkedOwnershipId && (
+              <button
+                onClick={() => {
+                  setLinkingMode("ownership");
+                  setSelectedValue("");
+                }}
+                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "ownership" ? "border-blue-500 bg-blue-100 text-blue-700 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"}`}
+              >
+                <Building size={14} />{" "}
+                <span className="text-[10px] font-black">بملكية</span>
+              </button>
+            )}
+            {!current.linkedTransactionId && (
+              <button
+                onClick={() => {
+                  setLinkingMode("privateTransaction");
+                  setSelectedValue("");
+                }}
+                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "privateTransaction" ? "border-blue-500 bg-blue-100 text-blue-700 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"}`}
+              >
+                <FileSignature size={14} />{" "}
+                <span className="text-[10px] font-black">بمعاملة فرعية</span>
+              </button>
+            )}
+          </div>
+
+          {/* منطقة البحث المنسدلة للربط */}
+          {linkingMode && (
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2">
+              <div className="flex-1">
+                <SearchableDropdown
+                  options={getOptions(linkingMode)}
+                  value={selectedValue}
+                  onChange={(val) => setSelectedValue(val)}
+                  placeholder={`ابحث واختر ${linkingMode === "client" ? "العميل" : linkingMode === "office" ? "المكتب" : linkingMode === "ownership" ? "الملكية" : "المعاملة"}...`}
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleApplyLink}
+                  className="px-4 py-2.5 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 shadow-sm transition-colors"
+                >
+                  اختيار وربط
+                </button>
+                <button
+                  onClick={() => setLinkingMode(null)}
+                  className="px-3 py-2.5 bg-white text-slate-500 border border-slate-200 text-[10px] font-black rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* استعراض السجلات المربوطة */}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {current.linkedClientId && (
+              <span className="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-emerald-200">
+                <User size={12} /> عميل:{" "}
+                {clients.find((c) => c.id === current.linkedClientId)?.name ||
+                  "مربوط"}
+                <button
+                  onClick={() => updateCurrentPermit("linkedClientId", "")}
+                  className="text-emerald-500 hover:text-red-500 ml-1"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {current.linkedOfficeId && (
+              <span className="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-emerald-200">
+                <Briefcase size={12} /> مكتب:{" "}
+                {offices.find((o) => o.id === current.linkedOfficeId)?.nameAr ||
+                  "مربوط"}
+                <button
+                  onClick={() => updateCurrentPermit("linkedOfficeId", "")}
+                  className="text-emerald-500 hover:text-red-500 ml-1"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {current.linkedOwnershipId && (
+              <span className="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-emerald-200">
+                <Building size={12} /> ملكية:{" "}
+                {ownerships.find((o) => o.id === current.linkedOwnershipId)
+                  ?.deedNumber || "مربوط"}
+                <button
+                  onClick={() => updateCurrentPermit("linkedOwnershipId", "")}
+                  className="text-emerald-500 hover:text-red-500 ml-1"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {current.linkedTransactionId && (
+              <span className="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-emerald-200">
+                <FileSignature size={12} /> معاملة:{" "}
+                {privateTransactions.find(
+                  (t) => t.id === current.linkedTransactionId,
+                )?.ref || "مربوط"}
+                <button
+                  onClick={() => updateCurrentPermit("linkedTransactionId", "")}
+                  className="text-emerald-500 hover:text-red-500 ml-1"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-[#fafbfc] custom-scrollbar-slim space-y-6">
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
             <h4 className="text-sm font-black text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
@@ -655,9 +860,13 @@ export function ModalUploadAi({ onClose }) {
                   label="اسم المالك (العميل) *"
                   value={current.ownerName}
                   linkedId={current.linkedClientId}
-                  onChange={(val) =>
-                    updateCurrentPermit("ownerName", val, "linkedClientId")
-                  }
+                  onChange={(val) => {
+                    const found = clients.find(
+                      (c) => c.name === val || c.idNumber === current.idNumber,
+                    );
+                    updateCurrentPermit("ownerName", val, "linkedClientId");
+                    if (found) updateCurrentPermit("linkedClientId", found.id);
+                  }}
                   options={clients}
                   listId="aiClientsList"
                   placeholder="ابحث أو اكتب اسم العميل..."
@@ -687,13 +896,35 @@ export function ModalUploadAi({ onClose }) {
                 dir="ltr"
                 style={{ textAlign: "right" }}
               />
-              <CopyableInput
-                label="رقم الرخصة *"
-                value={current.permitNumber}
-                onChange={(val) => updateCurrentPermit("permitNumber", val)}
-                placeholder="مثال: 1445/1234"
-                warning={isDuplicatePermit ? "تنبيه: مكرر في النظام" : null}
-              />
+              <div className="space-y-1 relative">
+                <div className="flex items-center justify-between mb-0.5">
+                  <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
+                    رقم الرخصة *
+                    {isDuplicatePermit && (
+                      <span className="flex items-center gap-1 bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded text-[9px] border border-amber-300 shadow-sm animate-pulse">
+                        <AlertTriangle size={10} /> مكرر
+                      </span>
+                    )}
+                    <button
+                      onClick={() => copyToClipboard(current.permitNumber)}
+                      className="text-slate-400 hover:text-blue-600 transition-colors"
+                      title="نسخ المحتوى"
+                    >
+                      <Copy size={12} />
+                    </button>
+                  </label>
+                </div>
+                <input
+                  type="text"
+                  value={current.permitNumber}
+                  onChange={(e) =>
+                    updateCurrentPermit("permitNumber", e.target.value)
+                  }
+                  placeholder="مثال: 1445/1234"
+                  dir="rtl"
+                  className={`w-full text-[11px] font-bold border rounded-lg px-3 py-2 outline-none focus:ring-1 transition-colors ${isDuplicatePermit ? "bg-amber-50 border-amber-300 focus:ring-amber-400 text-amber-900" : "bg-slate-50 border-slate-200 text-slate-700 focus:ring-blue-400 focus:bg-white"}`}
+                />
+              </div>
               <CopyableInput
                 label="تاريخ الإصدار"
                 value={current.issueDate}
@@ -803,6 +1034,7 @@ export function ModalUploadAi({ onClose }) {
                 label="شكل الرخصة (تلقائي)"
                 value={current.form}
                 onChange={() => {}}
+                disabled={true}
                 style={{ backgroundColor: "#f1f5f9", cursor: "not-allowed" }}
               />
 
@@ -811,13 +1043,18 @@ export function ModalUploadAi({ onClose }) {
                   label="المكتب الهندسي"
                   value={current.engineeringOffice}
                   linkedId={current.linkedOfficeId}
-                  onChange={(val) =>
+                  disabled={!!fixedOffice}
+                  onChange={(val) => {
+                    const found = offices.find(
+                      (o) => o.nameAr === val || o.nameEn === val,
+                    );
                     updateCurrentPermit(
                       "engineeringOffice",
                       val,
                       "linkedOfficeId",
-                    )
-                  }
+                    );
+                    if (found) updateCurrentPermit("linkedOfficeId", found.id);
+                  }}
                   options={offices}
                   listId="aiOfficesList"
                   placeholder="ابحث أو اكتب المكتب..."
@@ -849,7 +1086,7 @@ export function ModalUploadAi({ onClose }) {
                     ملاحظات / اشتراطات{" "}
                     <button
                       onClick={() => copyToClipboard(current.notes)}
-                      className="text-slate-400 hover:text-blue-600"
+                      className="text-slate-400 hover:text-blue-600 transition-colors"
                     >
                       <Copy size={12} />
                     </button>
@@ -866,7 +1103,6 @@ export function ModalUploadAi({ onClose }) {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* ... Components Data Table ... */}
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
               <h4 className="text-xs font-black text-slate-800 mb-3 flex items-center gap-2">
                 <Layers className="w-4 h-4 text-emerald-500" /> تفاصيل المكونات
@@ -958,7 +1194,6 @@ export function ModalUploadAi({ onClose }) {
               </div>
             </div>
 
-            {/* ... Boundaries Data Table ... */}
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
               <h4 className="text-xs font-black text-slate-800 mb-3 flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-orange-500" /> الحدود والأبعاد
