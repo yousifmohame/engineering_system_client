@@ -87,6 +87,18 @@ export default function TransactionFilesManager({ onClose }) {
     },
   });
 
+  // في ملف TransactionFilesManager أضف هذا لمعرفة عدد العناصر المحذوفة
+  const { data: trashData } = useQuery({
+    queryKey: ["trash-items"],
+    queryFn: async () => {
+      const res = await api.get("/files/trash");
+      return res.data;
+    }
+  });
+  
+  // واستبدل deletedItems.length بـ:
+  const trashCount = (trashData?.folders?.length || 0) + (trashData?.files?.length || 0);
+
   // 2. جلب التصنيفات
   const { data: categories = DEFAULT_CATEGORIES } = useQuery({
     queryKey: ["folder-categories"],
@@ -243,9 +255,9 @@ export default function TransactionFilesManager({ onClose }) {
           >
             <Trash2 size={16} />{" "}
             <span className="hidden sm:inline">سلة المحذوفات</span>
-            {deletedItems.length > 0 && (
+            {trashCount > 0 && (
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white flex items-center justify-center rounded-full text-[10px]">
-                {deletedItems.length}
+                {trashCount}
               </span>
             )}
           </button>
