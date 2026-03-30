@@ -93,11 +93,12 @@ export default function TransactionFilesManager({ onClose }) {
     queryFn: async () => {
       const res = await api.get("/files/trash");
       return res.data;
-    }
+    },
   });
-  
+
   // واستبدل deletedItems.length بـ:
-  const trashCount = (trashData?.folders?.length || 0) + (trashData?.files?.length || 0);
+  const trashCount =
+    (trashData?.folders?.length || 0) + (trashData?.files?.length || 0);
 
   // 2. جلب التصنيفات
   const { data: categories = DEFAULT_CATEGORIES } = useQuery({
@@ -123,11 +124,13 @@ export default function TransactionFilesManager({ onClose }) {
   });
 
   // 3. تحويل البيانات
+  // 3. تحويل البيانات
   const transactions = useMemo(() => {
     return rawTransactions.map((tx) => {
       const fullName =
         tx.clientName || tx.client || tx.ownerNames || "عميل غير محدد";
       const nameParts = fullName.trim().split(" ");
+
       return {
         id: tx.id,
         transactionId: tx.id,
@@ -139,16 +142,19 @@ export default function TransactionFilesManager({ onClose }) {
         district: tx.districtName || tx.district || "غير محدد",
         sector: tx.sector || "غير محدد",
         commonName: tx.internalName || "",
-        officeName: tx.source || tx.officeName || "",
-        brokerName: tx.brokerName || "",
-        agentName: tx.agentName || "",
-        stakeholderName: tx.stakeholderName || "",
-        totalSize: tx.totalSize || 0,
-        createdAt: tx.createdAt || new Date().toISOString(),
-        createdBy: tx.createdBy || "النظام",
-        modifiedAt: tx.modifiedAt || tx.createdAt || new Date().toISOString(),
-        modifiedBy: tx.modifiedBy || tx.createdBy || "النظام",
-        clientPhone: tx.phone || tx.client?.phone || "",
+
+        // 🔥 التعديلات تبدأ من هنا 🔥
+        officeName: tx.office || tx.source || "غير محدد", // 👈 تعديل المكتب المنفذ
+        brokerName: tx.mediator || "", // 👈 تعديل الوسيط
+        agentName:
+          Array.isArray(tx.agents) && tx.agents.length > 0
+            ? tx.agents.map((a) => a.name).join(" و ")
+            : "", // 👈 تعديل المعقبين
+        createdAt: tx.created || tx.createdAt || "—", // 👈 تعديل تاريخ الإنشاء
+        modifiedAt: tx.updated || tx.modifiedAt || tx.created || "—", // 👈 تعديل تاريخ التعديل
+        clientPhone: tx.phone || "—", // 👈 تعديل رقم الهاتف
+        // 🔥 انتهاء التعديلات 🔥
+
         clientEmail: tx.email || tx.client?.email || "",
         status: tx.status || "جارية",
         isUrgent: tx.isUrgent || false,
@@ -157,6 +163,7 @@ export default function TransactionFilesManager({ onClose }) {
           tx.linkedParentId ||
           (tx.linkedChildren && tx.linkedChildren.length > 0) ||
           false,
+        totalSize: tx.totalSize || 0,
       };
     });
   }, [rawTransactions]);
