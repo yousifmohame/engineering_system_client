@@ -19,22 +19,25 @@ import {
   Loader2,
   ArrowRight,
   ChevronLeft,
+  Edit2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "../../../../api/axios";
+import api from "../../../../api/axios"; // 💡 تأكد من مسارك الخاص
 
-import { 
-  getFileIcon, 
-  getFileColor, 
-  formatFileSize, 
-  getFullUrl, 
-  copyToClipboard 
+import {
+  getFileIcon,
+  getFileColor,
+  formatFileSize,
+  getFullUrl,
+  copyToClipboard,
 } from "../utils";
 
 import FileViewerModal from "./modals/FileViewerModal";
-
 import CreateFolderModal from "./modals/CreateFolderModal";
+
+// 💡 استيراد هوك المستخدم (تأكد من المسار الصحيح في مشروعك)
+import { useAuth } from "../../../../context/AuthContext";
 
 export default function FolderViewerWindow({
   transaction,
@@ -44,6 +47,12 @@ export default function FolderViewerWindow({
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
 
+  // 💡 جلب بيانات الموظف الحالي
+  const { user } = useAuth();
+  const currentUser =
+    user?.name ||
+    (user?.firstName ? `${user.firstName} ${user.lastName}` : "مدير النظام");
+
   const [pathStack, setPathStack] = useState([
     { id: null, name: "الرئيسية", type: "root" },
   ]);
@@ -51,7 +60,10 @@ export default function FolderViewerWindow({
 
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
-  const [viewMode, setViewMode] = useState("grid");
+
+  // 💡 التعديل هنا: جعل القائمة (List) هي الوضع الافتراضي
+  const [viewMode, setViewMode] = useState("list");
+
   const [contextMenu, setContextMenu] = useState({
     show: false,
     x: 0,
@@ -60,11 +72,16 @@ export default function FolderViewerWindow({
     type: null,
   });
 
-  // 💡 Upload Manager State
+  // 💡 Rename Modal State
+  const [renameModal, setRenameModal] = useState({
+    show: false,
+    item: null,
+    type: "",
+    newName: "",
+  });
+
   const [activeUploads, setActiveUploads] = useState({});
   const [showUploadManager, setShowUploadManager] = useState(false);
-
-  // 💡 In-App Viewer State
   const [viewerFile, setViewerFile] = useState(null);
 
   // 1. جلب محتويات المجلد الحالي من الباك إند
@@ -78,21 +95,19 @@ export default function FolderViewerWindow({
     },
   });
 
-  // 2. إنشاء المجلدات (معدل ليدعم الحزم والمجلدات الفرعية)
+  // 2. إنشاء المجلدات
   const createFolderMutation = useMutation({
     mutationFn: async (foldersToCreateArray) => {
-      // بما أن الباك إند يقبل مجلداً واحداً في الريكويست، سنقوم بعمل حلقة (Loop) لإنشائهم
-      // الأفضل في التطبيق الحقيقي إنشاء Endpoint للـ Bulk Create
       for (const folderData of foldersToCreateArray) {
         const res = await api.post("/files/folder", {
           name: folderData.name,
           transactionId: transaction.transactionId,
           parentId: currentFolderId,
+          createdBy: currentUser, // 💡 إرسال اسم الموظف
         });
 
         const newFolderId = res.data?.folder?.id;
 
-        // إذا كان هناك مجلدات فرعية مطلوبة، ننشئها فوراً داخل المجلد الجديد
         if (
           newFolderId &&
           folderData.subFolders &&
@@ -103,6 +118,7 @@ export default function FolderViewerWindow({
               name: subName,
               transactionId: transaction.transactionId,
               parentId: newFolderId,
+              createdBy: currentUser,
             });
           }
         }
@@ -146,7 +162,9 @@ export default function FolderViewerWindow({
     files.forEach((f) => fd.append("files", f));
     fd.append("transactionId", transaction.transactionId);
     if (currentFolderId) fd.append("folderId", currentFolderId);
-    fd.append("uploadedBy", "مدير النظام");
+
+    // 💡 إرسال اسم الموظف الفعلي
+    fd.append("uploadedBy", currentUser);
 
     try {
       await api.post("/files/upload", fd, {
@@ -223,9 +241,10 @@ export default function FolderViewerWindow({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // 4. الحذف החقيقي
+  // 4. الحذف الحقيقي
   const deleteMutation = useMutation({
-    mutationFn: async (payload) => await api.post("/files/delete", payload),
+    mutationFn: async (payload) =>
+      await api.post("/files/delete", { ...payload, deletedBy: currentUser }),
     onSuccess: () => {
       toast.success("تم الحذف بنجاح");
       queryClient.invalidateQueries([
@@ -253,7 +272,38 @@ export default function FolderViewerWindow({
       else fileIds.push(id);
     });
 
-    deleteMutation.mutate({ folderIds, fileIds });
+    deleteMutation.mutate({
+      folderIds,
+      fileIds,
+      transactionId: transaction.transactionId,
+    });
+  };
+
+  // 5. 💡 تغيير الاسم
+  const renameMutation = useMutation({
+    mutationFn: async (payload) =>
+      await api.put("/files/rename", { ...payload, modifiedBy: currentUser }),
+    onSuccess: () => {
+      toast.success("تم تغيير الاسم بنجاح");
+      queryClient.invalidateQueries([
+        "folder-contents",
+        transaction.transactionId,
+        currentFolderId,
+      ]);
+      setRenameModal({ show: false, item: null, type: "", newName: "" });
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "فشل تغيير الاسم"),
+  });
+
+  const handleRenameSubmit = (e) => {
+    e.preventDefault();
+    if (!renameModal.newName.trim()) return toast.error("يرجى إدخال اسم صحيح");
+    renameMutation.mutate({
+      id: renameModal.item.id,
+      type: renameModal.type,
+      newName: renameModal.newName,
+    });
   };
 
   // ==================== Interactions ====================
@@ -262,7 +312,6 @@ export default function FolderViewerWindow({
       setPathStack([...pathStack, { id: item.id, name: item.name }]);
       setSelectedItems(new Set());
     } else {
-      // 💡 فتح الملفات
       const ext = item.extension?.toLowerCase();
       const inAppSupported = [
         "pdf",
@@ -273,11 +322,8 @@ export default function FolderViewerWindow({
         "gif",
       ].includes(ext);
 
-      if (inAppSupported) {
-        setViewerFile(item); // فتح في الـ Modal الداخلي
-      } else {
-        window.open(getFullUrl(item.url), "_blank"); // فتح في تبويب خارجي/تحميل
-      }
+      if (inAppSupported) setViewerFile(item);
+      else window.open(getFullUrl(item.url), "_blank");
     }
   };
 
@@ -293,17 +339,12 @@ export default function FolderViewerWindow({
     setSelectedItems(new Set());
   };
 
-  // 💡 الدالة المحدثة: التحديد المتعدد التلقائي (Toggle Selection)
   const handleItemClick = (itemId, e) => {
-    if (e) e.stopPropagation(); // لمنع تداخل النقرات
-    
+    if (e) e.stopPropagation();
     setSelectedItems((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId); // إذا كان محدداً، قم بإلغائه
-      } else {
-        newSet.add(itemId); // إذا لم يكن محدداً، أضفه مع الاحتفاظ بالباقي
-      }
+      if (newSet.has(itemId)) newSet.delete(itemId);
+      else newSet.add(itemId);
       return newSet;
     });
   };
@@ -344,6 +385,8 @@ export default function FolderViewerWindow({
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Header ── */}
+        {/* ── داخل ملف FolderViewerWindow.jsx ابحث عن هذا الجزء ── */}
+
         <div className="flex items-center justify-between px-5 py-3 bg-slate-900 text-white shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-slate-800 rounded-lg border border-slate-700">
@@ -356,10 +399,28 @@ export default function FolderViewerWindow({
                   {transaction.transactionCode}
                 </span>
               </h2>
-              <p className="text-[10px] text-slate-400 mt-1 font-semibold">
-                {transaction.ownerFirstName} {transaction.ownerLastName} -{" "}
-                {transaction.district}
-              </p>
+
+              {/* 💡 التحديث هنا: إضافة الهاتف والمكتب للمعلومات المعروضة في رأس النافذة */}
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-[10px] text-slate-400 font-semibold">
+                  المالك: {transaction.ownerFirstName}{" "}
+                  {transaction.ownerLastName}
+                </p>
+
+                {/* إذا كان الهاتف موجوداً في الـ transaction prop */}
+                {transaction.clientPhone && (
+                  <p className="text-[10px] font-mono bg-slate-800 text-green-400 px-1.5 py-0.5 rounded">
+                    📞 {transaction.clientPhone}
+                  </p>
+                )}
+
+                {/* إذا كان المكتب موجوداً في الـ transaction prop */}
+                {transaction.officeName && (
+                  <p className="text-[10px] bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded">
+                    🏢 {transaction.officeName}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
           <button
@@ -485,19 +546,16 @@ export default function FolderViewerWindow({
             </div>
           ) : viewMode === "grid" ? (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-5 content-start">
+              {/* Folders */}
               {contents.folders.map((folder) => {
                 const isSelected = selectedItems.has(folder.id);
                 return (
                   <div
                     key={folder.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleItemClick(folder.id, e);
-                    }}
-                    onDoubleClick={(e) => {
-                      e.stopPropagation();
-                      handleItemDoubleClick(folder, "folder");
-                    }}
+                    onClick={(e) => handleItemClick(folder.id, e)}
+                    onDoubleClick={(e) =>
+                      handleItemDoubleClick(folder, "folder")
+                    }
                     onContextMenu={(e) =>
                       handleContextMenu(e, folder, "folder")
                     }
@@ -531,26 +589,25 @@ export default function FolderViewerWindow({
                 );
               })}
 
+              {/* Files Grid View (With Thumbnails) */}
               {contents.files.map((file) => {
                 const Icon = getFileIcon(file.extension);
                 const color = getFileColor(file.extension);
                 const isSelected = selectedItems.has(file.id);
+                const isImage = ["png", "jpg", "jpeg", "gif", "webp"].includes(
+                  file.extension?.toLowerCase(),
+                );
+
                 return (
                   <div
                     key={file.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleItemClick(file.id, e);
-                    }}
-                    onDoubleClick={(e) => {
-                      e.stopPropagation();
-                      handleItemDoubleClick(file, "file");
-                    }}
+                    onClick={(e) => handleItemClick(file.id, e)}
+                    onDoubleClick={(e) => handleItemDoubleClick(file, "file")}
                     onContextMenu={(e) => handleContextMenu(e, file, "file")}
-                    className={`group relative flex flex-col items-center justify-start p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 h-36 ${isSelected ? "border-blue-500 bg-blue-50 shadow-md ring-4 ring-blue-500/10" : "border-transparent bg-white shadow-sm hover:border-blue-300 hover:shadow-lg hover:-translate-y-1"}`}
+                    className={`group relative flex flex-col items-center justify-start p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 h-36 overflow-hidden ${isSelected ? "border-blue-500 bg-blue-50 shadow-md ring-4 ring-blue-500/10" : "border-transparent bg-white shadow-sm hover:border-blue-300 hover:shadow-lg hover:-translate-y-1"}`}
                   >
                     <div
-                      className={`absolute top-3 right-3 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${isSelected ? "bg-blue-600 border-blue-600" : "border-gray-300 bg-white opacity-0 group-hover:opacity-100"}`}
+                      className={`absolute top-3 right-3 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all z-10 ${isSelected ? "bg-blue-600 border-blue-600" : "border-gray-300 bg-white opacity-0 group-hover:opacity-100"}`}
                     >
                       {isSelected && (
                         <Check
@@ -560,25 +617,38 @@ export default function FolderViewerWindow({
                         />
                       )}
                     </div>
-                    <Icon
-                      size={60}
-                      color={color}
-                      strokeWidth={1}
-                      className={`mb-3 transition-transform duration-200 ${isSelected ? "scale-105" : "group-hover:scale-105"}`}
-                    />
+
+                    {/* 💡 الصورة المصغرة في الشبكة */}
+                    {isImage ? (
+                      <div className="w-16 h-16 mb-3 rounded-lg overflow-hidden border border-gray-200 shadow-sm shrink-0">
+                        <img
+                          src={getFullUrl(file.url)}
+                          alt="thumbnail"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <Icon
+                        size={60}
+                        color={color}
+                        strokeWidth={1}
+                        className={`mb-3 transition-transform duration-200 ${isSelected ? "scale-105" : "group-hover:scale-105"}`}
+                      />
+                    )}
+
                     <span
                       className="text-[11px] font-bold text-gray-800 text-center w-full line-clamp-2 leading-tight"
                       dir="ltr"
-                      title={file.name || file.originalName}
+                      title={file.originalName || file.name}
                     >
-                      {file.name || file.originalName}
+                      {file.originalName || file.name}
                     </span>
                   </div>
                 );
               })}
             </div>
           ) : (
-            // List View
+            // 💡 List View (الوضع الافتراضي مع الصور المصغرة)
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
               <table className="w-full text-right text-xs">
                 <thead className="bg-slate-50 text-slate-500 font-bold sticky top-0 border-b border-gray-200 z-10">
@@ -591,7 +661,7 @@ export default function FolderViewerWindow({
                         />
                       </button>
                     </th>
-                    <th className="p-4">الاسم</th>
+                    <th className="p-4">الاسم (موضح المصغرات)</th>
                     <th className="p-4">تاريخ التعديل</th>
                     <th className="p-4">النوع</th>
                     <th className="p-4">الحجم</th>
@@ -599,19 +669,16 @@ export default function FolderViewerWindow({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 font-semibold text-gray-700">
+                  {/* Folders List */}
                   {contents.folders.map((folder) => {
                     const isSelected = selectedItems.has(folder.id);
                     return (
                       <tr
                         key={folder.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleItemClick(folder.id, e);
-                        }}
-                        onDoubleClick={(e) => {
-                          e.stopPropagation();
-                          handleItemDoubleClick(folder, "folder");
-                        }}
+                        onClick={(e) => handleItemClick(folder.id, e)}
+                        onDoubleClick={(e) =>
+                          handleItemDoubleClick(folder, "folder")
+                        }
                         onContextMenu={(e) =>
                           handleContextMenu(e, folder, "folder")
                         }
@@ -632,11 +699,11 @@ export default function FolderViewerWindow({
                         </td>
                         <td className="p-4 flex items-center gap-3 font-bold text-gray-900">
                           <Folder
-                            size={24}
+                            size={28}
                             fill="#FDB022"
                             color="#B45309"
                             className="shrink-0"
-                          />{" "}
+                          />
                           {folder.name}
                         </td>
                         <td className="p-4 text-gray-500 font-mono">
@@ -646,25 +713,33 @@ export default function FolderViewerWindow({
                         </td>
                         <td className="p-4 text-gray-500">مجلد ملفات</td>
                         <td className="p-4 text-gray-400 font-mono">—</td>
-                        <td className="p-4 text-gray-500">النظام</td>
+                        <td className="p-4 text-gray-500">
+                          {folder.createdBy || "النظام"}
+                        </td>
                       </tr>
                     );
                   })}
+
+                  {/* Files List (With Thumbnails) */}
                   {contents.files.map((file) => {
                     const Icon = getFileIcon(file.extension);
                     const color = getFileColor(file.extension);
                     const isSelected = selectedItems.has(file.id);
+                    const isImage = [
+                      "png",
+                      "jpg",
+                      "jpeg",
+                      "gif",
+                      "webp",
+                    ].includes(file.extension?.toLowerCase());
+
                     return (
                       <tr
                         key={file.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleItemClick(file.id, e);
-                        }}
-                        onDoubleClick={(e) => {
-                          e.stopPropagation();
-                          handleItemDoubleClick(file, "file");
-                        }}
+                        onClick={(e) => handleItemClick(file.id, e)}
+                        onDoubleClick={(e) =>
+                          handleItemDoubleClick(file, "file")
+                        }
                         onContextMenu={(e) =>
                           handleContextMenu(e, file, "file")
                         }
@@ -684,9 +759,24 @@ export default function FolderViewerWindow({
                           </div>
                         </td>
                         <td className="p-4 flex items-center gap-3 font-bold text-gray-900">
-                          <Icon size={24} color={color} className="shrink-0" />{" "}
-                          <span dir="ltr">
-                            {file.name || file.originalName}
+                          {/* 💡 الصورة المصغرة هنا */}
+                          {isImage ? (
+                            <div className="w-8 h-8 rounded overflow-hidden border border-gray-200 shadow-sm shrink-0">
+                              <img
+                                src={getFullUrl(file.url)}
+                                alt="thumb"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <Icon
+                              size={28}
+                              color={color}
+                              className="shrink-0"
+                            />
+                          )}
+                          <span dir="ltr" className="truncate max-w-xs">
+                            {file.originalName || file.name}
                           </span>
                         </td>
                         <td className="p-4 text-gray-500 font-mono">
@@ -726,9 +816,9 @@ export default function FolderViewerWindow({
               <div className="px-4 py-2 border-b border-gray-100 mb-1 bg-slate-50">
                 <p
                   className="text-xs text-slate-800 truncate"
-                  title={contextMenu.item.name || contextMenu.item.originalName}
+                  title={contextMenu.item.originalName || contextMenu.item.name}
                 >
-                  {contextMenu.item.name || contextMenu.item.originalName}
+                  {contextMenu.item.originalName || contextMenu.item.name}
                 </p>
                 <p className="text-[10px] font-mono text-gray-400 mt-1">
                   {contextMenu.type === "folder"
@@ -775,10 +865,27 @@ export default function FolderViewerWindow({
                 </>
               )}
 
+              {/* 💡 زر إعادة التسمية */}
+              <button
+                onClick={() => {
+                  setRenameModal({
+                    show: true,
+                    item: contextMenu.item,
+                    type: contextMenu.type,
+                    newName:
+                      contextMenu.item.originalName || contextMenu.item.name,
+                  });
+                  closeContextMenu();
+                }}
+                className="w-full text-right px-4 py-2.5 hover:bg-blue-50 flex items-center gap-3 text-blue-600 text-xs transition-colors"
+              >
+                <Edit2 size={16} /> تغيير الاسم
+              </button>
+
               <button
                 onClick={() => {
                   copyToClipboard(
-                    contextMenu.item.name || contextMenu.item.originalName,
+                    contextMenu.item.originalName || contextMenu.item.name,
                     "الاسم",
                   );
                   closeContextMenu();
@@ -809,20 +916,20 @@ export default function FolderViewerWindow({
           <div className="absolute bottom-6 left-6 w-80 bg-white rounded-xl shadow-[0_15px_50px_rgba(0,0,0,0.2)] border border-gray-200 overflow-hidden z-[200] animate-in slide-in-from-bottom-6">
             <div className="bg-slate-900 px-4 py-3 flex justify-between items-center text-white">
               <span className="text-xs font-bold flex items-center gap-2">
-                <Upload size={16} className="text-blue-400" /> جاري رفع الملفات
+                <Upload size={16} className="text-blue-400" /> جاري الرفع...
               </span>
               <button
                 onClick={() => setShowUploadManager(false)}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-gray-400 hover:text-white"
               >
                 <X size={16} />
               </button>
             </div>
-            <div className="p-5 space-y-5 max-h-72 overflow-y-auto custom-scrollbar-slim">
+            <div className="p-5 space-y-5 max-h-72 overflow-y-auto">
               {Object.entries(activeUploads).map(([id, upload]) => (
                 <div key={id} className="space-y-2">
                   <div className="flex justify-between text-[11px] font-bold text-gray-700">
-                    <span>رفع {upload.filesCount} ملفات...</span>
+                    <span>{upload.filesCount} ملفات</span>
                     <span
                       className={
                         upload.status === "success"
@@ -833,15 +940,11 @@ export default function FolderViewerWindow({
                       {upload.progress}%
                     </span>
                   </div>
-                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden border border-gray-200">
+                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden border">
                     <div
-                      className={`h-full transition-all duration-300 ${upload.status === "error" ? "bg-red-500" : upload.status === "success" ? "bg-green-500" : "bg-blue-600"}`}
+                      className={`h-full transition-all ${upload.status === "error" ? "bg-red-500" : upload.status === "success" ? "bg-green-500" : "bg-blue-600"}`}
                       style={{ width: `${upload.progress}%` }}
                     ></div>
-                  </div>
-                  <div className="flex justify-between text-[10px] text-gray-500 font-mono font-bold">
-                    <span>السرعة: {upload.speed}</span>
-                    <span>متبقي: {upload.timeRemaining}</span>
                   </div>
                 </div>
               ))}
@@ -852,18 +955,14 @@ export default function FolderViewerWindow({
         {/* Footer Bar */}
         <div className="px-6 py-3 bg-white border-t border-gray-200 text-xs font-bold text-gray-500 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-4">
-            <span className="bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700">
-              {contents.folders.length + contents.files.length} عناصر في هذا
-              المجلد
+            <span className="bg-slate-100 px-3 py-1.5 rounded-lg border text-slate-700">
+              {contents.folders.length + contents.files.length} عناصر
             </span>
             {selectedItems.size > 0 && (
               <span className="text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
                 {selectedItems.size} عناصر محددة
               </span>
             )}
-          </div>
-          <div className="text-gray-400 flex items-center gap-2">
-            <Settings size={14} /> كليك يمين للخيارات • Ctrl للتحديد المتعدد
           </div>
         </div>
 
@@ -886,6 +985,73 @@ export default function FolderViewerWindow({
             }
             onClose={() => setShowCreateFolderModal(false)}
           />
+        )}
+
+        {/* 💡 نافذة تغيير الاسم */}
+        {renameModal.show && (
+          <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[500]"
+            onClick={() => setRenameModal({ ...renameModal, show: false })}
+            dir="rtl"
+          >
+            <div
+              className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-5 py-4 border-b border-gray-200 bg-slate-50 flex items-center justify-between">
+                <h3 className="font-bold text-slate-800">تغيير الاسم</h3>
+                <button
+                  onClick={() =>
+                    setRenameModal({ ...renameModal, show: false })
+                  }
+                  className="text-gray-400 hover:text-red-500"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <form onSubmit={handleRenameSubmit} className="p-5 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-2">
+                    الاسم الجديد
+                  </label>
+                  <input
+                    type="text"
+                    autoFocus
+                    value={renameModal.newName}
+                    onChange={(e) =>
+                      setRenameModal({
+                        ...renameModal,
+                        newName: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    dir="auto"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setRenameModal({ ...renameModal, show: false })
+                    }
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={renameMutation.isPending}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center gap-2"
+                  >
+                    {renameMutation.isPending && (
+                      <Loader2 size={12} className="animate-spin" />
+                    )}{" "}
+                    حفظ التغييرات
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
 
         {viewerFile && (

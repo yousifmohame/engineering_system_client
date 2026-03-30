@@ -182,7 +182,6 @@ export default function TransactionFilesManager({ onClose }) {
     toast.success(`تم تحديد ${filteredTransactions.length} مجلد`);
   };
 
-
   const handleStatusChange = async (id, newStatus) =>
     toast.success(`تم تغيير الحالة إلى ${newStatus}`);
   const handleUrgentToggle = async (id, isUrgent) =>
