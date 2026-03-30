@@ -75,6 +75,6 @@ export const getFullUrl = (url) => {
   if (url.startsWith("http")) return url;
   let fixedUrl = url;
   if (url.startsWith("/uploads/")) fixedUrl = `/api${url}`;
-  const baseUrl = "http://95.216.73.243:5001"; // 💡 الدومين والبورت
+  const baseUrl = "https://details-worksystem1.com"; // 💡 الدومين والبورت
   return `${baseUrl}${fixedUrl}`;
 };
