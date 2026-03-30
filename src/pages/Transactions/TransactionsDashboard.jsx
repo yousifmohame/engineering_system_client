@@ -33,7 +33,7 @@ import { useQuery } from "@tanstack/react-query";
 import api from "../../api/axios";
 
 // 💡 🚀 استيراد مكون مدير الملفات
-import { TransactionFilesManager } from "./TransactionFilesManager";
+import  TransactionFilesManager from "./TransactionFiles/index";
 
 // ==========================================
 // 💡 تعريف المسارات (Paths Configuration)

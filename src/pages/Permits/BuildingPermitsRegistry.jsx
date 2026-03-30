@@ -47,6 +47,7 @@ import {
   FileSignature,
   CalendarDays,
   Clock,
+  RefreshCw
 } from "lucide-react";
 
 import { SmartDropdownButton } from "../../components/SmartDropdownButton";

@@ -2325,8 +2325,8 @@ export function ModalPermitDetails({ permit, onClose }) {
   };
 
   const tabs = [
-    { label: "المستند", icon: <FileText size={12} /> },
     { label: "البيانات", icon: <Edit3 size={12} /> },
+    { label: "المستند", icon: <FileText size={12} /> },
     { label: "المكونات", icon: <Layers size={12} /> },
     { label: "الحدود", icon: <MapPin size={12} /> },
     { label: "المعاملات والارتباطات", icon: <Link size={12} /> },
@@ -2530,8 +2530,8 @@ export function ModalPermitDetails({ permit, onClose }) {
 
         {/* Tab Content Area */}
         <div className="flex-1 overflow-auto custom-scrollbar-slim bg-[#fafbfc] relative">
-          {activeTab === 0 && <TabDocument permit={permit} />}
-          {activeTab === 1 && <TabExtractedData permit={permit} />}
+          {activeTab === 0 && <TabExtractedData permit={permit} />}
+          {activeTab === 1 && <TabDocument permit={permit} />}
           {activeTab === 2 && <TabComponents permit={permit} />}
           {activeTab === 3 && <TabBoundaries permit={permit} />}
           {activeTab === 4 && (
