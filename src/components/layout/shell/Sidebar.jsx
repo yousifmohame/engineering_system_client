@@ -79,6 +79,15 @@ const MENU_CATEGORIES = [
     ],
   },
   {
+    id: "CAT_HR_TOOLS",
+    title: "الموارد البشرية",
+    icon: Zap,
+    items: [
+      { id: "88", label: "إدارة الموارد البشرية", code: "SCR_88_VIEW" },
+      
+    ],
+  },
+  {
     id: "CAT_DOCS",
     title: "المستندات",
     icon: FolderOpen,
@@ -261,6 +270,7 @@ const MENU_CATEGORIES = [
       { id: "87", label: "إنشاء عميل سريع", code: "SCR_87_VIEW" },
     ],
   },
+  
 ];
 
 const Sidebar = () => {
