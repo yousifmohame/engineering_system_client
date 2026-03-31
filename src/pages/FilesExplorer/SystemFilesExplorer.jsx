@@ -169,6 +169,18 @@ export default function SystemFilesExplorer({ onClose }) {
     },
   });
 
+  // ── جلب عناصر سلة المحذوفات لمعرفة العدد ──
+  const { data: trashData } = useQuery({
+    queryKey: ["system-trash-items"],
+    queryFn: async () => {
+      const res = await api.get("/system-files/trash");
+      return res.data.data || { folders: [], files: [] };
+    },
+  });
+
+  const trashCount =
+    (trashData?.folders?.length || 0) + (trashData?.files?.length || 0);
+
   const displayedItems = useMemo(() => {
     if (!folderContents) return [];
     let items = [
@@ -231,23 +243,33 @@ export default function SystemFilesExplorer({ onClose }) {
       );
       fd.append("folderId", currentFolder.id);
       fd.append("uploadedBy", currentUser);
+
       return api.post("/system-files/upload", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       toast.success("تم رفع الملفات بنجاح");
       queryClient.invalidateQueries(["system-files", currentFolder.id]);
+
+      // 💡 استقبال تنبيهات الباك اند (مثل وجود الملف في السلة) وعرضها للعميل
+      if (response.data?.warnings && response.data.warnings.length > 0) {
+        response.data.warnings.forEach((warn) =>
+          toast.info(warn, { duration: 7000 }),
+        );
+      }
     },
   });
 
   const uploadVersionMutation = useMutation({
-    mutationFn: async (file) => {
+    mutationFn: async ({ file, fileId }) => {
+      // 💡 التعديل هنا: استلام الملف والـ ID معاً
       const fd = new FormData();
       fd.append("files", file, encodeURIComponent(file.name));
       fd.append("folderId", currentFolder.id);
       fd.append("uploadedBy", currentUser);
-      fd.append("replaceFileId", fileToUpdate.id);
+      fd.append("replaceFileId", fileId); // 💡 التعديل هنا: استخدام الـ ID الممرر مباشرة
+
       return api.post("/system-files/upload-version", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -256,6 +278,10 @@ export default function SystemFilesExplorer({ onClose }) {
       toast.success("تم تحديث إصدار الملف بنجاح");
       queryClient.invalidateQueries(["system-files", currentFolder.id]);
       setFileToUpdate(null);
+    },
+    onError: (error) => {
+      toast.error("حدث خطأ أثناء رفع الإصدار الجديد");
+      console.error(error);
     },
   });
 
@@ -286,14 +312,15 @@ export default function SystemFilesExplorer({ onClose }) {
   const handleItemClick = (e, id) => {
     e.stopPropagation();
     closeContextMenu();
+
+    // 💡 تعديل: السماح باختيار متعدد بمجرد الضغط (Toggle)
     const newSet = new Set(selectedItems);
-    if (e.ctrlKey || e.metaKey) {
-      if (newSet.has(id)) newSet.delete(id);
-      else newSet.add(id);
+    if (newSet.has(id)) {
+      newSet.delete(id); // إذا كان محدد مسبقاً، قم بإلغاء التحديد
     } else {
-      newSet.clear();
-      newSet.add(id);
+      newSet.add(id); // إذا لم يكن محدد، أضفه للمجموعة
     }
+
     setSelectedItems(newSet);
   };
 
@@ -367,6 +394,11 @@ export default function SystemFilesExplorer({ onClose }) {
             className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-red-500/20 text-slate-300 hover:text-red-400 text-xs font-bold rounded-lg transition-colors border border-slate-700 hover:border-red-500/50"
           >
             <Trash2 size={16} /> سلة المحذوفات
+            {trashCount > 0 && (
+              <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                {trashCount}
+              </span>
+            )}
           </button>
           {/* 💡 يظهر زر الإغلاق فقط إذا تم تمرير الدالة onClose (عند فتح الشاشة كنافذة) */}
           {onClose && (
@@ -834,7 +866,20 @@ export default function SystemFilesExplorer({ onClose }) {
         type="file"
         ref={updateFileInputRef}
         className="hidden"
-        onChange={(e) => uploadVersionMutation.mutate(e.target.files[0])}
+        // 💡 الحل السحري: تصفير الحقل عند النقر، ليتم إطلاق حدث onChange دائماً
+        onClick={(e) => {
+          e.target.value = null;
+        }}
+        onChange={(e) => {
+          const file = e.target.files[0];
+          if (file && fileToUpdate) {
+            const toastId = toast.loading("جاري رفع الإصدار الجديد...");
+            uploadVersionMutation.mutate(
+              { file, fileId: fileToUpdate.id },
+              { onSettled: () => toast.dismiss(toastId) },
+            );
+          }
+        }}
       />
 
       {/* ── Modals ── */}
