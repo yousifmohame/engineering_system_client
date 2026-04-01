@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Layers,
   Save,
@@ -32,13 +32,14 @@ import {
   Trash2,
   ArrowUp,
   ArrowDown,
-  Copy,
+  Settings2,
   Edit2,
   Upload,
   Sparkles,
   Move,
   Square,
   ImagePlus,
+  Building2,
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../../../api/axios";
@@ -272,6 +273,15 @@ const FORM_BLOCKS = [
     color: "text-fuchsia-500",
     bg: "bg-fuchsia-500/10",
   },
+  {
+    id: 26,
+    type: "company_logo",
+    label: "لوجو الشركة",
+    desc: "صورة شعار الشركة",
+    icon: Building2,
+    color: "text-indigo-600",
+    bg: "bg-indigo-600/10",
+  },
 ];
 
 const getBlockVisuals = (type) => {
@@ -279,9 +289,10 @@ const getBlockVisuals = (type) => {
 };
 
 // ==========================================
-// 💡 2. مكون رسم البلوكات على الورقة
+// 💡 2. مكون العرض الساكن للمنشئ (Static Builder Renderer)
 // ==========================================
-const PreviewBlockRenderer = ({ block, formSettings }) => {
+// هذا المكون يعرض شكل البلوك دون أي وظائف تحرير لتسهيل عملية ضبط الأبعاد
+const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
   const getAlignStyles = (align) => {
     if (align === "center")
       return {
@@ -304,12 +315,8 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
   };
 
   const alignStyles = getAlignStyles(block.style?.alignment);
-  const widthStyle = block.position?.width
-    ? `${block.position.width}px`
-    : "100%";
-  const heightStyle = block.position?.height
-    ? `${block.position.height}px`
-    : "auto";
+  const widthStyle = "100%"; // الاعتماد الكلي على حجم الحاوية (Container)
+  const heightStyle = "100%";
   const fontSizeStyle = block.style?.fontSize
     ? `${block.style.fontSize}px`
     : "inherit";
@@ -322,16 +329,16 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
             ...alignStyles,
             fontSize: block.style?.fontSize ? fontSizeStyle : "24px",
           }}
-          className={`font-bold w-full ${formSettings.colorMode === "color" ? "text-blue-900" : "text-black"}`}
+          className={`font-bold w-full h-full overflow-hidden whitespace-pre-wrap break-words ${formSettings.colorMode === "color" ? "text-blue-900" : "text-black"}`}
         >
-          {formSettings.name || "عنوان النموذج"}
+          {block.defaultValue || formSettings.name || "عنوان النموذج"}
         </h2>
       );
     case "version":
       return (
         <div
           style={{ ...alignStyles, fontSize: fontSizeStyle }}
-          className="text-slate-500 font-mono w-full"
+          className="text-slate-500 font-mono w-full h-full overflow-hidden"
         >
           الإصدار: {formSettings.version || "1.0"}
         </div>
@@ -340,20 +347,21 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
       return (
         <div
           style={{ ...alignStyles, fontSize: fontSizeStyle }}
-          className="font-bold flex w-full gap-2"
+          className="font-bold flex w-full h-full gap-2 items-start overflow-hidden"
         >
-          <span>{block.label}:</span>
-          <span className="border-b border-black flex-1 border-dashed"></span>
+          <span className="whitespace-nowrap shrink-0">{block.label}:</span>
+          <span className="border-b border-slate-400 flex-1 border-dashed text-slate-400 font-normal">
+            نص الموضوع
+          </span>
         </div>
       );
     case "reference_number":
       return (
         <div
           style={{ ...alignStyles, fontSize: fontSizeStyle }}
-          className="text-slate-500 font-mono w-full"
+          className="text-slate-500 font-mono w-full h-full overflow-hidden"
         >
-          {block.label}: {formSettings.code || "FRM-XXX"}-
-          {new Date().getFullYear()}-001
+          {block.label}: {formSettings.code || "FRM-XXX"}-2026-001
         </div>
       );
     case "date_gregorian":
@@ -361,24 +369,34 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
     case "date_editable":
       return (
         <div
-          style={{ ...alignStyles, width: widthStyle, fontSize: fontSizeStyle }}
-          className="flex items-center gap-2"
+          style={{
+            ...alignStyles,
+            width: widthStyle,
+            height: heightStyle,
+            fontSize: fontSizeStyle,
+          }}
+          className="flex items-center gap-2 overflow-hidden"
         >
-          <span className="font-bold">{block.label}:</span>
-          <div className="border border-slate-300 bg-slate-50 rounded px-3 py-1.5 text-slate-500 flex items-center gap-2 min-w-[120px]">
-            {block.defaultValue || "__ / __ / ____"} <CalendarClock size={16} />
+          <span className="font-bold shrink-0">{block.label}:</span>
+          <div className="border border-slate-300 bg-slate-50 rounded px-3 py-1.5 text-slate-500 flex items-center gap-2 min-w-[120px] whitespace-nowrap">
+            ____ / __ / __ <CalendarClock size={16} />
           </div>
         </div>
       );
     case "time":
       return (
         <div
-          style={{ ...alignStyles, width: widthStyle, fontSize: fontSizeStyle }}
-          className="flex items-center gap-2"
+          style={{
+            ...alignStyles,
+            width: widthStyle,
+            height: heightStyle,
+            fontSize: fontSizeStyle,
+          }}
+          className="flex items-center gap-2 overflow-hidden"
         >
-          <span className="font-bold">{block.label}:</span>
+          <span className="font-bold shrink-0">{block.label}:</span>
           <span
-            className="font-mono bg-slate-50 border border-slate-200 px-3 py-1 rounded"
+            className="font-mono bg-slate-50 border border-slate-200 px-3 py-1 rounded whitespace-nowrap"
             dir="ltr"
           >
             10:30 AM
@@ -388,64 +406,93 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
     case "text_field":
       return (
         <div
-          style={{ ...alignStyles, width: widthStyle, fontSize: fontSizeStyle }}
-          className="flex items-center gap-2"
+          style={{
+            ...alignStyles,
+            width: widthStyle,
+            height: heightStyle,
+            fontSize: fontSizeStyle,
+          }}
+          className="flex items-center gap-2 overflow-hidden"
         >
-          <label className="font-bold text-slate-700 whitespace-nowrap">
+          <label className="font-bold text-slate-700 whitespace-nowrap shrink-0">
             {block.label}
           </label>
-          <div className="border-b border-slate-300 flex-1 h-6"></div>
+          <div className="border-b border-slate-300 flex-1 h-6 border-dashed"></div>
         </div>
       );
     case "text_area":
+    case "static_text":
       return (
         <div
-          style={{ ...alignStyles, width: widthStyle, fontSize: fontSizeStyle }}
-          className="flex flex-col h-full"
+          style={{
+            ...alignStyles,
+            width: widthStyle,
+            height: heightStyle,
+            fontSize: fontSizeStyle,
+          }}
+          className="flex flex-col overflow-hidden"
         >
-          <label className="font-bold text-slate-700 mb-1.5">
-            {block.label}
-          </label>
+          {block.type === "text_area" && (
+            <label className="font-bold text-slate-700 mb-1.5 shrink-0">
+              {block.label}
+            </label>
+          )}
           <div
-            className="border border-slate-300 rounded bg-slate-50 w-full p-3 text-slate-500 flex-1"
-            style={{ height: heightStyle }}
+            className={`${block.type === "text_area" ? "border border-slate-300 rounded bg-slate-50 p-2 text-slate-500" : "font-bold text-slate-800"} w-full h-full flex-1 overflow-hidden whitespace-pre-wrap break-words`}
           >
-            {block.defaultValue || "مساحة للكتابة..."}
+            {block.defaultValue ||
+              (block.type === "text_area"
+                ? "مساحة مخصصة لكتابة النصوص أثناء التعبئة..."
+                : "نص ثابت")}
           </div>
         </div>
       );
     case "image_upload":
+    case "company_logo":
+    case "header_image":
+    case "footer_image":
+    case "background_image":
       return (
         <div
           style={{ ...alignStyles, width: widthStyle, height: heightStyle }}
-          className="flex flex-col"
+          className="flex flex-col overflow-hidden"
         >
-          <label
-            style={{ fontSize: fontSizeStyle }}
-            className="font-bold text-slate-700 mb-1.5"
-          >
-            {block.label}
-          </label>
-          <div className="border-2 border-dashed border-slate-300 rounded-lg bg-slate-50 w-full flex-1 flex flex-col items-center justify-center text-slate-400">
-            <Upload size={32} className="mb-2 opacity-50" />
-            <span style={{ fontSize: "12px" }}>انقر لإرفاق صورة</span>
+          {block.type !== "background_image" &&
+            block.type !== "header_image" &&
+            block.type !== "footer_image" && (
+              <label
+                style={{ fontSize: fontSizeStyle }}
+                className="font-bold text-slate-700 mb-1.5 shrink-0"
+              >
+                {block.label}
+              </label>
+            )}
+          <div className="border-2 border-dashed border-blue-300 rounded-lg bg-blue-50/30 w-full h-full flex flex-col items-center justify-center text-blue-400">
+            <ImageIcon size={32} className="mb-2 opacity-50" />
+            <span style={{ fontSize: "10px" }} className="font-bold">
+              مساحة {block.label}
+            </span>
           </div>
         </div>
       );
     case "employee_info":
       return (
         <div
-          style={{ width: widthStyle, fontSize: fontSizeStyle }}
-          className="border border-indigo-200 bg-indigo-50/30 rounded-xl p-4"
+          style={{
+            width: widthStyle,
+            height: heightStyle,
+            fontSize: fontSizeStyle,
+          }}
+          className="border border-indigo-200 bg-indigo-50/30 rounded-xl p-4 overflow-hidden"
         >
           <div className="font-bold text-indigo-800 mb-3 flex items-center gap-2">
             <User size={18} /> {block.label}
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white p-2 border border-indigo-100 rounded-lg">
+          <div className="grid grid-cols-2 gap-3 text-slate-500">
+            <div className="bg-white p-2 border border-indigo-100 rounded-lg truncate">
               الاسم: ----------------
             </div>
-            <div className="bg-white p-2 border border-indigo-100 rounded-lg">
+            <div className="bg-white p-2 border border-indigo-100 rounded-lg truncate">
               الرقم الوظيفي: ---------
             </div>
           </div>
@@ -454,26 +501,30 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
     case "table":
       return (
         <div
-          style={{ width: widthStyle, fontSize: fontSizeStyle }}
-          className="border border-slate-300 rounded-lg overflow-hidden"
+          style={{
+            width: widthStyle,
+            height: heightStyle,
+            fontSize: fontSizeStyle,
+          }}
+          className="border border-slate-300 rounded-lg overflow-hidden flex flex-col"
         >
-          <table className="w-full text-center bg-white">
+          <table className="w-full text-center bg-white flex-1">
             <thead className="bg-slate-100 border-b border-slate-300">
               <tr>
-                <th className="p-2">العمود 1</th>
-                <th className="p-2">العمود 2</th>
+                <th className="p-2 border-r">العمود 1</th>
+                <th className="p-2 border-r">العمود 2</th>
                 <th className="p-2">العمود 3</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-slate-400">
               <tr className="border-b border-slate-200">
-                <td className="p-2">—</td>
-                <td className="p-2">—</td>
+                <td className="p-2 border-r">—</td>
+                <td className="p-2 border-r">—</td>
                 <td className="p-2">—</td>
               </tr>
               <tr>
-                <td className="p-2">—</td>
-                <td className="p-2">—</td>
+                <td className="p-2 border-r">—</td>
+                <td className="p-2 border-r">—</td>
                 <td className="p-2">—</td>
               </tr>
             </tbody>
@@ -483,11 +534,18 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
     case "checkbox":
       return (
         <div
-          style={{ ...alignStyles, width: widthStyle, fontSize: fontSizeStyle }}
-          className="flex items-center gap-3"
+          style={{
+            ...alignStyles,
+            width: widthStyle,
+            height: heightStyle,
+            fontSize: fontSizeStyle,
+          }}
+          className="flex items-center gap-3 overflow-hidden"
         >
-          <div className="w-4 h-4 border-2 border-slate-400 rounded-sm"></div>
-          <span className="font-bold text-slate-700">{block.label}</span>
+          <div className="w-4 h-4 border-2 border-slate-400 rounded-sm shrink-0"></div>
+          <span className="font-bold text-slate-700 truncate">
+            {block.label}
+          </span>
         </div>
       );
     case "signature":
@@ -501,10 +559,10 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
             height: heightStyle,
             fontSize: fontSizeStyle,
           }}
-          className={`flex flex-col ${block.style?.alignment === "left" ? "ml-auto" : block.style?.alignment === "center" ? "mx-auto" : "mr-auto"}`}
+          className={`flex flex-col overflow-hidden ${block.style?.alignment === "left" ? "ml-auto" : block.style?.alignment === "center" ? "mx-auto" : "mr-auto"}`}
         >
           <div
-            className="font-bold mb-2"
+            className="font-bold mb-2 shrink-0"
             style={{ textAlign: block.style?.alignment }}
           >
             {block.label}:
@@ -512,6 +570,8 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
           <div className="w-full flex-1 border-2 border-slate-300 border-dashed rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
             {block.type === "office_stamp" ? (
               <Stamp size={32} />
+            ) : block.type === "fingerprint" ? (
+              <span className="text-xs">البصمة</span>
             ) : (
               <Pen size={32} />
             )}
@@ -519,27 +579,24 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
         </div>
       );
     case "separator":
-      return <hr className="my-2 border-t-2 border-slate-300 w-full" />;
-    case "static_text":
       return (
-        <div
-          style={{ ...alignStyles, width: widthStyle, fontSize: fontSizeStyle }}
-          className="leading-relaxed w-full whitespace-pre-wrap"
-        >
-          {block.defaultValue || block.label}
-        </div>
+        <hr className="my-2 border-t-2 border-slate-300 w-full shrink-0" />
+      );
+    case "spacer":
+      return (
+        <div className="w-full h-full border border-dashed border-slate-200 bg-slate-50/50"></div>
       );
     default:
       return (
-        <div className="p-3 border border-dashed border-blue-300 bg-blue-50 text-blue-800 text-center rounded-lg w-full font-bold">
+        <div className="p-3 border border-dashed border-blue-300 bg-blue-50 text-blue-800 text-center rounded-lg w-full h-full font-bold">
           {block.label}
         </div>
       );
   }
-};
+});
 
 // ==========================================
-// 💡 3. المكون الرئيسي
+// 💡 3. المكون الرئيسي (Form Builder Modal)
 // ==========================================
 export default function FormBuilderModal({
   onClose,
@@ -551,7 +608,9 @@ export default function FormBuilderModal({
   const [zoomLevel, setZoomLevel] = useState(100);
   const [isSaving, setIsSaving] = useState(false);
 
-  // إعدادات النموذج (الآن تشمل showBorder لتُحفظ في الباك إند)
+  const paperRef = useRef(null);
+  const [originalBlock, setOriginalBlock] = useState(null);
+
   const [formSettings, setFormSettings] = useState({
     name: "",
     description: "",
@@ -564,15 +623,28 @@ export default function FormBuilderModal({
     fontFamily: "Tajawal",
     fontSize: 14,
     isPublic: false,
-    showBorder: false, // 👈 حفظ إطار الورقة
+    borderSettings: { active: false, width: 2, margin: 30, color: "#0f172a" },
+    watermark: {
+      text: "مسودة",
+      opacity: 0.1,
+      size: 100,
+      angle: -45,
+      color: "#94a3b8",
+      isImage: false,
+      imgUrl: null,
+      repeat: false,
+      active: false,
+    },
   });
 
   const [canvasBlocks, setCanvasBlocks] = useState([]);
   const [selectedBlockId, setSelectedBlockId] = useState(null);
   const [editingBlock, setEditingBlock] = useState(null);
-  const [originalBlock, setOriginalBlock] = useState(null);
 
-  // متغيرات السحب الحر
+  const [isWmSettingsOpen, setIsWmSettingsOpen] = useState(false);
+  const [isBorderSettingsOpen, setIsBorderSettingsOpen] = useState(false);
+
+  // حالة السحب (Drag)
   const [dragState, setDragState] = useState({
     isDragging: false,
     blockId: null,
@@ -581,28 +653,20 @@ export default function FormBuilderModal({
     initialLeft: 0,
     initialTop: 0,
   });
+  // 💡 حالة التحجيم عن طريق الحواف (Border Resize)
+  const [resizeState, setResizeState] = useState({
+    isResizing: false,
+    blockId: null,
+    handle: null,
+    startX: 0,
+    startY: 0,
+    initialX: 0,
+    initialY: 0,
+    initialW: 0,
+    initialH: 0,
+  });
 
-  const paperRef = useRef(null);
-  const A4_HEIGHT_PX = 1122.5; // طول صفحة A4 بالبيكسل
-
-  // 💡 حساب الطول الديناميكي للورقة وبناء الصفحات
-  const calculatePaperHeight = () => {
-    if (canvasBlocks.length === 0) return A4_HEIGHT_PX;
-    // استخراج أبعد نقطة وصل إليها أي بلوك للأسفل
-    const maxBottom = Math.max(
-      ...canvasBlocks.map(
-        (b) => (b.position.y || 0) + (b.position.height || 0),
-      ),
-    );
-    // حساب كم ورقة نحتاج (كل ورقة = 1122.5px)
-    const requiredPages = Math.max(
-      1,
-      Math.ceil((maxBottom + 100) / A4_HEIGHT_PX),
-    );
-    return requiredPages * A4_HEIGHT_PX;
-  };
-  const dynamicHeight = calculatePaperHeight();
-  const pagesCount = Math.ceil(dynamicHeight / A4_HEIGHT_PX);
+  const A4_HEIGHT_PX = 1122.5; // صفحة واحدة فقط للمُنشئ
 
   useEffect(() => {
     if (initialData) {
@@ -618,30 +682,38 @@ export default function FormBuilderModal({
         fontFamily: initialData.fontFamily || "Tajawal",
         fontSize: initialData.fontSize || 14,
         isPublic: initialData.isPublic || false,
-        showBorder: initialData.showBorder || false, // 👈 استرجاع إطار الورقة
+        borderSettings: initialData.borderSettings || {
+          active: initialData.showBorder || false,
+          width: 2,
+          margin: 30,
+          color: "#0f172a",
+        },
+        watermark: initialData.watermark || formSettings.watermark,
       });
 
       if (initialData.blocks && initialData.blocks.length > 0) {
-        const formattedBlocks = initialData.blocks.map((b) => ({
-          uid:
-            b.id ||
-            `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          type: b.type,
-          label: b.label,
-          position: b.position || {
-            x: 50,
-            y: 50,
-            width: 300,
-            height: 50,
-            absolute: true,
-          },
-          style: b.style || { alignment: "right", fontSize: 14 },
-          isEditable: b.isEditable,
-          isRequired: b.isRequired,
-          dataSource: b.dataSource,
-          defaultValue: b.defaultValue || "",
-          _ui: getBlockVisuals(b.type),
-        }));
+        const formattedBlocks = initialData.blocks
+          .filter((b) => b.type !== "watermark")
+          .map((b) => ({
+            uid:
+              b.id ||
+              `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            type: b.type,
+            label: b.label,
+            position: b.position || {
+              x: 50,
+              y: 50,
+              width: 300,
+              height: 50,
+              absolute: true,
+            },
+            style: b.style || { alignment: "right", fontSize: 14 },
+            isEditable: b.isEditable,
+            isRequired: b.isRequired,
+            dataSource: b.dataSource,
+            defaultValue: b.defaultValue || "",
+            _ui: getBlockVisuals(b.type),
+          }));
         setCanvasBlocks(formattedBlocks);
       }
     }
@@ -650,22 +722,16 @@ export default function FormBuilderModal({
   const handleGenerateAICode = async () => {
     if (!formSettings.name)
       return toast.error("يرجى كتابة اسم النموذج أولاً لتوليد الكود");
-
-    // إظهار حالة التحميل على الزر (اختياري، يمكنك إضافة state اسمها isGeneratingCode)
-    const loadingToast = toast.loading("جاري توليد الكود الذكي...");
-
+    const loadingToast = toast.loading("جاري توليد الكود...");
     try {
-      // 💡 استدعاء مسار الباك إند الجديد (تأكد من إضافته للـ routes)
       const res = await api.post("/forms/generate-code", {
         formName: formSettings.name,
         category: formSettings.category,
       });
-
       setFormSettings({ ...formSettings, code: res.data.data.code });
-      toast.success("تم توليد الكود الذكي بنجاح!", { id: loadingToast });
-    } catch (error) {
-      console.error(error);
-      toast.error("فشل توليد الكود الذكي، حاول مجدداً.", { id: loadingToast });
+      toast.success("تم التوليد بنجاح!", { id: loadingToast });
+    } catch {
+      toast.error("فشل التوليد، حاول مجدداً.", { id: loadingToast });
     }
   };
 
@@ -682,19 +748,22 @@ export default function FormBuilderModal({
           blockDef.type,
         )
           ? 600
-          : 300,
+          : ["company_logo"].includes(blockDef.type)
+            ? 150
+            : 300,
         height: ["text_area", "image_upload"].includes(blockDef.type)
           ? 120
           : ["table"].includes(blockDef.type)
             ? 200
-            : 50,
+            : ["company_logo"].includes(blockDef.type)
+              ? 80
+              : 50,
       },
       style: { alignment: "right", fontSize: 14 },
       isEditable: true,
       isRequired: false,
       dataSource: "manual",
-      defaultValue: "",
-      _ui: { bg: blockDef.bg, color: blockDef.color, icon: blockDef.icon },
+      defaultValue: blockDef.type === "static_text" ? "نص ثابت جديد..." : "",
     };
     setCanvasBlocks([...canvasBlocks, newBlock]);
     setSelectedBlockId(newBlock.uid);
@@ -705,9 +774,10 @@ export default function FormBuilderModal({
     if (selectedBlockId === uid) setSelectedBlockId(null);
   };
 
-  // نظام السحب الحر
-  const onMouseDown = (e, uid, position) => {
+  // 💡 دوال السحب (Drag)
+  const onMouseDownDrag = (e, uid, position) => {
     e.preventDefault();
+    e.stopPropagation();
     setSelectedBlockId(uid);
     setDragState({
       isDragging: true,
@@ -719,27 +789,94 @@ export default function FormBuilderModal({
     });
   };
 
+  // 💡 دوال التحجيم عن طريق الحواف (Border Resizing)
+  const onMouseDownResize = (e, uid, position, handle) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedBlockId(uid);
+    setResizeState({
+      isResizing: true,
+      blockId: uid,
+      handle,
+      startX: e.clientX,
+      startY: e.clientY,
+      initialX: position.x,
+      initialY: position.y,
+      initialW: position.width,
+      initialH: position.height,
+    });
+  };
+
   useEffect(() => {
     const onMouseMove = (e) => {
-      if (!dragState.isDragging || !dragState.blockId) return;
-      const deltaX = (e.clientX - dragState.startX) / (zoomLevel / 100);
-      const deltaY = (e.clientY - dragState.startY) / (zoomLevel / 100);
+      // حالة السحب للتحريك
+      if (dragState.isDragging && dragState.blockId) {
+        const deltaX = (e.clientX - dragState.startX) / (zoomLevel / 100);
+        const deltaY = (e.clientY - dragState.startY) / (zoomLevel / 100);
+        setCanvasBlocks((prev) =>
+          prev.map((b) => {
+            if (b.uid === dragState.blockId) {
+              return {
+                ...b,
+                position: {
+                  ...b.position,
+                  x: Math.max(0, dragState.initialLeft + deltaX),
+                  y: Math.max(0, dragState.initialTop + deltaY),
+                },
+              };
+            }
+            return b;
+          }),
+        );
+      }
 
-      setCanvasBlocks((prev) =>
-        prev.map((b) => {
-          if (b.uid === dragState.blockId) {
-            return {
-              ...b,
-              position: {
-                ...b.position,
-                x: Math.max(0, dragState.initialLeft + deltaX),
-                y: Math.max(0, dragState.initialTop + deltaY),
-              },
-            };
-          }
-          return b;
-        }),
-      );
+      // 💡 حالة السحب للتحجيم (Resize from Borders)
+      if (resizeState.isResizing && resizeState.blockId) {
+        const deltaX = (e.clientX - resizeState.startX) / (zoomLevel / 100);
+        const deltaY = (e.clientY - resizeState.startY) / (zoomLevel / 100);
+
+        setCanvasBlocks((prev) =>
+          prev.map((b) => {
+            if (b.uid === resizeState.blockId) {
+              let { initialX, initialY, initialW, initialH, handle } =
+                resizeState;
+              let newX = initialX,
+                newY = initialY,
+                newW = initialW,
+                newH = initialH;
+
+              // يمين ويسار
+              if (handle.includes("e")) newW = Math.max(30, initialW + deltaX);
+              if (handle.includes("w")) {
+                const maxDeltaX = initialW - 30; // الحفاظ على عرض أدنى
+                const actualDeltaX = Math.min(deltaX, maxDeltaX);
+                newX = initialX + actualDeltaX;
+                newW = initialW - actualDeltaX;
+              }
+              // أعلى وأسفل
+              if (handle.includes("s")) newH = Math.max(20, initialH + deltaY);
+              if (handle.includes("n")) {
+                const maxDeltaY = initialH - 20; // الحفاظ على ارتفاع أدنى
+                const actualDeltaY = Math.min(deltaY, maxDeltaY);
+                newY = initialY + actualDeltaY;
+                newH = initialH - actualDeltaY;
+              }
+
+              return {
+                ...b,
+                position: {
+                  ...b.position,
+                  x: newX,
+                  y: newY,
+                  width: newW,
+                  height: newH,
+                },
+              };
+            }
+            return b;
+          }),
+        );
+      }
     };
 
     const onMouseUp = () => {
@@ -752,9 +889,21 @@ export default function FormBuilderModal({
           initialLeft: 0,
           initialTop: 0,
         });
+      if (resizeState.isResizing)
+        setResizeState({
+          isResizing: false,
+          blockId: null,
+          handle: null,
+          startX: 0,
+          startY: 0,
+          initialX: 0,
+          initialY: 0,
+          initialW: 0,
+          initialH: 0,
+        });
     };
 
-    if (dragState.isDragging) {
+    if (dragState.isDragging || resizeState.isResizing) {
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
     }
@@ -762,34 +911,11 @@ export default function FormBuilderModal({
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
     };
-  }, [dragState, zoomLevel]);
-
-  // 💡 التعديل: التقاط الأبعاد بدقة بعد انتهاء التكبير/التصغير (Resize)
-  const handleResizeEnd = (e, uid) => {
-    const el = e.currentTarget;
-    const newWidth = el.offsetWidth;
-    const newHeight = el.offsetHeight;
-
-    setCanvasBlocks((prev) =>
-      prev.map((b) => {
-        if (b.uid === uid) {
-          return {
-            ...b,
-            position: { ...b.position, width: newWidth, height: newHeight },
-          };
-        }
-        return b;
-      }),
-    );
-  };
+  }, [dragState, resizeState, zoomLevel]);
 
   const openEditDialog = (block) => {
-    const originalCopy = JSON.parse(JSON.stringify(block));
-    originalCopy._ui = getBlockVisuals(originalCopy.type);
-    setOriginalBlock(originalCopy);
-    const editingCopy = JSON.parse(JSON.stringify(block));
-    editingCopy._ui = getBlockVisuals(editingCopy.type);
-    setEditingBlock(editingCopy);
+    setOriginalBlock(JSON.parse(JSON.stringify(block)));
+    setEditingBlock(JSON.parse(JSON.stringify(block)));
   };
 
   const updateEditingBlock = (updates) => {
@@ -801,11 +927,12 @@ export default function FormBuilderModal({
   };
 
   const cancelEdit = () => {
-    setCanvasBlocks(
-      canvasBlocks.map((b) =>
-        b.uid === originalBlock.uid ? originalBlock : b,
-      ),
-    );
+    if (originalBlock)
+      setCanvasBlocks(
+        canvasBlocks.map((b) =>
+          b.uid === originalBlock.uid ? originalBlock : b,
+        ),
+      );
     setEditingBlock(null);
     setOriginalBlock(null);
   };
@@ -825,7 +952,7 @@ export default function FormBuilderModal({
             y: b.position.y,
             width: b.position.width,
             height: b.position.height,
-            absolute: b.position.absolute,
+            absolute: true,
           },
           style: { alignment: b.style.alignment, fontSize: b.style.fontSize },
           isEditable: b.isEditable,
@@ -858,17 +985,17 @@ export default function FormBuilderModal({
     >
       <div className="bg-white rounded-xl w-full max-w-[1600px] h-[92vh] flex flex-col shadow-2xl overflow-hidden font-[Tajawal]">
         {/* ── Header ── */}
-        <div className="px-5 py-3.5 border-b-2 border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
+        <div className="px-5 py-3.5 border-b-2 border-slate-200 flex items-center justify-between bg-slate-50 shrink-0 z-20">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center shadow-md shadow-blue-600/20 text-white">
               <Layers size={20} />
             </div>
             <div>
               <div className="text-[15px] font-bold text-slate-900">
-                محرر النماذج الذكي
+                مُنشئ النماذج الذكي
               </div>
               <div className="text-[10px] text-slate-500">
-                سحب وإفلات، تحريك حر، وتعديل الأبعاد
+                سحب وإفلات، تحجيم بالحواف، وتخصيص دقيق
               </div>
             </div>
           </div>
@@ -879,11 +1006,11 @@ export default function FormBuilderModal({
               className={`flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 text-white font-bold text-[13px] transition-all ${isSaving ? "opacity-70" : "hover:bg-emerald-700 shadow-md shadow-emerald-600/20"}`}
             >
               <Save size={16} className={isSaving ? "animate-pulse" : ""} />{" "}
-              <span>{isSaving ? "جاري الحفظ..." : "حفظ النموذج كما هو"}</span>
+              <span>{isSaving ? "جاري الحفظ..." : "حفظ التصميم"}</span>
             </button>
             <button
               onClick={onClose}
-              className="p-2.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors"
+              className="p-2.5 rounded-lg border border-slate-200 hover:bg-red-50 hover:text-red-600 transition-colors"
             >
               <X size={18} />
             </button>
@@ -898,7 +1025,7 @@ export default function FormBuilderModal({
               <div className="bg-white rounded-xl border border-slate-200 mb-4 shadow-sm overflow-hidden">
                 <button
                   onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                  className="w-full p-3.5 flex items-center justify-between bg-transparent hover:bg-slate-50 transition-colors"
+                  className="w-full p-3.5 flex items-center justify-between bg-transparent hover:bg-slate-50 transition-colors border-b border-slate-100"
                 >
                   <div className="flex items-center gap-2 text-blue-700 font-bold text-[13px]">
                     <Settings size={16} /> الإعدادات الأساسية
@@ -909,9 +1036,8 @@ export default function FormBuilderModal({
                     <ChevronDown size={16} className="text-slate-400" />
                   )}
                 </button>
-
                 {isSettingsOpen && (
-                  <div className="p-4 pt-0 border-t border-slate-100 mt-1 flex flex-col gap-3">
+                  <div className="p-4 flex flex-col gap-3">
                     <div>
                       <label className="text-[11px] font-bold text-slate-600 block mb-1.5">
                         اسم النموذج *
@@ -925,8 +1051,7 @@ export default function FormBuilderModal({
                             name: e.target.value,
                           })
                         }
-                        placeholder="مثال: نموذج استلام عهدة"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500"
                       />
                     </div>
                     <div>
@@ -941,8 +1066,7 @@ export default function FormBuilderModal({
                             description: e.target.value,
                           })
                         }
-                        placeholder="اكتب وصفاً قصيراً للنموذج..."
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[60px] resize-none"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 min-h-[60px] resize-none"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -950,7 +1074,7 @@ export default function FormBuilderModal({
                         <label className="text-[11px] font-bold text-slate-600 block mb-1.5">
                           كود النموذج *
                         </label>
-                        <div className="flex items-center gap-1">
+                        <div className="flex gap-1">
                           <input
                             type="text"
                             value={formSettings.code}
@@ -960,13 +1084,11 @@ export default function FormBuilderModal({
                                 code: e.target.value,
                               })
                             }
-                            placeholder="FRM-001"
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 font-mono uppercase"
+                            className="w-full px-2 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 font-mono uppercase"
                           />
                           <button
                             onClick={handleGenerateAICode}
-                            title="توليد كود تلقائي"
-                            className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg border border-indigo-200 transition-colors"
+                            className="p-2 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-200"
                           >
                             <Sparkles size={16} />
                           </button>
@@ -1002,7 +1124,7 @@ export default function FormBuilderModal({
                   className="w-full p-3.5 flex items-center justify-between hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center gap-2 text-indigo-700 font-bold text-[13px]">
-                    <Grid3x3 size={16} /> البلوكات المتاحة
+                    <Grid3x3 size={16} /> إضافة البلوكات للورقة
                   </div>
                   {isBlocksOpen ? (
                     <ChevronUp size={16} className="text-slate-400" />
@@ -1012,22 +1134,38 @@ export default function FormBuilderModal({
                 </button>
                 {isBlocksOpen && (
                   <div className="p-3 border-t border-slate-100 grid grid-cols-2 gap-2 bg-slate-50/50">
-                    {FORM_BLOCKS.map((blockDef) => (
-                      <button
-                        key={blockDef.id}
-                        onClick={() => handleAddBlock(blockDef)}
-                        className="flex flex-col items-start gap-2 p-3 bg-white border border-slate-200 rounded-xl hover:border-blue-400 hover:shadow-sm transition-all group"
-                      >
-                        <div
-                          className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${blockDef.bg}`}
+                    {FORM_BLOCKS.filter((b) => b.type !== "watermark").map(
+                      (blockDef) => (
+                        <button
+                          key={blockDef.id}
+                          onClick={() => handleAddBlock(blockDef)}
+                          className={`flex flex-col items-start gap-2 p-3 bg-white border-2 rounded-xl transition-all group ${canvasBlocks.some((b) => b.type === blockDef.type && ["title", "version", "reference_number", "subject", "company_logo"].includes(b.type)) ? "opacity-50 cursor-not-allowed border-slate-100" : "hover:border-blue-400 hover:shadow-sm border-slate-200"}`}
+                          disabled={canvasBlocks.some(
+                            (b) =>
+                              b.type === blockDef.type &&
+                              [
+                                "title",
+                                "version",
+                                "reference_number",
+                                "subject",
+                                "company_logo",
+                              ].includes(b.type),
+                          )}
                         >
-                          <blockDef.icon size={16} className={blockDef.color} />
-                        </div>
-                        <div className="text-[11px] font-bold text-slate-800 text-right">
-                          {blockDef.label}
-                        </div>
-                      </button>
-                    ))}
+                          <div
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${blockDef.bg}`}
+                          >
+                            <blockDef.icon
+                              size={16}
+                              className={blockDef.color}
+                            />
+                          </div>
+                          <div className="text-[11px] font-bold text-slate-800 text-right">
+                            {blockDef.label}
+                          </div>
+                        </button>
+                      ),
+                    )}
                   </div>
                 )}
               </div>
@@ -1035,195 +1173,355 @@ export default function FormBuilderModal({
           </div>
 
           {/* ── Live Preview Area ── */}
-          <div className="flex-1 flex flex-col bg-slate-200/80 relative">
-            <div className="absolute top-4 left-4 right-4 bg-white/90 backdrop-blur border border-slate-200 rounded-xl px-4 py-2.5 flex items-center justify-between shadow-sm z-10">
-              <div className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                <Eye size={16} className="text-blue-600" /> معاينة حية للنموذج
-              </div>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() =>
-                    setFormSettings({
-                      ...formSettings,
-                      showBorder: !formSettings.showBorder,
-                    })
-                  }
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${formSettings.showBorder ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"}`}
-                >
-                  <Square size={14} /> إطار للورقة
-                </button>
-
-                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
-                  <button
-                    onClick={() =>
-                      setZoomLevel((prev) => Math.max(prev - 10, 50))
-                    }
-                    className="p-1.5 hover:bg-white rounded text-slate-600"
-                  >
-                    <ZoomOut size={16} />
-                  </button>
-                  <span className="text-[12px] w-12 text-center font-mono font-bold text-slate-700">
-                    {zoomLevel}%
-                  </span>
-                  <button
-                    onClick={() =>
-                      setZoomLevel((prev) => Math.min(prev + 10, 150))
-                    }
-                    className="p-1.5 hover:bg-white rounded text-slate-600"
-                  >
-                    <ZoomIn size={16} />
-                  </button>
-                </div>
-              </div>
+          <div
+            className="flex-1 flex flex-col bg-slate-200/80 relative"
+            onClick={() => setSelectedBlockId(null)}
+          >
+            {/* Toolbar */}
+            <div
+              className="absolute top-4 left-6 flex items-center gap-1 bg-white shadow-sm p-1 rounded-xl z-20 border border-slate-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setZoomLevel((p) => Math.max(p - 10, 50))}
+                className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+              >
+                <ZoomOut size={18} />
+              </button>
+              <span className="text-[13px] font-bold font-mono text-slate-700 min-w-[50px] text-center">
+                {zoomLevel}%
+              </span>
+              <button
+                onClick={() => setZoomLevel((p) => Math.min(p + 10, 150))}
+                className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+              >
+                <ZoomIn size={18} />
+              </button>
+            </div>
+            <div
+              className="absolute top-4 right-6 flex items-center gap-2 z-20"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setIsBorderSettingsOpen(true)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all border shadow-sm ${formSettings.borderSettings?.active ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"}`}
+              >
+                <Square size={14} /> إطار الورقة
+              </button>
+              <button
+                onClick={() => setIsWmSettingsOpen(true)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all border shadow-sm ${formSettings.watermark?.active ? "bg-blue-600 text-white border-blue-600" : "bg-white text-blue-600 border-blue-300 hover:bg-blue-50"}`}
+              >
+                <Droplet size={14} /> علامة مائية
+              </button>
             </div>
 
             <div className="flex-1 overflow-auto flex items-start justify-center pt-24 pb-12 px-8 custom-scrollbar">
               <div
                 ref={paperRef}
-                className={`bg-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] relative flex flex-col origin-top transition-all duration-300
-                  ${formSettings.showBorder ? "border-4 border-slate-800" : ""}
-                `}
+                className="bg-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] relative flex flex-col origin-top transition-transform duration-300"
                 style={{
                   width: "210mm",
-                  height: `${dynamicHeight}px`, // 💡 ارتفاع ديناميكي متعدد الصفحات
+                  height: `${A4_HEIGHT_PX}px`,
                   transform: `scale(${zoomLevel / 100})`,
+                  padding: "0",
                 }}
+                onClick={(e) => e.stopPropagation()} // منع إلغاء التحديد عند الضغط داخل الورقة (إلا لو ضغط خارج البلوكات سيتم التقاطها بواسطة الأب)
               >
-                {/* 💡 رسم الفواصل الوهمية بين الصفحات إذا زاد الطول عن ورقة A4 واحدة */}
-                {Array.from({ length: pagesCount - 1 }).map((_, i) => (
+                {/* الإطار الداخلي للورقة */}
+                {formSettings.borderSettings?.active && (
                   <div
-                    key={`break-${i}`}
-                    className="absolute left-0 right-0 border-b-2 border-dashed border-red-300 z-0 pointer-events-none"
-                    style={{ top: `${(i + 1) * A4_HEIGHT_PX}px` }}
-                  >
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-red-100 text-red-600 text-[10px] px-2 py-0.5 rounded font-bold">
-                      نهاية الصفحة {i + 1}
-                    </div>
-                  </div>
-                ))}
+                    className="absolute z-0 pointer-events-none"
+                    style={{
+                      top: `${formSettings.borderSettings.margin}px`,
+                      height: `${A4_HEIGHT_PX - formSettings.borderSettings.margin * 2}px`,
+                      left: `${formSettings.borderSettings.margin}px`,
+                      right: `${formSettings.borderSettings.margin}px`,
+                      border: `${formSettings.borderSettings.width}px solid ${formSettings.borderSettings.color}`,
+                    }}
+                  ></div>
+                )}
 
+                {/* العلامة المائية */}
+                {formSettings.watermark?.active &&
+                  formSettings.watermark.text &&
+                  !formSettings.watermark.isImage && (
+                    <div
+                      className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-0"
+                      style={{ opacity: formSettings.watermark.opacity }}
+                    >
+                      <div
+                        style={{
+                          transform: `rotate(${formSettings.watermark.angle}deg)`,
+                          fontSize: `${formSettings.watermark.size}px`,
+                          color: formSettings.watermark.color,
+                          fontWeight: 900,
+                          whiteSpace: "nowrap",
+                        }}
+                        className="select-none"
+                      >
+                        {formSettings.watermark.repeat
+                          ? Array(10)
+                              .fill(formSettings.watermark.text)
+                              .map((t, i) => (
+                                <div key={i} className="my-8">
+                                  {t} &nbsp;&nbsp;&nbsp; {t} &nbsp;&nbsp;&nbsp;{" "}
+                                  {t}
+                                </div>
+                              ))
+                          : formSettings.watermark.text}
+                      </div>
+                    </div>
+                  )}
+                {formSettings.watermark?.active &&
+                  formSettings.watermark.isImage &&
+                  formSettings.watermark.imgUrl && (
+                    <div
+                      className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-0"
+                      style={{ opacity: formSettings.watermark.opacity }}
+                    >
+                      <img
+                        src={formSettings.watermark.imgUrl}
+                        alt="Watermark"
+                        style={{
+                          width: formSettings.watermark.repeat
+                            ? "100%"
+                            : `${formSettings.watermark.size}%`,
+                          height: formSettings.watermark.repeat
+                            ? "100%"
+                            : "auto",
+                          objectFit: formSettings.watermark.repeat
+                            ? "cover"
+                            : "contain",
+                        }}
+                      />
+                    </div>
+                  )}
+
+                {/* Blocks Area */}
                 {canvasBlocks.length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-slate-400 opacity-60">
+                  <div className="flex-1 flex flex-col items-center justify-center text-slate-400 opacity-60 z-10">
                     <Grid3x3
                       size={64}
                       className="mb-4 text-slate-300"
                       strokeWidth={1}
                     />
                     <div className="text-lg font-bold mb-2 text-slate-600">
-                      الورقة فارغة
+                      الورقة فارغة تماماً
                     </div>
                     <div className="text-sm">
-                      قم باختيار الحقول من القائمة لبناء نموذجك
+                      قم باختيار الحقول من القائمة الجانبية لسحبها هنا
                     </div>
                   </div>
                 ) : (
-                  <div className="w-full h-full relative z-10 min-h-full">
-                    {canvasBlocks.map((block) => (
-                      <div
-                        key={block.uid}
-                        onClick={() => setSelectedBlockId(block.uid)}
-                        onMouseUp={(e) => handleResizeEnd(e, block.uid)} // 💡 التقاط الأبعاد الجديدة بعد انتهاء الـ Resize
-                        className={`group flex absolute
-                          ${selectedBlockId === block.uid ? "ring-2 ring-blue-400 bg-blue-50/20 z-50 rounded-sm" : "hover:ring-2 hover:ring-slate-300 z-10 rounded"} 
-                        `}
-                        style={{
-                          left: `${block.position.x}px`,
-                          top: `${block.position.y}px`,
-                          width: `${block.position.width}px`,
-                          height: `${block.position.height}px`,
-                          resize: "both",
-                          overflow: "hidden",
-                          minWidth: "50px",
-                          minHeight: "20px",
-                        }}
-                      >
-                        {/* مقبض السحب الحر */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                  <div
+                    className="w-full h-full relative z-10"
+                    onClick={() => setSelectedBlockId(null)}
+                  >
+                    {canvasBlocks.map((block) => {
+                      const isActive = selectedBlockId === block.uid;
+
+                      return (
+                        <div
+                          key={block.uid}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedBlockId(block.uid);
+                          }}
+                          className={`absolute group outline-none ${isActive ? "ring-2 ring-blue-500 z-50 bg-blue-50/10 shadow-lg" : "hover:ring-1 hover:ring-slate-300 z-10 bg-transparent"}`}
+                          style={{
+                            left: `${block.position.x}px`,
+                            top: `${block.position.y}px`,
+                            width: `${block.position.width}px`,
+                            height: `${block.position.height}px`,
+                            minWidth: "40px",
+                            minHeight: "20px",
+                          }}
+                        >
+                          {/* 💡 نظام التحجيم عن طريق الحواف (8 Directional Handles) */}
+                          {isActive && (
+                            <>
+                              <div
+                                className="absolute top-0 bottom-0 -left-1.5 w-3 cursor-w-resize z-[60]"
+                                onMouseDown={(e) =>
+                                  onMouseDownResize(
+                                    e,
+                                    block.uid,
+                                    block.position,
+                                    "w",
+                                  )
+                                }
+                              />
+                              <div
+                                className="absolute top-0 bottom-0 -right-1.5 w-3 cursor-e-resize z-[60]"
+                                onMouseDown={(e) =>
+                                  onMouseDownResize(
+                                    e,
+                                    block.uid,
+                                    block.position,
+                                    "e",
+                                  )
+                                }
+                              />
+                              <div
+                                className="absolute top-0 left-0 right-0 -mt-1.5 h-3 cursor-n-resize z-[60]"
+                                onMouseDown={(e) =>
+                                  onMouseDownResize(
+                                    e,
+                                    block.uid,
+                                    block.position,
+                                    "n",
+                                  )
+                                }
+                              />
+                              <div
+                                className="absolute bottom-0 left-0 right-0 -mb-1.5 h-3 cursor-s-resize z-[60]"
+                                onMouseDown={(e) =>
+                                  onMouseDownResize(
+                                    e,
+                                    block.uid,
+                                    block.position,
+                                    "s",
+                                  )
+                                }
+                              />
+
+                              <div
+                                className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-full cursor-nw-resize z-[70]"
+                                onMouseDown={(e) =>
+                                  onMouseDownResize(
+                                    e,
+                                    block.uid,
+                                    block.position,
+                                    "nw",
+                                  )
+                                }
+                              />
+                              <div
+                                className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-full cursor-ne-resize z-[70]"
+                                onMouseDown={(e) =>
+                                  onMouseDownResize(
+                                    e,
+                                    block.uid,
+                                    block.position,
+                                    "ne",
+                                  )
+                                }
+                              />
+                              <div
+                                className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-full cursor-sw-resize z-[70]"
+                                onMouseDown={(e) =>
+                                  onMouseDownResize(
+                                    e,
+                                    block.uid,
+                                    block.position,
+                                    "sw",
+                                  )
+                                }
+                              />
+                              <div
+                                className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-full cursor-se-resize z-[70]"
+                                onMouseDown={(e) =>
+                                  onMouseDownResize(
+                                    e,
+                                    block.uid,
+                                    block.position,
+                                    "se",
+                                  )
+                                }
+                              />
+                            </>
+                          )}
+
+                          {/* اسم البلوك للتعرف عليه أثناء التحرير */}
+                          {isActive && (
+                            <div className="absolute -top-6 right-0 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded shadow-sm font-bold truncate max-w-full">
+                              {block.label}
+                            </div>
+                          )}
+
+                          {/* زر التحريك (Move) */}
                           <div
+                            className={`absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white p-1 rounded-full shadow-lg cursor-move transition-opacity z-[80] ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
                             onMouseDown={(e) =>
-                              onMouseDown(e, block.uid, block.position)
+                              onMouseDownDrag(e, block.uid, block.position)
                             }
-                            className="bg-blue-600 text-white p-2 rounded-full shadow-lg pointer-events-auto cursor-move hover:scale-110 hover:bg-blue-700 transition-transform active:cursor-grabbing"
-                            title="اسحب للتحريك الحر"
                           >
-                            <Move size={20} />
+                            <Move size={14} />
+                          </div>
+
+                          {/* أزرار الحذف والتعديل */}
+                          {isActive && (
+                            <div className="absolute -top-8 left-0 flex gap-1 z-[80]">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditDialog(block);
+                                }}
+                                className="p-1.5 bg-white text-blue-600 hover:bg-blue-50 border border-slate-200 rounded shadow"
+                              >
+                                <Edit2 size={12} />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveBlock(block.uid);
+                                }}
+                                className="p-1.5 bg-white text-red-600 hover:bg-red-50 border border-slate-200 rounded shadow"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          )}
+
+                          {/* المحتوى الفعلي للقراءة فقط */}
+                          <div className="w-full h-full p-1 pointer-events-none select-none">
+                            <StaticBuilderRenderer
+                              block={block}
+                              formSettings={formSettings}
+                            />
                           </div>
                         </div>
-
-                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex flex-col gap-1 pointer-events-auto">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditDialog(block);
-                            }}
-                            className="p-1.5 bg-white text-blue-600 hover:bg-blue-50 border border-blue-200 rounded shadow-sm"
-                          >
-                            <Edit2 size={12} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveBlock(block.uid);
-                            }}
-                            className="p-1.5 bg-white text-red-600 hover:bg-red-50 border border-red-200 rounded shadow-sm"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-
-                        <div className="w-full h-full flex flex-col pointer-events-none p-1 overflow-hidden">
-                          <PreviewBlockRenderer
-                            block={block}
-                            formSettings={formSettings}
-                          />
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 
-                {/* 💡 الترقيم والفوتر لكل صفحة بناءً على طول المحتوى */}
-                {Array.from({ length: pagesCount }).map((_, i) => (
-                  <div
-                    key={`footer-${i}`}
-                    className="absolute left-[20mm] right-[20mm] flex justify-between text-[10px] text-slate-400 font-mono"
-                    style={{ top: `${(i + 1) * A4_HEIGHT_PX - 40}px` }}
-                  >
-                    <span dir="ltr">{formSettings.code || "FRM-XXX"}</span>
-                    <span className="font-bold text-slate-600">
-                      صفحة {i + 1} من {pagesCount}
-                    </span>
-                    <span>نظام الموارد البشرية</span>
-                  </div>
-                ))}
+                {/* 💡 الفوتر الوهمي الثابت في الـ Builder */}
+                <div
+                  className="absolute left-[20mm] right-[20mm] flex justify-between text-[10px] text-slate-400 font-mono pointer-events-none"
+                  style={{ top: `${A4_HEIGHT_PX - 40}px` }}
+                >
+                  <span dir="ltr">{formSettings.code || "FRM-XXX"}</span>
+                  <span className="font-bold">صفحة 1 من 1</span>
+                  <span>نظام الموارد البشرية</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Editor Dialog ── */}
+      {/* ── Editor Dialog (تعديل خصائص البلوك) ── */}
       {editingBlock && (
         <div className="fixed inset-0 bg-slate-900/40 z-[10000] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-[500px] shadow-2xl flex flex-col font-[Tajawal] overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div className="bg-white rounded-2xl w-full max-w-[450px] shadow-2xl flex flex-col font-[Tajawal] overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <div className="p-1.5 rounded bg-blue-100 text-blue-600">
-                  <Settings size={16} />
-                </div>
-                تعديل خصائص: {originalBlock?.label || "الحقل"}
+                <Settings size={16} className="text-blue-600" /> إعدادات:{" "}
+                {originalBlock?.label}
               </div>
               <button
                 onClick={cancelEdit}
-                className="p-2 text-slate-500 hover:bg-slate-200 rounded-lg"
+                className="p-1.5 text-slate-500 hover:bg-slate-200 rounded-lg"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
-            <div className="p-6 flex flex-col gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
+            <div className="p-5 flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
               <div>
-                <label className="text-[12px] font-bold text-slate-700 block mb-2">
+                <label className="text-xs font-bold text-slate-700 block mb-1.5">
                   التسمية (تظهر للمستخدم)
                 </label>
                 <input
@@ -1232,18 +1530,41 @@ export default function FormBuilderModal({
                   onChange={(e) =>
                     updateEditingBlock({ label: e.target.value })
                   }
-                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500"
                 />
               </div>
 
+              {/* حقل القيمة الافتراضية / النص الثابت */}
+              {[
+                "static_text",
+                "text_area",
+                "title",
+                "subject",
+                "text_field",
+              ].includes(editingBlock.type) && (
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                    النص / القيمة الافتراضية
+                  </label>
+                  <textarea
+                    value={editingBlock.defaultValue || ""}
+                    onChange={(e) =>
+                      updateEditingBlock({ defaultValue: e.target.value })
+                    }
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500 min-h-[80px]"
+                    placeholder="اكتب النص الثابت هنا..."
+                  />
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[12px] font-bold text-slate-700 block mb-2">
+                  <label className="text-xs font-bold text-slate-700 block mb-1.5">
                     العرض (Px)
                   </label>
                   <input
                     type="number"
-                    value={editingBlock.position.width || ""}
+                    value={Math.round(editingBlock.position.width) || ""}
                     onChange={(e) =>
                       updateEditingBlock({
                         position: {
@@ -1256,12 +1577,12 @@ export default function FormBuilderModal({
                   />
                 </div>
                 <div>
-                  <label className="text-[12px] font-bold text-slate-700 block mb-2">
+                  <label className="text-xs font-bold text-slate-700 block mb-1.5">
                     الارتفاع (Px)
                   </label>
                   <input
                     type="number"
-                    value={editingBlock.position.height || ""}
+                    value={Math.round(editingBlock.position.height) || ""}
                     onChange={(e) =>
                       updateEditingBlock({
                         position: {
@@ -1276,8 +1597,8 @@ export default function FormBuilderModal({
               </div>
 
               <div>
-                <label className="text-[12px] font-bold text-slate-700 block mb-2">
-                  حجم النص الداخلي (Px)
+                <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                  حجم الخط الأساسي (Px)
                 </label>
                 <input
                   type="number"
@@ -1293,13 +1614,12 @@ export default function FormBuilderModal({
                     })
                   }
                   className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500"
-                  placeholder="مثال: 14"
                 />
               </div>
 
               <div>
-                <label className="text-[12px] font-bold text-slate-700 block mb-2">
-                  المحاذاة داخل الورقة
+                <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                  المحاذاة داخل الحاوية
                 </label>
                 <div className="flex bg-slate-100 p-1 rounded-lg">
                   {["right", "center", "left"].map((align) => (
@@ -1321,28 +1641,12 @@ export default function FormBuilderModal({
                   ))}
                 </div>
               </div>
-
-              {["static_text", "watermark"].includes(editingBlock.type) && (
-                <div>
-                  <label className="text-[12px] font-bold text-slate-700 block mb-2">
-                    النص المعروض
-                  </label>
-                  <textarea
-                    value={editingBlock.defaultValue || ""}
-                    onChange={(e) =>
-                      updateEditingBlock({ defaultValue: e.target.value })
-                    }
-                    rows={3}
-                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500 resize-y"
-                  />
-                </div>
-              )}
             </div>
 
-            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+            <div className="px-5 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
               <button
                 onClick={cancelEdit}
-                className="px-5 py-2.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-sm font-bold text-slate-700 transition-colors"
+                className="px-5 py-2.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-xs font-bold text-slate-700"
               >
                 إلغاء التعديلات
               </button>
@@ -1351,11 +1655,370 @@ export default function FormBuilderModal({
                   setEditingBlock(null);
                   setOriginalBlock(null);
                 }}
-                className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-md shadow-blue-600/20 transition-all"
+                className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20"
               >
-                إعتماد التغييرات
+                حفظ التغييرات
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Settings Modals (Watermark & Border) ── */}
+      {isWmSettingsOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/30 flex items-center justify-center z-[10001] backdrop-blur-sm"
+          onClick={() => setIsWmSettingsOpen(false)}
+        >
+          <div
+            className="bg-white w-[400px] rounded-2xl shadow-2xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                <Settings2 size={20} className="text-blue-500" /> العلامة
+                المائية
+              </h3>
+              <label className="flex items-center gap-2 cursor-pointer bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
+                <input
+                  type="checkbox"
+                  checked={formSettings.watermark?.active}
+                  onChange={(e) =>
+                    setFormSettings({
+                      ...formSettings,
+                      watermark: {
+                        ...formSettings.watermark,
+                        active: e.target.checked,
+                      },
+                    })
+                  }
+                  className="accent-blue-600"
+                />
+                <span className="text-xs font-bold text-blue-800">تفعيل</span>
+              </label>
+            </div>
+            <div
+              className={`transition-opacity ${formSettings.watermark?.active ? "opacity-100" : "opacity-40 pointer-events-none"}`}
+            >
+              <div className="flex bg-slate-100 p-1 rounded-lg mb-4">
+                <button
+                  onClick={() =>
+                    setFormSettings({
+                      ...formSettings,
+                      watermark: { ...formSettings.watermark, isImage: false },
+                    })
+                  }
+                  className={`flex-1 py-1.5 text-sm font-bold rounded-md ${!formSettings.watermark?.isImage ? "bg-white shadow text-blue-600" : "text-slate-600"}`}
+                >
+                  نص
+                </button>
+                <button
+                  onClick={() =>
+                    setFormSettings({
+                      ...formSettings,
+                      watermark: { ...formSettings.watermark, isImage: true },
+                    })
+                  }
+                  className={`flex-1 py-1.5 text-sm font-bold rounded-md ${formSettings.watermark?.isImage ? "bg-white shadow text-blue-600" : "text-slate-600"}`}
+                >
+                  صورة
+                </button>
+              </div>
+              <div className="space-y-4">
+                {!formSettings.watermark?.isImage ? (
+                  <>
+                    <div>
+                      <label className="text-xs font-bold block mb-1">
+                        النص:
+                      </label>
+                      <input
+                        type="text"
+                        value={formSettings.watermark?.text}
+                        onChange={(e) =>
+                          setFormSettings({
+                            ...formSettings,
+                            watermark: {
+                              ...formSettings.watermark,
+                              text: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full border rounded p-2 text-sm outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className="text-xs font-bold block mb-1">
+                          الحجم:
+                        </label>
+                        <input
+                          type="number"
+                          value={formSettings.watermark?.size}
+                          onChange={(e) =>
+                            setFormSettings({
+                              ...formSettings,
+                              watermark: {
+                                ...formSettings.watermark,
+                                size: Number(e.target.value),
+                              },
+                            })
+                          }
+                          className="w-full border rounded p-2 text-sm outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-xs font-bold block mb-1">
+                          اللون:
+                        </label>
+                        <input
+                          type="color"
+                          value={formSettings.watermark?.color}
+                          onChange={(e) =>
+                            setFormSettings({
+                              ...formSettings,
+                              watermark: {
+                                ...formSettings.watermark,
+                                color: e.target.value,
+                              },
+                            })
+                          }
+                          className="w-full h-[38px] border rounded p-1 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold block mb-1">
+                        زاوية الميل: {formSettings.watermark?.angle}°
+                      </label>
+                      <input
+                        type="range"
+                        min="-90"
+                        max="90"
+                        value={formSettings.watermark?.angle}
+                        onChange={(e) =>
+                          setFormSettings({
+                            ...formSettings,
+                            watermark: {
+                              ...formSettings.watermark,
+                              angle: Number(e.target.value),
+                            },
+                          })
+                        }
+                        className="w-full accent-blue-500"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label className="text-xs font-bold block mb-1">
+                        إرفاق صورة:
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files[0]) {
+                            const r = new FileReader();
+                            r.onload = (ev) =>
+                              setFormSettings({
+                                ...formSettings,
+                                watermark: {
+                                  ...formSettings.watermark,
+                                  imgUrl: ev.target.result,
+                                },
+                              });
+                            r.readAsDataURL(e.target.files[0]);
+                          }
+                        }}
+                        className="w-full border rounded p-1 text-sm outline-none bg-slate-50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold block mb-1">
+                        الحجم (النسبة): {formSettings.watermark?.size}%
+                      </label>
+                      <input
+                        type="range"
+                        min="10"
+                        max="100"
+                        value={formSettings.watermark?.size}
+                        onChange={(e) =>
+                          setFormSettings({
+                            ...formSettings,
+                            watermark: {
+                              ...formSettings.watermark,
+                              size: Number(e.target.value),
+                            },
+                          })
+                        }
+                        className="w-full accent-blue-500"
+                        disabled={formSettings.watermark?.repeat}
+                      />
+                    </div>
+                  </>
+                )}
+                <div>
+                  <label className="text-xs font-bold block mb-1">
+                    الشفافية: {formSettings.watermark?.opacity}
+                  </label>
+                  <input
+                    type="range"
+                    min="0.01"
+                    max="1"
+                    step="0.05"
+                    value={formSettings.watermark?.opacity}
+                    onChange={(e) =>
+                      setFormSettings({
+                        ...formSettings,
+                        watermark: {
+                          ...formSettings.watermark,
+                          opacity: Number(e.target.value),
+                        },
+                      })
+                    }
+                    className="w-full accent-blue-500"
+                  />
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer mt-2 bg-slate-50 p-2 rounded border border-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={formSettings.watermark?.repeat}
+                    onChange={(e) =>
+                      setFormSettings({
+                        ...formSettings,
+                        watermark: {
+                          ...formSettings.watermark,
+                          repeat: e.target.checked,
+                        },
+                      })
+                    }
+                    className="accent-blue-600"
+                  />
+                  <span className="text-sm font-bold">
+                    تكرار النمط في كامل الورقة (Pattern)
+                  </span>
+                </label>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsWmSettingsOpen(false)}
+              className="w-full mt-6 bg-blue-600 text-white font-bold py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
+            >
+              تطبيق الإعدادات
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isBorderSettingsOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/30 flex items-center justify-center z-[10001] backdrop-blur-sm"
+          onClick={() => setIsBorderSettingsOpen(false)}
+        >
+          <div
+            className="bg-white w-[400px] rounded-2xl shadow-2xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                <Square size={20} className="text-slate-700" /> إطار الصفحة
+                الخارجي
+              </h3>
+              <label className="flex items-center gap-2 cursor-pointer bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
+                <input
+                  type="checkbox"
+                  checked={formSettings.borderSettings?.active}
+                  onChange={(e) =>
+                    setFormSettings({
+                      ...formSettings,
+                      borderSettings: {
+                        ...formSettings.borderSettings,
+                        active: e.target.checked,
+                      },
+                    })
+                  }
+                  className="accent-blue-600"
+                />
+                <span className="text-xs font-bold text-blue-800">
+                  إظهار الإطار
+                </span>
+              </label>
+            </div>
+            <div
+              className={`transition-opacity space-y-5 ${formSettings.borderSettings?.active ? "opacity-100" : "opacity-40 pointer-events-none"}`}
+            >
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="text-xs font-bold block mb-1">
+                    سُمك الخط (Px):
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={formSettings.borderSettings?.width}
+                    onChange={(e) =>
+                      setFormSettings({
+                        ...formSettings,
+                        borderSettings: {
+                          ...formSettings.borderSettings,
+                          width: Number(e.target.value),
+                        },
+                      })
+                    }
+                    className="w-full border border-slate-300 rounded p-2 text-sm outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs font-bold block mb-1">
+                    لون الخط:
+                  </label>
+                  <input
+                    type="color"
+                    value={formSettings.borderSettings?.color}
+                    onChange={(e) =>
+                      setFormSettings({
+                        ...formSettings,
+                        borderSettings: {
+                          ...formSettings.borderSettings,
+                          color: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full h-[38px] border border-slate-300 rounded p-1 cursor-pointer"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold block mb-1">
+                  الهامش (البُعد عن حافة الورقة):{" "}
+                  {formSettings.borderSettings?.margin} Px
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={formSettings.borderSettings?.margin}
+                  onChange={(e) =>
+                    setFormSettings({
+                      ...formSettings,
+                      borderSettings: {
+                        ...formSettings.borderSettings,
+                        margin: Number(e.target.value),
+                      },
+                    })
+                  }
+                  className="w-full accent-blue-600"
+                />
+              </div>
+            </div>
+            <button
+              onClick={() => setIsBorderSettingsOpen(false)}
+              className="w-full mt-6 bg-slate-800 text-white font-bold py-2.5 rounded-xl hover:bg-slate-900 transition-colors"
+            >
+              تطبيق وحفظ
+            </button>
           </div>
         </div>
       )}

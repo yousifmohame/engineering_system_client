@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
   Download,
   Printer,
@@ -24,13 +24,17 @@ import {
   Maximize,
   Frame,
   Grid3x3,
+  Move,
+  Plus,
+  Minus,
+  Type,
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { toast } from "sonner";
 
 // ==========================================
-// 💡 1. دوال مساعدة
+// 💡 دوال مساعدة للتواريخ
 // ==========================================
 const formatHijriDate = (dateString) => {
   if (!dateString) return "";
@@ -58,7 +62,7 @@ const formatGregorianDate = (dateString) => {
 };
 
 // ==========================================
-// 💡 2. محرر النصوص الغني المباشر على الورقة (Native Rich Text)
+// 💡 محرر النصوص الغني المباشر (للنصوص والموضوع والإصدار)
 // ==========================================
 const CanvasRichText = ({
   value,
@@ -66,11 +70,10 @@ const CanvasRichText = ({
   isForPrint,
   placeholder,
   isStatic,
+  inline = false,
 }) => {
   const [isFocused, setIsFocused] = useState(true);
   const contentRef = useRef(null);
-
-  // إذا كان نصاً ثابتاً نضع القيمة الافتراضية كنص حقيقي، أما إذا كان مساحة كتابة فنجعله فارغاً ليعمل الـ Placeholder
   const renderValue = value !== undefined ? value : isStatic ? placeholder : "";
 
   const handleFormat = (e, command, val = null) => {
@@ -80,117 +83,271 @@ const CanvasRichText = ({
   };
 
   return (
-    <>
-      <style>{`
-        /* CSS لعمل Placeholder احترافي يختفي عند الطباعة أو الكتابة */
-        .rich-text-editor:empty:before {
-          content: attr(data-placeholder);
-          color: #94a3b8;
-          pointer-events: none;
-          display: block;
+    <div
+      className={`relative w-full h-full group ${!isForPrint && isFocused ? "ring-2 ring-blue-400 bg-blue-50/20 rounded z-50" : ""}`}
+      onFocus={() => setIsFocused(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          setIsFocused(false);
+          onChange(contentRef.current.innerHTML);
         }
-        .print-container .rich-text-editor:empty:before {
-          content: none !important;
-        }
-      `}</style>
+      }}
+      style={{ display: inline ? "inline-block" : "block" }}
+    >
+      {!isForPrint && isFocused && (
+        <div
+          className="absolute -top-12 left-0 right-0 mx-auto w-max bg-slate-900 text-white rounded-lg shadow-xl flex items-center gap-1 p-1 z-[100] animate-in slide-in-from-bottom-2"
+          contentEditable={false}
+        >
+          <select
+            onChange={(e) => handleFormat(e, "fontSize", e.target.value)}
+            className="bg-slate-700 text-white text-[10px] px-1 py-1 rounded outline-none cursor-pointer"
+            defaultValue="3"
+          >
+            <option value="1">صغير جداً</option>
+            <option value="2">صغير</option>
+            <option value="3">عادي</option>
+            <option value="4">متوسط</option>
+            <option value="5">كبير</option>
+            <option value="6">ضخم</option>
+          </select>
+          <div className="w-px h-3 bg-slate-700 mx-0.5"></div>
+          <button
+            onMouseDown={(e) => handleFormat(e, "bold")}
+            className="p-1 hover:bg-slate-700 rounded"
+          >
+            <Bold size={12} />
+          </button>
+          <button
+            onMouseDown={(e) => handleFormat(e, "italic")}
+            className="p-1 hover:bg-slate-700 rounded"
+          >
+            <Italic size={12} />
+          </button>
+          <button
+            onMouseDown={(e) => handleFormat(e, "underline")}
+            className="p-1 hover:bg-slate-700 rounded"
+          >
+            <Underline size={12} />
+          </button>
+          <div className="w-px h-3 bg-slate-700 mx-0.5"></div>
+          <input
+            type="color"
+            onInput={(e) => handleFormat(e, "foreColor", e.target.value)}
+            className="w-5 h-5 p-0 border-0 rounded cursor-pointer bg-transparent"
+          />
+          <div className="w-px h-3 bg-slate-700 mx-0.5"></div>
+          <button
+            onMouseDown={(e) => handleFormat(e, "justifyRight")}
+            className="p-1 hover:bg-slate-700 rounded"
+          >
+            <AlignRight size={12} />
+          </button>
+          <button
+            onMouseDown={(e) => handleFormat(e, "justifyCenter")}
+            className="p-1 hover:bg-slate-700 rounded"
+          >
+            <AlignCenter size={12} />
+          </button>
+          <button
+            onMouseDown={(e) => handleFormat(e, "justifyLeft")}
+            className="p-1 hover:bg-slate-700 rounded"
+          >
+            <AlignLeft size={12} />
+          </button>
+        </div>
+      )}
 
       <div
-        className={`relative w-full h-full group ${!isForPrint && isFocused ? "ring-2 ring-blue-400 bg-blue-50/10 rounded" : ""}`}
-        onFocus={() => setIsFocused(true)}
-        onBlur={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget)) {
-            setIsFocused(false);
-            // حفظ التعديلات عند الخروج من المربع
-            onChange(contentRef.current.innerHTML);
-          }
+        ref={contentRef}
+        contentEditable={!isForPrint}
+        className={`rich-text-editor outline-none ${inline ? "inline-block min-w-[50px] border-b border-dashed border-slate-400 print:border-solid print:border-transparent" : "w-full h-full whitespace-pre-wrap break-words"}`}
+        style={{
+          minHeight: inline ? "auto" : "100%",
+          wordBreak: "break-word",
+          cursor: isForPrint ? "default" : "text",
         }}
-      >
-        {/* شريط الأدوات العائم (يظهر فقط عند الضغط) */}
-        {!isForPrint && isFocused && (
-          <div className="absolute -top-12 left-0 right-0 mx-auto w-fit bg-slate-900 text-white rounded-lg shadow-xl flex items-center gap-1 p-1 z-[100] animate-in slide-in-from-bottom-2">
-            {/* 💡 التعديل: أداة تغيير حجم الخط */}
-            <select
-              onChange={(e) => handleFormat(e, "fontSize", e.target.value)}
-              className="bg-slate-700 text-white text-xs px-1.5 py-1 rounded outline-none cursor-pointer hover:bg-slate-600"
-              defaultValue="3"
-              title="حجم الخط"
-            >
-              <option value="1">صغير جداً</option>
-              <option value="2">صغير</option>
-              <option value="3">عادي</option>
-              <option value="4">متوسط</option>
-              <option value="5">كبير</option>
-              <option value="6">كبير جداً</option>
-              <option value="7">ضخم</option>
-            </select>
-
-            <div className="w-px h-4 bg-slate-700 mx-1"></div>
-            <button
-              onMouseDown={(e) => handleFormat(e, "bold")}
-              className="p-1.5 hover:bg-slate-700 rounded"
-            >
-              <Bold size={14} />
-            </button>
-            <button
-              onMouseDown={(e) => handleFormat(e, "italic")}
-              className="p-1.5 hover:bg-slate-700 rounded"
-            >
-              <Italic size={14} />
-            </button>
-            <button
-              onMouseDown={(e) => handleFormat(e, "underline")}
-              className="p-1.5 hover:bg-slate-700 rounded"
-            >
-              <Underline size={14} />
-            </button>
-            <div className="w-px h-4 bg-slate-700 mx-1"></div>
-            <input
-              type="color"
-              onInput={(e) => handleFormat(e, "foreColor", e.target.value)}
-              className="w-6 h-6 p-0 border-0 rounded cursor-pointer bg-transparent"
-              title="لون النص"
-            />
-            <div className="w-px h-4 bg-slate-700 mx-1"></div>
-            <button
-              onMouseDown={(e) => handleFormat(e, "justifyRight")}
-              className="p-1.5 hover:bg-slate-700 rounded"
-            >
-              <AlignRight size={14} />
-            </button>
-            <button
-              onMouseDown={(e) => handleFormat(e, "justifyCenter")}
-              className="p-1.5 hover:bg-slate-700 rounded"
-            >
-              <AlignCenter size={14} />
-            </button>
-            <button
-              onMouseDown={(e) => handleFormat(e, "justifyLeft")}
-              className="p-1.5 hover:bg-slate-700 rounded"
-            >
-              <AlignLeft size={14} />
-            </button>
-          </div>
-        )}
-
-        <div
-          ref={contentRef}
-          contentEditable={!isForPrint}
-          className="rich-text-editor w-full h-full outline-none whitespace-pre-wrap break-words overflow-hidden"
-          style={{
-            minHeight: "100%",
-            wordBreak: "break-word",
-            cursor: isForPrint ? "default" : "text",
-          }}
-          dangerouslySetInnerHTML={{ __html: renderValue }}
-          data-placeholder={placeholder}
-        />
-      </div>
-    </>
+        dangerouslySetInnerHTML={{ __html: renderValue }}
+        data-placeholder={placeholder}
+      />
+    </div>
   );
 };
 
 // ==========================================
-// 💡 3. مكون رسم البلوكات الذكي على الورقة
+// 💡 محرر الجداول التفاعلي (Interactive Table Editor)
+// ==========================================
+const InteractiveTable = ({ value, onChange, isForPrint, blockLabel }) => {
+  const defaultTable = [
+    ["العمود 1", "العمود 2", "العمود 3"],
+    ["—", "—", "—"],
+  ];
+  const tableData =
+    Array.isArray(value) && value.length > 0 ? value : defaultTable;
+
+  const updateCell = (rIdx, cIdx, val) => {
+    if (!onChange) return;
+    const newData = [...tableData];
+    newData[rIdx][cIdx] = val;
+    onChange(newData);
+  };
+
+  const addRow = () =>
+    onChange && onChange([...tableData, Array(tableData[0].length).fill("—")]);
+  const removeRow = () =>
+    onChange && tableData.length > 1 && onChange(tableData.slice(0, -1));
+  const addCol = () =>
+    onChange && onChange(tableData.map((row) => [...row, "جديد"]));
+  const removeCol = () =>
+    onChange &&
+    tableData[0].length > 1 &&
+    onChange(tableData.map((row) => row.slice(0, -1)));
+
+  return (
+    <div className="w-full h-full flex flex-col relative group">
+      {!isForPrint && onChange && (
+        <div className="flex gap-1 mb-1 print-hidden opacity-30 hover:opacity-100 focus-within:opacity-100 transition-opacity">
+          <button
+            onClick={addRow}
+            className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[9px] font-bold flex items-center gap-0.5"
+          >
+            <Plus size={10} /> صف
+          </button>
+          <button
+            onClick={removeRow}
+            className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[9px] font-bold flex items-center gap-0.5"
+          >
+            <Minus size={10} /> صف
+          </button>
+          <div className="w-px h-3 bg-slate-300 mx-1 self-center"></div>
+          <button
+            onClick={addCol}
+            className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold flex items-center gap-0.5"
+          >
+            <Plus size={10} /> عمود
+          </button>
+          <button
+            onClick={removeCol}
+            className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[9px] font-bold flex items-center gap-0.5"
+          >
+            <Minus size={10} /> عمود
+          </button>
+        </div>
+      )}
+      <div className="flex-1 w-full overflow-hidden">
+        <table className="w-full h-full text-center border-collapse border border-slate-300 bg-white">
+          <tbody>
+            {tableData.map((row, rIdx) => (
+              <tr
+                key={rIdx}
+                className={`${rIdx === 0 ? "bg-slate-100 font-bold" : "border-t border-slate-200"}`}
+              >
+                {row.map((cell, cIdx) => (
+                  <td
+                    key={cIdx}
+                    className="border border-slate-300 p-0 relative"
+                  >
+                    <input
+                      type="text"
+                      value={cell}
+                      onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
+                      className="w-full h-full p-1.5 bg-transparent outline-none text-center focus:bg-blue-50/50"
+                      readOnly={isForPrint || !onChange}
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// 💡 بلوك الصورة القابل للتحريك والتحجيم
+// ==========================================
+const DraggableImageBlock = ({ block, value, onChange, isForPrint }) => {
+  const imgData =
+    typeof value === "object" && value?.url
+      ? value
+      : { url: value, fit: "contain" };
+
+  return (
+    <div className="w-full h-full flex flex-col relative group">
+      <div
+        className={`w-full h-full flex items-center justify-center overflow-hidden relative ${imgData.url ? "" : "border-2 border-dashed border-blue-300 bg-blue-50/50 rounded-xl"}`}
+      >
+        {imgData.url ? (
+          <img
+            src={imgData.url}
+            alt="img"
+            style={{ objectFit: imgData.fit }}
+            className="w-full h-full pointer-events-none"
+          />
+        ) : (
+          !isForPrint && (
+            <label className="cursor-pointer flex flex-col items-center text-blue-500 hover:text-blue-700 w-full h-full justify-center">
+              <Upload size={24} className="mb-1" />
+              <span className="text-[10px] font-bold">رفع {block.label}</span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) =>
+                      onChange({ url: ev.target.result, fit: "contain" });
+                    reader.readAsDataURL(e.target.files[0]);
+                  }
+                }}
+              />
+            </label>
+          )
+        )}
+      </div>
+
+      {!isForPrint && imgData.url && (
+        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white rounded-lg px-2 py-1 flex gap-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity print-hidden">
+          <button
+            onClick={() => onChange({ ...imgData, fit: "contain" })}
+            className={`p-1 rounded ${imgData.fit === "contain" ? "bg-blue-500" : "hover:bg-slate-700"}`}
+            title="احتواء"
+          >
+            <Frame size={12} />
+          </button>
+          <button
+            onClick={() => onChange({ ...imgData, fit: "cover" })}
+            className={`p-1 rounded ${imgData.fit === "cover" ? "bg-blue-500" : "hover:bg-slate-700"}`}
+            title="تغطية"
+          >
+            <Maximize size={12} />
+          </button>
+          <button
+            onClick={() => onChange({ ...imgData, fit: "fill" })}
+            className={`p-1 rounded ${imgData.fit === "fill" ? "bg-blue-500" : "hover:bg-slate-700"}`}
+            title="ملء"
+          >
+            <Grid3x3 size={12} />
+          </button>
+          <div className="w-px h-3 bg-slate-600 mx-0.5 self-center"></div>
+          <button
+            onClick={() => onChange(null)}
+            className="p-1 hover:bg-red-500 rounded text-red-300 hover:text-white"
+            title="حذف الصورة"
+          >
+            <Trash2 size={12} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==========================================
+// 💡 مكون رسم البلوكات الأساسي (Canvas Block Renderer)
 // ==========================================
 const CanvasBlockRenderer = ({
   block,
@@ -199,8 +356,6 @@ const CanvasBlockRenderer = ({
   onChange,
   isForPrint,
 }) => {
-  const [imgHover, setImgHover] = useState(false);
-
   const alignStyles = {
     textAlign:
       block.style?.alignment === "left"
@@ -217,67 +372,47 @@ const CanvasBlockRenderer = ({
     flexDirection: block.style?.alignment === "left" ? "row-reverse" : "row",
   };
 
-  const widthStyle = block.position?.width
-    ? `${block.position.width}px`
-    : "100%";
-  const heightStyle = block.position?.height
-    ? `${block.position.height}px`
-    : "auto";
   const fontSizeStyle = block.style?.fontSize
     ? `${block.style.fontSize}px`
     : "inherit";
 
-  const imgData =
-    typeof value === "object" && value?.url
-      ? value
-      : { url: value, fit: "contain" };
-
   switch (block.type) {
     case "title":
-      return (
-        <h2
-          style={{
-            ...alignStyles,
-            fontSize: block.style?.fontSize ? fontSizeStyle : "24px",
-          }}
-          className={`font-bold w-full truncate ${formSettings.colorMode === "color" ? "text-blue-900" : "text-black"}`}
-        >
-          {formSettings.name}
-        </h2>
-      );
-
     case "version":
+    case "reference_number":
+    case "text_area":
+    case "static_text":
       return (
         <div
           style={{ ...alignStyles, fontSize: fontSizeStyle }}
-          className="text-slate-500 font-mono w-full truncate"
+          className="w-full h-full"
         >
-          الإصدار: {formSettings.version}
+          <CanvasRichText
+            value={value}
+            onChange={onChange}
+            isForPrint={isForPrint}
+            placeholder={block.defaultValue || block.label}
+            isStatic={block.type === "static_text" || block.type === "title"}
+          />
         </div>
       );
 
     case "subject":
       return (
         <div
-          style={{ ...alignStyles, fontSize: fontSizeStyle, width: widthStyle }}
-          className="font-bold flex gap-2 items-center overflow-hidden"
+          style={{ ...alignStyles, fontSize: fontSizeStyle }}
+          className="font-bold w-full h-full flex gap-2 items-start"
         >
           <span className="whitespace-nowrap shrink-0">{block.label}:</span>
-          <span
-            className={`border-b border-black flex-1 min-w-0 truncate ${value ? "border-solid" : "border-dashed"}`}
-          >
-            {value || ""}
-          </span>
-        </div>
-      );
-
-    case "reference_number":
-      return (
-        <div
-          style={{ ...alignStyles, fontSize: fontSizeStyle }}
-          className="text-slate-500 font-mono w-full truncate"
-        >
-          {block.label}: {formSettings.code}-{new Date().getFullYear()}-0001
+          <div className="flex-1 w-full">
+            <CanvasRichText
+              value={value}
+              onChange={onChange}
+              isForPrint={isForPrint}
+              placeholder="اكتب هنا..."
+              inline={true}
+            />
+          </div>
         </div>
       );
 
@@ -292,28 +427,26 @@ const CanvasBlockRenderer = ({
             : formatGregorianDate(value);
       return (
         <div
-          style={{ ...alignStyles, width: widthStyle, fontSize: fontSizeStyle }}
-          className="flex items-center gap-2 overflow-hidden"
+          style={{ ...alignStyles, fontSize: fontSizeStyle }}
+          className="flex items-center gap-2"
         >
           <span className="font-bold whitespace-nowrap shrink-0">
             {block.label}:
           </span>
-          <span className="font-mono text-slate-800 truncate">
-            {displayDate}
-          </span>
+          <span className="font-mono text-slate-800">{displayDate}</span>
         </div>
       );
 
     case "time":
       return (
         <div
-          style={{ ...alignStyles, width: widthStyle, fontSize: fontSizeStyle }}
-          className="flex items-center gap-2 overflow-hidden"
+          style={{ ...alignStyles, fontSize: fontSizeStyle }}
+          className="flex items-center gap-2"
         >
           <span className="font-bold whitespace-nowrap shrink-0">
             {block.label}:
           </span>
-          <span className="font-mono text-slate-800 truncate" dir="ltr">
+          <span className="font-mono text-slate-800" dir="ltr">
             {value || "__:__"}
           </span>
         </div>
@@ -322,41 +455,17 @@ const CanvasBlockRenderer = ({
     case "text_field":
       return (
         <div
-          style={{ ...alignStyles, width: widthStyle, fontSize: fontSizeStyle }}
-          className="flex items-center gap-2 overflow-hidden"
+          style={{ ...alignStyles, fontSize: fontSizeStyle }}
+          className="flex items-center gap-2"
         >
           <label className="font-bold text-slate-700 whitespace-nowrap shrink-0">
             {block.label}:
           </label>
           <div
-            className={`flex-1 min-w-0 w-full flex items-center border-b ${value ? "px-2 font-semibold text-blue-900 border-solid border-slate-400" : "border-slate-300 border-dashed h-6"}`}
+            className={`flex-1 w-full flex items-center border-b ${value ? "px-2 font-semibold text-blue-900 border-solid border-slate-400" : "border-slate-300 border-dashed h-6"}`}
           >
-            <span className="truncate w-full block">{value || ""}</span>
+            <span>{value || ""}</span>
           </div>
-        </div>
-      );
-
-    // 💡 مساحة الكتابة والنص الثابت (كلاهما أصبح محرر غني مباشر على الورقة)
-    case "text_area":
-    case "static_text":
-      const isStatic = block.type === "static_text";
-      return (
-        <div
-          style={{
-            ...alignStyles,
-            width: widthStyle,
-            height: heightStyle,
-            fontSize: fontSizeStyle,
-          }}
-          className="flex flex-col"
-        >
-          <CanvasRichText
-            value={value}
-            onChange={onChange}
-            isForPrint={isForPrint}
-            placeholder={block.defaultValue || block.label}
-            isStatic={isStatic}
-          />
         </div>
       );
 
@@ -364,15 +473,15 @@ const CanvasBlockRenderer = ({
       const empData = value || { name: "", empId: "" };
       return (
         <div
-          style={{ width: widthStyle, fontSize: fontSizeStyle }}
-          className="border border-indigo-200 bg-indigo-50/30 rounded-xl p-3 overflow-hidden"
+          style={{ fontSize: fontSizeStyle }}
+          className="border border-indigo-200 bg-indigo-50/30 rounded-xl p-3 h-full"
         >
-          <div className="font-bold text-indigo-800 mb-2 flex items-center gap-2 truncate">
+          <div className="font-bold text-indigo-800 mb-2 flex items-center gap-2">
             <User size={16} /> {block.label}
           </div>
           <div className="grid grid-cols-2 gap-2 text-indigo-900 font-semibold text-[0.9em]">
-            <div className="truncate">الاسم: {empData.name || "---------"}</div>
-            <div className="truncate">
+            <div>الاسم: {empData.name || "---------"}</div>
+            <div>
               الرقم:{" "}
               <span className="font-mono">{empData.empId || "----"}</span>
             </div>
@@ -383,8 +492,8 @@ const CanvasBlockRenderer = ({
     case "checkbox":
       return (
         <div
-          style={{ ...alignStyles, width: widthStyle, fontSize: fontSizeStyle }}
-          className="flex items-center gap-3 overflow-hidden"
+          style={{ ...alignStyles, fontSize: fontSizeStyle }}
+          className="flex items-center gap-3"
         >
           <div
             className={`w-4 h-4 shrink-0 border-2 rounded flex items-center justify-center ${value ? "border-blue-600 bg-blue-600" : "border-slate-400"}`}
@@ -393,109 +502,89 @@ const CanvasBlockRenderer = ({
               <span className="text-white text-[10px] leading-none">✓</span>
             )}
           </div>
-          <span className="font-bold text-slate-700 truncate">
-            {block.label}
-          </span>
+          <span className="font-bold text-slate-700">{block.label}</span>
         </div>
       );
 
-    // تخصيص الصور بدون عناوين وبشريط أدوات
-    case "image_upload":
+    case "table":
+      return (
+        <InteractiveTable
+          value={value}
+          onChange={onChange}
+          isForPrint={isForPrint}
+          blockLabel={block.label}
+        />
+      );
+
+    case "company_logo":
     case "header_image":
     case "footer_image":
     case "background_image":
+    case "image_upload":
+      return (
+        <DraggableImageBlock
+          block={block}
+          value={value}
+          onChange={onChange}
+          isForPrint={isForPrint}
+        />
+      );
+
     case "signature":
     case "office_signature":
-    case "fingerprint":
     case "office_stamp":
       return (
         <div
-          style={{ width: widthStyle, height: heightStyle }}
-          className="flex flex-col relative group"
-          onMouseEnter={() => setImgHover(true)}
-          onMouseLeave={() => setImgHover(false)}
+          style={{ fontSize: fontSizeStyle }}
+          className={`flex flex-col h-full ${block.style?.alignment === "left" ? "ml-auto" : block.style?.alignment === "center" ? "mx-auto" : "mr-auto"}`}
         >
+          <div className="font-bold mb-2 text-slate-700 shrink-0">
+            {block.label}:
+          </div>
           <div
-            className={`w-full h-full flex items-center justify-center overflow-hidden ${imgData.url ? "" : "border-2 border-dashed border-slate-300 rounded-xl bg-slate-50/50"}`}
+            className={`w-full flex-1 flex flex-col justify-end items-center pb-2 border-2 border-dashed border-slate-300 print:border-slate-800 print:border-solid rounded`}
           >
-            {imgData.url ? (
-              <img
-                src={imgData.url}
-                alt="Content"
-                style={{ objectFit: imgData.fit }}
-                className="w-full h-full"
-              />
+            {block.type === "office_stamp" ? (
+              <span className="text-slate-300 print:opacity-30 mb-auto mt-2 text-xs">
+                مساحة الختم
+              </span>
             ) : (
-              !isForPrint && (
-                <label className="cursor-pointer flex flex-col items-center text-slate-400 hover:text-blue-500 transition-colors w-full h-full justify-center">
-                  <Upload size={24} className="mb-2" />
-                  <span className="text-[10px] font-bold">
-                    انقر لرفع {block.label}
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (ev) =>
-                          onChange({ url: ev.target.result, fit: "contain" });
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                  />
-                </label>
-              )
+              <div className="w-3/4 border-t border-slate-800 mt-auto"></div>
             )}
           </div>
+        </div>
+      );
 
-          {!isForPrint && imgHover && imgData.url && (
-            <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white rounded-lg px-2 py-1.5 flex gap-2 z-50 backdrop-blur-sm shadow-xl">
-              <button
-                onClick={() => onChange({ ...imgData, fit: "contain" })}
-                className={`p-1 rounded ${imgData.fit === "contain" ? "bg-blue-500" : "hover:bg-slate-700"}`}
-                title="احتواء (Contain)"
-              >
-                <Frame size={14} />
-              </button>
-              <button
-                onClick={() => onChange({ ...imgData, fit: "cover" })}
-                className={`p-1 rounded ${imgData.fit === "cover" ? "bg-blue-500" : "hover:bg-slate-700"}`}
-                title="تغطية (Cover)"
-              >
-                <Maximize size={14} />
-              </button>
-              <button
-                onClick={() => onChange({ ...imgData, fit: "fill" })}
-                className={`p-1 rounded ${imgData.fit === "fill" ? "bg-blue-500" : "hover:bg-slate-700"}`}
-                title="ملء (Stretch)"
-              >
-                <Grid3x3 size={14} />
-              </button>
-              <div className="w-px h-4 bg-slate-600 mx-1 self-center"></div>
-              <button
-                onClick={() => onChange(null)}
-                className="p-1 hover:bg-red-500 rounded text-red-300 hover:text-white"
-                title="حذف الصورة"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          )}
+    case "fingerprint":
+      return (
+        <div
+          style={{ fontSize: fontSizeStyle }}
+          className={`flex flex-col h-full ${block.style?.alignment === "left" ? "ml-auto" : block.style?.alignment === "center" ? "mx-auto" : "mr-auto"}`}
+        >
+          <div className="font-bold mb-2 text-slate-700 shrink-0">
+            {block.label}:
+          </div>
+          <div
+            className={`w-full flex-1 flex items-center justify-center border-2 border-dashed border-slate-300 print:border-slate-800 print:border-solid rounded aspect-square`}
+          >
+            <span className="text-slate-300 print:opacity-30 text-xs">
+              البصمة
+            </span>
+          </div>
         </div>
       );
 
     case "separator":
       return <hr className="my-2 border-t-2 border-slate-800 w-full" />;
+    case "watermark":
+      return null;
     default:
       return null;
   }
 };
 
 // ==========================================
-// 💡 4. مكون الشاشة الرئيسية (Form Fill Modal)
+// 💡 مكون الشاشة الرئيسية (Form Fill Modal)
 // ==========================================
 export default function FormFillModal({ form, onClose, onSaveUsage }) {
   const [formValues, setFormValues] = useState({});
@@ -503,32 +592,40 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
   const [exportType, setExportType] = useState("pdf");
   const [isExporting, setIsExporting] = useState(false);
   const [isForPrint, setIsForPrint] = useState(false);
+  const [activeBlockId, setActiveBlockId] = useState(null);
 
   const componentRef = useRef();
 
-  // 💡 التعديل: إخفاء جميع حقول النص الحر والصور من السايد بار لتكون التعبئة من الورقة فقط
+  // 💡 تحميل القيم الافتراضية للصور والجداول من الباك إند
+  useEffect(() => {
+    if (form?.blocks) {
+      const initialVals = {};
+      form.blocks.forEach((b) => {
+        if (b.defaultValue) {
+          try {
+            initialVals[b.uid] = JSON.parse(b.defaultValue);
+          } catch {
+            initialVals[b.uid] = b.defaultValue;
+          }
+        }
+      });
+      setFormValues(initialVals);
+    }
+  }, [form]);
+
   const sortedBlocks = useMemo(() => {
     if (!form?.blocks) return [];
     return [...form.blocks]
-      .filter(
-        (b) =>
-          ![
-            "title",
-            "version",
-            "reference_number",
-            "separator",
-            "static_text",
-            "watermark",
-            "text_area",
-            "image_upload",
-            "header_image",
-            "footer_image",
-            "background_image",
-            "signature",
-            "office_signature",
-            "office_stamp",
-            "fingerprint",
-          ].includes(b.type),
+      .filter((b) =>
+        [
+          "date_gregorian",
+          "date_hijri",
+          "time",
+          "text_field",
+          "employee_info",
+          "checkbox",
+          "table",
+        ].includes(b.type),
       )
       .sort((a, b) => (a.position?.y || 0) - (b.position?.y || 0));
   }, [form]);
@@ -536,6 +633,10 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
   const handleValueChange = useCallback((id, val) => {
     setFormValues((prev) => ({ ...prev, [id]: val }));
   }, []);
+
+  const handleBlockDragResize = (id, newPosition) => {
+    setFormValues((prev) => ({ ...prev, [`${id}_pos`]: newPosition }));
+  };
 
   const pageSettings = form?.pageSettings || {
     size: "A4",
@@ -551,17 +652,18 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
         (b) => (b.position?.y || 0) + (b.position?.height || 0),
       ),
     );
-    return (
-      Math.max(1, Math.ceil((maxBottom + 100) / A4_HEIGHT_PX)) * A4_HEIGHT_PX
-    );
+    if (maxBottom <= A4_HEIGHT_PX + 20) return A4_HEIGHT_PX;
+    const requiredPages = Math.ceil(maxBottom / A4_HEIGHT_PX);
+    return requiredPages * A4_HEIGHT_PX;
   };
   const dynamicHeight = calculatePaperHeight();
-  const pagesCount = Math.ceil(dynamicHeight / A4_HEIGHT_PX);
+  const pagesCount = Math.max(1, Math.round(dynamicHeight / A4_HEIGHT_PX));
 
-  // 🖨️ الطباعة الاحترافية
+  // 🖨️ الطباعة
   const handlePrintNatively = () => {
     if (!componentRef.current)
       return toast.error("لا يمكن الوصول لمحتوى الطباعة");
+    setActiveBlockId(null);
     setIsForPrint(true);
     const originalTransform = componentRef.current.style.transform;
     componentRef.current.style.transform = "scale(1)";
@@ -589,7 +691,7 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
         <style>
           @page { size: A4 ${pageSettings.orientation}; margin: 0; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
-          .page-break-indicator { display: none !important; }
+          .print-hidden { display: none !important; }
         </style></head>
         <body style="font-family: ${fontFamily};">${originalContent.outerHTML}</body></html>
       `;
@@ -610,9 +712,10 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
     }, 300);
   };
 
-  // 💾 التصدير الاحترافي
+  // 💾 التصدير
   const handleExport = async () => {
     if (!componentRef.current) return;
+    setActiveBlockId(null);
     setIsExporting(true);
     toast.loading("جاري إعداد الملف بدقة فائقة...", { duration: 5000 });
 
@@ -632,8 +735,6 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
-        width: element.offsetWidth,
-        height: element.offsetHeight,
       });
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
       const fileName = `نموذج_${form?.name || "بدون_اسم"}_${new Date().getTime()}`;
@@ -654,7 +755,6 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfPageHeight = pdf.internal.pageSize.getHeight();
         const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-
         let heightLeft = imgHeight;
         let position = 0;
         pdf.addImage(
@@ -668,7 +768,6 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
           "FAST",
         );
         heightLeft -= pdfPageHeight;
-
         while (heightLeft > 0) {
           position = heightLeft - imgHeight;
           pdf.addPage();
@@ -723,7 +822,7 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
           </div>
           <div>
             <h1 className="text-[17px] font-black text-slate-900">
-              تعبئة وتخصيص: {form?.name}
+              إصدار المستند: {form?.name}
             </h1>
             <p className="text-[12px] text-slate-500 font-mono mt-0.5">
               Code: {form?.code} • Version: {form?.version}
@@ -754,12 +853,6 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
           >
             <Printer size={18} /> طباعة النموذج
           </button>
-          <button
-            onClick={() => onSaveUsage && onSaveUsage(formValues)}
-            className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white font-bold text-[13px] rounded-xl shadow-md hover:bg-emerald-700 transition-colors"
-          >
-            <CheckCircle2 size={18} /> حفظ في السجل
-          </button>
           <div className="w-px h-8 bg-slate-200 mx-2"></div>
           <button
             onClick={onClose}
@@ -772,19 +865,20 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
 
       {/* ── Split Screen Layout ── */}
       <div className="flex-1 flex overflow-hidden">
-        {/* ── Right Panel: Basic Form Entry ── */}
+        {/* ── Right Panel: Form Entry ── */}
         <div className="w-[350px] bg-white border-l border-slate-200 flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.05)] z-10 shrink-0">
           <div className="p-5 border-b border-slate-100 bg-blue-50/50">
             <h3 className="font-bold text-blue-900 flex items-center gap-2">
-              <Pen size={18} className="text-blue-600" /> البيانات الأساسية
+              <Type size={18} className="text-blue-600" /> الحقول الأساسية
             </h3>
             <p className="text-[10px] text-blue-700/80 mt-1 font-semibold leading-relaxed">
-              تعبئة التواريخ والبيانات السريعة.
+              تعبئة سريعة للتواريخ والجداول.
               <br />
-              <span className="text-red-500 font-bold">تنبيه:</span>{" "}
+              <span className="text-red-500 font-bold">
+                للتنسيق الحر والصور:
+              </span>{" "}
               <strong>
-                لتعديل النصوص الحرة أو الصور والتواقيع، انقر عليها مباشرة داخل
-                الورقة (يسار) لتفعيل شريط التحرير الذكي.
+                انقر على المحتوى داخل الورقة (يسار) لتعديله مباشرة.
               </strong>
             </p>
           </div>
@@ -792,14 +886,19 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
           <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar">
             {sortedBlocks.length === 0 ? (
               <div className="text-center text-slate-400 text-xs mt-10">
-                جميع الحقول متاحة للتحرير المباشر على الورقة.
+                جميع الحقول متاحة للتحرير المباشر داخل الورقة.
               </div>
             ) : (
               sortedBlocks.map((block) => {
                 const bId = block.id || block.uid;
+                const isActive = activeBlockId === bId;
 
                 return (
-                  <div key={bId} className="flex flex-col gap-1.5">
+                  <div
+                    key={bId}
+                    onClick={() => setActiveBlockId(bId)}
+                    className={`flex flex-col gap-1.5 p-3 rounded-lg border-2 transition-all cursor-pointer ${isActive ? "border-blue-400 bg-blue-50/30" : "border-transparent hover:border-slate-200"}`}
+                  >
                     <label className="text-[12px] font-bold text-slate-800 flex items-center gap-2">
                       {["date_gregorian", "date_hijri"].includes(
                         block.type,
@@ -887,6 +986,12 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                         </span>
                       </label>
                     )}
+
+                    {block.type === "table" && (
+                      <div className="text-[10px] text-slate-500 bg-slate-100 p-2 rounded text-center border border-dashed border-slate-300">
+                        يتم تعديل محتوى الجدول مباشرة من داخل الورقة.
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -895,8 +1000,11 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
         </div>
 
         {/* ── Left Panel: Live Interactive Canvas ── */}
-        <div className="flex-1 bg-slate-200/80 overflow-y-auto flex justify-center py-12 custom-scrollbar relative">
-          <div className="absolute top-4 left-6 flex items-center gap-1 bg-white shadow-sm p-1 rounded-xl z-20 border border-slate-200">
+        <div
+          className="flex-1 bg-slate-200/80 overflow-y-auto flex justify-center py-12 custom-scrollbar relative"
+          onClick={() => setActiveBlockId(null)}
+        >
+          <div className="absolute top-4 left-6 flex items-center gap-1 bg-white shadow-sm p-1 rounded-xl z-20 border border-slate-200 print-hidden">
             <button
               onClick={() => setZoomLevel((p) => Math.max(p - 10, 50))}
               className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
@@ -916,14 +1024,82 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
 
           <div
             ref={componentRef}
-            className={`print-container bg-white shadow-2xl relative flex flex-col origin-top transition-transform duration-200 ${form?.showBorder && !isForPrint ? "border-[6px] border-slate-900" : ""}`}
+            className="print-container bg-white shadow-2xl relative flex flex-col origin-top transition-transform duration-200"
             style={{
               width: "210mm",
               height: `${dynamicHeight}px`,
               transform: `scale(${zoomLevel / 100})`,
               fontFamily: fontFamily,
             }}
+            onClick={(e) => e.stopPropagation()}
           >
+            {/* 💡 الإطار الخارجي من الباك إند */}
+            {form?.borderSettings?.active &&
+              Array.from({ length: pagesCount }).map((_, i) => (
+                <div
+                  key={`border-${i}`}
+                  className="absolute z-0 pointer-events-none"
+                  style={{
+                    top: `${i * A4_HEIGHT_PX + form.borderSettings.margin}px`,
+                    height: `${A4_HEIGHT_PX - form.borderSettings.margin * 2}px`,
+                    left: `${form.borderSettings.margin}px`,
+                    right: `${form.borderSettings.margin}px`,
+                    border: `${form.borderSettings.width}px solid ${form.borderSettings.color}`,
+                  }}
+                ></div>
+              ))}
+
+            {/* 💡 العلامة المائية الشاملة من الباك إند */}
+            {form?.watermark?.active &&
+              form.watermark.text &&
+              !form.watermark.isImage && (
+                <div
+                  className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-0"
+                  style={{ opacity: form.watermark.opacity }}
+                >
+                  <div
+                    style={{
+                      transform: `rotate(${form.watermark.angle}deg)`,
+                      fontSize: `${form.watermark.size}px`,
+                      color: form.watermark.color,
+                      fontWeight: 900,
+                      whiteSpace: "nowrap",
+                    }}
+                    className="select-none"
+                  >
+                    {form.watermark.repeat
+                      ? Array(10)
+                          .fill(form.watermark.text)
+                          .map((t, i) => (
+                            <div key={i} className="my-8">
+                              {t} &nbsp;&nbsp;&nbsp; {t} &nbsp;&nbsp;&nbsp; {t}
+                            </div>
+                          ))
+                      : form.watermark.text}
+                  </div>
+                </div>
+              )}
+            {form?.watermark?.active &&
+              form.watermark.isImage &&
+              form.watermark.imgUrl && (
+                <div
+                  className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-0"
+                  style={{ opacity: form.watermark.opacity }}
+                >
+                  <img
+                    src={form.watermark.imgUrl}
+                    alt="Watermark"
+                    style={{
+                      width: form.watermark.repeat
+                        ? "100%"
+                        : `${form.watermark.size}%`,
+                      height: form.watermark.repeat ? "100%" : "auto",
+                      objectFit: form.watermark.repeat ? "cover" : "contain",
+                    }}
+                  />
+                </div>
+              )}
+
             {!isForPrint &&
               Array.from({ length: pagesCount - 1 }).map((_, i) => (
                 <div
@@ -933,35 +1109,145 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                 ></div>
               ))}
 
+            {form?.bgImage && (
+              <div
+                className="absolute inset-0 bg-cover bg-center opacity-5 z-0 pointer-events-none"
+                style={{ backgroundImage: `url(${form.bgImage})` }}
+              />
+            )}
+
+            {/* Blocks Layer */}
             <div
               className={`w-full h-full relative z-10 min-h-full ${form?.colorMode === "bw" ? "grayscale" : ""}`}
             >
               <div className="w-full h-full relative z-10 min-h-full">
-                {form?.blocks?.map((block) => {
-                  const bId = block.id || block.uid;
-                  return (
-                    <div
-                      key={bId}
-                      className="absolute"
-                      style={{
-                        left: `${block.position?.x}px`,
-                        top: `${block.position?.y}px`,
-                        width: `${block.position?.width}px`,
-                        height: `${block.position?.height}px`,
-                      }}
-                    >
-                      <div className="w-full h-full flex flex-col p-1">
-                        <CanvasBlockRenderer
-                          block={block}
-                          formSettings={form}
-                          value={formValues[bId]}
-                          onChange={(val) => handleValueChange(bId, val)}
-                          isForPrint={isForPrint}
-                        />
+                {form?.blocks
+                  ?.filter((b) => b.type !== "watermark")
+                  .map((block) => {
+                    const bId = block.id || block.uid;
+                    const isActive = activeBlockId === bId;
+                    const customPos = formValues[`${bId}_pos`] ||
+                      block.position || { x: 0, y: 0, width: 200, height: 50 };
+
+                    return (
+                      <div
+                        key={bId}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveBlockId(bId);
+                        }}
+                        className={`absolute ${!isForPrint && isActive ? "ring-2 ring-blue-400 z-50 rounded" : "hover:ring-1 hover:ring-slate-300 z-10"}`}
+                        style={{
+                          left: `${customPos.x}px`,
+                          top: `${customPos.y}px`,
+                          width: `${customPos.width}px`,
+                          height: `${customPos.height}px`,
+                          resize:
+                            !isForPrint &&
+                            [
+                              "image_upload",
+                              "company_logo",
+                              "background_image",
+                              "header_image",
+                              "footer_image",
+                              "table",
+                              "text_area",
+                              "static_text",
+                            ].includes(block.type) &&
+                            isActive
+                              ? "both"
+                              : "none",
+                          overflow:
+                            !isForPrint &&
+                            ["image_upload", "company_logo"].includes(
+                              block.type,
+                            )
+                              ? "auto"
+                              : "visible",
+                        }}
+                        onMouseUp={(e) => {
+                          if (
+                            [
+                              "image_upload",
+                              "company_logo",
+                              "header_image",
+                              "footer_image",
+                            ].includes(block.type) &&
+                            isActive
+                          ) {
+                            handleBlockDragResize(bId, {
+                              ...customPos,
+                              width: e.currentTarget.offsetWidth,
+                              height: e.currentTarget.offsetHeight,
+                            });
+                          }
+                        }}
+                      >
+                        {!isForPrint && isActive && (
+                          <div className="print-hidden absolute -top-5 right-0 bg-blue-500 text-white text-[9px] px-2 py-0.5 rounded-t-md opacity-90">
+                            {block.label}
+                          </div>
+                        )}
+
+                        {!isForPrint &&
+                          isActive &&
+                          ["image_upload", "company_logo"].includes(
+                            block.type,
+                          ) && (
+                            <div
+                              className="print-hidden absolute -right-6 top-1/2 -translate-y-1/2 bg-blue-600 text-white p-1 rounded shadow cursor-move"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                const startX = e.clientX;
+                                const startY = e.clientY;
+                                const startLeft = customPos.x;
+                                const startTop = customPos.y;
+                                const onMouseMove = (moveEvent) => {
+                                  handleBlockDragResize(bId, {
+                                    ...customPos,
+                                    x:
+                                      startLeft +
+                                      (moveEvent.clientX - startX) /
+                                        (zoomLevel / 100),
+                                    y:
+                                      startTop +
+                                      (moveEvent.clientY - startY) /
+                                        (zoomLevel / 100),
+                                  });
+                                };
+                                const onMouseUp = () => {
+                                  document.removeEventListener(
+                                    "mousemove",
+                                    onMouseMove,
+                                  );
+                                  document.removeEventListener(
+                                    "mouseup",
+                                    onMouseUp,
+                                  );
+                                };
+                                document.addEventListener(
+                                  "mousemove",
+                                  onMouseMove,
+                                );
+                                document.addEventListener("mouseup", onMouseUp);
+                              }}
+                            >
+                              <Move size={14} />
+                            </div>
+                          )}
+
+                        <div className="w-full h-full flex flex-col p-0.5">
+                          <CanvasBlockRenderer
+                            block={block}
+                            formSettings={form}
+                            value={formValues[bId]}
+                            onChange={(val) => handleValueChange(bId, val)}
+                            isForPrint={isForPrint}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </div>
 
@@ -972,7 +1258,7 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                 style={{ top: `${(i + 1) * A4_HEIGHT_PX - 40}px` }}
               >
                 <span dir="ltr">{form?.code}</span>
-                <span className="font-bold text-slate-700">
+                <span className="font-bold text-slate-700 print:text-black">
                   صفحة {i + 1} من {pagesCount}
                 </span>
                 <span>نظام الموارد البشرية</span>

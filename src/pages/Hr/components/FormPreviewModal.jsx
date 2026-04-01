@@ -17,7 +17,7 @@ import jsPDF from "jspdf";
 import { toast } from "sonner";
 
 // ==========================================
-// 💡 1. دوال مساعدة للتواريخ (التحويل بين الهجري والميلادي)
+// 💡 1. دوال مساعدة للتواريخ
 // ==========================================
 const formatHijriDate = (dateString) => {
   if (!dateString) return "";
@@ -48,7 +48,7 @@ const formatGregorianDate = (dateString) => {
 };
 
 // ==========================================
-// 💡 2. مكون رسم البلوكات (Memoized لمنع الـ Re-renders)
+// 💡 2. مكون رسم البلوكات (للمعاينة)
 // ==========================================
 const PreviewBlockRenderer = React.memo(
   ({ block, formSettings, fillMode, value, onChange, isForPrint }) => {
@@ -287,6 +287,10 @@ const PreviewBlockRenderer = React.memo(
             )}
           </div>
         );
+      case "company_logo":
+      case "header_image":
+      case "footer_image":
+      case "background_image":
       case "image_upload":
         return (
           <div
@@ -332,11 +336,11 @@ const PreviewBlockRenderer = React.memo(
               </div>
             ) : (
               <div
-                className={`border-2 rounded-lg w-full flex-1 flex flex-col items-center justify-center overflow-hidden ${value && isForPrint ? "border-transparent bg-transparent" : "border-dashed border-slate-300 bg-slate-50 text-slate-400"}`}
+                className={`border-2 rounded-lg w-full flex-1 flex flex-col items-center justify-center overflow-hidden ${value || isFilled ? "border-transparent bg-transparent" : "border-dashed border-slate-300 bg-slate-50 text-slate-400"}`}
               >
-                {value ? (
+                {value || isFilled ? (
                   <img
-                    src={value}
+                    src={value || "https://placehold.co/400x200?text=Preview"}
                     alt="uploaded"
                     className="w-full h-full object-contain"
                   />
@@ -538,7 +542,7 @@ const PreviewBlockRenderer = React.memo(
 // ==========================================
 export default function FormPreviewModal({ form, onClose }) {
   const [zoomLevel, setZoomLevel] = useState(100);
-  const [exportType, setExportType] = useState("pdf"); // تم إضافة خيار 'word'
+  const [exportType, setExportType] = useState("pdf");
   const [fillMode, setFillMode] = useState("blank");
   const [isExporting, setIsExporting] = useState(false);
   const [formValues, setFormValues] = useState({});
@@ -557,7 +561,6 @@ export default function FormPreviewModal({ form, onClose }) {
     size: "A4",
     orientation: "portrait",
   };
-  const colorMode = form?.colorMode === "color" ? "🎨 ملون" : "⚫ أبيض وأسود";
   const fontFamily = form?.fontFamily || "Tajawal";
 
   const A4_HEIGHT_PX = 1122.5;
@@ -568,22 +571,19 @@ export default function FormPreviewModal({ form, onClose }) {
         (b) => (b.position?.y || 0) + (b.position?.height || 0),
       ),
     );
-    const requiredPages = Math.max(
-      1,
-      Math.ceil((maxBottom + 100) / A4_HEIGHT_PX),
-    );
+    if (maxBottom <= A4_HEIGHT_PX + 20) return A4_HEIGHT_PX;
+    const requiredPages = Math.ceil(maxBottom / A4_HEIGHT_PX);
     return requiredPages * A4_HEIGHT_PX;
   };
   const dynamicHeight = calculatePaperHeight();
-  const pagesCount = Math.ceil(dynamicHeight / A4_HEIGHT_PX);
+  const pagesCount = Math.max(1, Math.round(dynamicHeight / A4_HEIGHT_PX));
 
-  // 🖨️ الطباعة
+  // 🖨️ الطباعة الأصلية
   const handlePrintNatively = () => {
     if (!componentRef.current)
       return toast.error("لا يمكن الوصول لمحتوى الطباعة");
 
     setIsForPrint(true);
-    // إعادة الـ Zoom إلى 100% وإزالة الـ Transform مؤقتاً لضمان دقة الطباعة
     const originalTransform = componentRef.current.style.transform;
     componentRef.current.style.transform = "scale(1)";
 
@@ -633,7 +633,7 @@ export default function FormPreviewModal({ form, onClose }) {
     }, 300);
   };
 
-  // 💾 التصدير (PDF / صورة / Word) بأبعاد مضبوطة 100%
+  // 💾 التصدير (PDF / صورة / Word)
   const handleExport = async () => {
     if (!componentRef.current) return;
     setIsExporting(true);
@@ -641,8 +641,6 @@ export default function FormPreviewModal({ form, onClose }) {
 
     try {
       const element = componentRef.current;
-
-      // 💡 1. حفظ الزوم الحالي وإلغاؤه فوراً للحصول على أبعاد العنصر الحقيقية (Scale 1)
       const currentZoom = zoomLevel;
       const originalTransform = element.style.transform;
 
@@ -650,17 +648,15 @@ export default function FormPreviewModal({ form, onClose }) {
       setIsForPrint(true);
       element.style.transform = "scale(1)";
 
-      // 💡 2. انتظار تطبيق التغييرات على الـ DOM
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // 💡 3. التقاط الـ Canvas بدقة عالية وأبعاد مضبوطة
       const canvas = await html2canvas(element, {
-        scale: 3, // 3 كافية جداً وممتازة، 4 تجعل الملف ضخماً
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
         width: element.offsetWidth,
-        height: element.offsetHeight, // إجبار الارتفاع الحقيقي بدون Crop
+        height: element.offsetHeight,
       });
 
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
@@ -674,7 +670,6 @@ export default function FormPreviewModal({ form, onClose }) {
         toast.dismiss();
         toast.success("تم تصدير الصورة بدقة عالية بنجاح");
       } else if (exportType === "pdf") {
-        // 💡 4. حل مشكلة أبعاد الـ PDF وتعدد الصفحات (Pagination)
         const pdf = new jsPDF({
           orientation: pageSettings.orientation,
           unit: "mm",
@@ -682,16 +677,13 @@ export default function FormPreviewModal({ form, onClose }) {
           compress: true,
         });
 
-        const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm للـ A4
-        const pdfPageHeight = pdf.internal.pageSize.getHeight(); // 297mm للـ A4
-
-        // حساب الارتفاع الكلي للصورة مقارنة بعرض الـ PDF
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfPageHeight = pdf.internal.pageSize.getHeight();
         const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
         let heightLeft = imgHeight;
         let position = 0;
 
-        // طباعة الصفحة الأولى
         pdf.addImage(
           imgData,
           "JPEG",
@@ -704,7 +696,6 @@ export default function FormPreviewModal({ form, onClose }) {
         );
         heightLeft -= pdfPageHeight;
 
-        // تقطيع وإضافة صفحات جديدة إذا كان النموذج أطول من ورقة واحدة
         while (heightLeft > 0) {
           position = heightLeft - imgHeight;
           pdf.addPage();
@@ -725,7 +716,6 @@ export default function FormPreviewModal({ form, onClose }) {
         toast.dismiss();
         toast.success("تم تصدير الـ PDF بأبعاد صحيحة بنجاح");
       } else if (exportType === "word") {
-        // 💡 5. تصدير Word (Docx)
         const htmlContent = `
           <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
             <head><meta charset='utf-8'><title>${form?.name}</title></head>
@@ -745,7 +735,6 @@ export default function FormPreviewModal({ form, onClose }) {
         toast.success("تم تصدير ملف Word بنجاح");
       }
 
-      // 💡 6. استعادة التنسيقات الأصلية بعد انتهاء التصدير
       element.style.transform = originalTransform;
       setZoomLevel(currentZoom);
       setIsForPrint(false);
@@ -801,8 +790,7 @@ export default function FormPreviewModal({ form, onClose }) {
               className="px-3 py-2 border border-slate-300 rounded-lg text-[11px] font-bold text-slate-700 bg-white outline-none cursor-pointer"
             >
               <option value="pdf">تصدير كـ PDF</option>
-              <option value="word">تصدير كـ Word</option>{" "}
-              {/* 💡 خيار الـ Word */}
+              <option value="word">تصدير كـ Word</option>
               <option value="image">تصدير كصورة HD</option>
             </select>
 
@@ -843,14 +831,82 @@ export default function FormPreviewModal({ form, onClose }) {
         <div className="flex-1 overflow-auto bg-gradient-to-br from-slate-400 to-slate-500 flex items-start justify-center py-10 px-5 custom-scrollbar">
           <div
             ref={componentRef}
-            className={`print-container bg-white shadow-[0_20px_60px_rgba(0,0,0,0.4)] relative flex flex-col origin-top transition-transform duration-200 ${form?.showBorder && !isForPrint ? "border-[6px] border-slate-900" : ""}`}
+            className="print-container bg-white shadow-[0_20px_60px_rgba(0,0,0,0.4)] relative flex flex-col origin-top transition-transform duration-200"
             style={{
               width: "210mm",
               height: `${dynamicHeight}px`,
               transform: `scale(${zoomLevel / 100})`,
               fontFamily: fontFamily,
+              padding: 0,
             }}
           >
+            {/* 💡 الإطار الداخلي للورقة من إعدادات الباك إند */}
+            {form?.borderSettings?.active &&
+              Array.from({ length: pagesCount }).map((_, i) => (
+                <div
+                  key={`border-${i}`}
+                  className="absolute z-0 pointer-events-none"
+                  style={{
+                    top: `${i * A4_HEIGHT_PX + form.borderSettings.margin}px`,
+                    height: `${A4_HEIGHT_PX - form.borderSettings.margin * 2}px`,
+                    left: `${form.borderSettings.margin}px`,
+                    right: `${form.borderSettings.margin}px`,
+                    border: `${form.borderSettings.width}px solid ${form.borderSettings.color}`,
+                  }}
+                ></div>
+              ))}
+
+            {/* 💡 العلامة المائية الشاملة من إعدادات الباك إند */}
+            {form?.watermark?.active &&
+              form.watermark.text &&
+              !form.watermark.isImage && (
+                <div
+                  className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-0"
+                  style={{ opacity: form.watermark.opacity }}
+                >
+                  <div
+                    style={{
+                      transform: `rotate(${form.watermark.angle}deg)`,
+                      fontSize: `${form.watermark.size}px`,
+                      color: form.watermark.color,
+                      fontWeight: 900,
+                      whiteSpace: "nowrap",
+                    }}
+                    className="select-none"
+                  >
+                    {form.watermark.repeat
+                      ? Array(10)
+                          .fill(form.watermark.text)
+                          .map((t, i) => (
+                            <div key={i} className="my-8">
+                              {t} &nbsp;&nbsp;&nbsp; {t} &nbsp;&nbsp;&nbsp; {t}
+                            </div>
+                          ))
+                      : form.watermark.text}
+                  </div>
+                </div>
+              )}
+            {form?.watermark?.active &&
+              form.watermark.isImage &&
+              form.watermark.imgUrl && (
+                <div
+                  className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-0"
+                  style={{ opacity: form.watermark.opacity }}
+                >
+                  <img
+                    src={form.watermark.imgUrl}
+                    alt="Watermark"
+                    style={{
+                      width: form.watermark.repeat
+                        ? "100%"
+                        : `${form.watermark.size}%`,
+                      height: form.watermark.repeat ? "100%" : "auto",
+                      objectFit: form.watermark.repeat ? "cover" : "contain",
+                    }}
+                  />
+                </div>
+              )}
+
             {!isForPrint &&
               Array.from({ length: pagesCount - 1 }).map((_, i) => (
                 <div
@@ -881,6 +937,14 @@ export default function FormPreviewModal({ form, onClose }) {
                       width: 200,
                       height: 50,
                     };
+                    // إمكانية أن يكون له قيمة افتراضية كـ JSON (مثل الجداول أو الصور)
+                    let val = block.defaultValue;
+                    try {
+                      val = JSON.parse(val);
+                    } catch {
+                      /* Ignore */
+                    }
+
                     return (
                       <div
                         key={block.id || block.uid}
@@ -890,15 +954,15 @@ export default function FormPreviewModal({ form, onClose }) {
                           top: `${pos.y}px`,
                           width: `${pos.width}px`,
                           height: `${pos.height}px`,
-                          overflow: "visible",
+                          overflow: "hidden", // لمنع خروج المحتوى
                         }}
                       >
-                        <div className="w-full h-full flex flex-col">
+                        <div className="w-full h-full flex flex-col pointer-events-none">
                           <PreviewBlockRenderer
                             block={block}
                             formSettings={form}
                             fillMode={fillMode}
-                            value={formValues[block.uid]}
+                            value={val}
                             onChange={(val) =>
                               handleValueChange(block.uid, val)
                             }
