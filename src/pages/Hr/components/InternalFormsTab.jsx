@@ -8,7 +8,7 @@ import {
   Activity,
   ChartColumn,
   Loader2,
-  Trash2, // 👈 تمت إضافة أيقونة سلة المهملات تحسباً لاستخدامها مستقبلاً
+  Trash2, 
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../../api/axios";
@@ -16,6 +16,7 @@ import api from "../../../api/axios";
 // 💡 استيراد المكونات الفرعية
 import FormBuilderModal from "./models/FormBuilderModal";
 import FormPreviewModal from "./FormPreviewModal";
+import FormFillModal from "./FormFillModal"; // 👈 استيراد مكون شاشة التعبئة الجديد
 import FormCard from "./FormCard";
 
 export default function InternalFormsTab() {
@@ -23,6 +24,7 @@ export default function InternalFormsTab() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [previewForm, setPreviewForm] = useState(null);
   const [formToEdit, setFormToEdit] = useState(null);
+  const [formToFill, setFormToFill] = useState(null); // 👈 State خاصة بشاشة التعبئة
   const [templates, setTemplates] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -52,30 +54,43 @@ export default function InternalFormsTab() {
   // ── Handlers ──
   const handlePreviewTemplate = async (templateId) => {
     try {
-      toast.loading("جاري إعداد المعاينة...");
+      toast.loading("جاري إعداد المعاينة...", { id: "preview" });
       const response = await api.get(`/forms/templates/${templateId}`);
-      toast.dismiss();
+      toast.dismiss("preview");
       setPreviewForm(response.data.data);
     } catch (error) {
-      toast.dismiss();
+      toast.dismiss("preview");
       toast.error("فشل في تحميل النموذج للمعاينة");
     }
   };
 
   const handleEditTemplate = async (templateId) => {
     try {
-      toast.loading("جاري تحميل بيانات النموذج...");
+      toast.loading("جاري تحميل بيانات النموذج...", { id: "edit" });
       const response = await api.get(`/forms/templates/${templateId}`);
-      toast.dismiss();
+      toast.dismiss("edit");
       setFormToEdit(response.data.data);
       setIsModalOpen(true);
     } catch (error) {
-      toast.dismiss();
+      toast.dismiss("edit");
       toast.error("فشل في تحميل بيانات النموذج للتعديل");
     }
   };
 
-  // 💡 التعديل: دالة الحذف الجديدة
+  // 💡 التعديل: إضافة دالة لتحميل النموذج في وضع التعبئة (Fill Mode)
+  const handleFillTemplate = async (templateId) => {
+    try {
+      toast.loading("جاري تجهيز النموذج للتعبئة...", { id: "fill" });
+      const response = await api.get(`/forms/templates/${templateId}`);
+      toast.dismiss("fill");
+      setFormToFill(response.data.data);
+    } catch (error) {
+      toast.dismiss("fill");
+      toast.error("فشل في تحميل النموذج للتعبئة");
+    }
+  };
+
+  // دالة الحذف
   const handleDeleteTemplate = async (templateId, templateName) => {
     if (
       !window.confirm(
@@ -86,20 +101,14 @@ export default function InternalFormsTab() {
     }
 
     try {
-      toast.loading("جاري الحذف...");
-      // مناداة الـ Endpoint الذي أنشأناه سابقاً في الباك إند
+      toast.loading("جاري الحذف...", { id: "delete" });
       await api.delete(`/forms/templates/${templateId}`);
-
-      toast.dismiss();
+      toast.dismiss("delete");
       toast.success("تم حذف النموذج بنجاح");
-
-      // تحديث القائمة محلياً بدون إعادة جلب من السيرفر (لتسريع الأداء)
       setTemplates((prev) => prev.filter((t) => t.id !== templateId));
     } catch (error) {
-      toast.dismiss();
-      // التقاط رسالة الخطأ القادمة من الباك إند (مثلاً إذا كان النموذج مستخدماً)
-      const errorMsg =
-        error.response?.data?.message || "حدث خطأ أثناء محاولة الحذف";
+      toast.dismiss("delete");
+      const errorMsg = error.response?.data?.message || "حدث خطأ أثناء محاولة الحذف";
       toast.error(errorMsg);
     }
   };
@@ -112,7 +121,7 @@ export default function InternalFormsTab() {
       (sum, t) => sum + (t._count?.usages || 0),
       0,
     );
-    const todayUses = Math.floor(totalUses * 0.1); // قيمة تجريبية لليوم
+    const todayUses = Math.floor(totalUses * 0.1); 
 
     return [
       {
@@ -293,7 +302,8 @@ export default function InternalFormsTab() {
                 form={form}
                 onPreview={() => handlePreviewTemplate(form.id)}
                 onEdit={() => handleEditTemplate(form.id)}
-                onDelete={() => handleDeleteTemplate(form.id, form.name)} // 👈 التعديل: تمرير دالة الحذف
+                onDelete={() => handleDeleteTemplate(form.id, form.name)}
+                onFill={() => handleFillTemplate(form.id)} // 👈 التعديل: ربط دالة التعبئة بـ onFill
               />
             ))}
           </div>
@@ -301,6 +311,8 @@ export default function InternalFormsTab() {
       </div>
 
       {/* ── Modals ── */}
+      
+      {/* 1. Modal بناء النموذج */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100]">
           <FormBuilderModal
@@ -318,12 +330,27 @@ export default function InternalFormsTab() {
         </div>
       )}
 
+      {/* 2. Modal المعاينة فقط */}
       {previewForm && (
         <FormPreviewModal
           form={previewForm}
           onClose={() => setPreviewForm(null)}
         />
       )}
+
+      {/* 3. Modal شاشة التعبئة والطباعة الاحترافية 👈 */}
+      {formToFill && (
+        <FormFillModal
+          form={formToFill}
+          onClose={() => setFormToFill(null)}
+          onSaveUsage={(values) => {
+             // يمكنك لاحقاً ربط هذا الزر بحفظ النموذج في قاعدة البيانات للموظف
+             console.log("Data to save:", values);
+             toast.success("تم الحفظ في السجل (سيتم ربط الباك إند قريباً)");
+          }}
+        />
+      )}
+
     </div>
   );
 }
