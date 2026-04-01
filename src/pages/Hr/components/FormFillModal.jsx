@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useRef,
+  useMemo,
+  useCallback,
+  useEffect,
+} from "react";
 import {
   Download,
   Printer,
@@ -28,13 +34,15 @@ import {
   Plus,
   Minus,
   Type,
+  Droplet,
+  Settings2,
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { toast } from "sonner";
 
 // ==========================================
-// 💡 دوال مساعدة للتواريخ
+// 💡 دوال مساعدة للتواريخ والأوقات
 // ==========================================
 const formatHijriDate = (dateString) => {
   if (!dateString) return "";
@@ -48,6 +56,7 @@ const formatHijriDate = (dateString) => {
     return dateString;
   }
 };
+
 const formatGregorianDate = (dateString) => {
   if (!dateString) return "";
   try {
@@ -61,8 +70,30 @@ const formatGregorianDate = (dateString) => {
   }
 };
 
+const getCurrentDateStr = () => new Date().toISOString().split("T")[0];
+
+const getCurrentTime24 = () => {
+  const d = new Date();
+  return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+};
+
+const formatTime12Hour = (timeStr) => {
+  if (!timeStr) return "";
+  if (timeStr.toLowerCase().includes("m")) return timeStr;
+  try {
+    const [h, m] = timeStr.split(":");
+    let hours = parseInt(h, 10);
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${hours.toString().padStart(2, "0")}:${m} ${ampm}`;
+  } catch {
+    return timeStr;
+  }
+};
+
 // ==========================================
-// 💡 محرر النصوص الغني المباشر (للنصوص والموضوع والإصدار)
+// 💡 محرر النصوص الغني المباشر
 // ==========================================
 const CanvasRichText = ({
   value,
@@ -175,7 +206,7 @@ const CanvasRichText = ({
 };
 
 // ==========================================
-// 💡 محرر الجداول التفاعلي (Interactive Table Editor)
+// 💡 محرر الجداول التفاعلي
 // ==========================================
 const InteractiveTable = ({ value, onChange, isForPrint, blockLabel }) => {
   const defaultTable = [
@@ -186,7 +217,6 @@ const InteractiveTable = ({ value, onChange, isForPrint, blockLabel }) => {
     Array.isArray(value) && value.length > 0 ? value : defaultTable;
 
   const updateCell = (rIdx, cIdx, val) => {
-    if (!onChange) return;
     const newData = [...tableData];
     newData[rIdx][cIdx] = val;
     onChange(newData);
@@ -266,7 +296,7 @@ const InteractiveTable = ({ value, onChange, isForPrint, blockLabel }) => {
 };
 
 // ==========================================
-// 💡 بلوك الصورة القابل للتحريك والتحجيم
+// 💡 بلوك الصورة
 // ==========================================
 const DraggableImageBlock = ({ block, value, onChange, isForPrint }) => {
   const imgData =
@@ -420,11 +450,23 @@ const CanvasBlockRenderer = ({
     case "date_hijri":
     case "date_editable":
       let displayDate = value || block.defaultValue || "____ / __ / __";
-      if (value)
+      // 💡 التعبئة التلقائية للتواريخ وقت الطباعة
+      if (isForPrint && !value) {
         displayDate =
           block.type === "date_hijri"
-            ? formatHijriDate(value)
-            : formatGregorianDate(value);
+            ? formatHijriDate(new Date())
+            : formatGregorianDate(new Date());
+      } else if (value) {
+        const isIsoDate = /^\d{4}-\d{2}-\d{2}$/.test(value);
+        if (isIsoDate) {
+          displayDate =
+            block.type === "date_hijri"
+              ? formatHijriDate(value)
+              : formatGregorianDate(value);
+        } else {
+          displayDate = value;
+        }
+      }
       return (
         <div
           style={{ ...alignStyles, fontSize: fontSizeStyle }}
@@ -438,6 +480,13 @@ const CanvasBlockRenderer = ({
       );
 
     case "time":
+      let displayTime = value || block.defaultValue || "__:__";
+      // 💡 التعبئة التلقائية للوقت وقت الطباعة
+      if (isForPrint && !value) {
+        displayTime = formatTime12Hour(getCurrentTime24());
+      } else if (value) {
+        displayTime = formatTime12Hour(value);
+      }
       return (
         <div
           style={{ ...alignStyles, fontSize: fontSizeStyle }}
@@ -447,7 +496,7 @@ const CanvasBlockRenderer = ({
             {block.label}:
           </span>
           <span className="font-mono text-slate-800" dir="ltr">
-            {value || "__:__"}
+            {displayTime}
           </span>
         </div>
       );
@@ -596,7 +645,6 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
 
   const componentRef = useRef();
 
-  // 💡 تحميل القيم الافتراضية للصور والجداول من الباك إند
   useEffect(() => {
     if (form?.blocks) {
       const initialVals = {};
@@ -659,7 +707,6 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
   const dynamicHeight = calculatePaperHeight();
   const pagesCount = Math.max(1, Math.round(dynamicHeight / A4_HEIGHT_PX));
 
-  // 🖨️ الطباعة
   const handlePrintNatively = () => {
     if (!componentRef.current)
       return toast.error("لا يمكن الوصول لمحتوى الطباعة");
@@ -712,7 +759,6 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
     }, 300);
   };
 
-  // 💾 التصدير
   const handleExport = async () => {
     if (!componentRef.current) return;
     setActiveBlockId(null);
@@ -900,9 +946,13 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                     className={`flex flex-col gap-1.5 p-3 rounded-lg border-2 transition-all cursor-pointer ${isActive ? "border-blue-400 bg-blue-50/30" : "border-transparent hover:border-slate-200"}`}
                   >
                     <label className="text-[12px] font-bold text-slate-800 flex items-center gap-2">
-                      {["date_gregorian", "date_hijri"].includes(
-                        block.type,
-                      ) && <Calendar size={14} className="text-slate-400" />}
+                      {[
+                        "date_gregorian",
+                        "date_hijri",
+                        "date_editable",
+                      ].includes(block.type) && (
+                        <Calendar size={14} className="text-slate-400" />
+                      )}
                       {block.type === "time" && (
                         <Clock size={14} className="text-slate-400" />
                       )}
@@ -922,24 +972,98 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                       />
                     )}
 
-                    {["date_gregorian", "date_hijri", "date_editable"].includes(
+                    {/* 💡 التعديل: حقول التاريخ السهلة والتلقائية */}
+                    {["date_gregorian", "date_editable"].includes(
                       block.type,
                     ) && (
-                      <input
-                        type="date"
-                        value={formValues[bId] || ""}
-                        onChange={(e) => handleValueChange(bId, e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono font-semibold outline-none focus:bg-white focus:border-blue-500 transition-all"
-                      />
+                      <div className="flex gap-2">
+                        <input
+                          type="date"
+                          value={formValues[bId] || ""}
+                          onChange={(e) =>
+                            handleValueChange(bId, e.target.value)
+                          }
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono font-semibold outline-none focus:bg-white focus:border-blue-500 transition-all"
+                        />
+                        <button
+                          onClick={() =>
+                            handleValueChange(bId, getCurrentDateStr())
+                          }
+                          className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200"
+                        >
+                          اليوم
+                        </button>
+                      </div>
                     )}
 
+                    {block.type === "date_hijri" && (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={formValues[bId] || ""}
+                            onChange={(e) =>
+                              handleValueChange(bId, e.target.value)
+                            }
+                            placeholder="مثال: 1445/08/15"
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono font-semibold outline-none focus:bg-white focus:border-blue-500 transition-all"
+                          />
+                          <button
+                            onClick={() =>
+                              handleValueChange(
+                                bId,
+                                formatHijriDate(new Date()),
+                              )
+                            }
+                            className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 whitespace-nowrap"
+                          >
+                            اليوم
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="date"
+                            onChange={(e) => {
+                              if (e.target.value)
+                                handleValueChange(
+                                  bId,
+                                  formatHijriDate(e.target.value),
+                                );
+                            }}
+                            className="w-full px-3 py-1.5 text-xs text-slate-500 bg-slate-100 border border-slate-200 rounded-lg outline-none cursor-pointer"
+                          />
+                          <span className="absolute left-10 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">
+                            اختر بالميلادي للتحويل للهجري
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 💡 التعديل: حقل الوقت التلقائي */}
                     {block.type === "time" && (
-                      <input
-                        type="time"
-                        value={formValues[bId] || ""}
-                        onChange={(e) => handleValueChange(bId, e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono font-semibold outline-none focus:bg-white focus:border-blue-500 transition-all"
-                      />
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex gap-2">
+                          <input
+                            type="time"
+                            value={formValues[bId] || ""}
+                            onChange={(e) =>
+                              handleValueChange(bId, e.target.value)
+                            }
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono font-semibold outline-none focus:bg-white focus:border-blue-500 transition-all"
+                          />
+                          <button
+                            onClick={() =>
+                              handleValueChange(bId, getCurrentTime24())
+                            }
+                            className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 whitespace-nowrap"
+                          >
+                            الآن
+                          </button>
+                        </div>
+                        <span className="text-[10px] text-slate-400">
+                          سيُكتب وقت الطباعة تلقائياً إذا تُرك فارغاً.
+                        </span>
+                      </div>
                     )}
 
                     {block.type === "employee_info" && (
@@ -1033,7 +1157,6 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* 💡 الإطار الخارجي من الباك إند */}
             {form?.borderSettings?.active &&
               Array.from({ length: pagesCount }).map((_, i) => (
                 <div
@@ -1049,7 +1172,6 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                 ></div>
               ))}
 
-            {/* 💡 العلامة المائية الشاملة من الباك إند */}
             {form?.watermark?.active &&
               form.watermark.text &&
               !form.watermark.isImage && (
@@ -1115,8 +1237,16 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                 style={{ backgroundImage: `url(${form.bgImage})` }}
               />
             )}
+            {form?.headerImage && (
+              <div
+                className="absolute top-0 left-0 right-0 bg-cover bg-center z-[1] pointer-events-none"
+                style={{
+                  height: "30mm",
+                  backgroundImage: `url(${form.headerImage})`,
+                }}
+              />
+            )}
 
-            {/* Blocks Layer */}
             <div
               className={`w-full h-full relative z-10 min-h-full ${form?.colorMode === "bw" ? "grayscale" : ""}`}
             >
@@ -1250,6 +1380,16 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                   })}
               </div>
             </div>
+
+            {form?.footerImage && (
+              <div
+                className="absolute bottom-0 left-0 right-0 bg-cover bg-center z-[1] pointer-events-none"
+                style={{
+                  height: "20mm",
+                  backgroundImage: `url(${form.footerImage})`,
+                }}
+              />
+            )}
 
             {Array.from({ length: pagesCount }).map((_, i) => (
               <div
