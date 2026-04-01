@@ -1,7 +1,16 @@
 import React from "react";
-import { Lock, Users, Eye, Pen, Copy, Download, Calendar } from "lucide-react";
+import {
+  Lock,
+  Users,
+  Eye,
+  Pen,
+  Copy,
+  Download,
+  Calendar,
+  Trash2,
+} from "lucide-react";
 
-export default function FormCard({ form, onPreview, onEdit }) {
+export default function FormCard({ form, onPreview, onEdit, onDelete }) {
   const getCategoryIcon = (category) => {
     switch (category) {
       case "hr":
@@ -99,6 +108,14 @@ export default function FormCard({ form, onPreview, onEdit }) {
             className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-slate-50 text-slate-600 border border-slate-200 rounded hover:bg-slate-100 transition-colors text-[10px] font-bold"
           >
             <Pen size={12} /> <span>تعديل القالب</span>
+          </button>
+          {/* 💡 التعديل: إضافة زر الحذف هنا */}
+          <button
+            onClick={onDelete}
+            className="p-1.5 bg-red-50 text-red-500 rounded-md hover:bg-red-100 transition-colors"
+            title="حذف النموذج"
+          >
+            <Trash2 size={16} />
           </button>
           <button
             title="نسخ النموذج"

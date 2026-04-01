@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Layers,
   Save,
@@ -35,12 +35,16 @@ import {
   Copy,
   Edit2,
   Upload,
+  Sparkles,
+  Move,
+  Square,
+  ImagePlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../../../api/axios";
 
 // ==========================================
-// 💡 1. قائمة البلوكات المتاحة (القوالب الأساسية)
+// 💡 1. قائمة البلوكات المتاحة
 // ==========================================
 const FORM_BLOCKS = [
   {
@@ -259,6 +263,15 @@ const FORM_BLOCKS = [
     color: "text-sky-600",
     bg: "bg-sky-600/10",
   },
+  {
+    id: 25,
+    type: "image_upload",
+    label: "إرفاق صورة",
+    desc: "مربع لرفع صورة",
+    icon: ImagePlus,
+    color: "text-fuchsia-500",
+    bg: "bg-fuchsia-500/10",
+  },
 ];
 
 const getBlockVisuals = (type) => {
@@ -266,7 +279,7 @@ const getBlockVisuals = (type) => {
 };
 
 // ==========================================
-// 💡 2. مكون رسم البلوكات على الورقة (Live Preview Renderer)
+// 💡 2. مكون رسم البلوكات على الورقة
 // ==========================================
 const PreviewBlockRenderer = ({ block, formSettings }) => {
   const getAlignStyles = (align) => {
@@ -292,18 +305,24 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
 
   const alignStyles = getAlignStyles(block.style?.alignment);
   const widthStyle = block.position?.width
-    ? `${block.position.width}mm`
+    ? `${block.position.width}px`
     : "100%";
   const heightStyle = block.position?.height
-    ? `${block.position.height}mm`
+    ? `${block.position.height}px`
     : "auto";
+  const fontSizeStyle = block.style?.fontSize
+    ? `${block.style.fontSize}px`
+    : "inherit";
 
   switch (block.type) {
     case "title":
       return (
         <h2
-          style={alignStyles}
-          className={`text-xl font-bold mb-4 w-full ${formSettings.colorMode === "color" ? "text-blue-900" : "text-black"}`}
+          style={{
+            ...alignStyles,
+            fontSize: block.style?.fontSize ? fontSizeStyle : "24px",
+          }}
+          className={`font-bold w-full ${formSettings.colorMode === "color" ? "text-blue-900" : "text-black"}`}
         >
           {formSettings.name || "عنوان النموذج"}
         </h2>
@@ -311,8 +330,8 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
     case "version":
       return (
         <div
-          style={alignStyles}
-          className="text-[10px] text-slate-500 font-mono mb-2 w-full"
+          style={{ ...alignStyles, fontSize: fontSizeStyle }}
+          className="text-slate-500 font-mono w-full"
         >
           الإصدار: {formSettings.version || "1.0"}
         </div>
@@ -320,8 +339,8 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
     case "subject":
       return (
         <div
-          style={alignStyles}
-          className="text-[11px] font-bold mb-2 flex w-full gap-2"
+          style={{ ...alignStyles, fontSize: fontSizeStyle }}
+          className="font-bold flex w-full gap-2"
         >
           <span>{block.label}:</span>
           <span className="border-b border-black flex-1 border-dashed"></span>
@@ -330,8 +349,8 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
     case "reference_number":
       return (
         <div
-          style={alignStyles}
-          className="text-[10px] text-slate-500 font-mono mb-2 w-full"
+          style={{ ...alignStyles, fontSize: fontSizeStyle }}
+          className="text-slate-500 font-mono w-full"
         >
           {block.label}: {formSettings.code || "FRM-XXX"}-
           {new Date().getFullYear()}-001
@@ -342,24 +361,24 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
     case "date_editable":
       return (
         <div
-          style={{ ...alignStyles, width: widthStyle }}
-          className="mb-3 flex items-center gap-2 text-[11px]"
+          style={{ ...alignStyles, width: widthStyle, fontSize: fontSizeStyle }}
+          className="flex items-center gap-2"
         >
           <span className="font-bold">{block.label}:</span>
-          <div className="border border-slate-300 bg-slate-50 rounded px-3 py-1 text-slate-500 flex items-center gap-2 min-w-[100px]">
-            {block.defaultValue || "__ / __ / ____"} <CalendarClock size={12} />
+          <div className="border border-slate-300 bg-slate-50 rounded px-3 py-1.5 text-slate-500 flex items-center gap-2 min-w-[120px]">
+            {block.defaultValue || "__ / __ / ____"} <CalendarClock size={16} />
           </div>
         </div>
       );
     case "time":
       return (
         <div
-          style={{ ...alignStyles, width: widthStyle }}
-          className="mb-3 flex items-center gap-2 text-[11px]"
+          style={{ ...alignStyles, width: widthStyle, fontSize: fontSizeStyle }}
+          className="flex items-center gap-2"
         >
           <span className="font-bold">{block.label}:</span>
           <span
-            className="font-mono bg-slate-50 border border-slate-200 px-2 py-0.5 rounded"
+            className="font-mono bg-slate-50 border border-slate-200 px-3 py-1 rounded"
             dir="ltr"
           >
             10:30 AM
@@ -369,46 +388,64 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
     case "text_field":
       return (
         <div
-          style={{ ...alignStyles, width: widthStyle }}
-          className="mb-3 flex items-center gap-2"
+          style={{ ...alignStyles, width: widthStyle, fontSize: fontSizeStyle }}
+          className="flex items-center gap-2"
         >
-          <label className="text-[11px] font-bold text-slate-700 whitespace-nowrap">
+          <label className="font-bold text-slate-700 whitespace-nowrap">
             {block.label}
           </label>
-          <div className="border-b border-slate-300 flex-1 h-4"></div>
+          <div className="border-b border-slate-300 flex-1 h-6"></div>
         </div>
       );
     case "text_area":
       return (
         <div
-          style={{ ...alignStyles, width: widthStyle }}
-          className="mb-3 flex flex-col"
+          style={{ ...alignStyles, width: widthStyle, fontSize: fontSizeStyle }}
+          className="flex flex-col h-full"
         >
-          <label className="text-[11px] font-bold text-slate-700 mb-1">
+          <label className="font-bold text-slate-700 mb-1.5">
             {block.label}
           </label>
           <div
-            className="border border-slate-300 rounded bg-slate-50 w-full p-2 text-[10px] text-slate-500 overflow-hidden"
+            className="border border-slate-300 rounded bg-slate-50 w-full p-3 text-slate-500 flex-1"
             style={{ height: heightStyle }}
           >
             {block.defaultValue || "مساحة للكتابة..."}
           </div>
         </div>
       );
+    case "image_upload":
+      return (
+        <div
+          style={{ ...alignStyles, width: widthStyle, height: heightStyle }}
+          className="flex flex-col"
+        >
+          <label
+            style={{ fontSize: fontSizeStyle }}
+            className="font-bold text-slate-700 mb-1.5"
+          >
+            {block.label}
+          </label>
+          <div className="border-2 border-dashed border-slate-300 rounded-lg bg-slate-50 w-full flex-1 flex flex-col items-center justify-center text-slate-400">
+            <Upload size={32} className="mb-2 opacity-50" />
+            <span style={{ fontSize: "12px" }}>انقر لإرفاق صورة</span>
+          </div>
+        </div>
+      );
     case "employee_info":
       return (
         <div
-          style={{ width: widthStyle }}
-          className="mb-4 border border-indigo-200 bg-indigo-50/30 rounded-lg p-3"
+          style={{ width: widthStyle, fontSize: fontSizeStyle }}
+          className="border border-indigo-200 bg-indigo-50/30 rounded-xl p-4"
         >
-          <div className="text-[11px] font-bold text-indigo-800 mb-2 flex items-center gap-1.5">
-            <User size={14} /> {block.label}
+          <div className="font-bold text-indigo-800 mb-3 flex items-center gap-2">
+            <User size={18} /> {block.label}
           </div>
-          <div className="grid grid-cols-2 gap-2 text-[10px]">
-            <div className="bg-white p-1.5 border border-indigo-100 rounded">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white p-2 border border-indigo-100 rounded-lg">
               الاسم: ----------------
             </div>
-            <div className="bg-white p-1.5 border border-indigo-100 rounded">
+            <div className="bg-white p-2 border border-indigo-100 rounded-lg">
               الرقم الوظيفي: ---------
             </div>
           </div>
@@ -417,27 +454,27 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
     case "table":
       return (
         <div
-          style={{ width: widthStyle }}
-          className="mb-4 border border-slate-300 rounded overflow-hidden"
+          style={{ width: widthStyle, fontSize: fontSizeStyle }}
+          className="border border-slate-300 rounded-lg overflow-hidden"
         >
-          <table className="w-full text-center text-[10px] bg-white">
+          <table className="w-full text-center bg-white">
             <thead className="bg-slate-100 border-b border-slate-300">
               <tr>
-                <th className="p-1.5">العمود 1</th>
-                <th className="p-1.5">العمود 2</th>
-                <th className="p-1.5">العمود 3</th>
+                <th className="p-2">العمود 1</th>
+                <th className="p-2">العمود 2</th>
+                <th className="p-2">العمود 3</th>
               </tr>
             </thead>
             <tbody>
               <tr className="border-b border-slate-200">
-                <td className="p-1.5">—</td>
-                <td className="p-1.5">—</td>
-                <td className="p-1.5">—</td>
+                <td className="p-2">—</td>
+                <td className="p-2">—</td>
+                <td className="p-2">—</td>
               </tr>
               <tr>
-                <td className="p-1.5">—</td>
-                <td className="p-1.5">—</td>
-                <td className="p-1.5">—</td>
+                <td className="p-2">—</td>
+                <td className="p-2">—</td>
+                <td className="p-2">—</td>
               </tr>
             </tbody>
           </table>
@@ -446,126 +483,55 @@ const PreviewBlockRenderer = ({ block, formSettings }) => {
     case "checkbox":
       return (
         <div
-          style={{ ...alignStyles, width: widthStyle }}
-          className="mb-2 flex items-center gap-2"
+          style={{ ...alignStyles, width: widthStyle, fontSize: fontSizeStyle }}
+          className="flex items-center gap-3"
         >
-          <div className="w-3.5 h-3.5 border-2 border-slate-400 rounded-sm"></div>
-          <span className="text-[11px] font-bold text-slate-700">
-            {block.label}
-          </span>
+          <div className="w-4 h-4 border-2 border-slate-400 rounded-sm"></div>
+          <span className="font-bold text-slate-700">{block.label}</span>
         </div>
       );
     case "signature":
-      return (
-        <div
-          style={{ width: widthStyle }}
-          className={`mb-4 flex flex-col ${block.style?.alignment === "left" ? "ml-auto" : block.style?.alignment === "center" ? "mx-auto" : "mr-auto"}`}
-        >
-          <div
-            className="text-[10px] font-bold mb-1"
-            style={{ textAlign: block.style?.alignment }}
-          >
-            {block.label}:
-          </div>
-          <div
-            style={{ height: heightStyle }}
-            className="w-full border-2 border-slate-300 rounded bg-slate-50"
-          ></div>
-        </div>
-      );
     case "office_signature":
-      return (
-        <div
-          style={{ width: widthStyle }}
-          className={`mb-4 flex flex-col ${block.style?.alignment === "left" ? "ml-auto" : block.style?.alignment === "center" ? "mx-auto" : "mr-auto"}`}
-        >
-          <div
-            className="text-[10px] font-bold mb-1 text-cyan-700"
-            style={{ textAlign: block.style?.alignment }}
-          >
-            {block.label}:
-          </div>
-          <div
-            style={{ height: heightStyle }}
-            className="w-full border-2 border-cyan-600 rounded bg-cyan-50 flex items-center justify-center text-cyan-600 text-[10px] overflow-hidden"
-          >
-            {block.defaultValue ? (
-              <img
-                src={block.defaultValue}
-                alt="Signature"
-                className="max-w-full max-h-full"
-              />
-            ) : (
-              "توقيع رسمي"
-            )}
-          </div>
-        </div>
-      );
+    case "fingerprint":
     case "office_stamp":
       return (
         <div
-          style={{ width: widthStyle, height: heightStyle }}
-          className={`mb-4 flex flex-col ${block.style?.alignment === "left" ? "ml-auto" : block.style?.alignment === "center" ? "mx-auto" : "mr-auto"}`}
+          style={{
+            width: widthStyle,
+            height: heightStyle,
+            fontSize: fontSizeStyle,
+          }}
+          className={`flex flex-col ${block.style?.alignment === "left" ? "ml-auto" : block.style?.alignment === "center" ? "mx-auto" : "mr-auto"}`}
         >
           <div
-            className="text-[10px] font-bold mb-1 text-rose-700"
+            className="font-bold mb-2"
             style={{ textAlign: block.style?.alignment }}
           >
             {block.label}:
           </div>
-          <div className="w-full h-full border-2 border-dashed border-rose-600 rounded-full bg-rose-50 flex items-center justify-center text-rose-600 overflow-hidden aspect-square">
-            {block.defaultValue ? (
-              <img
-                src={block.defaultValue}
-                alt="Stamp"
-                className="w-full h-full rounded-full object-cover"
-              />
+          <div className="w-full flex-1 border-2 border-slate-300 border-dashed rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
+            {block.type === "office_stamp" ? (
+              <Stamp size={32} />
             ) : (
-              <Stamp size={24} />
+              <Pen size={32} />
             )}
           </div>
         </div>
       );
-    case "fingerprint":
-      return (
-        <div
-          style={{ width: widthStyle }}
-          className={`mb-4 flex flex-col ${block.style?.alignment === "left" ? "ml-auto" : block.style?.alignment === "center" ? "mx-auto" : "mr-auto"}`}
-        >
-          <div
-            className="text-[10px] font-bold mb-1"
-            style={{ textAlign: block.style?.alignment }}
-          >
-            {block.label}:
-          </div>
-          <div
-            style={{ height: heightStyle }}
-            className="w-full border-2 border-slate-300 rounded bg-slate-50 aspect-square"
-          ></div>
-        </div>
-      );
     case "separator":
-      return <hr className="my-4 border-t-2 border-slate-300 w-full" />;
-    case "spacer":
-      return <div style={{ height: heightStyle, width: "100%" }}></div>;
-    case "watermark":
-      return (
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-6xl font-black text-slate-400/10 -rotate-45 overflow-hidden z-0">
-          {block.defaultValue || "WATERMARK"}
-        </div>
-      );
+      return <hr className="my-2 border-t-2 border-slate-300 w-full" />;
     case "static_text":
       return (
         <div
-          style={{ ...alignStyles, width: widthStyle }}
-          className="text-[11px] leading-relaxed mb-3 w-full whitespace-pre-wrap"
+          style={{ ...alignStyles, width: widthStyle, fontSize: fontSizeStyle }}
+          className="leading-relaxed w-full whitespace-pre-wrap"
         >
           {block.defaultValue || block.label}
         </div>
       );
     default:
       return (
-        <div className="mb-2 p-2 border border-dashed border-blue-300 bg-blue-50 text-blue-800 text-[10px] text-center rounded w-full">
+        <div className="p-3 border border-dashed border-blue-300 bg-blue-50 text-blue-800 text-center rounded-lg w-full font-bold">
           {block.label}
         </div>
       );
@@ -585,19 +551,20 @@ export default function FormBuilderModal({
   const [zoomLevel, setZoomLevel] = useState(100);
   const [isSaving, setIsSaving] = useState(false);
 
-  // إعدادات النموذج
+  // إعدادات النموذج (الآن تشمل showBorder لتُحفظ في الباك إند)
   const [formSettings, setFormSettings] = useState({
     name: "",
-    code: "",
     description: "",
+    code: "",
     version: "1.0",
     category: "hr",
     colorMode: "color",
     numberFormat: "english",
     timezone: "Asia/Riyadh",
     fontFamily: "Tajawal",
-    fontSize: 12,
+    fontSize: 14,
     isPublic: false,
+    showBorder: false, // 👈 حفظ إطار الورقة
   });
 
   const [canvasBlocks, setCanvasBlocks] = useState([]);
@@ -605,7 +572,38 @@ export default function FormBuilderModal({
   const [editingBlock, setEditingBlock] = useState(null);
   const [originalBlock, setOriginalBlock] = useState(null);
 
-  // 💡 التعديل الجوهري: تعبئة البيانات المبدئية عند تعديل نموذج موجود
+  // متغيرات السحب الحر
+  const [dragState, setDragState] = useState({
+    isDragging: false,
+    blockId: null,
+    startX: 0,
+    startY: 0,
+    initialLeft: 0,
+    initialTop: 0,
+  });
+
+  const paperRef = useRef(null);
+  const A4_HEIGHT_PX = 1122.5; // طول صفحة A4 بالبيكسل
+
+  // 💡 حساب الطول الديناميكي للورقة وبناء الصفحات
+  const calculatePaperHeight = () => {
+    if (canvasBlocks.length === 0) return A4_HEIGHT_PX;
+    // استخراج أبعد نقطة وصل إليها أي بلوك للأسفل
+    const maxBottom = Math.max(
+      ...canvasBlocks.map(
+        (b) => (b.position.y || 0) + (b.position.height || 0),
+      ),
+    );
+    // حساب كم ورقة نحتاج (كل ورقة = 1122.5px)
+    const requiredPages = Math.max(
+      1,
+      Math.ceil((maxBottom + 100) / A4_HEIGHT_PX),
+    );
+    return requiredPages * A4_HEIGHT_PX;
+  };
+  const dynamicHeight = calculatePaperHeight();
+  const pagesCount = Math.ceil(dynamicHeight / A4_HEIGHT_PX);
+
   useEffect(() => {
     if (initialData) {
       setFormSettings({
@@ -618,20 +616,26 @@ export default function FormBuilderModal({
         numberFormat: initialData.numberFormat || "english",
         timezone: initialData.timezone || "Asia/Riyadh",
         fontFamily: initialData.fontFamily || "Tajawal",
-        fontSize: initialData.fontSize || 12,
+        fontSize: initialData.fontSize || 14,
         isPublic: initialData.isPublic || false,
+        showBorder: initialData.showBorder || false, // 👈 استرجاع إطار الورقة
       });
 
       if (initialData.blocks && initialData.blocks.length > 0) {
-        // إعادة بناء البلوكات لتتوافق مع الواجهة
         const formattedBlocks = initialData.blocks.map((b) => ({
           uid:
             b.id ||
             `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           type: b.type,
           label: b.label,
-          position: b.position || { width: 80, height: 10 },
-          style: b.style || { alignment: "right" },
+          position: b.position || {
+            x: 50,
+            y: 50,
+            width: 300,
+            height: 50,
+            absolute: true,
+          },
+          style: b.style || { alignment: "right", fontSize: 14 },
           isEditable: b.isEditable,
           isRequired: b.isRequired,
           dataSource: b.dataSource,
@@ -643,44 +647,50 @@ export default function FormBuilderModal({
     }
   }, [initialData]);
 
-  // --- Handlers ---
+  const handleGenerateAICode = async () => {
+    if (!formSettings.name)
+      return toast.error("يرجى كتابة اسم النموذج أولاً لتوليد الكود");
+
+    // إظهار حالة التحميل على الزر (اختياري، يمكنك إضافة state اسمها isGeneratingCode)
+    const loadingToast = toast.loading("جاري توليد الكود الذكي...");
+
+    try {
+      // 💡 استدعاء مسار الباك إند الجديد (تأكد من إضافته للـ routes)
+      const res = await api.post("/forms/generate-code", {
+        formName: formSettings.name,
+        category: formSettings.category,
+      });
+
+      setFormSettings({ ...formSettings, code: res.data.data.code });
+      toast.success("تم توليد الكود الذكي بنجاح!", { id: loadingToast });
+    } catch (error) {
+      console.error(error);
+      toast.error("فشل توليد الكود الذكي، حاول مجدداً.", { id: loadingToast });
+    }
+  };
+
   const handleAddBlock = (blockDef) => {
     const newBlock = {
       uid: `block_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       type: blockDef.type,
       label: blockDef.label,
       position: {
-        x: 20,
-        y: 50,
-        width: [
-          "table",
-          "employee_info",
-          "header_image",
-          "footer_image",
-          "background_image",
-          "separator",
-        ].includes(blockDef.type)
-          ? 170
-          : 80,
-        height: ["text_area"].includes(blockDef.type)
-          ? 30
+        x: Math.floor(Math.random() * 50) + 50,
+        y: Math.floor(Math.random() * 50) + 100,
+        absolute: true,
+        width: ["table", "employee_info", "header_image", "separator"].includes(
+          blockDef.type,
+        )
+          ? 600
+          : 300,
+        height: ["text_area", "image_upload"].includes(blockDef.type)
+          ? 120
           : ["table"].includes(blockDef.type)
-            ? 60
-            : ["office_stamp", "fingerprint"].includes(blockDef.type)
-              ? 20
-              : 10,
+            ? 200
+            : 50,
       },
-      style: { alignment: "right" },
-      isEditable: ![
-        "header_image",
-        "footer_image",
-        "background_image",
-        "watermark",
-        "office_stamp",
-        "office_signature",
-        "separator",
-        "spacer",
-      ].includes(blockDef.type),
+      style: { alignment: "right", fontSize: 14 },
+      isEditable: true,
       isRequired: false,
       dataSource: "manual",
       defaultValue: "",
@@ -695,38 +705,90 @@ export default function FormBuilderModal({
     if (selectedBlockId === uid) setSelectedBlockId(null);
   };
 
-  const handleDuplicateBlock = (block) => {
-    const newBlock = {
-      ...JSON.parse(JSON.stringify(block)),
-      uid: `block_${Date.now()}_dup`,
+  // نظام السحب الحر
+  const onMouseDown = (e, uid, position) => {
+    e.preventDefault();
+    setSelectedBlockId(uid);
+    setDragState({
+      isDragging: true,
+      blockId: uid,
+      startX: e.clientX,
+      startY: e.clientY,
+      initialLeft: position.x,
+      initialTop: position.y,
+    });
+  };
+
+  useEffect(() => {
+    const onMouseMove = (e) => {
+      if (!dragState.isDragging || !dragState.blockId) return;
+      const deltaX = (e.clientX - dragState.startX) / (zoomLevel / 100);
+      const deltaY = (e.clientY - dragState.startY) / (zoomLevel / 100);
+
+      setCanvasBlocks((prev) =>
+        prev.map((b) => {
+          if (b.uid === dragState.blockId) {
+            return {
+              ...b,
+              position: {
+                ...b.position,
+                x: Math.max(0, dragState.initialLeft + deltaX),
+                y: Math.max(0, dragState.initialTop + deltaY),
+              },
+            };
+          }
+          return b;
+        }),
+      );
     };
-    newBlock._ui = getBlockVisuals(newBlock.type); // إستعادة الأيقونة بعد الـ Parse
-    setCanvasBlocks([...canvasBlocks, newBlock]);
+
+    const onMouseUp = () => {
+      if (dragState.isDragging)
+        setDragState({
+          isDragging: false,
+          blockId: null,
+          startX: 0,
+          startY: 0,
+          initialLeft: 0,
+          initialTop: 0,
+        });
+    };
+
+    if (dragState.isDragging) {
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", onMouseUp);
+    }
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [dragState, zoomLevel]);
+
+  // 💡 التعديل: التقاط الأبعاد بدقة بعد انتهاء التكبير/التصغير (Resize)
+  const handleResizeEnd = (e, uid) => {
+    const el = e.currentTarget;
+    const newWidth = el.offsetWidth;
+    const newHeight = el.offsetHeight;
+
+    setCanvasBlocks((prev) =>
+      prev.map((b) => {
+        if (b.uid === uid) {
+          return {
+            ...b,
+            position: { ...b.position, width: newWidth, height: newHeight },
+          };
+        }
+        return b;
+      }),
+    );
   };
 
-  const moveBlock = (index, direction) => {
-    if (
-      (direction === -1 && index === 0) ||
-      (direction === 1 && index === canvasBlocks.length - 1)
-    )
-      return;
-    const newBlocks = [...canvasBlocks];
-    const temp = newBlocks[index];
-    newBlocks[index] = newBlocks[index + direction];
-    newBlocks[index + direction] = temp;
-    setCanvasBlocks(newBlocks);
-  };
-
-  // فتح نافذة التعديل مع الاحتفاظ بنسخة للـ Cancel
   const openEditDialog = (block) => {
-    // 1. أخذ نسخة آمنة مع استرجاع الأيقونة المفقودة بسبب الـ JSON.parse
     const originalCopy = JSON.parse(JSON.stringify(block));
-    originalCopy._ui = getBlockVisuals(originalCopy.type); // 💡 السطر السحري لاسترجاع الأيقونة
+    originalCopy._ui = getBlockVisuals(originalCopy.type);
     setOriginalBlock(originalCopy);
-
-    // 2. إعداد نسخة التعديل بنفس الطريقة
     const editingCopy = JSON.parse(JSON.stringify(block));
-    editingCopy._ui = getBlockVisuals(editingCopy.type); // 💡 السطر السحري لاسترجاع الأيقونة
+    editingCopy._ui = getBlockVisuals(editingCopy.type);
     setEditingBlock(editingCopy);
   };
 
@@ -749,10 +811,8 @@ export default function FormBuilderModal({
   };
 
   const handleSaveToBackend = async () => {
-    if (!formSettings.name || !formSettings.code) {
+    if (!formSettings.name || !formSettings.code)
       return toast.error("يرجى إدخال اسم النموذج والكود.");
-    }
-
     setIsSaving(true);
     try {
       const payload = {
@@ -760,8 +820,14 @@ export default function FormBuilderModal({
         blocks: canvasBlocks.map((b, index) => ({
           type: b.type,
           label: b.label,
-          position: b.position,
-          style: b.style,
+          position: {
+            x: b.position.x,
+            y: b.position.y,
+            width: b.position.width,
+            height: b.position.height,
+            absolute: b.position.absolute,
+          },
+          style: { alignment: b.style.alignment, fontSize: b.style.fontSize },
           isEditable: b.isEditable,
           isRequired: b.isRequired,
           dataSource: b.dataSource,
@@ -769,22 +835,17 @@ export default function FormBuilderModal({
           order: index,
         })),
       };
-
-      // 💡 التعديل الجوهري: تحديد هل العملية إنشاء أم تعديل بناءً على وجود initialData
       if (initialData && initialData.id) {
         await api.put(`/forms/templates/${initialData.id}`, payload);
-        toast.success("تم تحديث النموذج بنجاح!");
+        toast.success("تم تحديث النموذج بنجاح (بالتنسيقات الدقيقة)!");
       } else {
         await api.post("/forms/templates", payload);
         toast.success("تم إنشاء النموذج بنجاح!");
       }
-
       if (onSaveSuccess) onSaveSuccess();
       else onClose();
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "حدث خطأ أثناء الاتصال بالخادم",
-      );
+      toast.error(error.response?.data?.message || "حدث خطأ أثناء الحفظ");
     } finally {
       setIsSaving(false);
     }
@@ -804,10 +865,10 @@ export default function FormBuilderModal({
             </div>
             <div>
               <div className="text-[15px] font-bold text-slate-900">
-                {initialData ? "تعديل النموذج" : "إنشاء نموذج جديد"}
+                محرر النماذج الذكي
               </div>
               <div className="text-[10px] text-slate-500">
-                محرر السحب والافلات التفاعلي
+                سحب وإفلات، تحريك حر، وتعديل الأبعاد
               </div>
             </div>
           </div>
@@ -818,7 +879,7 @@ export default function FormBuilderModal({
               className={`flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 text-white font-bold text-[13px] transition-all ${isSaving ? "opacity-70" : "hover:bg-emerald-700 shadow-md shadow-emerald-600/20"}`}
             >
               <Save size={16} className={isSaving ? "animate-pulse" : ""} />{" "}
-              <span>{isSaving ? "جاري الحفظ..." : "حفظ النموذج"}</span>
+              <span>{isSaving ? "جاري الحفظ..." : "حفظ النموذج كما هو"}</span>
             </button>
             <button
               onClick={onClose}
@@ -834,7 +895,6 @@ export default function FormBuilderModal({
           {/* ── Sidebar (Right) ── */}
           <div className="w-[400px] border-l border-slate-300 flex flex-col bg-slate-50 shrink-0 z-10">
             <div className="flex-1 overflow-auto p-4 custom-scrollbar">
-              {/* Settings Accordion */}
               <div className="bg-white rounded-xl border border-slate-200 mb-4 shadow-sm overflow-hidden">
                 <button
                   onClick={() => setIsSettingsOpen(!isSettingsOpen)}
@@ -865,8 +925,24 @@ export default function FormBuilderModal({
                             name: e.target.value,
                           })
                         }
-                        placeholder="مثال: إقرار الحساب البنكي"
+                        placeholder="مثال: نموذج استلام عهدة"
                         className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-600 block mb-1.5">
+                        وصف النموذج (مختصر)
+                      </label>
+                      <textarea
+                        value={formSettings.description}
+                        onChange={(e) =>
+                          setFormSettings({
+                            ...formSettings,
+                            description: e.target.value,
+                          })
+                        }
+                        placeholder="اكتب وصفاً قصيراً للنموذج..."
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[60px] resize-none"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -874,18 +950,27 @@ export default function FormBuilderModal({
                         <label className="text-[11px] font-bold text-slate-600 block mb-1.5">
                           كود النموذج *
                         </label>
-                        <input
-                          type="text"
-                          value={formSettings.code}
-                          onChange={(e) =>
-                            setFormSettings({
-                              ...formSettings,
-                              code: e.target.value,
-                            })
-                          }
-                          placeholder="FRM-HR-001"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 font-mono uppercase"
-                        />
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="text"
+                            value={formSettings.code}
+                            onChange={(e) =>
+                              setFormSettings({
+                                ...formSettings,
+                                code: e.target.value,
+                              })
+                            }
+                            placeholder="FRM-001"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 font-mono uppercase"
+                          />
+                          <button
+                            onClick={handleGenerateAICode}
+                            title="توليد كود تلقائي"
+                            className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg border border-indigo-200 transition-colors"
+                          >
+                            <Sparkles size={16} />
+                          </button>
+                        </div>
                       </div>
                       <div>
                         <label className="text-[11px] font-bold text-slate-600 block mb-1.5">
@@ -911,7 +996,6 @@ export default function FormBuilderModal({
                 )}
               </div>
 
-              {/* Blocks Palette Accordion */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col mb-4">
                 <button
                   onClick={() => setIsBlocksOpen(!isBlocksOpen)}
@@ -947,89 +1031,6 @@ export default function FormBuilderModal({
                   </div>
                 )}
               </div>
-
-              {/* Added Blocks List */}
-              {canvasBlocks.length > 0 && (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-[13px] font-bold text-slate-900">
-                      العناصر المضافة ({canvasBlocks.length})
-                    </span>
-                    <button
-                      onClick={() => {
-                        if (window.confirm("حذف الكل؟")) setCanvasBlocks([]);
-                      }}
-                      className="text-[10px] font-bold text-red-500 hover:bg-red-50 px-2 py-1 rounded"
-                    >
-                      حذف الكل
-                    </button>
-                  </div>
-                  <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2 -mr-2">
-                    {canvasBlocks.map((block, index) => {
-                      const isSelected = selectedBlockId === block.uid;
-                      const Icon = block._ui?.icon || Type; // حماية ضد الـ undefined
-                      return (
-                        <div
-                          key={block.uid}
-                          onClick={() => setSelectedBlockId(block.uid)}
-                          className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer ${isSelected ? "border-blue-500 bg-blue-50" : "border-slate-200 bg-white hover:border-slate-300 shadow-sm"}`}
-                        >
-                          <div
-                            className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${block._ui?.bg}`}
-                          >
-                            <Icon size={14} className={block._ui?.color} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-[11px] font-bold text-slate-900 truncate">
-                              {block.label}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                moveBlock(index, -1);
-                              }}
-                              disabled={index === 0}
-                              className="p-1.5 hover:bg-slate-100 rounded disabled:opacity-30"
-                            >
-                              <ArrowUp size={12} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                moveBlock(index, 1);
-                              }}
-                              disabled={index === canvasBlocks.length - 1}
-                              className="p-1.5 hover:bg-slate-100 rounded disabled:opacity-30"
-                            >
-                              <ArrowDown size={12} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openEditDialog(block);
-                              }}
-                              className="p-1.5 hover:bg-blue-100 text-blue-600 rounded"
-                            >
-                              <Edit2 size={12} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveBlock(block.uid);
-                              }}
-                              className="p-1.5 hover:bg-red-100 text-red-600 rounded"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
@@ -1039,37 +1040,68 @@ export default function FormBuilderModal({
               <div className="text-xs font-bold text-slate-800 flex items-center gap-2">
                 <Eye size={16} className="text-blue-600" /> معاينة حية للنموذج
               </div>
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+              <div className="flex items-center gap-4">
                 <button
                   onClick={() =>
-                    setZoomLevel((prev) => Math.max(prev - 10, 50))
+                    setFormSettings({
+                      ...formSettings,
+                      showBorder: !formSettings.showBorder,
+                    })
                   }
-                  className="p-1.5 hover:bg-white rounded text-slate-600"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${formSettings.showBorder ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"}`}
                 >
-                  <ZoomOut size={16} />
+                  <Square size={14} /> إطار للورقة
                 </button>
-                <span className="text-[12px] w-12 text-center font-mono font-bold text-slate-700">
-                  {zoomLevel}%
-                </span>
-                <button
-                  onClick={() =>
-                    setZoomLevel((prev) => Math.min(prev + 10, 150))
-                  }
-                  className="p-1.5 hover:bg-white rounded text-slate-600"
-                >
-                  <ZoomIn size={16} />
-                </button>
+
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+                  <button
+                    onClick={() =>
+                      setZoomLevel((prev) => Math.max(prev - 10, 50))
+                    }
+                    className="p-1.5 hover:bg-white rounded text-slate-600"
+                  >
+                    <ZoomOut size={16} />
+                  </button>
+                  <span className="text-[12px] w-12 text-center font-mono font-bold text-slate-700">
+                    {zoomLevel}%
+                  </span>
+                  <button
+                    onClick={() =>
+                      setZoomLevel((prev) => Math.min(prev + 10, 150))
+                    }
+                    className="p-1.5 hover:bg-white rounded text-slate-600"
+                  >
+                    <ZoomIn size={16} />
+                  </button>
+                </div>
               </div>
             </div>
 
             <div className="flex-1 overflow-auto flex items-start justify-center pt-24 pb-12 px-8 custom-scrollbar">
               <div
-                className="w-[210mm] min-h-[297mm] bg-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] relative overflow-hidden flex flex-col transition-transform duration-300 origin-top"
+                ref={paperRef}
+                className={`bg-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] relative flex flex-col origin-top transition-all duration-300
+                  ${formSettings.showBorder ? "border-4 border-slate-800" : ""}
+                `}
                 style={{
+                  width: "210mm",
+                  height: `${dynamicHeight}px`, // 💡 ارتفاع ديناميكي متعدد الصفحات
                   transform: `scale(${zoomLevel / 100})`,
-                  padding: "20mm",
                 }}
               >
+                {/* 💡 رسم الفواصل الوهمية بين الصفحات إذا زاد الطول عن ورقة A4 واحدة */}
+                {Array.from({ length: pagesCount - 1 }).map((_, i) => (
+                  <div
+                    key={`break-${i}`}
+                    className="absolute left-0 right-0 border-b-2 border-dashed border-red-300 z-0 pointer-events-none"
+                    style={{ top: `${(i + 1) * A4_HEIGHT_PX}px` }}
+                  >
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-red-100 text-red-600 text-[10px] px-2 py-0.5 rounded font-bold">
+                      نهاية الصفحة {i + 1}
+                    </div>
+                  </div>
+                ))}
+
                 {canvasBlocks.length === 0 ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-slate-400 opacity-60">
                     <Grid3x3
@@ -1085,14 +1117,40 @@ export default function FormBuilderModal({
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2 w-full relative z-10">
+                  <div className="w-full h-full relative z-10 min-h-full">
                     {canvasBlocks.map((block) => (
                       <div
                         key={block.uid}
                         onClick={() => setSelectedBlockId(block.uid)}
-                        className={`relative group transition-all rounded ${selectedBlockId === block.uid ? "ring-2 ring-blue-400 bg-blue-50/20" : "hover:ring-2 hover:ring-slate-200"} p-2 -mx-2 flex`}
+                        onMouseUp={(e) => handleResizeEnd(e, block.uid)} // 💡 التقاط الأبعاد الجديدة بعد انتهاء الـ Resize
+                        className={`group flex absolute
+                          ${selectedBlockId === block.uid ? "ring-2 ring-blue-400 bg-blue-50/20 z-50 rounded-sm" : "hover:ring-2 hover:ring-slate-300 z-10 rounded"} 
+                        `}
+                        style={{
+                          left: `${block.position.x}px`,
+                          top: `${block.position.y}px`,
+                          width: `${block.position.width}px`,
+                          height: `${block.position.height}px`,
+                          resize: "both",
+                          overflow: "hidden",
+                          minWidth: "50px",
+                          minHeight: "20px",
+                        }}
                       >
-                        <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex gap-1">
+                        {/* مقبض السحب الحر */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                          <div
+                            onMouseDown={(e) =>
+                              onMouseDown(e, block.uid, block.position)
+                            }
+                            className="bg-blue-600 text-white p-2 rounded-full shadow-lg pointer-events-auto cursor-move hover:scale-110 hover:bg-blue-700 transition-transform active:cursor-grabbing"
+                            title="اسحب للتحريك الحر"
+                          >
+                            <Move size={20} />
+                          </div>
+                        </div>
+
+                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex flex-col gap-1 pointer-events-auto">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1112,9 +1170,8 @@ export default function FormBuilderModal({
                             <Trash2 size={12} />
                           </button>
                         </div>
-                        <div
-                          className={`w-full ${selectedBlockId === block.uid ? "pointer-events-none" : ""}`}
-                        >
+
+                        <div className="w-full h-full flex flex-col pointer-events-none p-1 overflow-hidden">
                           <PreviewBlockRenderer
                             block={block}
                             formSettings={formSettings}
@@ -1124,10 +1181,21 @@ export default function FormBuilderModal({
                     ))}
                   </div>
                 )}
-                <div className="mt-auto pt-4 border-t border-slate-200 text-[10px] text-slate-400 font-mono flex justify-between">
-                  <span dir="ltr">{formSettings.code || "FRM-XXX"}</span>
-                  <span>نظام الموارد البشرية</span>
-                </div>
+
+                {/* 💡 الترقيم والفوتر لكل صفحة بناءً على طول المحتوى */}
+                {Array.from({ length: pagesCount }).map((_, i) => (
+                  <div
+                    key={`footer-${i}`}
+                    className="absolute left-[20mm] right-[20mm] flex justify-between text-[10px] text-slate-400 font-mono"
+                    style={{ top: `${(i + 1) * A4_HEIGHT_PX - 40}px` }}
+                  >
+                    <span dir="ltr">{formSettings.code || "FRM-XXX"}</span>
+                    <span className="font-bold text-slate-600">
+                      صفحة {i + 1} من {pagesCount}
+                    </span>
+                    <span>نظام الموارد البشرية</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -1153,7 +1221,7 @@ export default function FormBuilderModal({
               </button>
             </div>
 
-            <div className="p-6 flex flex-col gap-5">
+            <div className="p-6 flex flex-col gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
               <div>
                 <label className="text-[12px] font-bold text-slate-700 block mb-2">
                   التسمية (تظهر للمستخدم)
@@ -1171,7 +1239,7 @@ export default function FormBuilderModal({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[12px] font-bold text-slate-700 block mb-2">
-                    العرض (مم)
+                    العرض (Px)
                   </label>
                   <input
                     type="number"
@@ -1189,7 +1257,7 @@ export default function FormBuilderModal({
                 </div>
                 <div>
                   <label className="text-[12px] font-bold text-slate-700 block mb-2">
-                    الارتفاع (مم)
+                    الارتفاع (Px)
                   </label>
                   <input
                     type="number"
@@ -1205,6 +1273,28 @@ export default function FormBuilderModal({
                     className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-[12px] font-bold text-slate-700 block mb-2">
+                  حجم النص الداخلي (Px)
+                </label>
+                <input
+                  type="number"
+                  min="8"
+                  max="72"
+                  value={editingBlock.style?.fontSize || 14}
+                  onChange={(e) =>
+                    updateEditingBlock({
+                      style: {
+                        ...editingBlock.style,
+                        fontSize: Number(e.target.value),
+                      },
+                    })
+                  }
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500"
+                  placeholder="مثال: 14"
+                />
               </div>
 
               <div>

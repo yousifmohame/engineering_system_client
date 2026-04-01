@@ -92,7 +92,7 @@ const AppContent = () => {
   }
 
   // 👈 قائمة بأكواد الشاشات التي قمت ببرمجتها بالفعل
-  const implementedScreens = ["DASH", "055", "300", "310", "817", "815", "942", "SET", "39", "40", "41", "222", "30", "31", "32", "71", "73", "74", "09", "0010", "10", "18", "16"];
+  const implementedScreens = ["DASH", "055", "300", "310", "817", "815", "942", "SET", "39", "40", "41", "222", "30", "31", "32", "71", "73", "74", "09", "0010", "10", "88", "16"];
   // فحص هل الشاشة المطلوبة مبرمجة أم لا
   const isImplemented = implementedScreens.includes(activeScreenId);
 
@@ -140,7 +140,7 @@ const AppContent = () => {
             <div className={activeScreenId === "09" ? "block h-full" : "hidden"}><BuildingPermitsRegistry /></div>
             <div className={activeScreenId === "0010" ? "block h-full" : "hidden"}><OurOfficePermits /></div>
             <div className={activeScreenId === "10" ? "block h-full" : "hidden"}><TransactionsDashboard /></div>
-            <div className={activeScreenId === "18" ? "block h-full" : "hidden"}><HRDashboard /></div>
+            <div className={activeScreenId === "88" ? "block h-full" : "hidden"}><HRDashboard /></div>
             <div className={activeScreenId === "16" ? "block h-full" : "hidden"}><SystemFilesExplorer /></div>
             {/* --- 👈 السحر هنا: شاشة Fallback لأي كود غير مبرمج --- */}
             {!isImplemented && (

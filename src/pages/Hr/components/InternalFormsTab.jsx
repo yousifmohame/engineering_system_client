@@ -8,11 +8,12 @@ import {
   Activity,
   ChartColumn,
   Loader2,
+  Trash2, // 👈 تمت إضافة أيقونة سلة المهملات تحسباً لاستخدامها مستقبلاً
 } from "lucide-react";
 import { toast } from "sonner";
-import api from "../../../api/axios"; // 💡 تأكد من مسار الاستيراد الصحيح
+import api from "../../../api/axios";
 
-// 💡 استيراد المكونات الفرعية التي أنشأناها
+// 💡 استيراد المكونات الفرعية
 import FormBuilderModal from "./models/FormBuilderModal";
 import FormPreviewModal from "./FormPreviewModal";
 import FormCard from "./FormCard";
@@ -74,6 +75,35 @@ export default function InternalFormsTab() {
     }
   };
 
+  // 💡 التعديل: دالة الحذف الجديدة
+  const handleDeleteTemplate = async (templateId, templateName) => {
+    if (
+      !window.confirm(
+        `هل أنت متأكد من حذف نموذج "${templateName}" نهائياً؟\nتنبيه: لا يمكن التراجع عن هذه الخطوة.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      toast.loading("جاري الحذف...");
+      // مناداة الـ Endpoint الذي أنشأناه سابقاً في الباك إند
+      await api.delete(`/forms/templates/${templateId}`);
+
+      toast.dismiss();
+      toast.success("تم حذف النموذج بنجاح");
+
+      // تحديث القائمة محلياً بدون إعادة جلب من السيرفر (لتسريع الأداء)
+      setTemplates((prev) => prev.filter((t) => t.id !== templateId));
+    } catch (error) {
+      toast.dismiss();
+      // التقاط رسالة الخطأ القادمة من الباك إند (مثلاً إذا كان النموذج مستخدماً)
+      const errorMsg =
+        error.response?.data?.message || "حدث خطأ أثناء محاولة الحذف";
+      toast.error(errorMsg);
+    }
+  };
+
   // ── Computed Data ──
   const stats = useMemo(() => {
     const total = templates.length;
@@ -82,7 +112,7 @@ export default function InternalFormsTab() {
       (sum, t) => sum + (t._count?.usages || 0),
       0,
     );
-    const todayUses = Math.floor(totalUses * 0.1);
+    const todayUses = Math.floor(totalUses * 0.1); // قيمة تجريبية لليوم
 
     return [
       {
@@ -263,6 +293,7 @@ export default function InternalFormsTab() {
                 form={form}
                 onPreview={() => handlePreviewTemplate(form.id)}
                 onEdit={() => handleEditTemplate(form.id)}
+                onDelete={() => handleDeleteTemplate(form.id, form.name)} // 👈 التعديل: تمرير دالة الحذف
               />
             ))}
           </div>
