@@ -292,24 +292,44 @@ const PreviewBlockRenderer = React.memo(
       case "footer_image":
       case "background_image":
       case "image_upload":
+        // 💡 استخراج بيانات الصورة بأمان من الـ value
+        let imgData = { url: null, opacity: 1, fit: "contain" };
+        if (typeof value === "object" && value !== null) {
+          imgData = { ...imgData, ...value };
+        } else if (
+          typeof value === "string" &&
+          value.startsWith("data:image")
+        ) {
+          // في حال كانت الصورة مخزنة كنص Base64 مباشر
+          imgData.url = value;
+        }
+
+        const isBackground = block.type === "background_image";
+
         return (
           <div
             style={{ ...alignStyles, width: widthStyle, height: heightStyle }}
-            className="flex flex-col"
+            className="flex flex-col relative"
           >
-            <label
-              style={{ fontSize: fontSizeStyle }}
-              className="font-bold text-slate-700 mb-1.5"
-            >
-              {block.label}
-            </label>
-            {shouldShowInput ? (
+            {!isBackground &&
+              block.type !== "header_image" &&
+              block.type !== "footer_image" && (
+                <label
+                  style={{ fontSize: fontSizeStyle }}
+                  className="font-bold text-slate-700 mb-1.5 z-10"
+                >
+                  {block.label}
+                </label>
+              )}
+
+            {shouldShowInput && !isBackground ? (
               <div className="relative border-2 border-dashed border-blue-400 rounded-lg bg-blue-50/30 w-full flex-1 flex flex-col items-center justify-center text-blue-500 overflow-hidden group">
-                {value ? (
+                {imgData.url ? (
                   <img
-                    src={value}
+                    src={imgData.url}
                     alt="uploaded"
-                    className="w-full h-full object-contain"
+                    className="w-full h-full"
+                    style={{ objectFit: imgData.fit, opacity: imgData.opacity }}
                   />
                 ) : (
                   <>
@@ -327,7 +347,8 @@ const PreviewBlockRenderer = React.memo(
                     const file = e.target.files[0];
                     if (file) {
                       const reader = new FileReader();
-                      reader.onload = (ev) => onChange(ev.target.result);
+                      reader.onload = (ev) =>
+                        onChange({ ...imgData, url: ev.target.result });
                       reader.readAsDataURL(file);
                     }
                   }}
@@ -336,19 +357,28 @@ const PreviewBlockRenderer = React.memo(
               </div>
             ) : (
               <div
-                className={`border-2 rounded-lg w-full flex-1 flex flex-col items-center justify-center overflow-hidden ${value || isFilled ? "border-transparent bg-transparent" : "border-dashed border-slate-300 bg-slate-50 text-slate-400"}`}
+                className={`w-full flex-1 flex flex-col items-center justify-center overflow-hidden ${imgData.url || isFilled ? "bg-transparent border-transparent" : "border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 rounded-lg"}`}
               >
-                {value || isFilled ? (
+                {imgData.url || isFilled ? (
                   <img
-                    src={value || "https://placehold.co/400x200?text=Preview"}
-                    alt="uploaded"
-                    className="w-full h-full object-contain"
+                    src={
+                      imgData.url || "https://placehold.co/400x200?text=Preview"
+                    }
+                    alt="block_image"
+                    className="w-full h-full pointer-events-none"
+                    style={{
+                      objectFit:
+                        imgData.fit || (isBackground ? "cover" : "contain"),
+                      opacity: imgData.opacity ?? 1,
+                    }}
                   />
                 ) : (
-                  <>
-                    <Upload size={32} className="mb-2 opacity-50" />
-                    <span style={{ fontSize: "12px" }}>انقر لإرفاق صورة</span>
-                  </>
+                  !isBackground && (
+                    <>
+                      <Upload size={32} className="mb-2 opacity-50" />
+                      <span style={{ fontSize: "12px" }}>انقر لإرفاق صورة</span>
+                    </>
+                  )
                 )}
               </div>
             )}
@@ -496,7 +526,7 @@ const PreviewBlockRenderer = React.memo(
                 </label>
               ) : isInteractive && value && isForPrint ? (
                 <img
-                  src={value}
+                  src={typeof value === "object" ? value.url : value}
                   alt="signature"
                   className="max-w-full max-h-full mix-blend-multiply"
                 />
@@ -537,9 +567,6 @@ const PreviewBlockRenderer = React.memo(
   },
 );
 
-// ==========================================
-// 💡 3. مكون نافذة المعاينة والطباعة (Preview Modal)
-// ==========================================
 export default function FormPreviewModal({ form, onClose }) {
   const [zoomLevel, setZoomLevel] = useState(100);
   const [exportType, setExportType] = useState("pdf");
@@ -937,12 +964,15 @@ export default function FormPreviewModal({ form, onClose }) {
                       width: 200,
                       height: 50,
                     };
-                    // إمكانية أن يكون له قيمة افتراضية كـ JSON (مثل الجداول أو الصور)
+
+                    // 💡 تحويل القيمة من الباك إند بأمان سواء كانت نصاً أو JSON
                     let val = block.defaultValue;
-                    try {
-                      val = JSON.parse(val);
-                    } catch {
-                      /* Ignore */
+                    if (typeof val === "string" && val.trim().startsWith("{")) {
+                      try {
+                        val = JSON.parse(val);
+                      } catch {
+                        /* Ignore */
+                      }
                     }
 
                     return (
@@ -954,7 +984,15 @@ export default function FormPreviewModal({ form, onClose }) {
                           top: `${pos.y}px`,
                           width: `${pos.width}px`,
                           height: `${pos.height}px`,
-                          overflow: "hidden", // لمنع خروج المحتوى
+                          overflow:
+                            block.type === "background_image" ||
+                            block.type === "header_image" ||
+                            block.type === "footer_image" ||
+                            block.type === "company_logo" ||
+                            block.type === "signature" ||
+                            block.type === "office_signature"
+                              ? "visible"
+                              : "hidden",
                         }}
                       >
                         <div className="w-full h-full flex flex-col pointer-events-none">

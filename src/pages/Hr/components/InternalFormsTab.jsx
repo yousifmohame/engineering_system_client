@@ -8,7 +8,7 @@ import {
   Activity,
   ChartColumn,
   Loader2,
-  Trash2, 
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../../api/axios";
@@ -16,7 +16,7 @@ import api from "../../../api/axios";
 // 💡 استيراد المكونات الفرعية
 import FormBuilderModal from "./models/FormBuilderModal";
 import FormPreviewModal from "./FormPreviewModal";
-import FormFillModal from "./FormFillModal"; // 👈 استيراد مكون شاشة التعبئة الجديد
+import FormFillModal from "./FormFillModal";
 import FormCard from "./FormCard";
 
 export default function InternalFormsTab() {
@@ -24,7 +24,7 @@ export default function InternalFormsTab() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [previewForm, setPreviewForm] = useState(null);
   const [formToEdit, setFormToEdit] = useState(null);
-  const [formToFill, setFormToFill] = useState(null); // 👈 State خاصة بشاشة التعبئة
+  const [formToFill, setFormToFill] = useState(null);
   const [templates, setTemplates] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -77,7 +77,6 @@ export default function InternalFormsTab() {
     }
   };
 
-  // 💡 التعديل: إضافة دالة لتحميل النموذج في وضع التعبئة (Fill Mode)
   const handleFillTemplate = async (templateId) => {
     try {
       toast.loading("جاري تجهيز النموذج للتعبئة...", { id: "fill" });
@@ -90,7 +89,6 @@ export default function InternalFormsTab() {
     }
   };
 
-  // دالة الحذف
   const handleDeleteTemplate = async (templateId, templateName) => {
     if (
       !window.confirm(
@@ -108,7 +106,8 @@ export default function InternalFormsTab() {
       setTemplates((prev) => prev.filter((t) => t.id !== templateId));
     } catch (error) {
       toast.dismiss("delete");
-      const errorMsg = error.response?.data?.message || "حدث خطأ أثناء محاولة الحذف";
+      const errorMsg =
+        error.response?.data?.message || "حدث خطأ أثناء محاولة الحذف";
       toast.error(errorMsg);
     }
   };
@@ -121,7 +120,7 @@ export default function InternalFormsTab() {
       (sum, t) => sum + (t._count?.usages || 0),
       0,
     );
-    const todayUses = Math.floor(totalUses * 0.1); 
+    const todayUses = Math.floor(totalUses * 0.1);
 
     return [
       {
@@ -303,7 +302,8 @@ export default function InternalFormsTab() {
                 onPreview={() => handlePreviewTemplate(form.id)}
                 onEdit={() => handleEditTemplate(form.id)}
                 onDelete={() => handleDeleteTemplate(form.id, form.name)}
-                onFill={() => handleFillTemplate(form.id)} // 👈 التعديل: ربط دالة التعبئة بـ onFill
+                onFill={() => handleFillTemplate(form.id)}
+                onDuplicate={fetchTemplates} // 👈 التعديل: تمرير دالة التحديث لتنفذ بعد نجاح النسخ
               />
             ))}
           </div>
@@ -311,8 +311,6 @@ export default function InternalFormsTab() {
       </div>
 
       {/* ── Modals ── */}
-      
-      {/* 1. Modal بناء النموذج */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100]">
           <FormBuilderModal
@@ -330,7 +328,6 @@ export default function InternalFormsTab() {
         </div>
       )}
 
-      {/* 2. Modal المعاينة فقط */}
       {previewForm && (
         <FormPreviewModal
           form={previewForm}
@@ -338,19 +335,16 @@ export default function InternalFormsTab() {
         />
       )}
 
-      {/* 3. Modal شاشة التعبئة والطباعة الاحترافية 👈 */}
       {formToFill && (
         <FormFillModal
           form={formToFill}
           onClose={() => setFormToFill(null)}
           onSaveUsage={(values) => {
-             // يمكنك لاحقاً ربط هذا الزر بحفظ النموذج في قاعدة البيانات للموظف
-             console.log("Data to save:", values);
-             toast.success("تم الحفظ في السجل (سيتم ربط الباك إند قريباً)");
+            console.log("Data to save:", values);
+            toast.success("تم الحفظ في السجل (سيتم ربط الباك إند قريباً)");
           }}
         />
       )}
-
     </div>
   );
 }

@@ -116,7 +116,7 @@ const CanvasRichText = ({
 
   return (
     <div
-      className={`relative w-full h-full group print:bg-transparent ${!isForPrint && isFocused ? "ring-2 ring-blue-400 bg-blue-50/20 rounded z-50" : ""}`}
+      className={`relative w-full h-full group ${isForPrint ? "bg-transparent" : ""} ${!isForPrint && isFocused ? "ring-2 ring-blue-400 bg-blue-50/20 rounded z-50" : ""}`}
       onFocus={() => setIsFocused(true)}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) {
@@ -193,7 +193,7 @@ const CanvasRichText = ({
       <div
         ref={contentRef}
         contentEditable={!isForPrint}
-        className={`rich-text-editor outline-none print:bg-transparent ${inline ? "inline-block min-w-[50px] border-b border-dashed border-slate-400 print:border-solid print:border-transparent" : "w-full h-full whitespace-pre-wrap break-words"}`}
+        className={`rich-text-editor outline-none ${isForPrint ? "bg-transparent border-transparent" : inline ? "border-b border-dashed border-slate-400" : ""} ${inline ? "inline-block min-w-[50px]" : "w-full h-full whitespace-pre-wrap break-words"}`}
         style={{
           minHeight: inline ? "auto" : "100%",
           wordBreak: "break-word",
@@ -205,37 +205,49 @@ const CanvasRichText = ({
     </div>
   );
 };
+
 // ==========================================
-// 💡 محرر الجداول المتقدم (دمج، خلفيات، تحجيم أعمدة، وتنسيق)
+// 💡 محرر الجداول المتقدم
 // ==========================================
 const InteractiveTable = ({ value, onChange, isForPrint }) => {
-  // الهيكل الافتراضي: يحتوي على إعدادات الجدول الكلية، وبيانات الخلايا
   const defaultState = {
-    bg: "#ffffff", // لون خلفية الجدول الافتراضي (معتم)
-    opacity: 1,    // شفافية الجدول
+    bg: "#ffffff",
+    opacity: 1,
     data: [
-      [{ v: "العمود 1", cs: 1, rs: 1, bg: "#f1f5f9", b: true, w: "auto" }, { v: "العمود 2", cs: 1, rs: 1, bg: "#f1f5f9", b: true, w: "auto" }, { v: "العمود 3", cs: 1, rs: 1, bg: "#f1f5f9", b: true, w: "auto" }],
-      [{ v: "—", cs: 1, rs: 1, bg: "transparent", b: false, w: "auto" }, { v: "—", cs: 1, rs: 1, bg: "transparent", b: false, w: "auto" }, { v: "—", cs: 1, rs: 1, bg: "transparent", b: false, w: "auto" }]
-    ]
+      [
+        { v: "العمود 1", cs: 1, rs: 1, bg: "#f1f5f9", b: true, w: "auto" },
+        { v: "العمود 2", cs: 1, rs: 1, bg: "#f1f5f9", b: true, w: "auto" },
+        { v: "العمود 3", cs: 1, rs: 1, bg: "#f1f5f9", b: true, w: "auto" },
+      ],
+      [
+        { v: "—", cs: 1, rs: 1, bg: "transparent", b: false, w: "auto" },
+        { v: "—", cs: 1, rs: 1, bg: "transparent", b: false, w: "auto" },
+        { v: "—", cs: 1, rs: 1, bg: "transparent", b: false, w: "auto" },
+      ],
+    ],
   };
 
-  // معالجة البيانات القديمة (إذا كانت نصوص فقط) وتحويلها للنظام الذكي
   let tableState = defaultState;
   if (value && value.data) {
     tableState = value;
   } else if (Array.isArray(value) && value.length > 0) {
-    tableState = { 
-      bg: "#ffffff", opacity: 1, 
-      data: value.map(r => r.map(c => ({ 
-        v: typeof c === 'string' ? c : c.v || "", 
-        cs: c.cs || 1, rs: c.rs || 1, 
-        bg: c.bg || "transparent", b: c.b || false, w: c.w || "auto" 
-      }))) 
+    tableState = {
+      bg: "#ffffff",
+      opacity: 1,
+      data: value.map((r) =>
+        r.map((c) => ({
+          v: typeof c === "string" ? c : c.v || "",
+          cs: c.cs || 1,
+          rs: c.rs || 1,
+          bg: c.bg || "transparent",
+          b: c.b || false,
+          w: c.w || "auto",
+        })),
+      ),
     };
   }
   const tableData = tableState.data;
 
-  // ── تحديث نص الخلية ──
   const updateCell = (rIdx, cIdx, val) => {
     if (!onChange) return;
     const newData = [...tableData];
@@ -243,7 +255,6 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
     onChange({ ...tableState, data: newData });
   };
 
-  // ── أدوات الخلية (Cell Tools) ──
   const toggleBold = (rIdx, cIdx) => {
     if (!onChange) return;
     const newData = [...tableData];
@@ -258,14 +269,12 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
     onChange({ ...tableState, data: newData });
   };
 
-  // ── الدمج (Merge) ──
-  const mergeLeft = (rIdx, cIdx) => { // يمين في الواجهة، يسار برمجياً بسبب LTR/RTL
+  const mergeRight = (rIdx, cIdx) => {
     if (!onChange) return;
     const newData = [...tableData];
-    // التأكد من وجود خلية تالية غير مدمجة مسبقاً
     if (cIdx + 1 < newData[rIdx].length && newData[rIdx][cIdx + 1].cs !== 0) {
       newData[rIdx][cIdx].cs += newData[rIdx][cIdx + 1].cs;
-      newData[rIdx][cIdx + 1].cs = 0; // إخفاء الخلية المدمجة
+      newData[rIdx][cIdx + 1].cs = 0;
       onChange({ ...tableState, data: newData });
     }
   };
@@ -275,7 +284,7 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
     const newData = [...tableData];
     if (rIdx + 1 < newData.length && newData[rIdx + 1][cIdx].rs !== 0) {
       newData[rIdx][cIdx].rs += newData[rIdx + 1][cIdx].rs;
-      newData[rIdx + 1][cIdx].rs = 0; 
+      newData[rIdx + 1][cIdx].rs = 0;
       onChange({ ...tableState, data: newData });
     }
   };
@@ -285,125 +294,251 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
     const newData = [...tableData];
     newData[rIdx][cIdx].cs = 1;
     newData[rIdx][cIdx].rs = 1;
-    // إعادة إظهار الخلايا المجاورة (تبسيط: نعيد الخلية التي تليها مباشرة)
     if (cIdx + 1 < newData[rIdx].length) newData[rIdx][cIdx + 1].cs = 1;
     if (rIdx + 1 < newData.length) newData[rIdx + 1][cIdx].rs = 1;
     onChange({ ...tableState, data: newData });
   };
 
-  // ── تحجيم العمود (Column Resize) ──
   const resizeColumn = (cIdx, action) => {
-      if (!onChange) return;
-      const newData = [...tableData];
-      // نأخذ العرض الحالي من الصف الأول
-      let currentWidthStr = newData[0][cIdx].w;
-      let currentWidth = currentWidthStr === "auto" ? 100 : parseInt(currentWidthStr); // افتراض 100px لو كان auto
-      
-      let newWidth = action === "expand" ? currentWidth + 20 : Math.max(30, currentWidth - 20);
-      
-      // تطبيق العرض الجديد على كل خلايا العمود
-      newData.forEach(row => {
-          if(row[cIdx]) row[cIdx].w = `${newWidth}px`;
-      });
-      onChange({ ...tableState, data: newData });
+    if (!onChange) return;
+    const newData = [...tableData];
+    let currentWidthStr = newData[0][cIdx].w;
+    let currentWidth =
+      currentWidthStr === "auto" ? 100 : parseInt(currentWidthStr);
+    let newWidth =
+      action === "expand" ? currentWidth + 20 : Math.max(30, currentWidth - 20);
+    newData.forEach((row) => {
+      if (row[cIdx]) row[cIdx].w = `${newWidth}px`;
+    });
+    onChange({ ...tableState, data: newData });
   };
 
+  const addRow = () =>
+    onChange &&
+    onChange({
+      ...tableState,
+      data: [
+        ...tableData,
+        Array(tableData[0].length).fill({
+          v: "—",
+          cs: 1,
+          rs: 1,
+          bg: "transparent",
+          b: false,
+          w: "auto",
+        }),
+      ],
+    });
+  const removeRow = () =>
+    onChange &&
+    tableData.length > 1 &&
+    onChange({ ...tableState, data: tableData.slice(0, -1) });
+  const addCol = () =>
+    onChange &&
+    onChange({
+      ...tableState,
+      data: tableData.map((row) => [
+        ...row,
+        { v: "جديد", cs: 1, rs: 1, bg: "transparent", b: false, w: "auto" },
+      ]),
+    });
+  const removeCol = () =>
+    onChange &&
+    tableData[0].length > 1 &&
+    onChange({ ...tableState, data: tableData.map((row) => row.slice(0, -1)) });
+  const changeTableBg = (color) =>
+    onChange && onChange({ ...tableState, bg: color });
+  const changeTableOpacity = (opacity) =>
+    onChange && onChange({ ...tableState, opacity: opacity });
 
-  // ── أدوات الجدول العامة ──
-  const addRow = () => onChange && onChange({ ...tableState, data: [...tableData, Array(tableData[0].length).fill({ v: "—", cs: 1, rs: 1, bg: "transparent", b: false, w: "auto" })] });
-  const removeRow = () => onChange && tableData.length > 1 && onChange({ ...tableState, data: tableData.slice(0, -1) });
-  const addCol = () => onChange && onChange({ ...tableState, data: tableData.map(row => [...row, { v: "جديد", cs: 1, rs: 1, bg: "transparent", b: false, w: "auto" }]) });
-  const removeCol = () => onChange && tableData[0].length > 1 && onChange({ ...tableState, data: tableData.map(row => row.slice(0, -1)) });
-  const changeTableBg = (color) => onChange && onChange({ ...tableState, bg: color });
-  const changeTableOpacity = (opacity) => onChange && onChange({ ...tableState, opacity: opacity });
-
-
-  // تحويل اللون السداسي العشري (Hex) والشفافية (Opacity) إلى rgba
   const hexToRgba = (hex, opacity) => {
-    if (!hex || hex === 'transparent') return 'transparent';
-    let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    if (!hex || hex === "transparent") return "transparent";
+    let r = parseInt(hex.slice(1, 3), 16),
+      g = parseInt(hex.slice(3, 5), 16),
+      b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
   const tableBgColor = hexToRgba(tableState.bg, tableState.opacity);
 
   return (
-    <div className="w-full h-full flex flex-col relative group print:bg-transparent" style={{ backgroundColor: isForPrint ? 'transparent' : tableBgColor }}>
-      
-      {/* ── شريط أدوات الجدول (General Table Toolbar) ── */}
+    <div
+      className={`w-full h-full flex flex-col relative group ${isForPrint ? "bg-transparent" : ""}`}
+      style={{ backgroundColor: isForPrint ? "transparent" : tableBgColor }}
+    >
       {!isForPrint && onChange && (
-        <div className="flex gap-1 mb-1 print-hidden opacity-30 hover:opacity-100 focus-within:opacity-100 transition-opacity flex-wrap items-center bg-white/80 p-1 rounded backdrop-blur-sm border border-slate-200">
-          <button onClick={addRow} className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[9px] font-bold flex items-center gap-0.5"><Plus size={10} /> صف</button>
-          <button onClick={removeRow} className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[9px] font-bold flex items-center gap-0.5"><Minus size={10} /> صف</button>
+        <div className="flex gap-1 mb-1 opacity-30 hover:opacity-100 focus-within:opacity-100 transition-opacity flex-wrap items-center bg-white/80 p-1 rounded backdrop-blur-sm border border-slate-200">
+          <button
+            onClick={addRow}
+            className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[9px] font-bold flex items-center gap-0.5"
+          >
+            <Plus size={10} /> صف
+          </button>
+          <button
+            onClick={removeRow}
+            className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[9px] font-bold flex items-center gap-0.5"
+          >
+            <Minus size={10} /> صف
+          </button>
           <div className="w-px h-3 bg-slate-300 mx-1"></div>
-          <button onClick={addCol} className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold flex items-center gap-0.5"><Plus size={10} /> عمود</button>
-          <button onClick={removeCol} className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[9px] font-bold flex items-center gap-0.5"><Minus size={10} /> عمود</button>
+          <button
+            onClick={addCol}
+            className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold flex items-center gap-0.5"
+          >
+            <Plus size={10} /> عمود
+          </button>
+          <button
+            onClick={removeCol}
+            className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[9px] font-bold flex items-center gap-0.5"
+          >
+            <Minus size={10} /> عمود
+          </button>
           <div className="w-px h-3 bg-slate-300 mx-1"></div>
-          
-          {/* التحكم بخلفية الجدول كاملة */}
           <div className="flex items-center gap-1 px-1 rounded">
-            <span className="text-[8px] font-bold text-slate-500">خلفية الجدول:</span>
-            <button onClick={() => changeTableBg("transparent")} className={`text-[8px] px-1 rounded ${tableState.bg === 'transparent' ? 'bg-slate-300 text-white' : 'text-slate-600 bg-slate-100'}`}>شفاف</button>
-            <input type="color" value={tableState.bg !== 'transparent' ? tableState.bg : '#ffffff'} onChange={(e) => changeTableBg(e.target.value)} className="w-4 h-4 p-0 border border-slate-300 rounded-full cursor-pointer" title="لون الجدول" />
-            
-            {/* مؤشر شفافية الجدول */}
-            <input type="range" min="0.1" max="1" step="0.1" value={tableState.opacity} onChange={(e) => changeTableOpacity(Number(e.target.value))} className="w-12 h-1 accent-blue-500" title="شفافية الجدول" disabled={tableState.bg === 'transparent'} />
+            <span className="text-[8px] font-bold text-slate-500">
+              خلفية الجدول:
+            </span>
+            <button
+              onClick={() => changeTableBg("transparent")}
+              className={`text-[8px] px-1 rounded ${tableState.bg === "transparent" ? "bg-slate-300 text-white" : "text-slate-600 bg-slate-100"}`}
+            >
+              شفاف
+            </button>
+            <input
+              type="color"
+              value={
+                tableState.bg !== "transparent" ? tableState.bg : "#ffffff"
+              }
+              onChange={(e) => changeTableBg(e.target.value)}
+              className="w-4 h-4 p-0 border border-slate-300 rounded-full cursor-pointer"
+              title="لون الجدول"
+            />
+            <input
+              type="range"
+              min="0.1"
+              max="1"
+              step="0.1"
+              value={tableState.opacity}
+              onChange={(e) => changeTableOpacity(Number(e.target.value))}
+              className="w-12 h-1 accent-blue-500"
+              title="شفافية الجدول"
+              disabled={tableState.bg === "transparent"}
+            />
           </div>
         </div>
       )}
-
-      {/* ── هيكل الجدول ── */}
-      <div className="flex-1 w-full overflow-visible" style={{ backgroundColor: tableBgColor }}>
+      <div
+        className="flex-1 w-full overflow-visible"
+        style={{ backgroundColor: tableBgColor }}
+      >
         <table className="w-full h-full text-center border-collapse border border-slate-800 bg-transparent table-fixed">
           <tbody>
             {tableData.map((row, rIdx) => (
               <tr key={rIdx} className="border-t border-slate-800">
                 {row.map((cell, cIdx) => {
-                  if (cell.cs === 0 || cell.rs === 0) return null; // إخفاء الخلايا المدمجة
-                  
+                  if (cell.cs === 0 || cell.rs === 0) return null;
                   return (
-                    <td 
-                      key={cIdx} 
-                      colSpan={cell.cs} 
-                      rowSpan={cell.rs} 
-                      className="border border-slate-800 p-0 relative group/cell align-top" 
-                      style={{ 
-                        backgroundColor: cell.bg !== 'transparent' ? cell.bg : 'inherit',
+                    <td
+                      key={cIdx}
+                      colSpan={cell.cs}
+                      rowSpan={cell.rs}
+                      className="border border-slate-800 p-0 relative group/cell align-top"
+                      style={{
+                        backgroundColor:
+                          cell.bg !== "transparent" ? cell.bg : "inherit",
                         width: cell.w,
-                        minWidth: '30px' // عرض أدنى
+                        minWidth: "30px",
                       }}
                     >
                       <textarea
                         value={cell.v}
                         onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
-                        className={`w-full h-full min-h-[30px] p-2 bg-transparent outline-none text-center focus:bg-blue-50/30 resize-none print:bg-transparent print:border-none ${cell.b ? 'font-bold' : 'font-normal'}`}
+                        className={`w-full h-full min-h-[30px] p-2 bg-transparent outline-none text-center resize-none ${isForPrint ? "bg-transparent border-none" : "focus:bg-blue-50/30"} ${cell.b ? "font-bold" : "font-normal"}`}
                         readOnly={isForPrint || !onChange}
                       />
-                      
-                      {/* ── شريط أدوات الخلية (يظهر عند التركيز) ── */}
                       {!isForPrint && onChange && (
                         <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 bg-slate-800 text-white rounded p-1 flex gap-1 hidden group-focus-within/cell:flex z-[60] shadow-xl opacity-95 items-center w-max">
-                          
-                          {/* تنسيق وتلوين الخلية */}
-                          <button onMouseDown={(e) => { e.preventDefault(); toggleBold(rIdx, cIdx) }} className={`p-0.5 rounded ${cell.b ? 'bg-blue-500' : 'hover:bg-slate-600'}`} title="نص عريض"><Bold size={10} /></button>
-                          <input type="color" value={cell.bg !== 'transparent' ? cell.bg : '#ffffff'} onInput={(e) => changeCellBg(rIdx, cIdx, e.target.value)} className="w-3 h-3 p-0 border-0 rounded-full cursor-pointer bg-transparent" title="تلوين الخلية" />
-                          <button onMouseDown={(e) => { e.preventDefault(); changeCellBg(rIdx, cIdx, 'transparent') }} className="text-[7px] bg-slate-600 px-1 rounded hover:bg-slate-500">شفاف</button>
-                          
+                          <button
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              toggleBold(rIdx, cIdx);
+                            }}
+                            className={`p-0.5 rounded ${cell.b ? "bg-blue-500" : "hover:bg-slate-600"}`}
+                            title="نص عريض"
+                          >
+                            <Bold size={10} />
+                          </button>
+                          <input
+                            type="color"
+                            value={
+                              cell.bg !== "transparent" ? cell.bg : "#ffffff"
+                            }
+                            onInput={(e) =>
+                              changeCellBg(rIdx, cIdx, e.target.value)
+                            }
+                            className="w-3 h-3 p-0 border-0 rounded-full cursor-pointer bg-transparent"
+                            title="تلوين الخلية"
+                          />
+                          <button
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              changeCellBg(rIdx, cIdx, "transparent");
+                            }}
+                            className="text-[7px] bg-slate-600 px-1 rounded hover:bg-slate-500"
+                          >
+                            شفاف
+                          </button>
                           <div className="w-px h-3 bg-slate-600 mx-0.5"></div>
-                          
-                          {/* الدمج */}
-                          <button onMouseDown={(e) => { e.preventDefault(); mergeRight(rIdx, cIdx) }} className="text-[8px] px-1 hover:bg-slate-600 rounded">دمج ➡️</button>
-                          <button onMouseDown={(e) => { e.preventDefault(); mergeDown(rIdx, cIdx) }} className="text-[8px] px-1 hover:bg-slate-600 rounded">دمج ⬇️</button>
+                          <button
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              mergeRight(rIdx, cIdx);
+                            }}
+                            className="text-[8px] px-1 hover:bg-slate-600 rounded"
+                          >
+                            دمج ➡️
+                          </button>
+                          <button
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              mergeDown(rIdx, cIdx);
+                            }}
+                            className="text-[8px] px-1 hover:bg-slate-600 rounded"
+                          >
+                            دمج ⬇️
+                          </button>
                           {(cell.cs > 1 || cell.rs > 1) && (
-                             <button onMouseDown={(e) => { e.preventDefault(); unmerge(rIdx, cIdx) }} className="text-[8px] px-1 hover:bg-slate-600 rounded text-red-300">✖ فك</button>
+                            <button
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                unmerge(rIdx, cIdx);
+                              }}
+                              className="text-[8px] px-1 hover:bg-slate-600 rounded text-red-300"
+                            >
+                              ✖ فك
+                            </button>
                           )}
-
                           <div className="w-px h-3 bg-slate-600 mx-0.5"></div>
-                          
-                          {/* تحجيم العمود */}
-                          <button onMouseDown={(e) => { e.preventDefault(); resizeColumn(cIdx, 'expand') }} className="p-0.5 hover:bg-slate-600 rounded" title="توسيع العمود">↔️</button>
-                          <button onMouseDown={(e) => { e.preventDefault(); resizeColumn(cIdx, 'shrink') }} className="p-0.5 hover:bg-slate-600 rounded" title="تضييق العمود">↔️</button>
-                          
+                          <button
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              resizeColumn(cIdx, "expand");
+                            }}
+                            className="p-0.5 hover:bg-slate-600 rounded"
+                            title="توسيع العمود"
+                          >
+                            ↔️
+                          </button>
+                          <button
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              resizeColumn(cIdx, "shrink");
+                            }}
+                            className="p-0.5 hover:bg-slate-600 rounded"
+                            title="تضييق العمود"
+                          >
+                            ↔️
+                          </button>
                         </div>
                       )}
                     </td>
@@ -419,7 +554,10 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
 };
 
 // ==========================================
-// 💡 بلوك الصورة والتوقيع (Draggable & Signature)
+// 💡 بلوك الصورة والتوقيع والخلفية
+// ==========================================
+// ==========================================
+// 💡 بلوك الصورة والتوقيع والخلفية
 // ==========================================
 const DraggableImageBlock = ({
   block,
@@ -427,18 +565,24 @@ const DraggableImageBlock = ({
   onChange,
   isForPrint,
   isSignature = false,
+  isBackground = false,
 }) => {
-  const imgData =
-    typeof value === "object" && value?.url
-      ? value
-      : { url: value, fit: "contain" };
+  // 1. معالجة القيمة بأمان واستخراج الصورة منها سواء كانت نص أو كائن
+  let imgData = { url: null, fit: "contain", opacity: 1 };
+
+  if (typeof value === "object" && value !== null) {
+    imgData = { ...imgData, ...value };
+  } else if (typeof value === "string" && value.trim() !== "") {
+    imgData.url = value;
+  }
 
   return (
-    <div className="w-full h-full flex flex-col relative group print:bg-transparent">
-      {/* عرض عنوان البلوك في حالة التوقيع */}
+    <div
+      className={`w-full h-full flex flex-col relative group ${isForPrint ? "bg-transparent" : ""}`}
+    >
       {isSignature && (
         <div
-          className="font-bold mb-1 shrink-0 print:text-black"
+          className={`font-bold mb-1 shrink-0 ${isForPrint ? "text-black" : ""}`}
           style={{
             textAlign: block.style?.alignment,
             fontSize: block.style?.fontSize,
@@ -449,16 +593,16 @@ const DraggableImageBlock = ({
       )}
 
       <div
-        className={`w-full flex-1 flex items-center justify-center overflow-hidden relative print:bg-transparent print:border-none ${imgData.url ? "bg-transparent" : "border-2 border-dashed border-blue-300 bg-blue-50/50 rounded-xl"}`}
+        className={`w-full flex-1 flex items-center justify-center overflow-hidden relative ${isForPrint ? "bg-transparent border-none" : imgData.url || isBackground ? "bg-transparent border-transparent" : "border-2 border-dashed border-blue-300 bg-blue-50/50 rounded-xl"}`}
       >
         {imgData.url ? (
           <img
             src={imgData.url}
             alt="img"
-            style={{ objectFit: imgData.fit }}
-            className={`w-full h-full pointer-events-none ${isSignature ? "mix-blend-multiply" : ""}`} // إضافة دمج الحبر للتوقيع
+            style={{ objectFit: imgData.fit, opacity: imgData.opacity }}
+            className={`w-full h-full pointer-events-none ${isSignature ? "mix-blend-multiply" : ""}`}
           />
-        ) : !isForPrint ? (
+        ) : !isForPrint && !isBackground ? (
           <label className="cursor-pointer flex flex-col items-center text-blue-500 hover:text-blue-700 w-full h-full justify-center p-2 text-center">
             <Upload size={24} className="mb-1" />
             <span className="text-[10px] font-bold">رفع {block.label}</span>
@@ -470,35 +614,35 @@ const DraggableImageBlock = ({
                 if (e.target.files?.[0]) {
                   const reader = new FileReader();
                   reader.onload = (ev) =>
-                    onChange({ url: ev.target.result, fit: "contain" });
+                    onChange({
+                      url: ev.target.result,
+                      fit: "contain",
+                      opacity: 1,
+                    });
                   reader.readAsDataURL(e.target.files[0]);
                 }
               }}
             />
           </label>
-        ) : (
-          // في حالة الطباعة ولم يتم رفع صورة توقيع، اظهر المربع المفرغ اليدوي
-          isSignature && (
-            <div className="w-full h-full border-2 border-dashed border-slate-300 print:border-solid print:border-slate-800 rounded flex flex-col items-center justify-end pb-2 print:bg-transparent">
-              {block.type === "office_stamp" ? (
-                <span className="text-slate-300 print:text-slate-400 mb-auto mt-2 text-xs">
-                  مساحة الختم
-                </span>
-              ) : block.type === "fingerprint" ? (
-                <span className="text-slate-300 print:text-slate-400 mb-auto mt-2 text-xs">
-                  البصمة
-                </span>
-              ) : (
-                <div className="w-3/4 border-t border-slate-800 mt-auto"></div>
-              )}
-            </div>
-          )
+        ) : null}
+
+        {isSignature && !imgData.url && !isForPrint && (
+          <div
+            className={`w-full h-full rounded flex flex-col items-center justify-end pb-2 border-2 border-dashed border-slate-300`}
+          >
+            <span className="text-slate-400 mb-auto mt-2 text-xs">
+              {block.type === "office_stamp"
+                ? "مساحة الختم"
+                : block.type === "fingerprint"
+                  ? "البصمة"
+                  : "التوقيع"}
+            </span>
+          </div>
         )}
       </div>
 
-      {/* شريط أدوات الصورة */}
-      {!isForPrint && imgData.url && (
-        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white rounded-lg px-2 py-1 flex gap-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity print-hidden">
+      {!isForPrint && imgData.url && !isBackground && (
+        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white rounded-lg px-2 py-1 flex gap-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={() => onChange({ ...imgData, fit: "contain" })}
             className={`p-1 rounded ${imgData.fit === "contain" ? "bg-blue-500" : "hover:bg-slate-700"}`}
@@ -530,12 +674,34 @@ const DraggableImageBlock = ({
           </button>
         </div>
       )}
+
+      {!isForPrint && isBackground && (
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white rounded-lg px-3 py-1.5 flex items-center gap-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="text-[10px] text-slate-300 whitespace-nowrap">
+            الشفافية:
+          </span>
+          <input
+            type="range"
+            min="0.05"
+            max="1"
+            step="0.05"
+            value={imgData.opacity ?? 1}
+            onChange={(e) =>
+              onChange({ ...imgData, opacity: Number(e.target.value) })
+            }
+            className="w-24 h-1 accent-blue-500 cursor-pointer"
+          />
+          <span className="text-[10px] text-white font-mono w-8 text-center border-l border-slate-700 pl-2">
+            {Math.round((imgData.opacity ?? 1) * 100)}%
+          </span>
+        </div>
+      )}
     </div>
   );
 };
 
 // ==========================================
-// 💡 مكون رسم البلوكات الأساسي (Canvas Block Renderer)
+// 💡 مكون رسم البلوكات الأساسي
 // ==========================================
 const CanvasBlockRenderer = ({
   block,
@@ -575,7 +741,7 @@ const CanvasBlockRenderer = ({
       return (
         <div
           style={{ ...alignStyles, fontSize: fontSizeStyle }}
-          className="w-full h-full print:bg-transparent print:border-none"
+          className={`w-full h-full ${isForPrint ? "bg-transparent border-none" : ""}`}
         >
           <CanvasRichText
             value={value}
@@ -592,12 +758,14 @@ const CanvasBlockRenderer = ({
       return (
         <div
           style={{ ...alignStyles, fontSize: fontSizeStyle }}
-          className="font-bold w-full h-full flex gap-2 items-start print:bg-transparent"
+          className={`font-bold w-full h-full flex gap-2 items-baseline ${isForPrint ? "bg-transparent" : ""}`}
         >
-          <span className="whitespace-nowrap shrink-0 print:text-black">
+          <span
+            className={`whitespace-nowrap shrink-0 ${isForPrint ? "text-black" : ""}`}
+          >
             {block.label}:
           </span>
-          <div className="flex-1 w-full">
+          <div className="flex-1 w-full flex items-center">
             <CanvasRichText
               value={value}
               onChange={onChange}
@@ -613,7 +781,6 @@ const CanvasBlockRenderer = ({
     case "date_hijri":
     case "date_editable":
       let displayDate = value || block.defaultValue || "____ / __ / __";
-      // التعبئة التلقائية للتواريخ وقت الطباعة إذا كانت فارغة
       if (isForPrint && !value) {
         displayDate =
           block.type === "date_hijri"
@@ -628,23 +795,23 @@ const CanvasBlockRenderer = ({
       return (
         <div
           style={{ ...alignStyles, fontSize: fontSizeStyle }}
-          className="flex items-center gap-2 print:bg-transparent print:border-none"
+          className={`flex items-center gap-2 ${isForPrint ? "bg-transparent border-none" : ""}`}
         >
-          <span className="font-bold whitespace-nowrap shrink-0 print:text-black">
+          <span
+            className={`font-bold whitespace-nowrap shrink-0 ${isForPrint ? "text-black" : ""}`}
+          >
             {block.label}:
           </span>
-          <div className="border border-slate-300 bg-slate-50 rounded px-3 py-1.5 text-slate-500 flex items-center gap-2 min-w-[120px] print:bg-transparent print:border-none print:text-black print:p-0">
-            {displayDate}{" "}
-            {!isForPrint && (
-              <CalendarClock size={14} className="print-hidden" />
-            )}
+          <div
+            className={`rounded flex items-center gap-2 min-w-[120px] ${isForPrint ? "bg-transparent border-none text-black p-0" : "border border-slate-300 bg-slate-50 px-3 py-1.5 text-slate-500"}`}
+          >
+            {displayDate} {!isForPrint && <CalendarClock size={14} />}
           </div>
         </div>
       );
 
     case "time":
       let displayTime = value || block.defaultValue || "__:__";
-      // التعبئة التلقائية للوقت وقت الطباعة إذا كان فارغاً
       if (isForPrint && !value) {
         displayTime = formatTime12Hour(getCurrentTime24());
       } else if (value) {
@@ -653,13 +820,15 @@ const CanvasBlockRenderer = ({
       return (
         <div
           style={{ ...alignStyles, fontSize: fontSizeStyle }}
-          className="flex items-center gap-2 print:bg-transparent print:border-none"
+          className={`flex items-center gap-2 ${isForPrint ? "bg-transparent border-none" : ""}`}
         >
-          <span className="font-bold whitespace-nowrap shrink-0 print:text-black">
+          <span
+            className={`font-bold whitespace-nowrap shrink-0 ${isForPrint ? "text-black" : ""}`}
+          >
             {block.label}:
           </span>
           <span
-            className="font-mono bg-slate-50 border border-slate-200 px-3 py-1 rounded print:bg-transparent print:border-none print:text-black print:p-0"
+            className={`font-mono px-3 py-1 rounded ${isForPrint ? "bg-transparent border-none text-black p-0" : "bg-slate-50 border border-slate-200"}`}
             dir="ltr"
           >
             {displayTime}
@@ -672,12 +841,16 @@ const CanvasBlockRenderer = ({
       return (
         <div
           style={{ fontSize: fontSizeStyle }}
-          className="border border-indigo-200 bg-indigo-50/30 rounded-xl p-3 h-full print:border-none print:bg-transparent print:p-0"
+          className={`rounded-xl h-full ${isForPrint ? "border-none bg-transparent p-0" : "border border-indigo-200 bg-indigo-50/30 p-3"}`}
         >
-          <div className="font-bold text-indigo-800 mb-2 flex items-center gap-2 print:text-black">
-            <User size={16} className="print-hidden" /> {block.label}
+          <div
+            className={`font-bold mb-2 flex items-center gap-2 ${isForPrint ? "text-black" : "text-indigo-800"}`}
+          >
+            {!isForPrint && <User size={16} />} {block.label}
           </div>
-          <div className="grid grid-cols-2 gap-2 text-indigo-900 font-semibold text-[0.9em] print:text-black">
+          <div
+            className={`grid grid-cols-2 gap-2 font-semibold text-[0.9em] ${isForPrint ? "text-black" : "text-indigo-900"}`}
+          >
             <div>الاسم: {empData.name || "---------"}</div>
             <div>
               الرقم:{" "}
@@ -692,11 +865,11 @@ const CanvasBlockRenderer = ({
       return (
         <div
           style={{ ...alignStyles, fontSize: fontSizeStyle }}
-          className="flex items-center gap-3 print:bg-transparent"
+          className={`flex items-center gap-3 ${isForPrint ? "bg-transparent" : ""}`}
         >
           <div
             onClick={() => !isForPrint && onChange(!value)}
-            className={`w-4 h-4 shrink-0 border-2 rounded flex items-center justify-center cursor-pointer ${value ? "border-blue-600 bg-blue-600 print:bg-black print:border-black" : "border-slate-400 print:border-black"}`}
+            className={`w-4 h-4 shrink-0 rounded flex items-center justify-center ${isForPrint ? "border" : "border-2 cursor-pointer"} ${value ? (isForPrint ? "border-black bg-black" : "border-blue-600 bg-blue-600") : isForPrint ? "border-black" : "border-slate-400"}`}
           >
             {value && (
               <span className="text-white text-[10px] leading-none">✓</span>
@@ -707,12 +880,10 @@ const CanvasBlockRenderer = ({
               type="text"
               value={cLabel}
               onChange={(e) => onLabelChange && onLabelChange(e.target.value)}
-              className="font-bold text-slate-700 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 outline-none w-full print:hidden"
+              className="font-bold text-slate-700 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 outline-none w-full"
             />
           ) : (
-            <span className="font-bold text-slate-700 print:text-black">
-              {cLabel}
-            </span>
+            <span className="font-bold text-black">{cLabel}</span>
           )}
         </div>
       );
@@ -729,7 +900,6 @@ const CanvasBlockRenderer = ({
     case "company_logo":
     case "header_image":
     case "footer_image":
-    case "background_image":
     case "image_upload":
       return (
         <DraggableImageBlock
@@ -737,6 +907,17 @@ const CanvasBlockRenderer = ({
           value={value}
           onChange={onChange}
           isForPrint={isForPrint}
+        />
+      );
+
+    case "background_image":
+      return (
+        <DraggableImageBlock
+          block={block}
+          value={value}
+          onChange={onChange}
+          isForPrint={isForPrint}
+          isBackground={true}
         />
       );
 
@@ -755,7 +936,11 @@ const CanvasBlockRenderer = ({
       );
 
     case "separator":
-      return <hr className="my-2 border-t-2 border-slate-800 w-full" />;
+      return (
+        <hr
+          className={`my-2 border-t-2 w-full ${isForPrint ? "border-black" : "border-slate-800"}`}
+        />
+      );
 
     case "spacer":
       return <div className="w-full h-full"></div>;
@@ -769,28 +954,39 @@ const CanvasBlockRenderer = ({
 };
 
 // ==========================================
-// 💡 مكون الشاشة الرئيسية (Form Fill Modal)
+// 💡 مكون الشاشة الرئيسية
 // ==========================================
 export default function FormFillModal({ form, onClose, onSaveUsage }) {
   const [formValues, setFormValues] = useState({});
   const [zoomLevel, setZoomLevel] = useState(100);
   const [exportType, setExportType] = useState("pdf");
+  const [exportFileName, setExportFileName] = useState(
+    `نموذج_${form?.name || "بدون_اسم"}`,
+  );
   const [isExporting, setIsExporting] = useState(false);
   const [isForPrint, setIsForPrint] = useState(false);
   const [activeBlockId, setActiveBlockId] = useState(null);
 
   const componentRef = useRef();
 
+  // 2. تحديث useEffect لربط الـ ID بشكل صحيح وفك تشفير الـ JSON
   useEffect(() => {
     if (form?.blocks) {
       const initialVals = {};
       form.blocks.forEach((b) => {
+        const bId = b.id || b.uid; // إصلاح هام: استخدام الـ ID الحقيقي من الداتا بيز
+        
         if (b.defaultValue) {
-          try {
-            initialVals[b.uid] = JSON.parse(b.defaultValue);
-          } catch {
-            initialVals[b.uid] = b.defaultValue;
+          let val = b.defaultValue;
+          // التأكد من فك تشفير JSON إذا كانت الصورة/البيانات محفوظة كـ String
+          if (typeof val === 'string' && val.trim().startsWith('{')) {
+            try {
+              val = JSON.parse(val);
+            } catch {
+              // تجاهل الخطأ واحتفظ بالنص كما هو
+            }
           }
+          initialVals[bId] = val;
         }
       });
       setFormValues(initialVals);
@@ -870,11 +1066,10 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
         .map((el) => el.outerHTML)
         .join("\n");
       const htmlContent = `
-        <html dir="rtl"><head><title>${form?.name || "طباعة النموذج"}</title>${styles}
+        <html dir="rtl"><head><title>${exportFileName.trim() || form?.name}</title>${styles}
         <style>
           @page { size: A4 ${pageSettings.orientation}; margin: 0; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; background: transparent; }
-          .print-hidden { display: none !important; }
         </style></head>
         <body style="font-family: ${fontFamily}; background: transparent;">${originalContent.outerHTML}</body></html>
       `;
@@ -919,11 +1114,12 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
         backgroundColor: "#ffffff",
       });
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
-      const fileName = `نموذج_${form?.name || "بدون_اسم"}_${new Date().getTime()}`;
+      const fileNameToSave =
+        exportFileName.trim() || `نموذج_${form?.name || "بدون_اسم"}`;
 
       if (exportType === "image") {
         const link = document.createElement("a");
-        link.download = `${fileName}.jpg`;
+        link.download = `${fileNameToSave}.jpg`;
         link.href = imgData;
         link.click();
         toast.success("تم التصدير بنجاح");
@@ -965,16 +1161,16 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
           );
           heightLeft -= pdfPageHeight;
         }
-        pdf.save(`${fileName}.pdf`);
+        pdf.save(`${fileNameToSave}.pdf`);
         toast.success("تم التصدير بنجاح");
       } else if (exportType === "word") {
-        const htmlContent = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${form?.name}</title></head><body style="margin: 0; padding: 0; text-align: center;"><img src="${imgData}" style="width: 100%; max-width: 210mm;" /></body></html>`;
+        const htmlContent = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${fileNameToSave}</title></head><body style="margin: 0; padding: 0; text-align: center;"><img src="${imgData}" style="width: 100%; max-width: 210mm;" /></body></html>`;
         const blob = new Blob(["\ufeff", htmlContent], {
           type: "application/msword",
         });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `${fileName}.doc`;
+        link.download = `${fileNameToSave}.doc`;
         link.click();
         toast.success("تم التصدير بنجاح");
       }
@@ -1012,10 +1208,20 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {/* ── حقل اسم الملف ── */}
+          <input
+            type="text"
+            value={exportFileName}
+            onChange={(e) => setExportFileName(e.target.value)}
+            className="px-3 py-2.5 border border-slate-300 rounded-xl text-[12px] font-bold text-slate-700 bg-slate-50 outline-none focus:border-blue-500 focus:bg-white transition-all w-[180px]"
+            placeholder="اسم الملف لتصديره..."
+            title="تخصيص اسم الملف قبل التصدير"
+          />
+
           <select
             value={exportType}
             onChange={(e) => setExportType(e.target.value)}
-            className="px-3 py-2.5 border border-slate-300 rounded-xl text-[12px] font-bold text-slate-700 bg-white outline-none cursor-pointer"
+            className="px-3 py-2.5 border border-slate-300 rounded-xl text-[12px] font-bold text-slate-700 bg-white outline-none cursor-pointer hover:border-slate-400"
           >
             <option value="pdf">تصدير PDF</option>
             <option value="word">تصدير Word</option>
@@ -1024,7 +1230,7 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
           <button
             onClick={handleExport}
             disabled={isExporting}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-700 font-bold text-[13px] rounded-xl hover:bg-blue-100 transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-700 font-bold text-[13px] rounded-xl hover:bg-blue-100 transition-colors border border-blue-200"
           >
             <Download size={18} />{" "}
             {isExporting ? "جاري التجهيز..." : "تصدير الملف"}
@@ -1255,33 +1461,38 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
           className="flex-1 bg-slate-200/80 overflow-y-auto flex justify-center py-12 custom-scrollbar relative"
           onClick={() => setActiveBlockId(null)}
         >
-          <div className="absolute top-4 left-6 flex items-center gap-1 bg-white shadow-sm p-1 rounded-xl z-20 border border-slate-200 print-hidden">
-            <button
-              onClick={() => setZoomLevel((p) => Math.max(p - 10, 50))}
-              className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
-            >
-              <ZoomOut size={18} />
-            </button>
-            <span className="text-[13px] font-bold font-mono text-slate-700 min-w-[50px] text-center">
-              {zoomLevel}%
-            </span>
-            <button
-              onClick={() => setZoomLevel((p) => Math.min(p + 10, 150))}
-              className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
-            >
-              <ZoomIn size={18} />
-            </button>
-          </div>
+          {!isForPrint && (
+            <div className="absolute top-4 left-6 flex items-center gap-1 bg-white shadow-sm p-1 rounded-xl z-20 border border-slate-200">
+              <button
+                onClick={() => setZoomLevel((p) => Math.max(p - 10, 50))}
+                className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+              >
+                <ZoomOut size={18} />
+              </button>
+              <span className="text-[13px] font-bold font-mono text-slate-700 min-w-[50px] text-center">
+                {zoomLevel}%
+              </span>
+              <button
+                onClick={() => setZoomLevel((p) => Math.min(p + 10, 150))}
+                className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+              >
+                <ZoomIn size={18} />
+              </button>
+            </div>
+          )}
 
           <div
             ref={componentRef}
-            className="print-container bg-white shadow-2xl relative flex flex-col origin-top transition-transform duration-200"
+            className="bg-white relative flex flex-col origin-top transition-transform duration-200"
             style={{
               width: "210mm",
               height: `${dynamicHeight}px`,
               transform: `scale(${zoomLevel / 100})`,
               fontFamily: fontFamily,
               backgroundColor: isForPrint ? "transparent" : "#ffffff",
+              boxShadow: isForPrint
+                ? "none"
+                : "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1354,7 +1565,7 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
               Array.from({ length: pagesCount - 1 }).map((_, i) => (
                 <div
                   key={`break-${i}`}
-                  className="page-break-indicator absolute left-0 right-0 border-b-2 border-dashed border-red-300 z-0 pointer-events-none"
+                  className="absolute left-0 right-0 border-b-2 border-dashed border-red-300 z-0 pointer-events-none"
                   style={{ top: `${(i + 1) * A4_HEIGHT_PX}px` }}
                 ></div>
               ))}
@@ -1379,7 +1590,7 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                           e.stopPropagation();
                           setActiveBlockId(bId);
                         }}
-                        className={`absolute ${!isForPrint && isActive ? "ring-2 ring-blue-400 rounded" : "hover:ring-1 hover:ring-slate-300"} ${isBackgroundLayer ? "z-0" : isActive ? "z-50" : "z-10"}`}
+                        className={`absolute ${!isForPrint && isActive ? "ring-2 ring-blue-400 rounded" : !isForPrint ? "hover:ring-1 hover:ring-slate-300" : ""} ${isBackgroundLayer ? "z-0" : isActive ? "z-50" : "z-10"}`}
                         style={{
                           left: `${customPos.x}px`,
                           top: `${customPos.y}px`,
@@ -1387,10 +1598,10 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                           height: `${customPos.height}px`,
                           resize:
                             !isForPrint &&
+                            !isBackgroundLayer &&
                             [
                               "image_upload",
                               "company_logo",
-                              "background_image",
                               "header_image",
                               "footer_image",
                               "table",
@@ -1413,41 +1624,19 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                               ? "auto"
                               : "visible",
                         }}
-                        onMouseUp={(e) => {
-                          if (
-                            [
-                              "image_upload",
-                              "company_logo",
-                              "header_image",
-                              "footer_image",
-                              "background_image",
-                              "signature",
-                              "office_signature",
-                              "office_stamp",
-                              "fingerprint",
-                            ].includes(block.type) &&
-                            isActive
-                          ) {
-                            handleBlockDragResize(bId, {
-                              ...customPos,
-                              width: e.currentTarget.offsetWidth,
-                              height: e.currentTarget.offsetHeight,
-                            });
-                          }
-                        }}
                       >
-                        {!isForPrint && isActive && (
-                          <div className="print-hidden absolute -top-5 right-0 bg-blue-500 text-white text-[9px] px-2 py-0.5 rounded-t-md opacity-90">
+                        {!isForPrint && isActive && !isBackgroundLayer && (
+                          <div className="absolute -top-5 right-0 bg-blue-500 text-white text-[9px] px-2 py-0.5 rounded-t-md opacity-90">
                             {block.label}
                           </div>
                         )}
 
                         {!isForPrint &&
                           isActive &&
+                          !isBackgroundLayer &&
                           [
                             "image_upload",
                             "company_logo",
-                            "background_image",
                             "header_image",
                             "footer_image",
                             "signature",
@@ -1456,7 +1645,7 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                             "fingerprint",
                           ].includes(block.type) && (
                             <div
-                              className="print-hidden absolute -right-6 top-1/2 -translate-y-1/2 bg-blue-600 text-white p-1 rounded shadow cursor-move z-50"
+                              className="absolute -right-6 top-1/2 -translate-y-1/2 bg-blue-600 text-white p-1 rounded shadow cursor-move z-50"
                               onMouseDown={(e) => {
                                 e.preventDefault();
                                 const startX = e.clientX;
@@ -1519,20 +1708,14 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
             {Array.from({ length: pagesCount }).map((_, i) => (
               <div
                 key={`footer-${i}`}
-                className="absolute left-[20mm] right-[20mm] flex justify-between text-[10px] text-slate-500 font-mono pointer-events-none"
+                className={`absolute left-[20mm] right-[20mm] flex justify-between text-[10px] font-mono pointer-events-none ${isForPrint ? "text-black" : "text-slate-500"}`}
                 style={{ top: `${(i + 1) * A4_HEIGHT_PX - 40}px` }}
               >
-                <span dir="ltr" className={isForPrint ? "text-black" : ""}>
-                  {form?.code}
-                </span>
-                <span
-                  className={`font-bold ${isForPrint ? "text-black" : "text-slate-700"}`}
-                >
+                <span dir="ltr">{form?.code}</span>
+                <span className="font-bold">
                   صفحة {i + 1} من {pagesCount}
                 </span>
-                <span className={isForPrint ? "text-black" : ""}>
-                  نظام الموارد البشرية
-                </span>
+                <span>نظام الموارد البشرية</span>
               </div>
             ))}
           </div>

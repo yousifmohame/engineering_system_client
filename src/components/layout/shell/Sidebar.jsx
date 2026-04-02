@@ -33,6 +33,7 @@ import {
   AlertCircle,
   CheckSquare,
   Target,
+  MessageCircle,
 } from "lucide-react";
 
 // ==========================================
@@ -82,9 +83,17 @@ const MENU_CATEGORIES = [
     id: "CAT_HR_TOOLS",
     title: "الموارد البشرية",
     icon: Zap,
+    items: [{ id: "88", label: "إدارة الموارد البشرية", code: "SCR_88_VIEW" }],
+  },
+  {
+    id: "EMAIL_SETTINGS",
+    title: "اعدادات الايميل و الرسائل",
+    icon: MessageCircle,
     items: [
-      { id: "88", label: "إدارة الموارد البشرية", code: "SCR_88_VIEW" },
-      
+      { id: "98", label: "مركز الإشعارات", code: "SCR_98_VIEW" },
+      { id: "99", label: "الصادر و الوارد", code: "SCR_99_VIEW" },
+      { id: "100", label: "مركز طلب و إرسال الوثائق", code: "SCR_100_VIEW" },
+      { id: "101", label: "اعدادات الايميل", code: "SCR_101_VIEW" },
     ],
   },
   {
@@ -270,7 +279,6 @@ const MENU_CATEGORIES = [
       { id: "87", label: "إنشاء عميل سريع", code: "SCR_87_VIEW" },
     ],
   },
-  
 ];
 
 const Sidebar = () => {

@@ -27,6 +27,7 @@ import {
   ZoomOut,
   ZoomIn,
   Grid3x3,
+  SeparatorVertical, // 👈 أضف هذه الأيقونة
   Plus,
   Users,
   Trash2,
@@ -43,6 +44,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../../../api/axios";
+
+// ==========================================
+// 💡 ثوابت أبعاد الورقة
+// ==========================================
+const A4_WIDTH_PX = 794; // عرض الورقة التقريبي 210mm
+const A4_HEIGHT_PX = 1122.5;
 
 // ==========================================
 // 💡 1. قائمة البلوكات المتاحة
@@ -282,6 +289,24 @@ const FORM_BLOCKS = [
     color: "text-indigo-600",
     bg: "bg-indigo-600/10",
   },
+  {
+    id: 27,
+    type: "vertical_separator",
+    label: "فاصل رأسي",
+    desc: "خط فاصل عمودي",
+    icon: SeparatorVertical, // 👈 الأيقونة الجديدة
+    color: "text-slate-400",
+    bg: "bg-slate-400/10",
+  },
+  {
+    id: 28,
+    type: "square_frame",
+    label: "إطار مربع",
+    desc: "مربع شفاف بحدود",
+    icon: Square, // 👈 استخدمنا أيقونة Square المستوردة مسبقاً
+    color: "text-slate-700",
+    bg: "bg-slate-700/10",
+  },
 ];
 
 const getBlockVisuals = (type) => {
@@ -291,7 +316,6 @@ const getBlockVisuals = (type) => {
 // ==========================================
 // 💡 2. مكون العرض الساكن للمنشئ (Static Builder Renderer)
 // ==========================================
-// هذا المكون يعرض شكل البلوك دون أي وظائف تحرير لتسهيل عملية ضبط الأبعاد
 const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
   const getAlignStyles = (align) => {
     if (align === "center")
@@ -315,7 +339,7 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
   };
 
   const alignStyles = getAlignStyles(block.style?.alignment);
-  const widthStyle = "100%"; // الاعتماد الكلي على حجم الحاوية (Container)
+  const widthStyle = "100%";
   const heightStyle = "100%";
   const fontSizeStyle = block.style?.fontSize
     ? `${block.style.fontSize}px`
@@ -452,27 +476,50 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
     case "header_image":
     case "footer_image":
     case "background_image":
+      // استخدام القيمة الافتراضية إذا كانت تحتوي على صورة لتعرض مباشرة في وضع المُنشئ
+      const imgData =
+        typeof block.defaultValue === "object"
+          ? block.defaultValue
+          : { url: block.defaultValue };
+      const hasImage = !!imgData?.url;
+
       return (
         <div
           style={{ ...alignStyles, width: widthStyle, height: heightStyle }}
-          className="flex flex-col overflow-hidden"
+          className="flex flex-col overflow-hidden relative"
         >
           {block.type !== "background_image" &&
             block.type !== "header_image" &&
             block.type !== "footer_image" && (
               <label
                 style={{ fontSize: fontSizeStyle }}
-                className="font-bold text-slate-700 mb-1.5 shrink-0"
+                className="font-bold text-slate-700 mb-1.5 shrink-0 z-10"
               >
                 {block.label}
               </label>
             )}
-          <div className="border-2 border-dashed border-blue-300 rounded-lg bg-blue-50/30 w-full h-full flex flex-col items-center justify-center text-blue-400">
-            <ImageIcon size={32} className="mb-2 opacity-50" />
-            <span style={{ fontSize: "10px" }} className="font-bold">
-              مساحة {block.label}
-            </span>
-          </div>
+          {hasImage ? (
+            <div className="flex-1 w-full h-full relative">
+              <img
+                src={imgData.url}
+                alt="block_img"
+                className="w-full h-full pointer-events-none"
+                style={{
+                  objectFit:
+                    imgData.fit ||
+                    (block.type === "background_image" ? "cover" : "contain"),
+                  opacity: imgData.opacity ?? 1,
+                }}
+              />
+            </div>
+          ) : (
+            <div className="border-2 border-dashed border-blue-300 rounded-lg bg-blue-50/30 w-full h-full flex flex-col items-center justify-center text-blue-400">
+              <ImageIcon size={32} className="mb-2 opacity-50" />
+              <span style={{ fontSize: "10px" }} className="font-bold">
+                مساحة {block.label}
+              </span>
+            </div>
+          )}
         </div>
       );
     case "employee_info":
@@ -586,6 +633,25 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
       return (
         <div className="w-full h-full border border-dashed border-slate-200 bg-slate-50/50"></div>
       );
+    // 👇 الكود الجديد الخاص بالفاصل الرأسي
+    case "vertical_separator":
+      return (
+        <div className="mx-auto w-0 h-full border-r-2 border-slate-300 shrink-0"></div>
+      );
+    // 👇 الكود الخاص بالإطار المربع
+    case "square_frame":
+      const borderWidth = block.style?.borderWidth || 2;
+      return (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            border: `${borderWidth}px solid #000`, // لون الحد أسود
+            backgroundColor: "transparent", // شفافية الخلفية
+          }}
+          className="pointer-events-none" // حتى لا يعيق السحب والإفلات
+        ></div>
+      );
     default:
       return (
         <div className="p-3 border border-dashed border-blue-300 bg-blue-50 text-blue-800 text-center rounded-lg w-full h-full font-bold">
@@ -644,7 +710,6 @@ export default function FormBuilderModal({
   const [isWmSettingsOpen, setIsWmSettingsOpen] = useState(false);
   const [isBorderSettingsOpen, setIsBorderSettingsOpen] = useState(false);
 
-  // حالة السحب (Drag)
   const [dragState, setDragState] = useState({
     isDragging: false,
     blockId: null,
@@ -653,7 +718,7 @@ export default function FormBuilderModal({
     initialLeft: 0,
     initialTop: 0,
   });
-  // 💡 حالة التحجيم عن طريق الحواف (Border Resize)
+
   const [resizeState, setResizeState] = useState({
     isResizing: false,
     blockId: null,
@@ -665,8 +730,6 @@ export default function FormBuilderModal({
     initialW: 0,
     initialH: 0,
   });
-
-  const A4_HEIGHT_PX = 1122.5; // صفحة واحدة فقط للمُنشئ
 
   useEffect(() => {
     if (initialData) {
@@ -694,26 +757,38 @@ export default function FormBuilderModal({
       if (initialData.blocks && initialData.blocks.length > 0) {
         const formattedBlocks = initialData.blocks
           .filter((b) => b.type !== "watermark")
-          .map((b) => ({
-            uid:
-              b.id ||
-              `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            type: b.type,
-            label: b.label,
-            position: b.position || {
-              x: 50,
-              y: 50,
-              width: 300,
-              height: 50,
-              absolute: true,
-            },
-            style: b.style || { alignment: "right", fontSize: 14 },
-            isEditable: b.isEditable,
-            isRequired: b.isRequired,
-            dataSource: b.dataSource,
-            defaultValue: b.defaultValue || "",
-            _ui: getBlockVisuals(b.type),
-          }));
+          .map((b) => {
+            let parsedDefault = b.defaultValue || "";
+            // تفكيك الكائن لو كان محفوظاً على هيئة JSON
+            if (
+              typeof parsedDefault === "string" &&
+              parsedDefault.startsWith("{")
+            ) {
+              try {
+                parsedDefault = JSON.parse(parsedDefault);
+              } catch (e) {}
+            }
+            return {
+              uid:
+                b.id ||
+                `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              type: b.type,
+              label: b.label,
+              position: b.position || {
+                x: 50,
+                y: 50,
+                width: 300,
+                height: 50,
+                absolute: true,
+              },
+              style: b.style || { alignment: "right", fontSize: 14 },
+              isEditable: b.isEditable,
+              isRequired: b.isRequired,
+              dataSource: b.dataSource,
+              defaultValue: parsedDefault,
+              _ui: getBlockVisuals(b.type),
+            };
+          });
         setCanvasBlocks(formattedBlocks);
       }
     }
@@ -744,16 +819,24 @@ export default function FormBuilderModal({
         x: Math.floor(Math.random() * 50) + 50,
         y: Math.floor(Math.random() * 50) + 100,
         absolute: true,
-        width: ["table", "employee_info", "header_image", "separator"].includes(
-          blockDef.type,
-        )
+        width: [
+          "table",
+          "employee_info",
+          "header_image",
+          "separator",
+          "background_image",
+        ].includes(blockDef.type)
           ? 600
-          : ["company_logo"].includes(blockDef.type)
-            ? 150
-            : 300,
+          : ["vertical_separator"].includes(blockDef.type)
+            ? 30
+            : ["square_frame"].includes(blockDef.type) // 👈 عرض الإطار المربع
+              ? 200
+              : ["company_logo"].includes(blockDef.type)
+                ? 150
+                : 300,
         height: ["text_area", "image_upload"].includes(blockDef.type)
           ? 120
-          : ["table"].includes(blockDef.type)
+          : ["table", "background_image"].includes(blockDef.type)
             ? 200
             : ["company_logo"].includes(blockDef.type)
               ? 80
@@ -774,7 +857,6 @@ export default function FormBuilderModal({
     if (selectedBlockId === uid) setSelectedBlockId(null);
   };
 
-  // 💡 دوال السحب (Drag)
   const onMouseDownDrag = (e, uid, position) => {
     e.preventDefault();
     e.stopPropagation();
@@ -789,7 +871,6 @@ export default function FormBuilderModal({
     });
   };
 
-  // 💡 دوال التحجيم عن طريق الحواف (Border Resizing)
   const onMouseDownResize = (e, uid, position, handle) => {
     e.preventDefault();
     e.stopPropagation();
@@ -809,20 +890,28 @@ export default function FormBuilderModal({
 
   useEffect(() => {
     const onMouseMove = (e) => {
-      // حالة السحب للتحريك
+      // 💡 التحكم بالسحب مع تقييد حدود الورقة
       if (dragState.isDragging && dragState.blockId) {
         const deltaX = (e.clientX - dragState.startX) / (zoomLevel / 100);
         const deltaY = (e.clientY - dragState.startY) / (zoomLevel / 100);
         setCanvasBlocks((prev) =>
           prev.map((b) => {
             if (b.uid === dragState.blockId) {
+              let newX = dragState.initialLeft + deltaX;
+              let newY = dragState.initialTop + deltaY;
+              // التقييد بحدود الورقة
+              newX = Math.max(
+                0,
+                Math.min(newX, A4_WIDTH_PX - b.position.width),
+              );
+              newY = Math.max(
+                0,
+                Math.min(newY, A4_HEIGHT_PX - b.position.height),
+              );
+
               return {
                 ...b,
-                position: {
-                  ...b.position,
-                  x: Math.max(0, dragState.initialLeft + deltaX),
-                  y: Math.max(0, dragState.initialTop + deltaY),
-                },
+                position: { ...b.position, x: newX, y: newY },
               };
             }
             return b;
@@ -830,7 +919,7 @@ export default function FormBuilderModal({
         );
       }
 
-      // 💡 حالة السحب للتحجيم (Resize from Borders)
+      // 💡 التحكم بالتحجيم مع تقييد حدود الورقة
       if (resizeState.isResizing && resizeState.blockId) {
         const deltaX = (e.clientX - resizeState.startX) / (zoomLevel / 100);
         const deltaY = (e.clientY - resizeState.startY) / (zoomLevel / 100);
@@ -845,19 +934,29 @@ export default function FormBuilderModal({
                 newW = initialW,
                 newH = initialH;
 
-              // يمين ويسار
-              if (handle.includes("e")) newW = Math.max(30, initialW + deltaX);
+              if (handle.includes("e")) {
+                newW = Math.max(30, initialW + deltaX);
+                newW = Math.min(newW, A4_WIDTH_PX - initialX);
+              }
               if (handle.includes("w")) {
-                const maxDeltaX = initialW - 30; // الحفاظ على عرض أدنى
-                const actualDeltaX = Math.min(deltaX, maxDeltaX);
+                const maxDeltaX = initialW - 30;
+                const actualDeltaX = Math.max(
+                  -initialX,
+                  Math.min(deltaX, maxDeltaX),
+                );
                 newX = initialX + actualDeltaX;
                 newW = initialW - actualDeltaX;
               }
-              // أعلى وأسفل
-              if (handle.includes("s")) newH = Math.max(20, initialH + deltaY);
+              if (handle.includes("s")) {
+                newH = Math.max(20, initialH + deltaY);
+                newH = Math.min(newH, A4_HEIGHT_PX - initialY);
+              }
               if (handle.includes("n")) {
-                const maxDeltaY = initialH - 20; // الحفاظ على ارتفاع أدنى
-                const actualDeltaY = Math.min(deltaY, maxDeltaY);
+                const maxDeltaY = initialH - 20;
+                const actualDeltaY = Math.max(
+                  -initialY,
+                  Math.min(deltaY, maxDeltaY),
+                );
                 newY = initialY + actualDeltaY;
                 newH = initialH - actualDeltaY;
               }
@@ -937,6 +1036,28 @@ export default function FormBuilderModal({
     setOriginalBlock(null);
   };
 
+  // رفع الصورة للبلوكات المدعومة من داخل إعدادات المُنشئ
+  const handleImageUploadForBlock = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        let currentVal = editingBlock.defaultValue;
+        if (typeof currentVal !== "object" || currentVal === null)
+          currentVal = {};
+        updateEditingBlock({
+          defaultValue: {
+            ...currentVal,
+            url: ev.target.result,
+            opacity: currentVal.opacity ?? 1,
+            fit: "contain",
+          },
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSaveToBackend = async () => {
     if (!formSettings.name || !formSettings.code)
       return toast.error("يرجى إدخال اسم النموذج والكود.");
@@ -958,7 +1079,11 @@ export default function FormBuilderModal({
           isEditable: b.isEditable,
           isRequired: b.isRequired,
           dataSource: b.dataSource,
-          defaultValue: b.defaultValue,
+          // تحويل الـ JSON لكائن نصي إذا كان يحتوي على صورة وشفافية للحفاظ عليه في الـ Backend
+          defaultValue:
+            typeof b.defaultValue === "object"
+              ? JSON.stringify(b.defaultValue)
+              : b.defaultValue,
           order: index,
         })),
       };
@@ -1139,7 +1264,7 @@ export default function FormBuilderModal({
                         <button
                           key={blockDef.id}
                           onClick={() => handleAddBlock(blockDef)}
-                          className={`flex flex-col items-start gap-2 p-3 bg-white border-2 rounded-xl transition-all group ${canvasBlocks.some((b) => b.type === blockDef.type && ["title", "version", "reference_number", "subject", "company_logo"].includes(b.type)) ? "opacity-50 cursor-not-allowed border-slate-100" : "hover:border-blue-400 hover:shadow-sm border-slate-200"}`}
+                          className={`flex flex-col items-start gap-2 p-3 bg-white border-2 rounded-xl transition-all group ${canvasBlocks.some((b) => b.type === blockDef.type && ["title", "version", "reference_number", "subject", "company_logo", "background_image"].includes(b.type)) ? "opacity-50 cursor-not-allowed border-slate-100" : "hover:border-blue-400 hover:shadow-sm border-slate-200"}`}
                           disabled={canvasBlocks.some(
                             (b) =>
                               b.type === blockDef.type &&
@@ -1149,6 +1274,7 @@ export default function FormBuilderModal({
                                 "reference_number",
                                 "subject",
                                 "company_logo",
+                                "background_image",
                               ].includes(b.type),
                           )}
                         >
@@ -1221,14 +1347,13 @@ export default function FormBuilderModal({
                 ref={paperRef}
                 className="bg-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] relative flex flex-col origin-top transition-transform duration-300"
                 style={{
-                  width: "210mm",
+                  width: `${A4_WIDTH_PX}px`,
                   height: `${A4_HEIGHT_PX}px`,
                   transform: `scale(${zoomLevel / 100})`,
                   padding: "0",
                 }}
-                onClick={(e) => e.stopPropagation()} // منع إلغاء التحديد عند الضغط داخل الورقة (إلا لو ضغط خارج البلوكات سيتم التقاطها بواسطة الأب)
+                onClick={(e) => e.stopPropagation()}
               >
-                {/* الإطار الداخلي للورقة */}
                 {formSettings.borderSettings?.active && (
                   <div
                     className="absolute z-0 pointer-events-none"
@@ -1242,7 +1367,6 @@ export default function FormBuilderModal({
                   ></div>
                 )}
 
-                {/* العلامة المائية */}
                 {formSettings.watermark?.active &&
                   formSettings.watermark.text &&
                   !formSettings.watermark.isImage && (
@@ -1338,7 +1462,6 @@ export default function FormBuilderModal({
                             minHeight: "20px",
                           }}
                         >
-                          {/* 💡 نظام التحجيم عن طريق الحواف (8 Directional Handles) */}
                           {isActive && (
                             <>
                               <div
@@ -1433,14 +1556,12 @@ export default function FormBuilderModal({
                             </>
                           )}
 
-                          {/* اسم البلوك للتعرف عليه أثناء التحرير */}
                           {isActive && (
                             <div className="absolute -top-6 right-0 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded shadow-sm font-bold truncate max-w-full">
                               {block.label}
                             </div>
                           )}
 
-                          {/* زر التحريك (Move) */}
                           <div
                             className={`absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white p-1 rounded-full shadow-lg cursor-move transition-opacity z-[80] ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
                             onMouseDown={(e) =>
@@ -1450,7 +1571,6 @@ export default function FormBuilderModal({
                             <Move size={14} />
                           </div>
 
-                          {/* أزرار الحذف والتعديل */}
                           {isActive && (
                             <div className="absolute -top-8 left-0 flex gap-1 z-[80]">
                               <button
@@ -1474,7 +1594,6 @@ export default function FormBuilderModal({
                             </div>
                           )}
 
-                          {/* المحتوى الفعلي للقراءة فقط */}
                           <div className="w-full h-full p-1 pointer-events-none select-none">
                             <StaticBuilderRenderer
                               block={block}
@@ -1487,7 +1606,6 @@ export default function FormBuilderModal({
                   </div>
                 )}
 
-                {/* 💡 الفوتر الوهمي الثابت في الـ Builder */}
                 <div
                   className="absolute left-[20mm] right-[20mm] flex justify-between text-[10px] text-slate-400 font-mono pointer-events-none"
                   style={{ top: `${A4_HEIGHT_PX - 40}px` }}
@@ -1519,7 +1637,7 @@ export default function FormBuilderModal({
               </button>
             </div>
 
-            <div className="p-5 flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
+            <div className="p-5 flex flex-col gap-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1.5">
                   التسمية (تظهر للمستخدم)
@@ -1534,7 +1652,89 @@ export default function FormBuilderModal({
                 />
               </div>
 
-              {/* حقل القيمة الافتراضية / النص الثابت */}
+              {/* 💡 إضافة زر رفع الصور للأنواع المحددة */}
+              {[
+                "company_logo",
+                "header_image",
+                "footer_image",
+                "background_image",
+              ].includes(editingBlock.type) && (
+                <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                  <label className="text-xs font-bold text-blue-800 block mb-2 flex items-center gap-1">
+                    <ImagePlus size={14} /> إرفاق ورفع الصورة
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUploadForBlock}
+                    className="w-full text-xs file:mr-2 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-2">
+                    ستكون هذه الصورة هي الافتراضية في هذا النموذج. (يمكن لاحقاً
+                    تعديلها من الموظف أثناء تعبئة النموذج)
+                  </p>
+                </div>
+              )}
+
+              {/* 💡 تحكم سماكة الإطار المربع */}
+              {editingBlock.type === "square_frame" && (
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                    سماكة خط الإطار (Px)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={editingBlock.style?.borderWidth || 2}
+                    onChange={(e) =>
+                      updateEditingBlock({
+                        style: {
+                          ...editingBlock.style,
+                          borderWidth: Number(e.target.value),
+                        },
+                      })
+                    }
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500"
+                  />
+                </div>
+              )}
+
+              {/* 💡 تحكم شفافية الخلفية */}
+              {editingBlock.type === "background_image" && (
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                    شفافية الخلفية:{" "}
+                    {typeof editingBlock.defaultValue === "object"
+                      ? (editingBlock.defaultValue?.opacity ?? 1)
+                      : 1}
+                  </label>
+                  <input
+                    type="range"
+                    min="0.05"
+                    max="1"
+                    step="0.05"
+                    value={
+                      typeof editingBlock.defaultValue === "object"
+                        ? (editingBlock.defaultValue?.opacity ?? 1)
+                        : 1
+                    }
+                    onChange={(e) => {
+                      let currentVal = editingBlock.defaultValue;
+                      if (typeof currentVal !== "object" || currentVal === null)
+                        currentVal = { url: "" };
+                      updateEditingBlock({
+                        defaultValue: {
+                          ...currentVal,
+                          opacity: Number(e.target.value),
+                        },
+                      });
+                    }}
+                    className="w-full accent-blue-500 cursor-pointer"
+                  />
+                </div>
+              )}
+
               {[
                 "static_text",
                 "text_area",
