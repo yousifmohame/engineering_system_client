@@ -30,92 +30,10 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import api from "../../api/axios"; // 👈 تأكد من المسار الصحيح للـ API
 
 // ==========================================
-// 💡 البيانات الوهمية (Mock Data)
-// ==========================================
-const MOCK_MESSAGES = [
-  {
-    id: "MSG-001",
-    accountId: "ACC-1",
-    from: "noreply@balady.gov.sa",
-    to: "inbox@company.sa",
-    subject: "إشعار بتحديث حالة الطلب",
-    body: "عزيزنا المراجع...\nبخصوص طلبكم رقم: 863883 / 1447\nالخاص بخدمة : اصدار رخصة بناء الكترونية\nنفيدكم بأنه : تم الإطلاع في 20:38:27 PM\nأمانة منطقة الرياض - قطاع وسط مدينة الرياض",
-    date: new Date("2026-04-02T08:30:00"),
-    isRead: false,
-    isStarred: true,
-    isArchived: false,
-    isDeleted: false,
-    isSent: false,
-    hasAttachments: false,
-    messageCategory: "building-license",
-    readInfo: { isRead: false },
-    aiExtraction: {
-      requestNumber: "863883",
-      serviceNumber: "863883",
-      ownerName: "عبدالله محمد الغامدي",
-      serviceType: "اصدار رخصة بناء الكترونية",
-      confidence: 0.95,
-      matches: [{ transactionNumber: "2026/001", matchPercentage: 95 }],
-    },
-  },
-  {
-    id: "MSG-002",
-    accountId: "ACC-1",
-    from: "contracts@legal.sa",
-    to: "inbox@company.sa",
-    subject: "إشعار بموعد توقيع العقد",
-    body: "السادة الكرام،\n\nنحيطكم علماً بأن موعد توقيع عقد البيع للعقار رقم 78901 محدد يوم الأحد 06/04/2026 الساعة 10:00 صباحاً.",
-    date: new Date("2026-04-01T14:20:00"),
-    isRead: true,
-    isStarred: true,
-    isArchived: false,
-    isDeleted: false,
-    isSent: false,
-    hasAttachments: true,
-    messageCategory: "client-contract",
-    readInfo: {
-      isRead: true,
-      readBy: "أحمد محمد الإداري",
-      readAt: new Date("2026-04-01T15:30:00"),
-    },
-    aiExtraction: {
-      requestNumber: "CON-2026-567",
-      ownerName: "خالد سعد المطيري",
-      serviceType: "توقيع عقد البيع",
-      confidence: 0.97,
-      matches: [{ transactionNumber: "2026/003", matchPercentage: 96 }],
-    },
-  },
-  {
-    id: "SENT-001",
-    accountId: "ACC-1",
-    from: "inbox@company.sa",
-    to: "client@example.sa",
-    subject: "رد: استفسار عن حالة المعاملة",
-    body: "السادة الكرام،\nتحية طيبة وبعد،\nبخصوص استفساركم عن المعاملة رقم TRX-2026-045، نفيدكم بأنه تم إنجاز المعاملة بنجاح.",
-    date: new Date("2026-04-02T09:15:00"),
-    isRead: true,
-    isStarred: false,
-    isArchived: false,
-    isDeleted: false,
-    isSent: true,
-    hasAttachments: false,
-  },
-];
-
-const MOCK_ACCOUNTS = [
-  {
-    id: "ACC-1",
-    accountName: "بريد العمل الرئيسي",
-    email: "inbox@company.sa",
-    isActive: true,
-  },
-];
-
-// ==========================================
-// 💡 مكون النافذة المنبثقة المبسط (Inline Modal)
+// 💡 المكونات المنبثقة المبسطة (Inline Modal)
 // ==========================================
 const SimpleModal = ({ title, isOpen, onClose, children, icon: Icon }) => {
   if (!isOpen) return null;
@@ -146,31 +64,25 @@ const SimpleModal = ({ title, isOpen, onClose, children, icon: Icon }) => {
 // 💡 المكون الرئيسي
 // ==========================================
 export default function InboxCenter() {
-  // States
-  const [accounts, setAccounts] = useState(MOCK_ACCOUNTS);
-  const [messages, setMessages] = useState(MOCK_MESSAGES);
+  // ── States ──
+  const [accounts, setAccounts] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [currentView, setCurrentView] = useState("inbox");
   const [selectedAccount, setSelectedAccount] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Modals State
+  // ── Modals State ──
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showComposer, setShowComposer] = useState(false);
   const [showSignatureSettings, setShowSignatureSettings] = useState(false);
-  const [showAccountsManager, setShowAccountsManager] = useState(false);
-  const [showCategorySettings, setShowCategorySettings] = useState(false);
-  const [showExtractionSettings, setShowExtractionSettings] = useState(false);
-  const [showMatchingSettings, setShowMatchingSettings] = useState(false);
   const [showAISmartSearch, setShowAISmartSearch] = useState(false);
 
-  // Filters State
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    sender: "",
-    keyword: "",
-    isStarred: false,
-    isRead: null,
+  // ── Email Compose State ──
+  const [composeData, setComposeData] = useState({
+    to: "",
+    subject: "",
+    body: "",
   });
 
   const [signature, setSignature] = useState("--\nمع تحياتي،\nفريق العمل");
@@ -179,7 +91,33 @@ export default function InboxCenter() {
   );
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // تحديث عداد غير المقروء
+  // ── جلب البيانات من الـ API ──
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      // جلب الحسابات
+      const accRes = await api.get("/email/accounts");
+      setAccounts(accRes.data.data || []);
+
+      // جلب الرسائل
+      const msgRes = await api.get("/email/messages");
+      // تحويل النصوص إلى تواريخ حقيقية
+      const formattedMsgs = (msgRes.data.data || []).map((m) => ({
+        ...m,
+        date: new Date(m.date),
+      }));
+      setMessages(formattedMsgs);
+    } catch (error) {
+      toast.error("حدث خطأ أثناء جلب البريد");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   useEffect(() => {
     const count = messages.filter(
       (m) => !m.isRead && !m.isDeleted && !m.isArchived,
@@ -187,7 +125,8 @@ export default function InboxCenter() {
     setUnreadCount(count);
   }, [messages]);
 
-  // فلترة الرسائل
+  // ── التصفية والترتيب ──
+  const [searchQuery, setSearchQuery] = useState("");
   const filteredMessages = messages.filter((msg) => {
     if (
       currentView === "inbox" &&
@@ -211,20 +150,6 @@ export default function InboxCenter() {
       )
         return false;
     }
-
-    if (
-      filters.sender &&
-      !msg.from.toLowerCase().includes(filters.sender.toLowerCase())
-    )
-      return false;
-    if (
-      filters.keyword &&
-      !msg.body.toLowerCase().includes(filters.keyword.toLowerCase())
-    )
-      return false;
-    if (filters.isStarred && !msg.isStarred) return false;
-    if (filters.isRead !== null && msg.isRead !== filters.isRead) return false;
-
     return true;
   });
 
@@ -232,50 +157,74 @@ export default function InboxCenter() {
     (a, b) => b.date.getTime() - a.date.getTime(),
   );
 
-  // الإجراءات
-  const handleToggleStar = (id) => {
-    setMessages(
-      messages.map((msg) =>
-        msg.id === id ? { ...msg, isStarred: !msg.isStarred } : msg,
-      ),
-    );
+  // ── الإجراءات (Actions) التي تتواصل مع الباك إند ──
+  const updateMessageInDB = async (id, data) => {
+    try {
+      await api.put(`/email/messages/${id}`, data);
+      setMessages(
+        messages.map((msg) => (msg.id === id ? { ...msg, ...data } : msg)),
+      );
+    } catch (error) {
+      toast.error("حدث خطأ أثناء التحديث");
+    }
   };
 
-  const handleMarkAsRead = (id, isRead) => {
-    setMessages(
-      messages.map((msg) => (msg.id === id ? { ...msg, isRead } : msg)),
-    );
+  const handleToggleStar = (msg) => {
+    updateMessageInDB(msg.id, { isStarred: !msg.isStarred });
   };
 
-  const handleArchive = (id) => {
-    setMessages(
-      messages.map((msg) =>
-        msg.id === id ? { ...msg, isArchived: true } : msg,
-      ),
-    );
-    toast.success("تم الأرشفة بنجاح");
-    if (selectedMessage?.id === id) setSelectedMessage(null);
+  const handleArchive = (msg) => {
+    updateMessageInDB(msg.id, { isArchived: true });
+    toast.success("تم الأرشفة");
+    if (selectedMessage?.id === msg.id) setSelectedMessage(null);
   };
 
-  const handleDelete = (id) => {
-    setMessages(
-      messages.map((msg) =>
-        msg.id === id ? { ...msg, isDeleted: true } : msg,
-      ),
-    );
-    toast.success("تم النقل إلى سلة المهملات");
-    if (selectedMessage?.id === id) setSelectedMessage(null);
-  };
-
-  const handleRefresh = () => {
-    toast.success("تم تحديث البريد", { duration: 1500 });
+  const handleDelete = (msg) => {
+    updateMessageInDB(msg.id, { isDeleted: true });
+    toast.success("نُقلت للمهملات");
+    if (selectedMessage?.id === msg.id) setSelectedMessage(null);
   };
 
   const handleSelectMessage = (msg) => {
     setSelectedMessage(msg);
-    if (!msg.isRead) handleMarkAsRead(msg.id, true);
+    if (!msg.isRead) {
+      updateMessageInDB(msg.id, { isRead: true });
+    }
   };
 
+  const handleSendEmail = async () => {
+    if (!accounts.length) return toast.error("يرجى إضافة حساب بريد أولاً");
+    if (!composeData.to || !composeData.subject)
+      return toast.error("يرجى إكمال الحقول");
+
+    const toastId = toast.loading("جاري الإرسال عبر خوادم Hostinger...");
+    try {
+      const fullBody = `${preamble}\n${composeData.body}\n\n${signature}`;
+
+      const res = await api.post("/email/send", {
+        accountId: accounts[0].id, // يستخدم الحساب الأول مبدئياً
+        to: composeData.to,
+        subject: composeData.subject,
+        body: fullBody,
+      });
+
+      const newMsg = { ...res.data.data, date: new Date(res.data.data.date) };
+      setMessages([newMsg, ...messages]);
+
+      toast.success("تم إرسال الرسالة بنجاح", { id: toastId });
+      setShowComposer(false);
+      setComposeData({ to: "", subject: "", body: "" });
+    } catch (error) {
+      toast.error("فشل في الإرسال. تأكد من إعدادات Hostinger", { id: toastId });
+    }
+  };
+
+  const handleRefresh = () => {
+    fetchData();
+    toast.success("تم التحديث");
+  };
+
+  // المساعدات البصرية
   const getAICategoryBadge = (category) => {
     switch (category) {
       case "building-license":
@@ -320,10 +269,10 @@ export default function InboxCenter() {
             </div>
             <div>
               <h1 className="text-xl font-bold">
-                الصادر والوارد - نظام البريد الإلكتروني
+                الصادر والوارد - Hostinger Email
               </h1>
               <p className="text-sm text-blue-100">
-                إدارة البريد الإلكتروني مع ذكاء صناعي وتصنيف تلقائي
+                إدارة البريد الإلكتروني مع خوادم هوستنقر
               </p>
             </div>
           </div>
@@ -335,25 +284,11 @@ export default function InboxCenter() {
               <MailPlus className="w-4 h-4" /> رسالة جديدة
             </button>
             <button
-              onClick={() => setShowCategorySettings(true)}
+              onClick={() => setShowAISmartSearch(true)}
               className="p-2 bg-white/20 hover:bg-white/30 rounded-lg"
-              title="التصنيفات"
+              title="البحث الذكي"
             >
-              <Tag className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setShowExtractionSettings(true)}
-              className="p-2 bg-white/20 hover:bg-white/30 rounded-lg"
-              title="حقول الاستخراج"
-            >
-              <Sliders className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setShowMatchingSettings(true)}
-              className="p-2 bg-white/20 hover:bg-white/30 rounded-lg"
-              title="المطابقة"
-            >
-              <Bot className="w-5 h-5" />
+              <Sparkles className="w-5 h-5" />
             </button>
             <button
               onClick={() => setShowSignatureSettings(true)}
@@ -363,16 +298,9 @@ export default function InboxCenter() {
               <FileSignature className="w-5 h-5" />
             </button>
             <button
-              onClick={() => setShowAccountsManager(true)}
-              className="p-2 bg-white/20 hover:bg-white/30 rounded-lg"
-              title="إدارة الحسابات"
-            >
-              <Users className="w-5 h-5" />
-            </button>
-            <button
               onClick={() => setShowSettingsModal(true)}
               className="p-2 bg-white/20 hover:bg-white/30 rounded-lg"
-              title="إعدادات POP3/SMTP"
+              title="إعدادات Hostinger POP3/SMTP"
             >
               <Settings className="w-5 h-5" />
             </button>
@@ -431,96 +359,12 @@ export default function InboxCenter() {
               <Trash2 className="w-4 h-4" /> المهملات
             </button>
           </div>
-
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${showFilters ? "bg-blue-600 text-white" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"}`}
-          >
-            <Filter className="w-4 h-4" /> فلاتر{" "}
-            {showFilters ? (
-              <ChevronUp className="w-4 h-4" />
-            ) : (
-              <ChevronDown className="w-4 h-4" />
-            )}
-          </button>
           <button
             onClick={handleRefresh}
             className="p-2 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50"
-            title="تحديث"
+            title="تحديث البريد من السيرفر"
           >
             <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Filters Panel */}
-        {showFilters && (
-          <div className="p-4 bg-white border border-slate-200 rounded-lg mb-3">
-            <div className="grid grid-cols-4 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-2">
-                  كلمة محددة
-                </label>
-                <input
-                  type="text"
-                  value={filters.keyword}
-                  onChange={(e) =>
-                    setFilters({ ...filters, keyword: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm"
-                  placeholder="بحث في المحتوى"
-                />
-              </div>
-              <div className="col-span-3 flex items-end gap-3">
-                <button
-                  onClick={() =>
-                    setFilters({ ...filters, isStarred: !filters.isStarred })
-                  }
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${filters.isStarred ? "bg-yellow-100 text-yellow-700 border border-yellow-300" : "bg-slate-100 text-slate-700"}`}
-                >
-                  <Star
-                    className={`w-4 h-4 ${filters.isStarred ? "fill-yellow-500" : ""}`}
-                  />{" "}
-                  المميزة فقط
-                </button>
-                <button
-                  onClick={() =>
-                    setFilters({
-                      sender: "",
-                      keyword: "",
-                      isStarred: false,
-                      isRead: null,
-                    })
-                  }
-                  className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-medium rounded-lg hover:bg-slate-200"
-                >
-                  إعادة تعيين
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Storage Bar */}
-        <div className="flex items-center justify-between p-2.5 bg-slate-100 border border-slate-200 rounded-lg">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-300 rounded-md">
-              <HardDrive className="w-4 h-4 text-blue-600" />
-              <span className="text-xs font-bold text-slate-900">
-                12.4 ميغابايت مستخدمة
-              </span>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-300 rounded-md">
-              <Mail className="w-4 h-4 text-green-600" />
-              <span className="text-xs font-bold text-slate-900">
-                {messages.length} رسالة إجمالية
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowAISmartSearch(true)}
-            className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-l from-purple-600 to-blue-600 text-white text-xs font-bold rounded-md hover:brightness-110 shadow-sm"
-          >
-            <Sparkles className="w-4 h-4" /> بحث ذكي بالذكاء الصناعي
           </button>
         </div>
       </div>
@@ -529,7 +373,12 @@ export default function InboxCenter() {
       <div className="flex-1 flex overflow-hidden">
         {/* Messages List */}
         <div className="w-2/5 border-l border-slate-200 overflow-y-auto custom-scrollbar">
-          {sortedMessages.length === 0 ? (
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center h-full text-slate-400">
+              <RefreshCw className="w-8 h-8 mb-3 animate-spin text-blue-500" />
+              <p className="font-bold">جاري المزامنة مع Hostinger...</p>
+            </div>
+          ) : sortedMessages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-slate-400">
               <Mail className="w-12 h-12 mb-3 opacity-50" />
               <p className="text-sm font-bold">لا توجد رسائل</p>
@@ -549,7 +398,7 @@ export default function InboxCenter() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleToggleStar(msg.id);
+                        handleToggleStar(msg);
                       }}
                       className="flex-shrink-0 mt-0.5"
                     >
@@ -559,27 +408,6 @@ export default function InboxCenter() {
                     </button>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                        <span
-                          className={`text-[11px] font-bold font-mono ${msg.isRead ? "text-slate-400" : "text-blue-600"}`}
-                        >
-                          {msg.id}
-                        </span>
-                        {msg.messageCategory && (
-                          <span
-                            className={`text-[10px] px-2 py-0.5 rounded border ${getAICategoryBadge(msg.messageCategory).color}`}
-                          >
-                            {getAICategoryBadge(msg.messageCategory).label}
-                          </span>
-                        )}
-                        {msg.readInfo?.isRead && (
-                          <span className="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1">
-                            <CheckCircle size={10} /> قرأها:{" "}
-                            {msg.readInfo.readBy}
-                          </span>
-                        )}
-                      </div>
-
                       <h3
                         className={`text-sm mb-1 truncate ${msg.isRead ? "font-medium text-slate-700" : "font-bold text-slate-900"}`}
                       >
@@ -619,7 +447,7 @@ export default function InboxCenter() {
                     </h2>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleToggleStar(selectedMessage.id)}
+                        onClick={() => handleToggleStar(selectedMessage)}
                         className="p-2 hover:bg-slate-50 rounded-lg border border-slate-200"
                       >
                         <Star
@@ -628,7 +456,7 @@ export default function InboxCenter() {
                       </button>
                       {!selectedMessage.isArchived && (
                         <button
-                          onClick={() => handleArchive(selectedMessage.id)}
+                          onClick={() => handleArchive(selectedMessage)}
                           className="p-2 hover:bg-slate-50 rounded-lg border border-slate-200 text-slate-600"
                           title="أرشفة"
                         >
@@ -636,7 +464,7 @@ export default function InboxCenter() {
                         </button>
                       )}
                       <button
-                        onClick={() => handleDelete(selectedMessage.id)}
+                        onClick={() => handleDelete(selectedMessage)}
                         className="p-2 hover:bg-red-50 rounded-lg border border-slate-200 text-red-500"
                         title="حذف"
                       >
@@ -671,44 +499,6 @@ export default function InboxCenter() {
                   </div>
                 </div>
 
-                {/* AI Panel Inline */}
-                {selectedMessage.aiExtraction &&
-                  selectedMessage.aiExtraction.confidence > 0.8 && (
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-indigo-100 p-4">
-                      <div className="flex items-center gap-2 mb-3 text-indigo-800 font-bold text-sm">
-                        <Bot size={18} /> تم استخراج البيانات التالية بالذكاء
-                        الاصطناعي (ثقة{" "}
-                        {selectedMessage.aiExtraction.confidence * 100}%)
-                      </div>
-                      <div className="grid grid-cols-2 gap-3 text-xs">
-                        {selectedMessage.aiExtraction.requestNumber && (
-                          <div className="bg-white p-2 rounded border border-indigo-100">
-                            رقم الطلب:{" "}
-                            <strong>
-                              {selectedMessage.aiExtraction.requestNumber}
-                            </strong>
-                          </div>
-                        )}
-                        {selectedMessage.aiExtraction.ownerName && (
-                          <div className="bg-white p-2 rounded border border-indigo-100">
-                            المالك:{" "}
-                            <strong>
-                              {selectedMessage.aiExtraction.ownerName}
-                            </strong>
-                          </div>
-                        )}
-                        {selectedMessage.aiExtraction.serviceType && (
-                          <div className="bg-white p-2 rounded border border-indigo-100 col-span-2">
-                            الخدمة:{" "}
-                            <strong>
-                              {selectedMessage.aiExtraction.serviceType}
-                            </strong>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
                 {/* Body */}
                 <div className="p-6 min-h-[300px]">
                   <div className="whitespace-pre-wrap text-slate-800 leading-loose text-sm font-medium">
@@ -720,7 +510,14 @@ export default function InboxCenter() {
                 {!selectedMessage.isSent && currentView !== "trash" && (
                   <div className="p-4 border-t border-slate-100 bg-slate-50">
                     <button
-                      onClick={() => setShowComposer(true)}
+                      onClick={() => {
+                        setComposeData({
+                          to: selectedMessage.from,
+                          subject: `رد: ${selectedMessage.subject}`,
+                          body: "",
+                        });
+                        setShowComposer(true);
+                      }}
                       className="w-full text-right p-3 bg-white border border-slate-300 rounded-lg text-slate-500 text-sm hover:border-blue-400 transition-colors flex items-center gap-2"
                     >
                       <Send size={16} className="text-slate-400" /> انقر هنا
@@ -747,9 +544,9 @@ export default function InboxCenter() {
       {/* 💡 النوافذ المنبثقة المبسطة (Inline Modals) */}
       {/* ========================================== */}
 
-      {/* 1. Modal إضافة/تعديل رسالة */}
+      {/* 1. Modal إرسال رسالة جديدة */}
       <SimpleModal
-        title="رسالة جديدة"
+        title="رسالة جديدة عبر Hostinger"
         icon={MailPlus}
         isOpen={showComposer}
         onClose={() => setShowComposer(false)}
@@ -758,23 +555,36 @@ export default function InboxCenter() {
           <input
             type="text"
             placeholder="إلى (البريد الإلكتروني)"
+            value={composeData.to}
+            onChange={(e) =>
+              setComposeData({ ...composeData, to: e.target.value })
+            }
             className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500"
           />
           <input
             type="text"
             placeholder="الموضوع"
+            value={composeData.subject}
+            onChange={(e) =>
+              setComposeData({ ...composeData, subject: e.target.value })
+            }
             className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500"
           />
           <textarea
-            className="w-full p-3 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500 h-48 resize-none"
-            defaultValue={`${preamble}\n\n\n\n${signature}`}
+            placeholder="اكتب رسالتك هنا..."
+            value={composeData.body}
+            onChange={(e) =>
+              setComposeData({ ...composeData, body: e.target.value })
+            }
+            className="w-full p-3 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500 h-32 resize-none"
           />
+          <div className="bg-slate-50 p-2 text-xs text-slate-500 whitespace-pre-wrap rounded">
+            <span className="font-bold text-slate-700">ملاحظة:</span> سيتم إرفاق
+            الديباجة والتوقيع المحفوظ تلقائياً.
+          </div>
           <div className="flex justify-end pt-2">
             <button
-              onClick={() => {
-                toast.success("تم الإرسال بنجاح");
-                setShowComposer(false);
-              }}
+              onClick={handleSendEmail}
               className="px-6 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2"
             >
               <Send size={16} /> إرسال
@@ -783,44 +593,82 @@ export default function InboxCenter() {
         </div>
       </SimpleModal>
 
-      {/* 2. Modal البحث الذكي */}
+      {/* 2. Modal إعدادات Hostinger */}
       <SimpleModal
-        title="البحث الذكي بالذكاء الاصطناعي"
-        icon={Sparkles}
-        isOpen={showAISmartSearch}
-        onClose={() => setShowAISmartSearch(false)}
+        title="إعدادات خوادم Hostinger"
+        icon={Settings}
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
       >
-        <div className="flex flex-col gap-4 text-center">
-          <p className="text-sm text-slate-600 leading-relaxed">
-            اكتب ما تبحث عنه بلغتك الطبيعية، وسيقوم الذكاء الاصطناعي بتحليل
-            نواياك والبحث في جميع الرسائل وتصنيفاتها.
-          </p>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="مثال: اعرض لي رسائل الرخص الخاصة بمحمد الغامدي"
-              className="w-full p-3 pr-10 border-2 border-purple-200 rounded-xl text-sm outline-none focus:border-purple-500 bg-purple-50/30"
-            />
-            <Bot
-              size={18}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-400"
-            />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2 text-xs bg-blue-50 text-blue-700 p-2 rounded mb-2">
+            هذه الإعدادات مخصصة لربط سيرفرات <strong>Hostinger</strong> للبريد
+            الوارد والصادر.
           </div>
+          <input
+            type="text"
+            placeholder="اسم الحساب (مثال: بريد العمل)"
+            className="col-span-2 p-2 border rounded text-sm"
+          />
+          <input
+            type="email"
+            placeholder="البريد الإلكتروني"
+            className="col-span-2 p-2 border rounded text-sm"
+          />
+          <input
+            type="password"
+            placeholder="كلمة المرور"
+            className="col-span-2 p-2 border rounded text-sm"
+          />
+
+          <div className="col-span-2 text-xs font-bold text-slate-500 mt-2">
+            إعدادات IMAP (للاستقبال)
+          </div>
+          <input
+            type="text"
+            defaultValue="imap.hostinger.com"
+            disabled
+            className="p-2 border bg-slate-50 rounded text-sm text-slate-500"
+          />
+          <input
+            type="text"
+            defaultValue="993"
+            disabled
+            className="p-2 border bg-slate-50 rounded text-sm text-slate-500"
+          />
+
+          <div className="col-span-2 text-xs font-bold text-slate-500 mt-2">
+            إعدادات SMTP (للإرسال)
+          </div>
+          <input
+            type="text"
+            defaultValue="smtp.hostinger.com"
+            disabled
+            className="p-2 border bg-slate-50 rounded text-sm text-slate-500"
+          />
+          <input
+            type="text"
+            defaultValue="465"
+            disabled
+            className="p-2 border bg-slate-50 rounded text-sm text-slate-500"
+          />
+
           <button
-            onClick={() => {
-              toast.info("جاري البحث العميق...");
-              setShowAISmartSearch(false);
+            onClick={async () => {
+              // في المشروع الحقيقي سترسل هذه للـ API
+              toast.success("تمت إضافة حساب Hostinger بنجاح");
+              setShowSettingsModal(false);
             }}
-            className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-sm rounded-xl hover:opacity-90"
+            className="col-span-2 mt-4 py-2.5 bg-green-600 text-white font-bold text-sm rounded-lg hover:bg-green-700"
           >
-            بحث الآن
+            حفظ وربط الحساب
           </button>
         </div>
       </SimpleModal>
 
       {/* 3. Modal إعدادات التوقيع والديباجة */}
       <SimpleModal
-        title="إعدادات القوالب (التوقيع والديباجة)"
+        title="إعدادات القوالب"
         icon={FileSignature}
         isOpen={showSignatureSettings}
         onClose={() => setShowSignatureSettings(false)}
@@ -828,7 +676,7 @@ export default function InboxCenter() {
         <div className="flex flex-col gap-4">
           <div>
             <label className="block text-xs font-bold mb-2">
-              الديباجة الافتراضية (تظهر في بداية الرسالة)
+              الديباجة الافتراضية
             </label>
             <textarea
               value={preamble}
@@ -838,7 +686,7 @@ export default function InboxCenter() {
           </div>
           <div>
             <label className="block text-xs font-bold mb-2">
-              التوقيع الافتراضي (يظهر في نهاية الرسالة)
+              التوقيع الافتراضي
             </label>
             <textarea
               value={signature}
@@ -848,7 +696,7 @@ export default function InboxCenter() {
           </div>
           <button
             onClick={() => {
-              toast.success("تم حفظ التوقيع");
+              toast.success("تم الحفظ");
               setShowSignatureSettings(false);
             }}
             className="w-full py-2.5 bg-slate-800 text-white font-bold text-sm rounded-lg hover:bg-slate-900"
@@ -858,99 +706,36 @@ export default function InboxCenter() {
         </div>
       </SimpleModal>
 
-      {/* 4. Modal التصنيفات الذكية */}
+      {/* 4. Modal البحث الذكي */}
       <SimpleModal
-        title="إعدادات التصنيف التلقائي"
-        icon={Tag}
-        isOpen={showCategorySettings}
-        onClose={() => setShowCategorySettings(false)}
+        title="البحث الذكي بالذكاء الاصطناعي"
+        icon={Sparkles}
+        isOpen={showAISmartSearch}
+        onClose={() => setShowAISmartSearch(false)}
       >
-        <div className="text-sm text-slate-600 text-center mb-4">
-          يقوم النظام بتصنيف الرسائل الواردة تلقائياً بناءً على الكلمات
-          المفتاحية والمصدر.
-        </div>
-        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-          {[
-            "رخصة بناء",
-            "عقد عميل",
-            "معاملة رسمية",
-            "طلب توظيف",
-            "عرض سعر",
-          ].map((cat, i) => (
-            <div
-              key={i}
-              className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between"
-            >
-              <span className="font-bold text-slate-700 text-sm">{cat}</span>
-              <div className="w-8 h-4 bg-blue-600 rounded-full relative cursor-pointer">
-                <div className="absolute left-1 top-0.5 w-3 h-3 bg-white rounded-full"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <button
-          onClick={() => setShowCategorySettings(false)}
-          className="w-full mt-4 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg"
-        >
-          إغلاق
-        </button>
-      </SimpleModal>
-
-      {/* 5. Modal حسابات البريد (POP3/SMTP) */}
-      <SimpleModal
-        title="إعدادات خوادم البريد"
-        icon={Settings}
-        isOpen={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-      >
-        <div className="grid grid-cols-2 gap-3">
-          <input
-            type="text"
-            placeholder="اسم الحساب"
-            className="col-span-2 p-2 border rounded text-sm"
-          />
-          <input
-            type="email"
-            placeholder="البريد الإلكتروني"
-            className="col-span-2 p-2 border rounded text-sm"
-          />
-
-          <div className="col-span-2 text-xs font-bold text-slate-500 mt-2">
-            إعدادات POP3 (للاستقبال)
+        <div className="flex flex-col gap-4 text-center">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            اكتب ما تبحث عنه بلغتك الطبيعية.
+          </p>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="مثال: استخرج كل رخص البناء المرفقة الأسبوع الماضي"
+              className="w-full p-3 pr-10 border-2 border-purple-200 rounded-xl text-sm outline-none focus:border-purple-500 bg-purple-50/30"
+            />
+            <Bot
+              size={18}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-400"
+            />
           </div>
-          <input
-            type="text"
-            placeholder="الخادم (Server)"
-            className="p-2 border rounded text-sm"
-          />
-          <input
-            type="text"
-            placeholder="المنفذ (Port)"
-            className="p-2 border rounded text-sm"
-          />
-
-          <div className="col-span-2 text-xs font-bold text-slate-500 mt-2">
-            إعدادات SMTP (للإرسال)
-          </div>
-          <input
-            type="text"
-            placeholder="الخادم (Server)"
-            className="p-2 border rounded text-sm"
-          />
-          <input
-            type="text"
-            placeholder="المنفذ (Port)"
-            className="p-2 border rounded text-sm"
-          />
-
           <button
             onClick={() => {
-              toast.success("تم ربط الخادم بنجاح");
-              setShowSettingsModal(false);
+              toast.info("الميزة ستتوفر بعد ربط الـ AI");
+              setShowAISmartSearch(false);
             }}
-            className="col-span-2 mt-4 py-2.5 bg-green-600 text-white font-bold text-sm rounded-lg"
+            className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-sm rounded-xl"
           >
-            حفظ واختبار الاتصال
+            ابحث الآن
           </button>
         </div>
       </SimpleModal>
