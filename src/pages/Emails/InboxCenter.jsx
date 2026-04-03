@@ -72,6 +72,11 @@ export default function InboxCenter() {
   const [selectedAccount, setSelectedAccount] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
 
+  // 💡 States خاصة بالتحميل اللانهائي (Pagination)
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+
   // ── Modals State ──
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showComposer, setShowComposer] = useState(false);
@@ -92,30 +97,62 @@ export default function InboxCenter() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   // ── جلب البيانات من الـ API ──
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-      // جلب الحسابات
-      const accRes = await api.get("/email/accounts");
-      setAccounts(accRes.data.data || []);
+  const fetchEmails = async (pageNumber = 1) => {
+    if (pageNumber === 1) setIsLoading(true);
+    else setIsFetchingMore(true);
 
-      // جلب الرسائل
-      const msgRes = await api.get("/email/messages");
-      // تحويل النصوص إلى تواريخ حقيقية
-      const formattedMsgs = (msgRes.data.data || []).map((m) => ({
+    try {
+      // 1. جلب الحسابات (يتم مرة واحدة فقط)
+      if (pageNumber === 1) {
+        const accRes = await api.get("/email/accounts");
+        setAccounts(accRes.data?.data || []);
+      }
+
+      // 2. جلب الرسائل الحية من Hostinger مع تحديد الصفحة
+      const imapRes = await api.get(`/email/sync?page=${pageNumber}&limit=50`);
+      const liveMsgs = (imapRes.data?.data || []).map((m) => ({
         ...m,
         date: new Date(m.date),
       }));
-      setMessages(formattedMsgs);
+
+      // التحقق إذا ما كان هناك المزيد من الرسائل
+      if (liveMsgs.length < 50) setHasMore(false);
+      else setHasMore(true);
+
+      if (pageNumber === 1) {
+        // جلب رسائل قاعدة البيانات (الصادر، الأرشيف) فقط في الصفحة الأولى
+        const dbRes = await api.get("/email/messages");
+        const dbMsgs = (dbRes.data?.data || []).map((m) => ({
+          ...m,
+          date: new Date(m.date),
+        }));
+
+        // دمج الحي (الوارد) مع المحفوظ (الصادر)
+        setMessages([...liveMsgs, ...dbMsgs]);
+      } else {
+        // إضافة الرسائل الجديدة للقديمة عند التمرير (مع منع التكرار)
+        setMessages((prev) => {
+          const combined = [...prev, ...liveMsgs];
+          // فلترة ذكية لمنع تكرار الرسائل إذا نزلت رسالة جديدة أثناء السحب
+          const uniqueMessages = Array.from(
+            new Map(combined.map((item) => [item.id, item])).values(),
+          );
+          return uniqueMessages;
+        });
+      }
+
+      setPage(pageNumber);
     } catch (error) {
-      toast.error("حدث خطأ أثناء جلب البريد");
+      console.error("فشل الجلب:", error);
+      toast.error("حدث خطأ أثناء جلب الرسائل");
     } finally {
       setIsLoading(false);
+      setIsFetchingMore(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchEmails(1); // تحميل الصفحة الأولى عند فتح الشاشة
   }, []);
 
   useEffect(() => {
@@ -220,8 +257,20 @@ export default function InboxCenter() {
   };
 
   const handleRefresh = () => {
-    fetchData();
-    toast.success("تم التحديث");
+    setPage(1);
+    fetchEmails(1);
+    toast.success("تم التحديث وجلب أحدث الرسائل");
+  };
+
+  // 💡 دالة مراقبة التمرير (Scroll Handler)
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    // إذا وصل المستخدم لآخر 100 بيكسل في القائمة، ولم نكن نحمل مسبقاً، وهناك المزيد
+    if (scrollHeight - scrollTop <= clientHeight + 100) {
+      if (hasMore && !isFetchingMore && !isLoading && currentView === "inbox") {
+        fetchEmails(page + 1);
+      }
+    }
   };
 
   // المساعدات البصرية
@@ -371,8 +420,11 @@ export default function InboxCenter() {
 
       {/* ── Content Area ── */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Messages List */}
-        <div className="w-2/5 border-l border-slate-200 overflow-y-auto custom-scrollbar">
+        {/* Messages List - 💡 تم نقل onScroll هنا ليعمل بشكل صحيح */}
+        <div
+          className="w-2/5 border-l border-slate-200 overflow-y-auto custom-scrollbar relative"
+          onScroll={handleScroll}
+        >
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-full text-slate-400">
               <RefreshCw className="w-8 h-8 mb-3 animate-spin text-blue-500" />
@@ -430,6 +482,13 @@ export default function InboxCenter() {
                   </div>
                 </div>
               ))}
+              {/* 💡 مؤشر التحميل السفلي (Loading Indicator) عند التمرير */}
+              {isFetchingMore && (
+                <div className="py-6 flex justify-center items-center gap-2 text-slate-500 font-bold text-sm bg-slate-50">
+                  <RefreshCw className="w-5 h-5 animate-spin text-blue-500" />
+                  جاري تحميل المزيد من الرسائل...
+                </div>
+              )}
             </div>
           )}
         </div>

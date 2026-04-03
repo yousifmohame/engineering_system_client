@@ -16,15 +16,11 @@ import {
   Search,
   Filter,
   Settings,
-  Loader2,
   RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
-import api from "../../api/axios"; // 👈 تأكد من المسار
+import api from "../../api/axios";
 
-// ==========================================
-// 💡 مكون مساعدة: Tooltip
-// ==========================================
 const SimpleTooltip = ({ children, content }) => {
   return (
     <div className="relative group inline-flex">
@@ -45,56 +41,45 @@ const categories = [
   { code: "TXN", label: "معاملات" },
 ];
 
-export default function NotificationsCenter() {
+export default function EmailNotificationsCenter() {
   const [allNotifications, setAllNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
   const [selectedNotif, setSelectedNotif] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [financialFilter, setFinancialFilter] = useState(null);
 
-  // ── جلب الإيميلات الحقيقية من السيرفر (هوستنقر) ──
-  const fetchRealEmails = async () => {
+  const fetchAIAnalyzedEmails = async () => {
     setIsLoading(true);
     try {
-      const res = await api.get("/email/sync");
-
-      // تحويل الإيميلات إلى صيغة تناسب الإشعارات
-      const realEmailsAsNotifications = res.data.data.map((email) => ({
-        id: email.id,
-        code: `MAIL-${email.id}`,
-        category: email.category || "نظام",
-        subCategory: null,
-        title: email.subject,
-        description:
-          email.body.length > 100
-            ? email.body.substring(0, 100) + "..."
-            : email.body,
-        fullBody: email.body, // النص الكامل للدرج الجانبي
-        sender: email.from,
-        relatedEntityCode: email.from, // عرض البريد كمرجع
-        severity: email.severity || "medium",
-        timestamp: new Date(email.date).toLocaleString("ar-SA", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        isRead: email.isRead,
-        assignedTo: null,
-      }));
-
-      setAllNotifications(realEmailsAsNotifications);
+      // جلب الإيميلات بعد تحليلها عبر OpenAI
+      const res = await api.get("/email/analyze-inbox");
+      setAllNotifications(res.data.data || []);
+      toast.success("تم جلب وتحليل الإشعارات بنجاح");
     } catch (error) {
-      toast.error("فشل في جلب رسائل البريد من هوستنقر");
+      toast.error("حدث خطأ أثناء جلب وتحليل الإشعارات");
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchRealEmails();
+    fetchAIAnalyzedEmails();
   }, []);
+
+  const closeDrawer = () => setIsDrawerOpen(false);
+
+  // تصنيف الإشعارات المعروضة
+  const financialNotifications = allNotifications.filter(
+    (n) => n.category === "مالي",
+  );
+  const filteredNotifications = financialFilter
+    ? allNotifications.filter(
+        (n) => n.subCategory && n.subCategory === financialFilter,
+      )
+    : allNotifications;
 
   // إحصائيات سريعة
   const unreadCount = allNotifications.filter((n) => !n.isRead).length;
@@ -102,42 +87,92 @@ export default function NotificationsCenter() {
     (n) => n.severity === "high",
   ).length;
   const assignedCount = allNotifications.filter((n) => n.assignedTo).length;
-  const financialCount = allNotifications.filter(
-    (n) => n.category === "مالي",
-  ).length;
+  const financialCount = financialNotifications.length;
+  const snoozedCount = 0;
 
   const selectedNotification = allNotifications.find(
     (n) => n.id === selectedNotif,
   );
 
-  // فلترة
-  const filteredNotifications = allNotifications.filter(
-    (n) =>
-      n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      n.sender.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
-
   const handleRowClick = (id) => {
+    const notif = allNotifications.find((n) => n.id === id);
     setSelectedNotif(id);
-    setIsDrawerOpen(true);
-
-    // التحديث كمقروء محلياً
-    setAllNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
-    );
+    if (notif?.category === "مالي") {
+      setShowDetailsModal(true);
+    } else {
+      setIsDrawerOpen(true);
+    }
   };
 
-  const closeDrawer = () => {
-    setIsDrawerOpen(false);
-    setSelectedNotif(null);
+  const handleGoToSource = (linkedScreen) => {
+    if (linkedScreen) {
+      alert(`سيتم فتح الشاشة ${linkedScreen.screenCode}`);
+    }
   };
+
+  const financialSubCategories = [
+    {
+      id: "فواتير متأخرة",
+      label: "فواتير متأخرة",
+      icon: AlertCircle,
+      color: "red",
+      count: financialNotifications.filter(
+        (n) => n.subCategory === "فواتير متأخرة",
+      ).length,
+    },
+    {
+      id: "فواتير قريبة الاستحقاق",
+      label: "فواتير قريبة الاستحقاق",
+      icon: Calendar,
+      color: "amber",
+      count: financialNotifications.filter(
+        (n) => n.subCategory === "فواتير قريبة الاستحقاق",
+      ).length,
+    },
+    {
+      id: "دفعات غير مربوطة",
+      label: "دفعات غير مربوطة",
+      icon: FileX,
+      color: "orange",
+      count: financialNotifications.filter(
+        (n) => n.subCategory === "دفعات غير مربوطة",
+      ).length,
+    },
+    {
+      id: "تسويات جاهزة",
+      label: "تسويات جاهزة",
+      icon: CheckCircle2,
+      color: "green",
+      count: financialNotifications.filter(
+        (n) => n.subCategory === "تسويات جاهزة",
+      ).length,
+    },
+    {
+      id: "تسويات بدون مرفق",
+      label: "تسويات بدون مرفق",
+      icon: Paperclip,
+      color: "purple",
+      count: financialNotifications.filter(
+        (n) => n.subCategory === "تسويات بدون مرفق",
+      ).length,
+    },
+    {
+      id: "معاملات معتمدة بمتأخرات",
+      label: "معاملات معتمدة بمتأخرات",
+      icon: AlertTriangle,
+      color: "red",
+      count: financialNotifications.filter(
+        (n) => n.subCategory === "معاملات معتمدة بمتأخرات",
+      ).length,
+    },
+  ];
 
   return (
     <div
       className="flex-1 flex flex-col overflow-hidden bg-slate-50 min-h-screen font-[Tajawal]"
       dir="rtl"
     >
-      {/* Header */}
+      {/* 1️⃣ Header */}
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-blue-100 text-blue-700 flex items-center justify-center rounded-lg">
@@ -145,34 +180,29 @@ export default function NotificationsCenter() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-slate-800 leading-tight">
-              مركز الإشعارات والبريد الوارد{" "}
-              <span className="text-slate-400 text-sm font-mono ml-2">
-                (Hostinger)
-              </span>
+              مركز الإشعارات الذكي (AI)
             </h1>
-            <p className="text-xs text-slate-500">مزامنة حية مع بريد المكتب</p>
+            <p className="text-xs text-slate-500">
+              تم تحليل الرسائل وتصنيفها باستخدام الذكاء الاصطناعي
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={fetchRealEmails}
-            className="px-4 py-2 text-[11px] font-bold bg-white border border-slate-300 text-slate-700 rounded-lg shadow-sm hover:bg-slate-50 flex items-center gap-2"
-          >
-            <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />{" "}
-            مزامنة البريد
-          </button>
-          <button className="px-4 py-2 text-[11px] font-bold bg-green-600 text-white rounded-lg shadow-sm hover:bg-green-700 transition-colors flex items-center gap-2">
-            <CheckCircle2 size={14} /> تحديد الكل كمقروء
-          </button>
-        </div>
+        <button
+          onClick={fetchAIAnalyzedEmails}
+          disabled={isLoading}
+          className="px-4 py-2 text-[11px] font-bold bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-70"
+        >
+          <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />{" "}
+          {isLoading ? "جاري التحليل..." : "تحديث وتحليل جديد"}
+        </button>
       </div>
 
       <div className="p-4 space-y-4 flex-1 overflow-y-auto custom-scrollbar">
-        {/* KPI Chips */}
+        {/* 2️⃣ KPI Chips */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
           <div className="flex flex-wrap gap-3">
             <SimpleTooltip content="الإشعارات التي لم تُقرأ بعد">
-              <div className="flex items-center gap-3 px-4 py-2 bg-blue-50/50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 min-w-[120px]">
+              <div className="flex items-center gap-3 px-4 py-2 bg-blue-50/50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors min-w-[120px]">
                 <div className="p-2 bg-blue-100 text-blue-600 rounded-md">
                   <Bell className="w-4 h-4" />
                 </div>
@@ -187,7 +217,7 @@ export default function NotificationsCenter() {
               </div>
             </SimpleTooltip>
             <SimpleTooltip content="إشعارات عالية الأولوية">
-              <div className="flex items-center gap-3 px-4 py-2 bg-red-50/50 border border-red-200 rounded-lg cursor-pointer hover:bg-red-50 min-w-[120px]">
+              <div className="flex items-center gap-3 px-4 py-2 bg-red-50/50 border border-red-200 rounded-lg cursor-pointer hover:bg-red-50 transition-colors min-w-[120px]">
                 <div className="p-2 bg-red-100 text-red-600 rounded-md">
                   <AlertTriangle className="w-4 h-4" />
                 </div>
@@ -201,166 +231,249 @@ export default function NotificationsCenter() {
                 </div>
               </div>
             </SimpleTooltip>
+            <SimpleTooltip content="إشعارات مسندة لك">
+              <div className="flex items-center gap-3 px-4 py-2 bg-purple-50/50 border border-purple-200 rounded-lg cursor-pointer hover:bg-purple-50 transition-colors min-w-[120px]">
+                <div className="p-2 bg-purple-100 text-purple-600 rounded-md">
+                  <User className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-purple-600/80">
+                    مسندة لي
+                  </div>
+                  <div className="text-xl font-black text-purple-900 leading-tight">
+                    {assignedCount}
+                  </div>
+                </div>
+              </div>
+            </SimpleTooltip>
+            <SimpleTooltip content="إشعارات مالية من الحسابات والخزينة">
+              <div className="flex items-center gap-3 px-4 py-2 bg-green-50 border-2 border-green-400 rounded-lg cursor-pointer hover:bg-green-100 transition-colors min-w-[120px]">
+                <div className="p-2 bg-green-200 text-green-700 rounded-md">
+                  <DollarSign className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-green-700">
+                    إشعارات مالية
+                  </div>
+                  <div className="text-xl font-black text-green-900 leading-tight">
+                    {financialCount}
+                  </div>
+                </div>
+              </div>
+            </SimpleTooltip>
           </div>
         </div>
 
-        {/* Filters & Table */}
+        {/* 3️⃣ Financial Filters Section */}
+        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4 shadow-sm">
+          <h3 className="text-[13px] font-bold text-emerald-900 mb-3 flex items-center gap-2">
+            <DollarSign className="w-4 h-4" /> فلاتر سريعة - الإشعارات المالية
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setFinancialFilter(null)}
+              className={`px-3 py-1.5 text-[11px] font-bold rounded-lg flex items-center gap-1.5 transition-all ${financialFilter === null ? "bg-emerald-600 text-white shadow-md" : "bg-white border border-emerald-200 text-emerald-800 hover:bg-emerald-100"}`}
+            >
+              <DollarSign className="w-3 h-3" /> جميع المالية ({financialCount})
+            </button>
+            {financialSubCategories.map((cat) => {
+              const Icon = cat.icon;
+              const activeClass =
+                cat.color === "red"
+                  ? "bg-red-600 text-white border-red-600"
+                  : cat.color === "amber"
+                    ? "bg-amber-600 text-white border-amber-600"
+                    : cat.color === "orange"
+                      ? "bg-orange-600 text-white border-orange-600"
+                      : cat.color === "green"
+                        ? "bg-green-600 text-white border-green-600"
+                        : "bg-purple-600 text-white border-purple-600";
+              const bgClass =
+                cat.color === "red"
+                  ? "bg-red-50 border-red-200 text-red-800"
+                  : cat.color === "amber"
+                    ? "bg-amber-50 border-amber-200 text-amber-800"
+                    : cat.color === "orange"
+                      ? "bg-orange-50 border-orange-200 text-orange-800"
+                      : cat.color === "green"
+                        ? "bg-green-50 border-green-200 text-green-800"
+                        : "bg-purple-50 border-purple-200 text-purple-800";
+
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setFinancialFilter(cat.id)}
+                  className={`px-3 py-1.5 text-[11px] font-bold rounded-lg flex items-center gap-1.5 transition-all border ${financialFilter === cat.id ? activeClass : bgClass}`}
+                >
+                  <Icon className="w-3 h-3" /> {cat.label} ({cat.count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 4️⃣ Table */}
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col">
-          <div className="p-4 border-b border-slate-100 bg-slate-50/50 rounded-t-xl flex flex-wrap gap-4 items-center justify-between">
+          <div className="p-4 border-b border-slate-100 bg-slate-50/50 rounded-t-xl flex justify-end">
             <div className="relative">
               <Search className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="بحث سريع في البريد..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="text-xs border border-slate-300 rounded-full bg-white pr-7 pl-3 py-1.5 outline-none focus:border-blue-500 w-64"
+                placeholder="بحث سريع..."
+                className="text-xs border border-slate-300 rounded-full bg-white pr-7 pl-3 py-1.5 outline-none focus:border-blue-500 w-48"
               />
             </div>
           </div>
-
-          <div className="overflow-x-auto min-h-[300px]">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center h-48 text-slate-400">
-                <Loader2 className="w-8 h-8 animate-spin mb-2 text-blue-500" />
-                <p className="font-bold text-sm">
-                  جاري جلب الرسائل من هوستنقر...
-                </p>
-              </div>
-            ) : filteredNotifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-48 text-slate-400">
-                <p className="font-bold text-sm">لا توجد رسائل بريد</p>
-              </div>
-            ) : (
-              <table className="w-full text-[11px] text-right">
-                <thead className="bg-slate-100/80 border-b border-slate-200 text-slate-600">
+          <div className="overflow-x-auto">
+            <table className="w-full text-[11px] text-right">
+              <thead className="bg-slate-100/80 border-b border-slate-200 text-slate-600">
+                <tr>
+                  <th className="px-4 py-3 font-bold">الكود / المرجع</th>
+                  <th className="px-4 py-3 font-bold">التصنيف (AI)</th>
+                  <th className="px-4 py-3 font-bold">الموضوع</th>
+                  <th className="px-4 py-3 font-bold">المبلغ (AI)</th>
+                  <th className="px-4 py-3 font-bold w-16">أولوية</th>
+                  <th className="px-4 py-3 font-bold w-32">التاريخ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {isLoading ? (
                   <tr>
-                    <th className="px-4 py-3 font-bold w-24">المعرف</th>
-                    <th className="px-4 py-3 font-bold w-20">تصنيف</th>
-                    <th className="px-4 py-3 font-bold">العنوان / الموضوع</th>
-                    <th className="px-4 py-3 font-bold w-48">
-                      المرسل (البريد)
-                    </th>
-                    <th className="px-4 py-3 font-bold w-16">أولوية</th>
-                    <th className="px-4 py-3 font-bold w-32">التاريخ</th>
-                    <th className="px-4 py-3 font-bold w-20">الحالة</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredNotifications.map((notif) => (
-                    <tr
-                      key={notif.id}
-                      className={`hover:bg-slate-50 cursor-pointer transition-colors ${!notif.isRead ? "bg-blue-50/30 font-bold" : ""}`}
-                      onClick={() => handleRowClick(notif.id)}
+                    <td
+                      colSpan="6"
+                      className="text-center py-10 text-slate-400"
                     >
-                      <td className="px-4 py-2.5 font-mono text-slate-500">
-                        {notif.code}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <span
-                          className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${notif.category === "عاجل" ? "bg-red-50 border-red-200 text-red-700" : notif.category === "مالي" ? "bg-green-50 border-green-200 text-green-700" : "bg-slate-100 border-slate-200 text-slate-700"}`}
-                        >
-                          {notif.category}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-800 truncate max-w-[200px]">
-                        {notif.title}
-                      </td>
-                      <td className="px-4 py-2.5 font-mono text-slate-500 truncate max-w-[150px] dir-ltr text-left">
-                        {notif.sender}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <div
-                          className={`w-2.5 h-2.5 rounded-full shadow-sm ${notif.severity === "high" ? "bg-red-500" : notif.severity === "medium" ? "bg-amber-400" : "bg-blue-400"}`}
-                        />
-                      </td>
-                      <td className="px-4 py-2.5 font-mono text-slate-500">
-                        {notif.timestamp}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        {notif.isRead ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-slate-500">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />{" "}
-                            مقروء
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700">
-                            جديد
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                      جاري تحليل رسائل البريد باستخدام الذكاء الاصطناعي...
+                    </td>
+                  </tr>
+                ) : filteredNotifications.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      className="text-center py-10 text-slate-400"
+                    >
+                      لا توجد إشعارات مطابقة
+                    </td>
+                  </tr>
+                ) : (
+                  filteredNotifications.map((notif) => {
+                    const isFinancial = notif.category === "مالي";
+                    return (
+                      <tr
+                        key={notif.id}
+                        className={`hover:bg-slate-50 cursor-pointer transition-colors group ${!notif.isRead ? "bg-blue-50/30" : ""} ${isFinancial ? "border-r-4 border-r-green-500" : "border-r-4 border-r-transparent"}`}
+                        onClick={() => handleRowClick(notif.id)}
+                      >
+                        <td className="px-4 py-2.5 font-mono font-bold text-slate-500">
+                          {notif.relatedEntityCode || notif.code}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <div className="flex flex-col gap-1 items-start">
+                            <span
+                              className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${notif.category === "عاجل" ? "bg-red-50 border-red-200 text-red-700" : notif.category === "مالي" ? "bg-green-50 border-green-200 text-green-700" : notif.category === "توثيق" ? "bg-purple-50 border-purple-200 text-purple-700" : "bg-slate-100 border-slate-200 text-slate-700"}`}
+                            >
+                              {notif.category}
+                            </span>
+                            {isFinancial && (
+                              <span className="text-[9px] text-emerald-600 font-bold whitespace-nowrap">
+                                {notif.subCategory}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-800 font-semibold max-w-xs truncate">
+                          {notif.title}
+                        </td>
+                        <td className="px-4 py-2.5 font-mono font-bold text-emerald-600">
+                          {isFinancial && notif.amount
+                            ? `${notif.amount.toLocaleString()} ر.س`
+                            : "-"}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <div
+                            className={`w-2.5 h-2.5 rounded-full shadow-sm ${notif.severity === "high" ? "bg-red-500" : notif.severity === "medium" ? "bg-amber-400" : "bg-blue-400"}`}
+                            title={notif.severity}
+                          />
+                        </td>
+                        <td className="px-4 py-2.5 font-mono text-slate-500">
+                          {notif.timestamp}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      {/* 6️⃣ الدرج الجانبي لقراءة الإيميل الكامل (Drawer) */}
-      {isDrawerOpen && selectedNotification && (
-        <div
-          className="fixed inset-0 z-50 flex justify-start bg-slate-900/40 backdrop-blur-sm animate-in fade-in"
-          dir="rtl"
-        >
-          <div className="absolute inset-0" onClick={closeDrawer}></div>
-          <div className="relative w-full max-w-lg h-full bg-white shadow-2xl border-l border-slate-200 flex flex-col animate-in slide-in-from-right duration-300 font-[Tajawal]">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <div>
-                <h3 className="text-sm font-bold text-slate-800">
-                  قراءة الرسالة
-                </h3>
-                <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                  {selectedNotification.code}
-                </p>
-              </div>
-              <button
-                onClick={closeDrawer}
-                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5 custom-scrollbar bg-white">
-              <div className="mb-4 pb-4 border-b border-slate-100">
-                <h4 className="text-lg font-bold text-slate-900 mb-3 leading-tight">
-                  {selectedNotification.title}
-                </h4>
-                <div className="flex flex-col gap-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="w-12 text-slate-400 font-bold text-xs">
-                      من:
-                    </span>{" "}
-                    <span className="font-mono text-blue-600 dir-ltr text-left">
-                      {selectedNotification.sender}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-12 text-slate-400 font-bold text-xs">
-                      التاريخ:
-                    </span>{" "}
-                    <span className="text-slate-700 font-mono">
-                      {selectedNotification.timestamp}
-                    </span>
-                  </div>
+      {/* 5️⃣ Modal المالي */}
+      {showDetailsModal &&
+        selectedNotification &&
+        selectedNotification.category === "مالي" && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
+            <div
+              className="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col animate-in zoom-in-95"
+              dir="rtl"
+            >
+              <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white px-5 py-4 flex justify-between">
+                <div>
+                  <h3 className="font-bold">تحليل الإشعار المالي (AI)</h3>
+                  <p className="text-xs opacity-80">
+                    {selectedNotification.relatedEntityCode}
+                  </p>
                 </div>
+                <button onClick={() => setShowDetailsModal(false)}>
+                  <X />
+                </button>
               </div>
-
-              <div className="text-sm text-slate-800 leading-loose whitespace-pre-wrap">
-                {selectedNotification.fullBody}
+              <div className="p-6 space-y-4">
+                <div className="bg-slate-50 p-4 rounded-lg border text-sm text-slate-700 whitespace-pre-wrap">
+                  {selectedNotification.description}
+                </div>
+                {selectedNotification.amount && (
+                  <div className="bg-emerald-50 border-emerald-200 border p-4 rounded-lg text-center">
+                    <p className="text-xs text-emerald-800 font-bold mb-1">
+                      المبلغ المكتشف
+                    </p>
+                    <p className="text-3xl font-black text-emerald-600">
+                      {selectedNotification.amount} ر.س
+                    </p>
+                  </div>
+                )}
               </div>
-            </div>
-
-            <div className="p-4 border-t border-slate-200 bg-slate-50 grid grid-cols-2 gap-2 shrink-0">
-              <button className="col-span-2 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-blue-700 flex items-center justify-center gap-1.5">
-                <ArrowRight className="w-4 h-4" /> رد على المرسل
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+      {/* 6️⃣ Drawer العادي */}
+      {isDrawerOpen &&
+        selectedNotification &&
+        selectedNotification.category !== "مالي" && (
+          <div
+            className="fixed inset-0 z-50 flex justify-start bg-slate-900/40 backdrop-blur-sm"
+            dir="rtl"
+          >
+            <div className="absolute inset-0" onClick={closeDrawer}></div>
+            <div className="relative w-full max-w-md h-full bg-white shadow-2xl border-l flex flex-col animate-in slide-in-from-right">
+              <div className="px-5 py-4 border-b flex justify-between bg-slate-50">
+                <h3 className="font-bold">تفاصيل الإشعار</h3>
+                <button onClick={closeDrawer}>
+                  <X />
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto">
+                <h4 className="font-bold text-lg mb-4 text-blue-600">
+                  {selectedNotification.title}
+                </h4>
+                <div className="bg-slate-50 p-4 rounded-lg text-sm text-slate-700 whitespace-pre-wrap leading-loose border">
+                  {selectedNotification.description}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
