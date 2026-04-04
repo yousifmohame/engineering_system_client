@@ -33,7 +33,8 @@ import { useQuery } from "@tanstack/react-query";
 import api from "../../api/axios";
 
 // 💡 🚀 استيراد مكون مدير الملفات
-import  TransactionFilesManager from "./TransactionFiles/index";
+import TransactionFilesManager from "./TransactionFiles/index";
+import TransactionsPage from "./TransactionContinu/TransactionsPage";
 
 // ==========================================
 // 💡 تعريف المسارات (Paths Configuration)
@@ -259,6 +260,7 @@ const PATHS = [
 export default function TransactionsDashboard({ onOpenPath }) {
   const [hoveredPath, setHoveredPath] = useState(null);
   const [showFilesManager, setShowFilesManager] = useState(false);
+  const [showTransactionsPage, setShowTransactionsPage] = useState(false);
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions-dashboard"],
@@ -271,6 +273,11 @@ export default function TransactionsDashboard({ onOpenPath }) {
   const handlePathClick = (pathId) => {
     if (pathId === "055-PATH-00") {
       setShowFilesManager(true);
+      return;
+    }
+    if (pathId === "055-PATH-01") {
+      // 👈 إضافة هذا الشرط الجديد
+      setShowTransactionsPage(true);
       return;
     }
     if (onOpenPath) {
@@ -656,6 +663,12 @@ export default function TransactionsDashboard({ onOpenPath }) {
       {showFilesManager && (
         <div className="fixed inset-0 z-[999] bg-white flex flex-col animate-in slide-in-from-bottom-4 duration-300">
           <TransactionFilesManager onClose={() => setShowFilesManager(false)} />
+        </div>
+      )}
+      {/* 💡 🚀 عرض شاشة متابعة المعاملات (الجزء الجديد) */}
+      {showTransactionsPage && (
+        <div className="fixed inset-0 z-[999] bg-white flex flex-col animate-in slide-in-from-bottom-4 duration-300">
+          <TransactionsPage onClose={() => setShowTransactionsPage(false)} />
         </div>
       )}
     </div>

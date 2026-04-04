@@ -12,7 +12,6 @@ import {
 import { CopyableCell, CommunicationBlock } from "./SharedComponents";
 import { formatFileSize, formatDateWithTime, GRID_COLUMNS } from "../utils";
 
-
 export default function EnhancedListItem({
   transaction,
   isSelected,
@@ -69,7 +68,7 @@ export default function EnhancedListItem({
             className={isLocked ? "text-gray-400" : "text-amber-500 shrink-0"}
           />
           <CopyableCell
-            text={`${transaction.ownerFirstName} ${transaction.ownerLastName}${transaction.commonName ? ` • ${transaction.commonName}` : ""}`}
+            text={`${transaction.ownerFirstName} ${transaction.ownerLastName}${transaction.commonName ? ` || ${transaction.commonName} || ${transaction.district}` : ""}`}
             className="text-[12px] font-black text-gray-900"
             label="اسم المجلد"
           />
@@ -179,12 +178,22 @@ export default function EnhancedListItem({
         {!isLocked ? (
           <>
             <CopyableCell
-              text={transaction.clientPhone || "—"}
+              // 💡 التعديل هنا: نتحقق إذا كان النص يشتمل على "غير متوفر"
+              text={
+                transaction.clientPhone?.includes("غير متوفر")
+                  ? "—"
+                  : transaction.clientPhone || "—"
+              }
               className="text-[10px] font-mono font-bold text-gray-700 bg-gray-50 border border-gray-100 px-1.5 py-0.5 rounded w-max"
               label="الجوال"
             />
             <CommunicationBlock
-              phone={transaction.clientPhone}
+              // 💡 ونمنع تمريره لزر الواتساب/الاتصال أيضاً
+              phone={
+                transaction.clientPhone?.includes("غير متوفر")
+                  ? ""
+                  : transaction.clientPhone
+              }
               email={transaction.clientEmail}
             />
           </>

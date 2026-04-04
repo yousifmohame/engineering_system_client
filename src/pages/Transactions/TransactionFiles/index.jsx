@@ -124,36 +124,63 @@ export default function TransactionFilesManager({ onClose }) {
   });
 
   // 3. تحويل البيانات
-  // 3. تحويل البيانات
   const transactions = useMemo(() => {
     return rawTransactions.map((tx) => {
-      const fullName =
+      // 💡 1. جلب الاسم الخام وتنظيفه من الأكواد أو الرموز الإضافية (مثل " - C-123")
+      const rawName =
         tx.clientName || tx.client || tx.ownerNames || "عميل غير محدد";
-      const nameParts = fullName.trim().split(" ");
+      const cleanName = rawName.split("-")[0].split("(")[0].trim(); // أخذ الجزء ما قبل الشرطة أو الأقواس
+
+      const nameParts = cleanName
+        .split(" ")
+        .filter((part) => part.trim() !== ""); // إزالة المسافات الفارغة
+
+      // 💡 2. استخراج الاسم الأول والأخير بذكاء
+      let firstName = "عميل";
+      let lastName = "";
+
+      if (nameParts.length === 1) {
+        firstName = nameParts[0];
+      } else if (nameParts.length === 2) {
+        firstName = nameParts[0];
+        lastName = nameParts[1];
+      } else if (nameParts.length > 2) {
+        // إذا كان الاسم ثلاثياً أو رباعياً، نأخذ أول اسمين كاسم أول، والاسم الأخير كعائلة
+        firstName = nameParts.slice(0, nameParts.length - 1).join(" ");
+        lastName = nameParts[nameParts.length - 1];
+      }
+
+      // التأكد من أن الاسم الأخير ليس رقماً أو كوداً (يحتوي فقط على حروف عربية/إنجليزية)
+      const isWord = /^[a-zA-Z\u0600-\u06FF\s]+$/.test(lastName);
+      if (!isWord && lastName !== "") {
+        firstName = cleanName; // إذا كان الأخير كوداً، نعتبر الاسم كله هو الاسم الأول
+        lastName = "";
+      }
 
       return {
         id: tx.id,
         transactionId: tx.id,
         transactionCode: tx.ref || tx.transactionCode || tx.id.substring(0, 8),
-        ownerFirstName: nameParts[0] || "عميل",
-        ownerLastName:
-          nameParts.length > 1 ? nameParts[nameParts.length - 1] : "",
+
+        // 🔥 التعديل هنا: استخدام الأسماء المعالجة بذكاء 🔥
+        ownerFirstName: firstName,
+        ownerLastName: lastName,
+
         transactionType: tx.type || tx.category || "معاملة",
         district: tx.districtName || tx.district || "غير محدد",
         sector: tx.sector || "غير محدد",
         commonName: tx.internalName || "",
 
-        // 🔥 التعديلات تبدأ من هنا 🔥
-        officeName: tx.office || tx.source || "غير محدد", // 👈 تعديل المكتب المنفذ
-        brokerName: tx.mediator || "", // 👈 تعديل الوسيط
+        officeName: tx.office || tx.source || "غير محدد",
+        brokerName: tx.mediator || "",
         agentName:
           Array.isArray(tx.agents) && tx.agents.length > 0
             ? tx.agents.map((a) => a.name).join(" و ")
-            : "", // 👈 تعديل المعقبين
-        createdAt: tx.created || tx.createdAt || "—", // 👈 تعديل تاريخ الإنشاء
-        modifiedAt: tx.updated || tx.modifiedAt || tx.created || "—", // 👈 تعديل تاريخ التعديل
-        clientPhone: tx.phone || "—", // 👈 تعديل رقم الهاتف
-        // 🔥 انتهاء التعديلات 🔥
+            : "",
+        createdAt: tx.created || tx.createdAt || "—",
+        modifiedAt: tx.updated || tx.modifiedAt || tx.created || "—",
+        clientPhone:
+          tx.phone && !tx.phone.includes("غير متوفر") ? tx.phone : "",
 
         clientEmail: tx.email || tx.client?.email || "",
         status: tx.status || "جارية",
