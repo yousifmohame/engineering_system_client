@@ -265,7 +265,7 @@ const MENU_CATEGORIES = [
     icon: Sliders,
     items: [
       { id: "SET", label: "إعدادات عامة", code: "SCREEN_SET_VIEW" },
-      { id: "83", label: "السياسات", code: "SCR_83_VIEW" },
+      { id: "83", label: "اعدادات Tailscale", code: "SCR_83_VIEW" },
     ],
   },
   {
