@@ -47,6 +47,7 @@ const MENU_CATEGORIES = [
     items: [
       { id: "01", label: "لوحة التحكم الرئيسية", code: "SCR_01_VIEW" },
       { id: "02", label: "التنبيهات", code: "SCR_02_VIEW" },
+      { id: "109", label: "الروابط السريعه", code: "SCR_109_VIEW" },
       { id: "03", label: "المهام", code: "SCR_03_VIEW" },
       { id: "04", label: "الإحصائيات السريعة", code: "SCR_04_VIEW" },
     ],
