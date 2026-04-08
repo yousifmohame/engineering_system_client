@@ -91,7 +91,7 @@ const getFullUrl = (url) => {
   if (url.startsWith("/uploads/")) {
     fixedUrl = `/api${url}`;
   }
-  const baseUrl = "http://95.216.73.243";
+  const baseUrl = "https://details-worksystem1.com";
   return `${baseUrl}${fixedUrl}`;
 };
 
@@ -2461,7 +2461,7 @@ export function ModalPermitDetails({ permit, onClose }) {
         </div>
 
         {/* Quick Info Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-6 py-4 bg-white border-b border-slate-100 text-[11px] shrink-0">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-6 py-4 bg-white border-b border-slate-100 text-[11px] shrink-0 z-20 shadow-sm relative">
           <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col justify-between group">
             <span className="text-slate-400 font-bold mb-1 flex justify-between items-center">
               المالك
@@ -2504,59 +2504,78 @@ export function ModalPermitDetails({ permit, onClose }) {
             </span>
             <div className="flex items-center gap-1 mt-1">
               <FormBadge form={permit.form} />
-              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
                 {permit.source}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Tabs Navigation */}
-        <div className="flex border-b border-slate-200 bg-slate-50 overflow-x-auto shrink-0 px-2 custom-scrollbar-slim">
-          {tabs.map((tab, i) => (
-            <button
-              key={i}
-              onClick={() => setActiveTab(i)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-3.5 text-[11px] font-bold whitespace-nowrap border-b-[3px] transition-colors ${
-                activeTab === i
-                  ? "border-blue-600 text-blue-700 bg-white"
-                  : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-              }`}
-            >
-              {tab.icon} {tab.label}
-            </button>
-          ))}
-        </div>
+        {/* 💡 التعديل هنا: إضافة min-h-0 للحاوية الرئيسية لفرض التمرير الداخلي */}
+        <div className="flex flex-row flex-1 overflow-hidden bg-[#fafbfc] min-h-0">
+          {/* 👈 Sidebar (Vertical Tabs) */}
+          <div className="w-full md:w-[220px] bg-white border-l border-slate-200 overflow-y-auto custom-scrollbar-slim p-3 flex flex-col gap-1.5 shrink-0 shadow-[2px_0_10px_-5px_rgba(0,0,0,0.05)] z-10 min-h-0">
+            {tabs.map((tab, i) => {
+              const isActive = activeTab === i;
+              return (
+                <button
+                  key={i}
+                  onClick={() => setActiveTab(i)}
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-lg text-[11px] font-bold transition-all text-right w-full shrink-0 relative ${
+                    isActive
+                      ? "bg-blue-50 text-blue-700 shadow-sm border border-blue-100"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent"
+                  }`}
+                >
+                  {/* خط التحديد النشط الجانبي */}
+                  {isActive && (
+                    <div className="absolute right-0 top-1/4 bottom-1/4 w-[3px] bg-blue-600 rounded-l-full"></div>
+                  )}
 
-        {/* Tab Content Area */}
-        <div className="flex-1 overflow-auto custom-scrollbar-slim bg-[#fafbfc] relative">
-          {activeTab === 0 && <TabExtractedData permit={permit} />}
-          {activeTab === 1 && <TabDocument permit={permit} />}
-          {activeTab === 2 && <TabComponents permit={permit} />}
-          {activeTab === 3 && <TabBoundaries permit={permit} />}
-          {activeTab === 4 && (
-            <TabLinkedRecords
-              permit={permit}
-              localLinks={localLinks}
-              setLocalLinks={setLocalLinks}
-              linkingMode={linkingMode}
-              setLinkingMode={setLinkingMode}
-              selectedValue={selectedValue}
-              setSelectedValue={setSelectedValue}
-              handleSaveLink={handleSaveLink}
-              handleUnlink={handleUnlink}
-              getOptions={getOptions}
-              linkMutation={linkMutation}
-              autoLinkedTransactions={autoLinkedTransactions}
-              loadingAuto={loadingAuto}
-              clients={clients}
-              offices={offices}
-              ownerships={ownerships}
-              privateTransactions={privateTransactions}
-            />
-          )}
-          {activeTab === 5 && <TabExtraAttachments permit={permit} />}
-          {activeTab === 6 && <TabAiReport permit={permit} />}
+                  <span
+                    className={`shrink-0 transition-transform ${isActive ? "text-blue-600 scale-110" : "text-slate-400 group-hover:scale-110"}`}
+                  >
+                    {tab.icon}
+                  </span>
+
+                  <span className="truncate">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 👈 Tab Content Area */}
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar relative bg-transparent min-h-0">
+            <div className="max-w-4xl mx-auto">
+              {activeTab === 0 && <TabExtractedData permit={permit} />}
+              {activeTab === 1 && <TabDocument permit={permit} />}
+              {activeTab === 2 && <TabComponents permit={permit} />}
+              {activeTab === 3 && <TabBoundaries permit={permit} />}
+              {activeTab === 4 && (
+                <TabLinkedRecords
+                  permit={permit}
+                  localLinks={localLinks}
+                  setLocalLinks={setLocalLinks}
+                  linkingMode={linkingMode}
+                  setLinkingMode={setLinkingMode}
+                  selectedValue={selectedValue}
+                  setSelectedValue={setSelectedValue}
+                  handleSaveLink={handleSaveLink}
+                  handleUnlink={handleUnlink}
+                  getOptions={getOptions}
+                  linkMutation={linkMutation}
+                  autoLinkedTransactions={autoLinkedTransactions}
+                  loadingAuto={loadingAuto}
+                  clients={clients}
+                  offices={offices}
+                  ownerships={ownerships}
+                  privateTransactions={privateTransactions}
+                />
+              )}
+              {activeTab === 5 && <TabExtraAttachments permit={permit} />}
+              {activeTab === 6 && <TabAiReport permit={permit} />}
+            </div>
+          </div>
         </div>
       </div>
     </div>

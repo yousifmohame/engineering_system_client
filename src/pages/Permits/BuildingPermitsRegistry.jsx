@@ -56,8 +56,8 @@ import { ModalPermitDetails } from "../../components/ModalPermitDetails";
 // ─── Column Definitions ──────────────────────────────────────
 const COLUMNS = [
   { key: "permitNumber", label: "رقم الرخصة", width: 110 },
-  { key: "source", label: "مصدر السجل", width: 130 },
   { key: "year", label: "السنة", width: 60 },
+  { key: "source", label: "مصدر السجل", width: 130 },
   { key: "type", label: "نوع الرخصة", width: 110 },
   { key: "form", label: "شكل الرخصة", width: 80 },
   { key: "ownerName", label: "اسم المالك", width: 170 },
@@ -68,7 +68,6 @@ const COLUMNS = [
   { key: "aiStatus", label: "حالة التحليل (AI)", width: 105 },
   { key: "archiveDate", label: "تاريخ الأرشفة", width: 100 },
 ];
-
 // ==========================================
 // 💡 دوال مساعدة
 // ==========================================

@@ -2642,25 +2642,57 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
           </div>
         </div>
 
-        {/* شريط التابات */}
-        <div className="flex items-center gap-1 overflow-x-auto bg-slate-100 border-b border-slate-300 px-4 pt-3 shrink-0 custom-scrollbar shadow-inner relative z-10">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 shrink-0 transition-all text-xs font-bold rounded-t-xl px-5 py-3 relative top-[1px]
-                ${activeTab === tab.id ? "bg-white text-blue-700 border-t-[3px] border-x border-blue-600 shadow-[0_-2px_5px_rgba(0,0,0,0.03)]" : "bg-transparent text-slate-500 hover:bg-slate-200 border-t-[3px] border-transparent border-x border-transparent hover:text-slate-800"}`}
-            >
-              <tab.icon
-                className={`w-4 h-4 ${activeTab === tab.id ? "text-blue-600" : "text-slate-400"}`}
-              />
-              <span>{tab.label}</span>
-            </button>
-          ))}
-        </div>
+        {/* 💡 التعديل الجوهري: تحويل المنطقة السفلية إلى Row يحتوي على الشريط الجانبي والمحتوى */}
+        <div className="flex flex-row flex-1 overflow-hidden bg-slate-50/50">
+          {/* 👈 الشريط الجانبي الرأسي (Sidebar) */}
+          <div className="w-full md:w-[200px] bg-white border-l border-slate-200 overflow-y-auto custom-scrollbar-slim p-3 flex flex-col gap-1.5 shrink-0 h-full shadow-[2px_0_10px_-5px_rgba(0,0,0,0.1)] z-10">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-lg text-sm font-bold transition-all text-right w-full relative ${
+                    isActive
+                      ? "bg-blue-50 text-blue-700 shadow-sm border border-blue-100"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent"
+                  }`}
+                >
+                  {/* خط التحديد النشط الجانبي */}
+                  {isActive && (
+                    <div className="absolute right-0 top-1/4 bottom-1/4 w-[3px] bg-blue-600 rounded-l-full"></div>
+                  )}
 
-        <div className="flex-1 overflow-y-auto bg-white p-8 custom-scrollbar relative">
-          {renderTabContent()}
+                  <tab.icon
+                    className={`w-4 h-4 shrink-0 transition-transform ${
+                      isActive
+                        ? "text-blue-600 scale-110"
+                        : "text-slate-400 group-hover:scale-110"
+                    }`}
+                  />
+                  <span className="truncate">{tab.label}</span>
+
+                  {/* الشارة (Badge) إذا كانت موجودة */}
+                  {tab.badge !== undefined && tab.badge > 0 && (
+                    <span
+                      className={`mr-auto px-2 py-0.5 rounded-full text-[10px] font-black shadow-sm ${
+                        isActive
+                          ? "bg-blue-200 text-blue-800"
+                          : "bg-slate-100 text-slate-500 border border-slate-200"
+                      }`}
+                    >
+                      {tab.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 👈 منطقة المحتوى (Content Area) */}
+          <div className="flex-1 overflow-y-auto bg-transparent p-6 custom-scrollbar relative">
+            <div className="max-w-6xl mx-auto h-full">{renderTabContent()}</div>
+          </div>
         </div>
       </div>
 
