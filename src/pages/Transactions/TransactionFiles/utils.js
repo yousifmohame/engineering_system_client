@@ -18,7 +18,7 @@ export const TRANSACTION_PACKAGES = {
 };
 
 // 💡 13 عمود لضمان التجاوب والسكرول الأفقي بشكل متطابق 100%
-export const GRID_COLUMNS = "40px 30px minmax(220px, 2fr) minmax(120px, 1fr) minmax(100px, 1fr) minmax(110px, 1fr) minmax(80px, 0.8fr) minmax(140px, 1.2fr) minmax(140px, 1.2fr) minmax(130px, 1fr) minmax(100px, 1fr) 40px 40px";
+export const GRID_COLUMNS = "35px 35px 2fr 1.5fr 1.5fr 1fr 1fr 70px 80px 80px 70px 100px 100px 100px 35px 40px";
 
 export const copyToClipboard = (text, label = "النص") => {
   if (!text) return toast.error("الحقل فارغ لا يوجد شيء لنسخه!");

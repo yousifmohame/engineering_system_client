@@ -17,22 +17,26 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../../api/axios";
 import { useAuth } from "../../../context/AuthContext";
 
-// 💡 استيراد الثوابت والمكونات
-import { DEFAULT_CATEGORIES, GRID_COLUMNS } from "./utils";
+// 💡 استيراد المكونات
+import { DEFAULT_CATEGORIES } from "./utils";
 import EnhancedListItem from "./components/EnhancedListItem";
 import FolderViewerWindow from "./components/FolderViewerWindow";
 import FolderCategoriesModal from "./components/modals/FolderCategoriesModal";
 import TrashModal from "./components/modals/TrashModal";
 import { LinkedTransactionsModal } from "./components/modals/Modals";
 
+// 💡 (السحر هنا) شبكة أعمدة محسنة خصيصاً للابتوب تمنع الفراغات وتلغي السكرول الأفقي
+const OPTIMIZED_GRID_COLUMNS =
+  "35px 30px minmax(130px, 2.5fr) minmax(80px, 1.2fr) minmax(90px, 1.2fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(60px, 0.7fr) minmax(75px, 0.9fr) minmax(75px, 0.9fr) minmax(70px, 0.8fr) minmax(75px, 0.9fr) minmax(75px, 0.9fr) minmax(80px, 1fr) 30px 35px";
+
 // ============================================================================
-// 💡 TABLE HEADER COMPONENT (مكون منفصل لضمان التطابق)
+// 💡 TABLE HEADER COMPONENT
 // ============================================================================
 
 function TableHeaderRow({ gridColumns }) {
   return (
     <div
-      className="grid gap-2 items-center px-3 py-2.5 bg-slate-800 text-white rounded-t-xl text-[11px] font-bold sticky top-0 z-20 shadow-sm"
+      className="grid gap-2 items-center px-3 py-3 bg-slate-800 text-white text-[11px] font-bold sticky top-0 z-20 shadow-sm"
       style={{ gridTemplateColumns: gridColumns }}
       dir="rtl"
     >
@@ -43,12 +47,15 @@ function TableHeaderRow({ gridColumns }) {
       <div>المجلد / المالك</div>
       <div>رقم / نوع</div>
       <div>القطاع / الحي</div>
-      <div>المكتب المنفذ</div>
+      <div>المكتب المصمم</div>
+      <div>المكتب المشرف</div>
       <div>الحجم</div>
       <div>آخر تعديل</div>
       <div>تاريخ الإنشاء</div>
       <div className="text-center">تواصل</div>
-      <div className="text-center">حالة</div>
+      <div className="text-center">الحالة المالية</div>
+      <div className="text-center">الحالة الفنية</div>
+      <div className="text-center">الحالة الإجرائية</div>
       <div className="text-center">🔒</div>
       <div className="text-center">➡️</div>
     </div>
@@ -78,7 +85,6 @@ export default function TransactionFilesManager({ onClose }) {
     transaction: null,
   });
 
-  // 1. جلب المعاملات
   const { data: rawTransactions = [], isLoading: txLoading } = useQuery({
     queryKey: ["private-transactions-files-list"],
     queryFn: async () => {
@@ -87,7 +93,6 @@ export default function TransactionFilesManager({ onClose }) {
     },
   });
 
-  // في ملف TransactionFilesManager أضف هذا لمعرفة عدد العناصر المحذوفة
   const { data: trashData } = useQuery({
     queryKey: ["trash-items"],
     queryFn: async () => {
@@ -96,11 +101,9 @@ export default function TransactionFilesManager({ onClose }) {
     },
   });
 
-  // واستبدل deletedItems.length بـ:
   const trashCount =
     (trashData?.folders?.length || 0) + (trashData?.files?.length || 0);
 
-  // 2. جلب التصنيفات
   const { data: categories = DEFAULT_CATEGORIES } = useQuery({
     queryKey: ["folder-categories"],
     queryFn: async () => {
@@ -123,19 +126,16 @@ export default function TransactionFilesManager({ onClose }) {
     },
   });
 
-  // 3. تحويل البيانات
   const transactions = useMemo(() => {
     return rawTransactions.map((tx) => {
-      // 💡 1. جلب الاسم الخام وتنظيفه من الأكواد أو الرموز الإضافية (مثل " - C-123")
       const rawName =
         tx.clientName || tx.client || tx.ownerNames || "عميل غير محدد";
-      const cleanName = rawName.split("-")[0].split("(")[0].trim(); // أخذ الجزء ما قبل الشرطة أو الأقواس
+      const cleanName = rawName.split("-")[0].split("(")[0].trim();
 
       const nameParts = cleanName
         .split(" ")
-        .filter((part) => part.trim() !== ""); // إزالة المسافات الفارغة
+        .filter((part) => part.trim() !== "");
 
-      // 💡 2. استخراج الاسم الأول والأخير بذكاء
       let firstName = "عميل";
       let lastName = "";
 
@@ -145,15 +145,13 @@ export default function TransactionFilesManager({ onClose }) {
         firstName = nameParts[0];
         lastName = nameParts[1];
       } else if (nameParts.length > 2) {
-        // إذا كان الاسم ثلاثياً أو رباعياً، نأخذ أول اسمين كاسم أول، والاسم الأخير كعائلة
         firstName = nameParts.slice(0, nameParts.length - 1).join(" ");
         lastName = nameParts[nameParts.length - 1];
       }
 
-      // التأكد من أن الاسم الأخير ليس رقماً أو كوداً (يحتوي فقط على حروف عربية/إنجليزية)
       const isWord = /^[a-zA-Z\u0600-\u06FF\s]+$/.test(lastName);
       if (!isWord && lastName !== "") {
-        firstName = cleanName; // إذا كان الأخير كوداً، نعتبر الاسم كله هو الاسم الأول
+        firstName = cleanName;
         lastName = "";
       }
 
@@ -161,17 +159,17 @@ export default function TransactionFilesManager({ onClose }) {
         id: tx.id,
         transactionId: tx.id,
         transactionCode: tx.ref || tx.transactionCode || tx.id.substring(0, 8),
-
-        // 🔥 التعديل هنا: استخدام الأسماء المعالجة بذكاء 🔥
         ownerFirstName: firstName,
         ownerLastName: lastName,
-
         transactionType: tx.type || tx.category || "معاملة",
         district: tx.districtName || tx.district || "غير محدد",
         sector: tx.sector || "غير محدد",
         commonName: tx.internalName || "",
-
         officeName: tx.office || tx.source || "غير محدد",
+        supervisingOffice: tx.supervisingOffice || "غير محدد",
+        financialStatus: tx.financialStatus || "غير مسدد",
+        technicalStatus: tx.technicalStatus || "قيد المراجعة",
+        proceduralStatus: tx.proceduralStatus || tx.status || "جارية",
         brokerName: tx.mediator || "",
         agentName:
           Array.isArray(tx.agents) && tx.agents.length > 0
@@ -181,9 +179,7 @@ export default function TransactionFilesManager({ onClose }) {
         modifiedAt: tx.updated || tx.modifiedAt || tx.created || "—",
         clientPhone:
           tx.phone && !tx.phone.includes("غير متوفر") ? tx.phone : "",
-
         clientEmail: tx.email || tx.client?.email || "",
-        status: tx.status || "جارية",
         isUrgent: tx.isUrgent || false,
         locked: tx.locked || false,
         hasLinked:
@@ -195,7 +191,6 @@ export default function TransactionFilesManager({ onClose }) {
     });
   }, [rawTransactions]);
 
-  // 4. الفلترة والترتيب
   const filteredTransactions = useMemo(() => {
     let result = transactions;
     if (searchQuery) {
@@ -232,6 +227,7 @@ export default function TransactionFilesManager({ onClose }) {
     toast.success(`تم تغيير الحالة إلى ${newStatus}`);
   const handleUrgentToggle = async (id, isUrgent) =>
     toast.success(isUrgent ? "تم تفعيل الاستعجال" : "إلغاء الاستعجال");
+
   const handleMainContextMenu = (e, transaction) => {
     e.preventDefault();
     e.stopPropagation();
@@ -239,6 +235,7 @@ export default function TransactionFilesManager({ onClose }) {
     if (!selectedItems.has(transaction.transactionId))
       setSelectedItems(new Set([transaction.transactionId]));
   };
+
   const copyToClipboard = (text, label) => {
     navigator.clipboard.writeText(text);
     toast.success("تم النسخ", { description: label });
@@ -246,7 +243,7 @@ export default function TransactionFilesManager({ onClose }) {
 
   return (
     <div
-      className="flex flex-col h-full bg-gray-50 font-[Tajawal] overflow-hidden"
+      className="flex flex-col h-full bg-[#f3f4f6] font-[Tajawal] overflow-hidden"
       dir="rtl"
       onClick={() => {
         setSelectedItems(new Set());
@@ -257,82 +254,47 @@ export default function TransactionFilesManager({ onClose }) {
         setMainContextMenu({ show: false, x: 0, y: 0, transaction: null });
       }}
     >
-      {/* ── Header ── */}
+      {/* ── 💡 Header & Toolbar Combined (شريط علوي مدمج للابتوب) ── */}
       <div
-        className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-white border-b border-gray-200 shadow-sm shrink-0 z-30"
+        className="flex flex-col xl:flex-row items-center justify-between px-4 sm:px-6 py-3 bg-white border-b border-gray-200 shadow-sm shrink-0 z-30 gap-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-2.5 sm:gap-3">
+        {/* 1. الشعار والعنوان */}
+        <div className="flex items-center gap-2.5 sm:gap-3 w-full xl:w-auto shrink-0">
           <div className="bg-orange-100 p-2 sm:p-2.5 rounded-xl">
-            <FolderOpen size={20} className="text-orange-600 sm:size-6" />
+            <FolderOpen size={20} className="text-orange-600 sm:size-5" />
           </div>
           <div>
             <h2 className="text-base sm:text-lg font-black text-slate-800">
-              نظام إدارة ملفات المعاملات
+              إدارة ملفات المعاملات
             </h2>
-            <p className="text-[10px] sm:text-[11px] font-bold text-slate-500 mt-0.5 hidden sm:block">
-              استكشاف، تنظيم، ومشاركة المستندات بفعالية
+            <p className="text-[10px] font-bold text-slate-500 mt-0.5 hidden sm:block">
+              استكشاف، تنظيم، ومشاركة المستندات
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            onClick={() => setShowCategoriesModal(true)}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] sm:text-xs font-bold rounded-lg transition-colors"
-          >
-            <Settings size={14} className="sm:size-16" />{" "}
-            <span className="hidden sm:inline">إعدادات</span>
-          </button>
-          <button
-            onClick={() => setShowTrashModal(true)}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] sm:text-xs font-bold rounded-lg transition-colors relative"
-          >
-            <Trash2 size={16} />{" "}
-            <span className="hidden sm:inline">سلة المحذوفات</span>
-            {trashCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white flex items-center justify-center rounded-full text-[10px]">
-                {trashCount}
-              </span>
-            )}
-          </button>
-          <div className="w-px h-6 bg-gray-300 mx-1 sm:mx-2" />
-          <button
-            onClick={onClose}
-            className="p-2 bg-gray-100 hover:bg-red-50 hover:text-red-600 rounded-lg text-gray-500 transition-colors"
-          >
-            <X size={18} className="sm:size-20" />
-          </button>
-        </div>
-      </div>
 
-      {/* ── Toolbar ── */}
-      <div
-        className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 sm:px-6 py-3 bg-white border-b border-gray-200 shrink-0 z-20"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="relative w-full sm:max-w-lg">
-          <Search
-            size={14}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ابحث برقم المعاملة، المالك، الحي..."
-            className="w-full pl-3 pr-9 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold outline-none focus:bg-white focus:border-blue-500 transition-all"
-          />
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center sm:justify-end">
-          <span className="text-[10px] sm:text-[11px] font-bold text-gray-500">
-            ترتيب:
-          </span>
-          <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+        {/* 2. منطقة البحث والترتيب (تم دمجها في المنتصف) */}
+        <div className="flex flex-1 items-center justify-center gap-3 w-full max-w-2xl px-2">
+          <div className="relative w-full">
+            <Search
+              size={14}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="ابحث برقم المعاملة، المالك، الحي..."
+              className="w-full pl-3 pr-9 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold outline-none focus:bg-white focus:border-blue-500 transition-all"
+            />
+          </div>
+          <div className="flex bg-gray-50 p-1 rounded-lg border border-gray-200 shrink-0">
             {["newest", "modified", "largest"].map((key) => (
               <button
                 key={key}
                 onClick={() => setSortBy(key)}
-                className={`px-2.5 sm:px-3 py-1.5 text-[9px] sm:text-[11px] font-bold rounded-md transition-colors ${sortBy === key ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}
+                className={`px-3 py-1.5 text-[10px] font-bold rounded-md transition-colors ${sortBy === key ? "bg-white text-blue-600 shadow-sm border border-gray-100" : "text-gray-500 hover:text-gray-800"}`}
               >
                 {key === "newest"
                   ? "الأحدث"
@@ -342,44 +304,73 @@ export default function TransactionFilesManager({ onClose }) {
               </button>
             ))}
           </div>
-          <div className="w-px h-6 bg-gray-300 mx-1 hidden sm:block" />
+        </div>
+
+        {/* 3. الإجراءات والإعدادات (في اليسار) */}
+        <div className="flex items-center gap-2 shrink-0 w-full xl:w-auto justify-end">
           <button
             onClick={handleSelectAll}
-            className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-[10px] sm:text-[11px] font-bold transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-[10px] font-bold transition-colors"
           >
             <CheckSquare size={14} />{" "}
             <span className="hidden sm:inline">تحديد الكل</span>
           </button>
+          <button
+            onClick={() => setShowCategoriesModal(true)}
+            className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg border border-gray-200 transition-colors"
+            title="إعدادات النظام"
+          >
+            <Settings size={16} />
+          </button>
+          <button
+            onClick={() => setShowTrashModal(true)}
+            className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-100 transition-colors relative"
+            title="سلة المحذوفات"
+          >
+            <Trash2 size={16} />
+            {trashCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 text-white flex items-center justify-center rounded-full text-[9px] font-bold">
+                {trashCount}
+              </span>
+            )}
+          </button>
+          <div className="w-px h-6 bg-gray-300 mx-1" />
+          <button
+            onClick={onClose}
+            className="p-2 bg-gray-200 hover:bg-red-100 hover:text-red-600 rounded-lg text-gray-600 transition-colors"
+          >
+            <X size={18} />
+          </button>
         </div>
       </div>
 
-      {/* ── 🔥 FIXED: TABLE CONTAINER WITH SYNCED SCROLL 🔥 ── */}
-      <div className="flex-1 overflow-hidden px-4 sm:px-6 pb-6 relative z-10">
-        {/* 💡 الحاوية الخارجية: تتحكم في التمرير الأفقي والرأسي معاً */}
-        <div className="overflow-auto h-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 rounded-xl">
-          {/* 💡 الحاوية الداخلية: تمنع انكماش الجدول وتضمن تطابق الأعمدة */}
-          <div className="min-w-max inline-block align-middle w-full">
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col">
-              {/* الـ Header - sticky للأعلى داخل الحاوية القابلة للتمرير */}
-              <TableHeaderRow gridColumns={GRID_COLUMNS} />
+      {/* ── 💡 TABLE CONTAINER (بدون فراغات، يستجيب لحجم الشاشة) ── */}
+      <div className="flex-1 overflow-hidden p-4 relative z-10">
+        {/* حواف الجدول دائرية مع خلفية بيضاء */}
+        <div className="overflow-auto h-full rounded-2xl border border-gray-200 shadow-sm bg-white custom-scrollbar-slim">
+          {/* min-w-full تجعل الجدول يأخذ عرض الشاشة كاملاً على اللابتوب ولا يترك فراغات، وإذا صغرت الشاشة يظهر سكرول */}
+          <div className="w-full min-w-[1200px] xl:min-w-full inline-block align-middle">
+            <div className="flex flex-col bg-white">
+              {/* تمرير الشبكة المحسنة للـ Header */}
+              <TableHeaderRow gridColumns={OPTIMIZED_GRID_COLUMNS} />
 
-              {/* الـ Body - بدون overflow داخلي ليتم التمرير عبر الحاوية الخارجية */}
               <div className="divide-y divide-gray-100">
                 {txLoading ? (
-                  <div className="flex justify-center items-center h-[300px]">
+                  <div className="flex justify-center items-center h-[400px]">
                     <Loader2 className="animate-spin text-blue-500" size={40} />
                   </div>
                 ) : filteredTransactions.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">
+                  <div className="flex flex-col items-center justify-center h-[400px] text-gray-400">
                     <FolderOpen size={48} className="mb-3 opacity-30" />
                     <p className="text-sm font-bold">لا توجد نتائج</p>
-                    <p className="text-xs">جرب تعديل بحثك</p>
+                    <p className="text-xs">جرب تعديل بحثك أو الفلاتر</p>
                   </div>
                 ) : (
                   filteredTransactions.map((tx) => (
                     <EnhancedListItem
                       key={tx.transactionId}
                       transaction={tx}
+                      gridColumns={OPTIMIZED_GRID_COLUMNS} // 👈 نمرر الشبكة المحسنة لكل صف
                       isSelected={selectedItems.has(tx.transactionId)}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -434,19 +425,6 @@ export default function TransactionFilesManager({ onClose }) {
             className="w-full text-right px-4 py-2.5 hover:bg-gray-50 flex items-center gap-3 text-gray-700 text-[11px] transition-colors"
           >
             <Copy size={16} className="text-gray-500" /> <span>نسخ الرقم</span>
-          </button>
-          <button
-            onClick={() => {
-              copyToClipboard(
-                `${mainContextMenu.transaction.ownerFirstName} ${mainContextMenu.transaction.ownerLastName}`,
-                "اسم المالك",
-              );
-              setMainContextMenu({ show: false });
-            }}
-            className="w-full text-right px-4 py-2.5 hover:bg-gray-50 flex items-center gap-3 text-gray-700 text-[11px] transition-colors"
-          >
-            <User size={16} className="text-gray-500" />{" "}
-            <span>نسخ اسم المالك</span>
           </button>
         </div>
       )}

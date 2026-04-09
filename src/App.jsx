@@ -98,7 +98,7 @@ const AppContent = () => {
   }
 
   // 👈 قائمة بأكواد الشاشات التي قمت ببرمجتها بالفعل
-  const implementedScreens = ["DASH", "055", "300", "310", "817", "815", "942", "SET", "39", "40", "41", "222", "30", "31", "32", "71", "73", "74", "09", "0010", "10", "88", "16", "98", "99", "100", "101", "83", "109"];
+  const implementedScreens = ["01","DASH", "055", "300", "310", "817", "815", "942", "SET", "39", "40", "41", "222", "30", "31", "32", "71", "73", "74", "09", "0010", "10", "88", "16", "98", "99", "100", "101", "83", "109"];
   // فحص هل الشاشة المطلوبة مبرمجة أم لا
   const isImplemented = implementedScreens.includes(activeScreenId);
 
@@ -117,7 +117,7 @@ const AppContent = () => {
         
         {/* ================= Main Content Viewport ================= */}
         <main className="flex-1 relative overflow-hidden flex flex-col">
-          {activeScreenId !== "DASH" && (
+          {activeScreenId !== "01" && (
             <div className="shrink-0">
               <ScreenHeader screenId={activeScreenId} />
             </div>
@@ -126,6 +126,7 @@ const AppContent = () => {
           <div className="flex-1 overflow-auto p-0 pb-8 scroll-smooth relative h-full">
             
             {/* --- الشاشات المبرمجة --- */}
+            <div className={activeScreenId === "01" ? "block h-full" : "hidden"}><Dashboard /></div>
             <div className={activeScreenId === "DASH" ? "block h-full" : "hidden"}><Dashboard /></div>
             <div className={activeScreenId === "055" ? "block h-full" : "hidden"}><TransactionsScreenWrapper /></div>
             <div className={activeScreenId === "300" ? "block h-full" : "hidden"}><ClientsScreenWrapper /></div>

@@ -15,10 +15,11 @@ import { formatFileSize, formatDateWithTime, GRID_COLUMNS } from "../utils";
 export default function EnhancedListItem({
   transaction,
   isSelected,
+  gridColumns,
   onClick,
   onDoubleClick,
   onContextMenu,
-  onStatusChange,
+  onStatusChange, // 💡 لم تعد مستخدمة هنا ولكن تركناها إن احتجتها لاحقاً
   onUrgentToggle,
   onOpenLinks,
 }) {
@@ -33,9 +34,10 @@ export default function EnhancedListItem({
       onDoubleClick={isLocked ? undefined : onDoubleClick}
       onContextMenu={(e) => onContextMenu(e, transaction)}
       className={`grid gap-2 items-center px-3 py-2.5 cursor-pointer transition-all border-b border-gray-200 relative ${isSelected && !isLocked ? "bg-blue-50/80 border-l-4 border-l-blue-600 shadow-sm z-10" : "hover:bg-gray-50 border-l-4 border-l-transparent bg-white"} ${isLocked ? "bg-slate-50 opacity-80" : ""} ${transaction.isUrgent ? "bg-red-50/30" : ""}`}
-      style={{ gridTemplateColumns: GRID_COLUMNS }}
+      style={{ gridTemplateColumns: gridColumns }}
       dir="rtl"
     >
+      {/* 1. التحديد */}
       <div className="flex justify-center">
         <div
           className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${isSelected ? "bg-blue-600 border-blue-600" : "border-gray-300 bg-white"}`}
@@ -46,6 +48,7 @@ export default function EnhancedListItem({
         </div>
       </div>
 
+      {/* 2. الأهمية (نجمة) */}
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -61,6 +64,7 @@ export default function EnhancedListItem({
         />
       </button>
 
+      {/* 3. المجلد والمالك */}
       <div className="flex flex-col min-w-0 py-0.5">
         <div className="flex items-center gap-1.5 mb-1">
           <FolderOpen
@@ -103,6 +107,7 @@ export default function EnhancedListItem({
         )}
       </div>
 
+      {/* 4. الرقم والنوع */}
       <div className="flex flex-col gap-1">
         <CopyableCell
           text={transaction.transactionCode}
@@ -115,6 +120,7 @@ export default function EnhancedListItem({
         </span>
       </div>
 
+      {/* 5. القطاع والحي */}
       <div className="flex flex-col gap-1">
         <CopyableCell
           text={transaction.sector}
@@ -127,22 +133,28 @@ export default function EnhancedListItem({
         </span>
       </div>
 
-      <div className="flex flex-col">
-        {!isLocked && transaction.officeName ? (
-          <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-1 rounded w-max truncate max-w-[100px] flex items-center gap-1">
-            <Building2 size={10} /> {transaction.officeName}
-          </span>
-        ) : (
-          <span className="text-gray-400 text-[10px] font-bold">
-            {renderHidden("—")}
-          </span>
-        )}
+      {/* 6. المكتب المصمم */}
+      <div
+        className="truncate text-blue-700 text-[10px] font-bold px-1"
+        title={transaction.officeName}
+      >
+        {renderHidden(transaction.officeName)}
       </div>
 
+      {/* 7. المكتب المشرف */}
+      <div
+        className="truncate text-indigo-700 text-[10px] font-bold px-1"
+        title={transaction.supervisingOffice}
+      >
+        {renderHidden(transaction.supervisingOffice)}
+      </div>
+
+      {/* 8. الحجم */}
       <div className="text-[10px] font-mono font-bold text-gray-500">
         {renderHidden(formatFileSize(transaction.totalSize))}
       </div>
 
+      {/* 9. آخر تعديل */}
       <div className="flex flex-col gap-0.5">
         {!isLocked ? (
           <>
@@ -159,6 +171,7 @@ export default function EnhancedListItem({
         )}
       </div>
 
+      {/* 10. تاريخ الإنشاء */}
       <div className="flex flex-col gap-0.5">
         {!isLocked ? (
           <>
@@ -174,11 +187,11 @@ export default function EnhancedListItem({
         )}
       </div>
 
+      {/* 11. تواصل */}
       <div className="flex flex-col items-center">
         {!isLocked ? (
           <>
             <CopyableCell
-              // 💡 التعديل هنا: نتحقق إذا كان النص يشتمل على "غير متوفر"
               text={
                 transaction.clientPhone?.includes("غير متوفر")
                   ? "—"
@@ -188,7 +201,6 @@ export default function EnhancedListItem({
               label="الجوال"
             />
             <CommunicationBlock
-              // 💡 ونمنع تمريره لزر الواتساب/الاتصال أيضاً
               phone={
                 transaction.clientPhone?.includes("غير متوفر")
                   ? ""
@@ -202,23 +214,40 @@ export default function EnhancedListItem({
         )}
       </div>
 
-      <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
+      {/* 12. الحالة المالية */}
+      <div className="text-center px-1">
         {!isLocked ? (
-          <select
-            value={transaction.status}
-            onChange={(e) => onStatusChange(transaction.id, e.target.value)}
-            className={`text-[9px] font-bold px-1.5 py-1 rounded-md border outline-none cursor-pointer appearance-none text-center shadow-sm w-full max-w-[80px] ${transaction.status === "مكتملة" ? "bg-green-50 text-green-700 border-green-200" : transaction.status === "ملغاة" ? "bg-red-50 text-red-700 border-red-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
-          >
-            <option value="جارية">جارية</option>
-            <option value="معلقة">معلقة</option>
-            <option value="مكتملة">مكتملة</option>
-            <option value="ملغاة">ملغاة</option>
-          </select>
+          <span className="px-1.5 py-0.5 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded text-[9px] font-bold whitespace-nowrap">
+            {transaction.financialStatus}
+          </span>
         ) : (
           <span className="text-gray-400 text-[10px]">••••</span>
         )}
       </div>
 
+      {/* 13. الحالة الفنية */}
+      <div className="text-center px-1">
+        {!isLocked ? (
+          <span className="px-1.5 py-0.5 bg-sky-50 text-sky-700 border border-sky-200 rounded text-[9px] font-bold whitespace-nowrap">
+            {transaction.technicalStatus}
+          </span>
+        ) : (
+          <span className="text-gray-400 text-[10px]">••••</span>
+        )}
+      </div>
+
+      {/* 14. الحالة الإجرائية (تم حذف القائمة المنسدلة من هنا) */}
+      <div className="text-center px-1">
+        {!isLocked ? (
+          <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[9px] font-bold whitespace-nowrap">
+            {transaction.proceduralStatus}
+          </span>
+        ) : (
+          <span className="text-gray-400 text-[10px]">••••</span>
+        )}
+      </div>
+
+      {/* 15. القفل (Locked) */}
       <div className="flex justify-center">
         <div
           className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${isLocked ? "bg-red-600 border-red-600 shadow-sm" : "bg-gray-50 border-gray-200"}`}
@@ -231,6 +260,7 @@ export default function EnhancedListItem({
         </div>
       </div>
 
+      {/* 16. إجراء الفتح */}
       <div className="flex justify-center">
         <button
           onClick={isLocked ? undefined : onDoubleClick}
