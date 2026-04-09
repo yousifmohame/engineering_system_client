@@ -44,29 +44,77 @@ const categories = [
 export default function EmailNotificationsCenter() {
   const [allNotifications, setAllNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAnalyzing, setIsAnalyzing] = useState(false); // 👈 حالة خاصة لمعرفة هل الـ AI يحلل الآن
 
   const [selectedNotif, setSelectedNotif] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [financialFilter, setFinancialFilter] = useState(null);
 
-  const fetchAIAnalyzedEmails = async () => {
+  // 💡 1. دالة جلب الإشعارات المحفوظة مسبقاً (بدون AI)
+  const fetchLocalNotifications = async () => {
     setIsLoading(true);
     try {
-      // جلب الإيميلات بعد تحليلها عبر OpenAI
-      const res = await api.get("/email/analyze-inbox");
-      setAllNotifications(res.data.data || []);
-      toast.success("تم جلب وتحليل الإشعارات بنجاح");
+      // يمكنك لاحقاً إنشاء مسار GET /email/notifications يجلب الرسائل من قاعدة البيانات مباشرة بدون AI
+      // هنا سنستخدم localStorage للمحاكاة وتوفير الـ API
+      const cachedData = localStorage.getItem("aiAnalyzedEmails");
+      if (cachedData) {
+        setAllNotifications(JSON.parse(cachedData));
+      } else {
+        // إذا لم يكن هناك داتا سابقة، نقوم بالتحليل التلقائي كأول مرة فقط
+        await fetchAIAnalyzedEmails();
+      }
     } catch (error) {
-      toast.error("حدث خطأ أثناء جلب وتحليل الإشعارات");
-      console.error(error);
+      toast.error("حدث خطأ أثناء جلب الإشعارات المحفوظة");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // 💡 2. دالة تشغيل الذكاء الاصطناعي (يتم استدعاؤها يدوياً أو مرة يومياً)
+  const fetchAIAnalyzedEmails = async () => {
+    setIsAnalyzing(true);
+    try {
+      const toastId = toast.loading(
+        "جاري تحليل البريد الوارد باستخدام الذكاء الاصطناعي...",
+      );
+
+      const res = await api.get("/email/analyze-inbox");
+      const analyzedData = res.data.data || [];
+
+      setAllNotifications(analyzedData);
+
+      // حفظ النتيجة ووقت التحليل محلياً
+      localStorage.setItem("aiAnalyzedEmails", JSON.stringify(analyzedData));
+      localStorage.setItem("lastAiAnalysisDate", new Date().toISOString());
+
+      toast.success("تم جلب وتحليل الإشعارات بنجاح", { id: toastId });
+    } catch (error) {
+      toast.error("حدث خطأ أثناء تحليل الإشعارات الذكي");
+      console.error(error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // 💡 3. الـ useEffect يعمل عند فتح الشاشة
   useEffect(() => {
-    fetchAIAnalyzedEmails();
+    const lastAnalysisDate = localStorage.getItem("lastAiAnalysisDate");
+
+    // التحقق هل مر 24 ساعة على آخر تحليل؟
+    const shouldRunDailyAnalysis = () => {
+      if (!lastAnalysisDate) return true;
+      const lastDate = new Date(lastAnalysisDate);
+      const now = new Date();
+      const diffHours = Math.abs(now - lastDate) / 36e5;
+      return diffHours >= 24;
+    };
+
+    if (shouldRunDailyAnalysis()) {
+      fetchAIAnalyzedEmails(); // تشغيل الـ AI إذا مر يوم
+    } else {
+      fetchLocalNotifications(); // غير ذلك، جلب الداتا القديمة المحفوظة لتوفير التكلفة
+    }
   }, []);
 
   const closeDrawer = () => setIsDrawerOpen(false);
@@ -88,7 +136,6 @@ export default function EmailNotificationsCenter() {
   ).length;
   const assignedCount = allNotifications.filter((n) => n.assignedTo).length;
   const financialCount = financialNotifications.length;
-  const snoozedCount = 0;
 
   const selectedNotification = allNotifications.find(
     (n) => n.id === selectedNotif,
@@ -101,12 +148,6 @@ export default function EmailNotificationsCenter() {
       setShowDetailsModal(true);
     } else {
       setIsDrawerOpen(true);
-    }
-  };
-
-  const handleGoToSource = (linkedScreen) => {
-    if (linkedScreen) {
-      alert(`سيتم فتح الشاشة ${linkedScreen.screenCode}`);
     }
   };
 
@@ -182,18 +223,31 @@ export default function EmailNotificationsCenter() {
             <h1 className="text-lg font-bold text-slate-800 leading-tight">
               مركز الإشعارات الذكي (AI)
             </h1>
-            <p className="text-xs text-slate-500">
-              تم تحليل الرسائل وتصنيفها باستخدام الذكاء الاصطناعي
+            <p className="text-xs text-slate-500 flex items-center gap-1">
+              يتم فرز وتحليل الرسائل ذكياً لمرة واحدة يومياً لتوفير الموارد
+              {localStorage.getItem("lastAiAnalysisDate") && (
+                <span className="bg-slate-100 px-1.5 rounded border border-slate-200 font-mono text-[9px]">
+                  آخر تحليل:{" "}
+                  {new Date(
+                    localStorage.getItem("lastAiAnalysisDate"),
+                  ).toLocaleTimeString("ar-SA", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              )}
             </p>
           </div>
         </div>
+
+        {/* 💡 4. زر التحديث اليدوي (يُشغّل الـ AI بالقوة عند ضغطه) */}
         <button
           onClick={fetchAIAnalyzedEmails}
-          disabled={isLoading}
+          disabled={isAnalyzing}
           className="px-4 py-2 text-[11px] font-bold bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-70"
         >
-          <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />{" "}
-          {isLoading ? "جاري التحليل..." : "تحديث وتحليل جديد"}
+          <RefreshCw size={14} className={isAnalyzing ? "animate-spin" : ""} />{" "}
+          {isAnalyzing ? "جاري التحليل المعمق..." : "تحديث وتحليل جديد الآن"}
         </button>
       </div>
 
@@ -337,20 +391,23 @@ export default function EmailNotificationsCenter() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {isLoading ? (
+                {isLoading || isAnalyzing ? (
                   <tr>
                     <td
                       colSpan="6"
-                      className="text-center py-10 text-slate-400"
+                      className="text-center py-10 text-slate-500 font-bold"
                     >
-                      جاري تحليل رسائل البريد باستخدام الذكاء الاصطناعي...
+                      <RefreshCw className="w-6 h-6 animate-spin text-blue-500 mx-auto mb-2" />
+                      {isAnalyzing
+                        ? "جاري تحليل رسائل البريد الجديدة باستخدام الذكاء الاصطناعي..."
+                        : "جاري تحميل البيانات السابقة..."}
                     </td>
                   </tr>
                 ) : filteredNotifications.length === 0 ? (
                   <tr>
                     <td
                       colSpan="6"
-                      className="text-center py-10 text-slate-400"
+                      className="text-center py-10 text-slate-400 font-bold"
                     >
                       لا توجد إشعارات مطابقة
                     </td>
@@ -396,7 +453,9 @@ export default function EmailNotificationsCenter() {
                           />
                         </td>
                         <td className="px-4 py-2.5 font-mono text-slate-500">
-                          {notif.timestamp}
+                          {new Date(notif.timestamp).toLocaleDateString(
+                            "ar-SA",
+                          )}
                         </td>
                       </tr>
                     );

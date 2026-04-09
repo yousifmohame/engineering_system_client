@@ -604,9 +604,20 @@ export default function InboxCenter() {
 
                 {/* Body */}
                 <div className="p-6 flex-1 overflow-y-auto bg-white">
-                  <div className="whitespace-pre-wrap text-slate-800 leading-loose text-sm font-medium">
-                    {selectedMessage.body}
-                  </div>
+                  {selectedMessage.html ? (
+                    // عرض رسائل Gmail والبريد الحديث بتنسيقاتها الأصلية
+                    <div
+                      className="email-html-content text-sm text-slate-800"
+                      dangerouslySetInnerHTML={{ __html: selectedMessage.html }}
+                    />
+                  ) : (
+                    // عرض الرسائل النصية القديمة
+                    <div className="whitespace-pre-wrap text-slate-800 leading-loose text-sm font-medium">
+                      {selectedMessage.body ||
+                        selectedMessage.text ||
+                        "لا يوجد نص لعرضه"}
+                    </div>
+                  )}
                 </div>
 
                 {/* Reply Box Placeholder */}
