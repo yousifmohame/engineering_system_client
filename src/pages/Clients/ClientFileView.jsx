@@ -110,7 +110,7 @@ const getFullUrl = (url) => {
   if (url.startsWith("/uploads/")) {
     fixedUrl = `/api${url}`;
   }
-  const baseUrl = "http://95.216.73.243";
+  const baseUrl = "https://details-worksystem1.com";
   return `${baseUrl}${fixedUrl}`;
 };
 

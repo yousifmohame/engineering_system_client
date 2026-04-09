@@ -64,6 +64,7 @@ const MENU_CATEGORIES = [
       { id: "08", label: "الهويات", code: "SCR_08_VIEW" },
       { id: "09", label: "سجلات الرخص الخارجية", code: "SCR_09_VIEW" },
       { id: "0010", label: "سجلات رخص مكتبنا", code: "SCR_0010_VIEW" },
+      { id: "112", label: "اشتراطات و أدلة و تعاميم و عروض", code: "SCR_112_VIEW" },
     ],
   },
   {

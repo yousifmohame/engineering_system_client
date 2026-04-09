@@ -1,0 +1,433 @@
+import React, { useState, useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import api from "../../../api/axios";
+import { useAuth } from "../../../context/AuthContext";
+import {
+  X,
+  Trash2,
+  BookOpen,
+  Brain,
+  Zap,
+  Sparkles,
+  MessageSquare,
+  Filter,
+  History,
+  ExternalLink,
+  Share2,
+  Loader2,
+} from "lucide-react";
+
+// 💡 دالة تحويل الرابط للملفات
+const getFullUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  let fixedUrl = url;
+  if (url.startsWith("/uploads/")) {
+    fixedUrl = `/api${url}`;
+  }
+  const baseUrl = "https://details-worksystem1.com";
+  return `${baseUrl}${fixedUrl}`;
+};
+
+export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
+  const queryClient = useQueryClient();
+  const { user } = useAuth(); // 👈 سحب بيانات المستخدم من الـ Context
+
+  const [manualNotes, setManualNotes] = useState("");
+  const [showLogs, setShowLogs] = useState(false);
+
+  useEffect(() => {
+    if (document) {
+      setManualNotes(document.manualNotes || "");
+    }
+  }, [document]);
+
+  // 1. جلب سجل التحديثات (Logs)
+  const { data: logs = [], isLoading: isLoadingLogs } = useQuery({
+    queryKey: ["reference-logs", document?.id],
+    queryFn: async () => {
+      const res = await api.get(`/references/${document.id}/logs`);
+      return res.data.data;
+    },
+    enabled: !!document?.id && showLogs, // لا يتم الجلب إلا عند فتح نافذة السجل لتوفير الموارد
+  });
+
+  // 2. تحديث الملاحظات والتوجيهات (مع إرسال اسم المستخدم)
+  const updateNotesMutation = useMutation({
+    mutationFn: async (notes) =>
+      api.put(`/references/${document.id}/notes`, {
+        manualNotes: notes,
+        userName: user?.name, // 👈 إرسال الاسم للباك إند
+        userEmail: user?.email,
+      }),
+    onSuccess: () => {
+      toast.success("تم حفظ التوجيهات وتحديث السجل");
+      queryClient.invalidateQueries(["reference-documents"]);
+      queryClient.invalidateQueries(["reference-logs", document?.id]); // 👈 تحديث سجل الأحداث فوراً
+    },
+    onError: () => toast.error("حدث خطأ أثناء الحفظ"),
+  });
+
+  // 3. حذف المستند
+  const deleteMutation = useMutation({
+    mutationFn: async () => api.delete(`/references/${document.id}`),
+    onSuccess: () => {
+      toast.success("تم حذف المستند بنجاح");
+      queryClient.invalidateQueries(["reference-documents"]);
+      onClose();
+    },
+    onError: () => toast.error("حدث خطأ أثناء الحذف"),
+  });
+
+  // 4. إعادة التحليل (شامل أو سريع) مع إرسال اسم المستخدم
+  const reanalyzeMutation = useMutation({
+    mutationFn: async (type) =>
+      api.post(`/references/${document.id}/reanalyze`, {
+        type,
+        userName: user?.name, // 👈 إرسال الاسم للباك إند للتسجيل
+        userEmail: user?.email,
+      }),
+    onSuccess: () => {
+      toast.success("بدأت عملية التحليل.. تم تسجيل الإجراء في السجل");
+      queryClient.invalidateQueries(["reference-documents"]);
+      queryClient.invalidateQueries(["reference-logs", document?.id]); // 👈 تحديث السجل فوراً
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "فشل بدء التحليل"),
+  });
+
+  const handleDelete = () => {
+    if (window.confirm("هل أنت متأكد من حذف هذا المستند نهائياً؟")) {
+      deleteMutation.mutate();
+    }
+  };
+
+  if (!isOpen || !document) return null;
+
+  const issueDate = document.issueDate
+    ? new Date(document.issueDate).toLocaleDateString("en-GB")
+    : "غير محدد";
+  const expiryDate = document.expiryDate
+    ? new Date(document.expiryDate).toLocaleDateString("en-GB")
+    : "غير محدد";
+  const txTypes = document.transactionTypes?.length
+    ? document.transactionTypes
+    : ["الكل"];
+  const bldTypes = document.buildingTypes?.length
+    ? document.buildingTypes
+    : ["الكل"];
+
+  return (
+    <div
+      className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in"
+      dir="rtl"
+    >
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col w-full max-w-5xl max-h-[90vh] animate-in zoom-in-95 relative">
+        {/* ─── Header ─── */}
+        <div className="bg-slate-900 p-6 text-white relative shrink-0">
+          <div className="absolute top-4 left-4 flex gap-2">
+            <button
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+              title="حذف المستند"
+            >
+              {deleteMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
+              ) : (
+                <Trash2 className="w-4 h-4 text-slate-400 hover:text-rose-400" />
+              )}
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/10 rounded-xl transition-colors bg-white/5"
+              title="إغلاق"
+            >
+              <X className="w-4 h-4 text-white" />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-4 mb-4 pr-2">
+            <div className="p-3 bg-emerald-500 rounded-2xl shadow-lg shadow-emerald-500/20">
+              <BookOpen className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black leading-tight mb-1">
+                {document.title}
+              </h3>
+              <p className="text-xs text-slate-400 font-bold">
+                {document.source}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <span className="px-3 py-1 bg-white/10 rounded-lg text-[10px] font-black border border-white/5">
+              إصدار: {issueDate}
+            </span>
+            <span
+              className={`px-3 py-1 rounded-lg text-[10px] font-black border border-white/5 ${document.status === "نشط" ? "bg-emerald-500/20 text-emerald-300" : "bg-white/10 text-white"}`}
+            >
+              الحالة: {document.status || "نشط"}
+            </span>
+            <span className="px-3 py-1 bg-white/10 rounded-lg text-[10px] font-black border border-white/5">
+              النوع: {document.type || "عام"}
+            </span>
+          </div>
+        </div>
+
+        {/* ─── Body ─── */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar-slim">
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              onClick={() => reanalyzeMutation.mutate("full")}
+              disabled={
+                reanalyzeMutation.isPending ||
+                document.analysisStatus === "قيد التحليل"
+              }
+              className="flex items-center justify-center gap-2 py-3 bg-purple-50 text-purple-700 rounded-xl text-xs font-black hover:bg-purple-100 transition-all border border-purple-100 disabled:opacity-50"
+            >
+              {reanalyzeMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Brain className="w-4 h-4" />
+              )}{" "}
+              إعادة التحليل الذكي
+            </button>
+            <button
+              onClick={() => reanalyzeMutation.mutate("quick")}
+              disabled={
+                reanalyzeMutation.isPending ||
+                document.analysisStatus === "قيد التحليل"
+              }
+              className="flex items-center justify-center gap-2 py-3 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-black hover:bg-emerald-100 transition-all border border-emerald-100 disabled:opacity-50"
+            >
+              {reanalyzeMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Zap className="w-4 h-4" />
+              )}{" "}
+              تلخيص سريع
+            </button>
+          </div>
+
+          <div className="space-y-6">
+            {/* الملخص الذكي */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-500" /> الملخص الذكي
+                  (AI)
+                </h4>
+                <span
+                  className={`text-[10px] font-black px-2 py-1 rounded-lg ${document.analysisStatus === "محلل" ? "bg-emerald-100 text-emerald-700" : document.analysisStatus === "قيد التحليل" ? "bg-purple-100 text-purple-700 animate-pulse" : "bg-slate-100 text-slate-500"}`}
+                >
+                  {document.analysisStatus || "غير محلل"}
+                </span>
+              </div>
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 text-xs font-bold text-slate-700 leading-loose whitespace-pre-wrap shadow-sm">
+                {document.aiSummary ||
+                  "لم يتم توليد ملخص ذكي لهذا المستند حتى الآن. انقر على زر التحليل الذكي للبدء."}
+              </div>
+            </div>
+
+            {/* توجيهات الإدارة */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-blue-500" /> شرح وتوجيهات
+                الإدارة (يدوي)
+              </h4>
+              <textarea
+                value={manualNotes}
+                onChange={(e) => setManualNotes(e.target.value)}
+                placeholder="أضف ملاحظات أو توجيهات داخلية للفريق..."
+                className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none min-h-[100px] transition-all shadow-sm resize-none"
+              />
+              <div className="flex justify-end">
+                <button
+                  onClick={() => updateNotesMutation.mutate(manualNotes)}
+                  disabled={updateNotesMutation.isPending}
+                  className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black hover:bg-slate-800 transition-colors shadow-md disabled:opacity-50 flex items-center gap-2"
+                >
+                  {updateNotesMutation.isPending && (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  )}
+                  حفظ التوجيهات
+                </button>
+              </div>
+            </div>
+
+            {/* محددات الانطباق */}
+            <div className="space-y-4 p-5 bg-slate-50/50 rounded-3xl border border-slate-200">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-emerald-500" /> محددات
+                  الانطباق (نطاق التطبيق)
+                </h4>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-400">
+                    نوع المعاملة
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {txTypes.map((t) => (
+                      <span
+                        key={t}
+                        className="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-700 shadow-sm"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-400">
+                    نوع المبنى
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {bldTypes.map((b) => (
+                      <span
+                        key={b}
+                        className="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-700 shadow-sm"
+                      >
+                        {b}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-400">
+                    الموقع الجغرافي
+                  </span>
+                  <div className="text-xs font-bold text-slate-800 mt-1">
+                    {document.city || "الكل"}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-400">
+                    عدد الأدوار
+                  </span>
+                  <div
+                    className="text-xs font-bold text-slate-800 mt-1"
+                    dir="ltr"
+                  >
+                    {document.floorsFrom || document.floorsTo
+                      ? `${document.floorsFrom || 0} - ${document.floorsTo || "∞"}`
+                      : "غير محدد"}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-400">
+                    عرض الشارع (متر)
+                  </span>
+                  <div
+                    className="text-xs font-bold text-slate-800 mt-1"
+                    dir="ltr"
+                  >
+                    {document.streetWidthFrom || document.streetWidthTo
+                      ? `${document.streetWidthFrom || 0} - ${document.streetWidthTo || "∞"}`
+                      : "غير محدد"}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-400">
+                    الصلاحية الزمنية
+                  </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-emerald-100 text-emerald-700">
+                      ساري
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-bold">
+                      ينتهي: {expiryDate}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* سجل التحديثات الزر */}
+            <div className="pt-2">
+              <button
+                onClick={() => setShowLogs(!showLogs)}
+                className="w-full flex items-center justify-between p-4 hover:bg-slate-50 border border-slate-200 rounded-2xl transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-slate-100 rounded-lg group-hover:bg-blue-100 transition-colors">
+                    <History className="w-4 h-4 text-slate-500 group-hover:text-blue-600" />
+                  </div>
+                  <span className="text-xs font-black text-slate-700">
+                    سجل التحديثات والأحداث
+                  </span>
+                </div>
+                <div className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                  {showLogs ? "إخفاء السجل" : "انقر للاستعراض"}
+                </div>
+              </button>
+            </div>
+
+            {/* 🚀 عرض السجل عند النقر */}
+            {showLogs && (
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 animate-in slide-in-from-top-2 max-h-[250px] overflow-y-auto custom-scrollbar-slim">
+                {isLoadingLogs ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+                  </div>
+                ) : logs.length === 0 ? (
+                  <div className="text-center text-xs text-slate-400 font-bold py-4">
+                    لا توجد سجلات محفوظة حتى الآن
+                  </div>
+                ) : (
+                  logs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 text-[10px] font-bold bg-white p-3 rounded-xl border border-slate-100 shadow-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 uppercase">
+                          {log.userName.substring(0, 2)}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-slate-800">{log.userName}</span>
+                          <span className="text-slate-500">{log.action}</span>
+                        </div>
+                      </div>
+                      <div
+                        className="text-slate-400 font-mono shrink-0"
+                        dir="ltr"
+                      >
+                        {new Date(log.createdAt).toLocaleString("en-GB")}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ─── Footer ─── */}
+        <div className="flex gap-3 p-4 border-t border-slate-100 bg-white shrink-0">
+          <button
+            onClick={() =>
+              document.fileUrl
+                ? window.open(getFullUrl(document.fileUrl), "_blank")
+                : null
+            }
+            disabled={!document.fileUrl}
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-slate-900 text-white rounded-2xl text-xs font-black hover:bg-slate-800 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ExternalLink className="w-4 h-4" /> فتح المستند الأصلي
+          </button>
+          <button
+            className="p-3.5 bg-slate-100 text-slate-600 rounded-2xl hover:bg-slate-200 transition-all border border-slate-200 shadow-sm"
+            title="مشاركة المرجع"
+          >
+            <Share2 className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
