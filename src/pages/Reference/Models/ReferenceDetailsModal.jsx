@@ -16,9 +16,14 @@ import {
   ExternalLink,
   Share2,
   Loader2,
+  Info,
+  Target,
+  AlertTriangle,
+  Wind,
+  Activity,
+  CheckCircle2,
 } from "lucide-react";
 
-// 💡 دالة تحويل الرابط للملفات
 const getFullUrl = (url) => {
   if (!url) return null;
   if (url.startsWith("http")) return url;
@@ -32,7 +37,7 @@ const getFullUrl = (url) => {
 
 export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
   const queryClient = useQueryClient();
-  const { user } = useAuth(); // 👈 سحب بيانات المستخدم من الـ Context
+  const { user } = useAuth();
 
   const [manualNotes, setManualNotes] = useState("");
   const [showLogs, setShowLogs] = useState(false);
@@ -43,33 +48,29 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
     }
   }, [document]);
 
-  // 1. جلب سجل التحديثات (Logs)
   const { data: logs = [], isLoading: isLoadingLogs } = useQuery({
     queryKey: ["reference-logs", document?.id],
     queryFn: async () => {
       const res = await api.get(`/references/${document.id}/logs`);
       return res.data.data;
     },
-    enabled: !!document?.id && showLogs, // لا يتم الجلب إلا عند فتح نافذة السجل لتوفير الموارد
+    enabled: !!document?.id && showLogs,
   });
 
-  // 2. تحديث الملاحظات والتوجيهات (مع إرسال اسم المستخدم)
   const updateNotesMutation = useMutation({
     mutationFn: async (notes) =>
       api.put(`/references/${document.id}/notes`, {
         manualNotes: notes,
-        userName: user?.name, // 👈 إرسال الاسم للباك إند
+        userName: user?.name,
         userEmail: user?.email,
       }),
     onSuccess: () => {
       toast.success("تم حفظ التوجيهات وتحديث السجل");
       queryClient.invalidateQueries(["reference-documents"]);
-      queryClient.invalidateQueries(["reference-logs", document?.id]); // 👈 تحديث سجل الأحداث فوراً
+      queryClient.invalidateQueries(["reference-logs", document?.id]);
     },
-    onError: () => toast.error("حدث خطأ أثناء الحفظ"),
   });
 
-  // 3. حذف المستند
   const deleteMutation = useMutation({
     mutationFn: async () => api.delete(`/references/${document.id}`),
     onSuccess: () => {
@@ -77,24 +78,20 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
       queryClient.invalidateQueries(["reference-documents"]);
       onClose();
     },
-    onError: () => toast.error("حدث خطأ أثناء الحذف"),
   });
 
-  // 4. إعادة التحليل (شامل أو سريع) مع إرسال اسم المستخدم
   const reanalyzeMutation = useMutation({
     mutationFn: async (type) =>
       api.post(`/references/${document.id}/reanalyze`, {
         type,
-        userName: user?.name, // 👈 إرسال الاسم للباك إند للتسجيل
+        userName: user?.name,
         userEmail: user?.email,
       }),
     onSuccess: () => {
       toast.success("بدأت عملية التحليل.. تم تسجيل الإجراء في السجل");
       queryClient.invalidateQueries(["reference-documents"]);
-      queryClient.invalidateQueries(["reference-logs", document?.id]); // 👈 تحديث السجل فوراً
+      queryClient.invalidateQueries(["reference-logs", document?.id]);
     },
-    onError: (err) =>
-      toast.error(err.response?.data?.message || "فشل بدء التحليل"),
   });
 
   const handleDelete = () => {
@@ -111,12 +108,10 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
   const expiryDate = document.expiryDate
     ? new Date(document.expiryDate).toLocaleDateString("en-GB")
     : "غير محدد";
-  const txTypes = document.transactionTypes?.length
-    ? document.transactionTypes
-    : ["الكل"];
   const bldTypes = document.buildingTypes?.length
     ? document.buildingTypes
     : ["الكل"];
+  const districts = document.districts?.length ? document.districts : ["الكل"];
 
   return (
     <div
@@ -131,7 +126,6 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
               className="p-2 hover:bg-white/10 rounded-xl transition-colors"
-              title="حذف المستند"
             >
               {deleteMutation.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
@@ -142,7 +136,6 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
             <button
               onClick={onClose}
               className="p-2 hover:bg-white/10 rounded-xl transition-colors bg-white/5"
-              title="إغلاق"
             >
               <X className="w-4 h-4 text-white" />
             </button>
@@ -212,28 +205,28 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
             </button>
           </div>
 
-          <div className="space-y-6">
-            {/* الملخص الذكي */}
-            <div className="space-y-3">
+          <div className="space-y-8">
+            {/* التقرير التحليلي */}
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-500" /> الملخص الذكي
-                  (AI)
+                <h4 className="text-lg font-black text-slate-900 flex items-center gap-2 border-r-4 border-purple-500 pr-3">
+                  <Sparkles className="w-5 h-5 text-purple-500" /> التقرير
+                  التحليلي الشامل (AI)
                 </h4>
                 <span
-                  className={`text-[10px] font-black px-2 py-1 rounded-lg ${document.analysisStatus === "محلل" ? "bg-emerald-100 text-emerald-700" : document.analysisStatus === "قيد التحليل" ? "bg-purple-100 text-purple-700 animate-pulse" : "bg-slate-100 text-slate-500"}`}
+                  className={`text-[10px] font-black px-3 py-1 rounded-lg ${document.analysisStatus === "محلل" ? "bg-emerald-100 text-emerald-700" : "bg-purple-100 text-purple-700 animate-pulse"}`}
                 >
                   {document.analysisStatus || "غير محلل"}
                 </span>
               </div>
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 text-xs font-bold text-slate-700 leading-loose whitespace-pre-wrap shadow-sm">
                 {document.aiSummary ||
-                  "لم يتم توليد ملخص ذكي لهذا المستند حتى الآن. انقر على زر التحليل الذكي للبدء."}
+                  "لم يتم توليد ملخص ذكي لهذا المستند حتى الآن."}
               </div>
             </div>
 
             {/* توجيهات الإدارة */}
-            <div className="space-y-3">
+            <div className="space-y-3 pt-6 border-t border-slate-100">
               <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-blue-500" /> شرح وتوجيهات
                 الإدارة (يدوي)
@@ -252,60 +245,115 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
                 >
                   {updateNotesMutation.isPending && (
                     <Loader2 className="w-3 h-3 animate-spin" />
-                  )}
+                  )}{" "}
                   حفظ التوجيهات
                 </button>
               </div>
             </div>
 
-            {/* محددات الانطباق */}
+            {/* 🚀 محددات الانطباق المحدثة بالكامل 🚀 */}
             <div className="space-y-4 p-5 bg-slate-50/50 rounded-3xl border border-slate-200">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-4">
                 <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
                   <Filter className="w-4 h-4 text-emerald-500" /> محددات
-                  الانطباق (نطاق التطبيق)
+                  الانطباق (Applicability Scope)
                 </h4>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-bold text-slate-400">
-                    نوع المعاملة
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {txTypes.map((t) => (
-                      <span
-                        key={t}
-                        className="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-700 shadow-sm"
-                      >
-                        {t}
-                      </span>
-                    ))}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* المعاملات والمباني */}
+                <div className="space-y-4 md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl">
+                    <span className="text-[10px] font-bold text-slate-400">
+                      نوع المعاملة
+                    </span>
+                    <div className="text-xs font-bold text-slate-800">
+                      {document.txType || "الكل"}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl">
+                    <span className="text-[10px] font-bold text-slate-400">
+                      التصنيف الرئيسي
+                    </span>
+                    <div className="text-xs font-bold text-slate-800">
+                      {document.txMainCategory || "الكل"}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl">
+                    <span className="text-[10px] font-bold text-slate-400">
+                      التصنيف الفرعي
+                    </span>
+                    <div className="text-xs font-bold text-slate-800">
+                      {document.txSubCategory || "الكل"}
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-1.5">
+
+                {/* العقار والأراضي */}
+                <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl md:col-span-1">
                   <span className="text-[10px] font-bold text-slate-400">
-                    نوع المبنى
+                    أنواع المباني
                   </span>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5 mt-1">
                     {bldTypes.map((b) => (
                       <span
                         key={b}
-                        className="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-700 shadow-sm"
+                        className="px-2 py-1 bg-slate-50 border border-slate-200 rounded-md text-[10px] font-bold text-slate-700"
                       >
                         {b}
                       </span>
                     ))}
                   </div>
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl md:col-span-2">
                   <span className="text-[10px] font-bold text-slate-400">
-                    الموقع الجغرافي
+                    نطاق مساحة الأرض م² (من - إلى)
+                  </span>
+                  <div
+                    className="text-xs font-bold text-slate-800 mt-1"
+                    dir="ltr"
+                  >
+                    {document.landAreaFrom || document.landAreaTo
+                      ? `${document.landAreaFrom || 0} - ${document.landAreaTo || "∞"}`
+                      : "غير محدد"}
+                  </div>
+                </div>
+
+                {/* الموقع الجغرافي */}
+                <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl">
+                  <span className="text-[10px] font-bold text-slate-400">
+                    المدينة
                   </span>
                   <div className="text-xs font-bold text-slate-800 mt-1">
                     {document.city || "الكل"}
                   </div>
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl">
+                  <span className="text-[10px] font-bold text-slate-400">
+                    القطاع
+                  </span>
+                  <div className="text-xs font-bold text-slate-800 mt-1">
+                    {document.sector || "غير محدد"}
+                  </div>
+                </div>
+                <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl">
+                  <span className="text-[10px] font-bold text-slate-400">
+                    الأحياء
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 mt-1 max-h-20 overflow-y-auto custom-scrollbar-slim pr-1">
+                    {districts.map((d) => (
+                      <span
+                        key={d}
+                        className="px-2 py-1 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-md text-[10px] font-bold"
+                      >
+                        {d}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* المقاسات والصلاحية */}
+                <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl">
                   <span className="text-[10px] font-bold text-slate-400">
                     عدد الأدوار
                   </span>
@@ -318,7 +366,7 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
                       : "غير محدد"}
                   </div>
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl">
                   <span className="text-[10px] font-bold text-slate-400">
                     عرض الشارع (متر)
                   </span>
@@ -331,7 +379,7 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
                       : "غير محدد"}
                   </div>
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl">
                   <span className="text-[10px] font-bold text-slate-400">
                     الصلاحية الزمنية
                   </span>
@@ -347,7 +395,7 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
               </div>
             </div>
 
-            {/* سجل التحديثات الزر */}
+            {/* سجل التحديثات */}
             <div className="pt-2">
               <button
                 onClick={() => setShowLogs(!showLogs)}
@@ -367,7 +415,6 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
               </button>
             </div>
 
-            {/* 🚀 عرض السجل عند النقر */}
             {showLogs && (
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 animate-in slide-in-from-top-2 max-h-[250px] overflow-y-auto custom-scrollbar-slim">
                 {isLoadingLogs ? (
@@ -407,7 +454,7 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
           </div>
         </div>
 
-        {/* ─── Footer ─── */}
+        {/* Footer */}
         <div className="flex gap-3 p-4 border-t border-slate-100 bg-white shrink-0">
           <button
             onClick={() =>
@@ -419,12 +466,6 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
             className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-slate-900 text-white rounded-2xl text-xs font-black hover:bg-slate-800 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ExternalLink className="w-4 h-4" /> فتح المستند الأصلي
-          </button>
-          <button
-            className="p-3.5 bg-slate-100 text-slate-600 rounded-2xl hover:bg-slate-200 transition-all border border-slate-200 shadow-sm"
-            title="مشاركة المرجع"
-          >
-            <Share2 className="w-5 h-5" />
           </button>
         </div>
       </div>
