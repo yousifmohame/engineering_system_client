@@ -105,6 +105,7 @@ const MENU_CATEGORIES = [
     items: [
       { id: "16", label: "مركز المستندات", code: "SCR_16_VIEW" },
       { id: "17", label: "أنواع المستندات", code: "SCR_17_VIEW" },
+      { id: "170", label: "العقود", code: "SCR_170_VIEW" },
       { id: "18", label: "نماذج الجهات الرسمية", code: "SCR_18_VIEW" },
       { id: "19", label: "مركز تجهيز الملفات", code: "SCR_19_VIEW" },
       { id: "20", label: "مركز استقبال الملفات", code: "SCR_20_VIEW" },

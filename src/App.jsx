@@ -41,6 +41,7 @@ import EmailSettingsScreen from "./pages/Emails/EmailSettingsScreen";
 import TailscalePage from "./pages/tailscale/tailscalePage";
 import QuickLinksScreen from "./pages/QuickLinksScreen";
 import ReferenceLibraryScreen from "./pages/Reference/ReferenceLibraryScreen";
+import ContractsManagementScreen from "./pages/ContractsManagement/ContractsManagementScreen";
 
 // --- Icons & Context ---
 import { Wrench } from "lucide-react"; // 👈 استيراد أيقونة شاشة الصيانة
@@ -99,7 +100,7 @@ const AppContent = () => {
   }
 
   // 👈 قائمة بأكواد الشاشات التي قمت ببرمجتها بالفعل
-  const implementedScreens = ["01","DASH", "055", "300", "310", "817", "815", "942", "SET", "39", "40", "41", "222", "30", "31", "32", "71", "73", "74", "09", "0010", "10", "88", "16", "98", "99", "100", "101", "83", "109", "112"];
+  const implementedScreens = ["01","DASH", "055", "300", "310", "817", "815", "942", "SET", "39", "40", "41", "222", "30", "31", "32", "71", "73", "74", "09", "0010", "10", "88", "16", "98", "99", "100", "101", "83", "109", "112", "170"];
   // فحص هل الشاشة المطلوبة مبرمجة أم لا
   const isImplemented = implementedScreens.includes(activeScreenId);
 
@@ -157,6 +158,7 @@ const AppContent = () => {
             <div className={activeScreenId === "83" ? "block h-full" : "hidden"}><TailscalePage /></div>
             <div className={activeScreenId === "109" ? "block h-full" : "hidden"}><QuickLinksScreen /></div>
             <div className={activeScreenId === "112" ? "block h-full" : "hidden"}><ReferenceLibraryScreen /></div>
+            <div className={activeScreenId === "170" ? "block h-full" : "hidden"}><ContractsManagementScreen /></div>
             {/* --- 👈 السحر هنا: شاشة Fallback لأي كود غير مبرمج --- */}
             {!isImplemented && (
               <div className="block h-full">
