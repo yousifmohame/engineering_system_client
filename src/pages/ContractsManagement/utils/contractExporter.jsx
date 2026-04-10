@@ -1,9 +1,9 @@
-import { generateZatcaQr } from './zatca';
-import html2canvas from 'html2canvas';
+import { generateZatcaQr } from "./zatca";
+import html2canvas from "html2canvas";
 
 export const generateContractPdf = (contract) => {
   const html = generateContractHtml(contract);
-  const printWindow = window.open('', '_blank');
+  const printWindow = window.open("", "_blank");
   if (printWindow) {
     printWindow.document.write(html);
     printWindow.document.close();
@@ -14,20 +14,20 @@ export const generateContractPdf = (contract) => {
 
 export const generateContractImage = async (contract) => {
   const html = generateContractHtml(contract);
-  
+
   // Create a hidden iframe to render the HTML
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'absolute';
-  iframe.style.width = '210mm';
-  iframe.style.height = '297mm';
-  iframe.style.top = '-9999px';
-  iframe.style.left = '-9999px';
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "absolute";
+  iframe.style.width = "210mm";
+  iframe.style.height = "297mm";
+  iframe.style.top = "-9999px";
+  iframe.style.left = "-9999px";
   document.body.appendChild(iframe);
-  
+
   iframe.contentDocument?.open();
   iframe.contentDocument?.write(html);
   iframe.contentDocument?.close();
-  
+
   // Wait for images to load
   await new Promise((resolve) => {
     iframe.onload = () => {
@@ -44,15 +44,15 @@ export const generateContractImage = async (contract) => {
         logging: false,
         windowWidth: 794, // A4 width in pixels at 96 DPI
       });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
+
+      const imgData = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
       link.download = `contract-${contract.code}.png`;
       link.href = imgData;
       link.click();
     }
   } catch (error) {
-    console.error('Error generating image:', error);
+    console.error("Error generating image:", error);
   } finally {
     document.body.removeChild(iframe);
   }
@@ -67,32 +67,52 @@ export const generateContractLink = (contract) => {
 
 export const generateContractHtml = (contract) => {
   const qrData = generateZatcaQr(
-    contract.partyA || 'شركة الحلول الهندسية',
-    contract.partyADetails?.cr || '310123456700003',
+    contract.partyA || "شركة الحلول الهندسية",
+    contract.partyADetails?.cr || "310123456700003",
     contract.date || new Date().toISOString(),
     (contract.financials?.grandTotal || 0).toString(),
-    (contract.financials?.taxAmount || 0).toString()
+    (contract.financials?.taxAmount || 0).toString(),
   );
 
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}`;
-  const projectQrUrl = contract.qrSettings?.enabled && contract.qrSettings?.frontQrContent === 'link' ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('https://maps.google.com')}` : null;
+  const projectQrUrl =
+    contract.qrSettings?.enabled &&
+    contract.qrSettings?.frontQrContent === "link"
+      ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent("https://maps.google.com")}`
+      : null;
   const verificationQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://example.com/verify/${contract.code}`)}`;
   const companyQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://example.com/company`)}`;
 
-  const watermarkText = contract.status === 'مسودة' ? 'مسودة غير معتمدة' : contract.status === 'معتمد' ? 'عقد معتمد' : contract.status;
-  const watermarkColor = contract.status === 'مسودة' ? 'rgba(226, 232, 240, 0.4)' : 'rgba(16, 185, 129, 0.1)';
+  const watermarkText =
+    contract.status === "مسودة"
+      ? "مسودة غير معتمدة"
+      : contract.status === "معتمد"
+        ? "عقد معتمد"
+        : contract.status;
+  const watermarkColor =
+    contract.status === "مسودة"
+      ? "rgba(226, 232, 240, 0.4)"
+      : "rgba(16, 185, 129, 0.1)";
 
-  const bgImageFront = contract.coverSettings?.background?.imageUrl ? `
+  const bgImageFront = contract.coverSettings?.background?.imageUrl
+    ? `
     <div style="position: absolute; top:0; left:0; right:0; bottom:0; background-image: url('${contract.coverSettings.background.imageUrl}'); background-size: ${contract.coverSettings.background.size}; opacity: ${contract.coverSettings.background.opacity}; z-index: -1;"></div>
-  ` : '';
+  `
+    : "";
 
-  const bgImageBack = contract.backCoverSettings?.background?.imageUrl ? `
+  const bgImageBack = contract.backCoverSettings?.background?.imageUrl
+    ? `
     <div style="position: absolute; top:0; left:0; right:0; bottom:0; background-image: url('${contract.backCoverSettings.background.imageUrl}'); background-size: ${contract.backCoverSettings.background.size}; opacity: ${contract.backCoverSettings.background.opacity}; z-index: -1;"></div>
-  ` : '';
+  `
+    : "";
 
-  const bgImageAll = contract.coverSettings?.background?.applyTo === 'all' && contract.coverSettings?.background?.imageUrl ? `
+  const bgImageAll =
+    contract.coverSettings?.background?.applyTo === "all" &&
+    contract.coverSettings?.background?.imageUrl
+      ? `
     <div style="position: absolute; top:0; left:0; right:0; bottom:0; background-image: url('${contract.coverSettings.background.imageUrl}'); background-size: ${contract.coverSettings.background.size}; opacity: ${contract.coverSettings.background.opacity}; z-index: -1;"></div>
-  ` : '';
+  `
+      : "";
 
   return `
     <!DOCTYPE html>
@@ -148,46 +168,46 @@ export const generateContractHtml = (contract) => {
         
         /* Dynamic Styling */
         body {
-          font-family: '${contract.typographySettings?.fontFamily || 'Tajawal'}', sans-serif;
-          font-size: ${contract.typographySettings?.fontSize || '14px'};
-          color: ${contract.typographySettings?.color || '#0f172a'};
+          font-family: '${contract.typographySettings?.fontFamily || "Tajawal"}', sans-serif;
+          font-size: ${contract.typographySettings?.fontSize || "14px"};
+          color: ${contract.typographySettings?.color || "#0f172a"};
         }
         p, li {
-          line-height: ${contract.spacingSettings?.lineHeight || '1.8'};
-          margin-bottom: ${contract.spacingSettings?.paragraphSpacing || '16px'};
+          line-height: ${contract.spacingSettings?.lineHeight || "1.8"};
+          margin-bottom: ${contract.spacingSettings?.paragraphSpacing || "16px"};
         }
         .page {
-          padding: ${contract.spacingSettings?.padding || '40px'};
+          padding: ${contract.spacingSettings?.padding || "40px"};
         }
 
         /* Frames */
         .page-frame {
           position: absolute;
-          top: ${contract.frameSettings?.pageFrame?.margin || '20px'};
-          bottom: ${contract.frameSettings?.pageFrame?.margin || '20px'};
-          left: ${contract.frameSettings?.pageFrame?.margin || '20px'};
-          right: ${contract.frameSettings?.pageFrame?.margin || '20px'};
-          border: ${contract.frameSettings?.pageFrame?.enabled ? `2px ${contract.frameSettings.pageFrame.style} ${contract.frameSettings.pageFrame.color}` : 'none'};
+          top: ${contract.frameSettings?.pageFrame?.margin || "20px"};
+          bottom: ${contract.frameSettings?.pageFrame?.margin || "20px"};
+          left: ${contract.frameSettings?.pageFrame?.margin || "20px"};
+          right: ${contract.frameSettings?.pageFrame?.margin || "20px"};
+          border: ${contract.frameSettings?.pageFrame?.enabled ? `2px ${contract.frameSettings.pageFrame.style} ${contract.frameSettings.pageFrame.color}` : "none"};
           pointer-events: none;
           z-index: 5;
         }
         .front-cover-frame {
           position: absolute;
-          top: ${contract.frameSettings?.frontCoverFrame?.margin || '30px'};
-          bottom: ${contract.frameSettings?.frontCoverFrame?.margin || '30px'};
-          left: ${contract.frameSettings?.frontCoverFrame?.margin || '30px'};
-          right: ${contract.frameSettings?.frontCoverFrame?.margin || '30px'};
-          border: ${contract.frameSettings?.frontCoverFrame?.enabled ? `4px ${contract.frameSettings.frontCoverFrame.style} ${contract.frameSettings.frontCoverFrame.color}` : 'none'};
+          top: ${contract.frameSettings?.frontCoverFrame?.margin || "30px"};
+          bottom: ${contract.frameSettings?.frontCoverFrame?.margin || "30px"};
+          left: ${contract.frameSettings?.frontCoverFrame?.margin || "30px"};
+          right: ${contract.frameSettings?.frontCoverFrame?.margin || "30px"};
+          border: ${contract.frameSettings?.frontCoverFrame?.enabled ? `4px ${contract.frameSettings.frontCoverFrame.style} ${contract.frameSettings.frontCoverFrame.color}` : "none"};
           pointer-events: none;
           z-index: 5;
         }
         .back-cover-frame {
           position: absolute;
-          top: ${contract.frameSettings?.backCoverFrame?.margin || '30px'};
-          bottom: ${contract.frameSettings?.backCoverFrame?.margin || '30px'};
-          left: ${contract.frameSettings?.backCoverFrame?.margin || '30px'};
-          right: ${contract.frameSettings?.backCoverFrame?.margin || '30px'};
-          border: ${contract.frameSettings?.backCoverFrame?.enabled ? `4px ${contract.frameSettings.backCoverFrame.style} ${contract.frameSettings.backCoverFrame.color}` : 'none'};
+          top: ${contract.frameSettings?.backCoverFrame?.margin || "30px"};
+          bottom: ${contract.frameSettings?.backCoverFrame?.margin || "30px"};
+          left: ${contract.frameSettings?.backCoverFrame?.margin || "30px"};
+          right: ${contract.frameSettings?.backCoverFrame?.margin || "30px"};
+          border: ${contract.frameSettings?.backCoverFrame?.enabled ? `4px ${contract.frameSettings.backCoverFrame.style} ${contract.frameSettings.backCoverFrame.color}` : "none"};
           pointer-events: none;
           z-index: 5;
         }
@@ -518,12 +538,16 @@ export const generateContractHtml = (contract) => {
       <div class="page cover-page">
         <div class="front-cover-frame"></div>
         ${bgImageFront}
-        ${contract.coverSettings?.showLogo !== false ? `<div class="cover-logo">ES</div>` : ''}
+        ${contract.coverSettings?.showLogo !== false ? `<div class="cover-logo">ES</div>` : ""}
         <div class="cover-title">عقد</div>
-        ${contract.isAddendum ? `
+        ${
+          contract.isAddendum
+            ? `
           <div class="cover-addendum">(إلحاقي)</div>
-          <div class="cover-base-info">عقد أساسي رقم: ${contract.baseContractId || '---'}</div>
-        ` : ''}
+          <div class="cover-base-info">عقد أساسي رقم: ${contract.baseContractId || "---"}</div>
+        `
+            : ""
+        }
         
         <div class="cover-type">${contract.type}</div>
         
@@ -536,23 +560,23 @@ export const generateContractHtml = (contract) => {
             </tr>
             <tr>
               <th>عنوان المشروع</th>
-              <td>${contract.projectDetails?.name || '---'}</td>
+              <td>${contract.projectDetails?.name || "---"}</td>
             </tr>
             <tr>
               <th>المدينة / الحي</th>
-              <td>${contract.projectDetails?.city || '---'} / ${contract.projectDetails?.location || '---'}</td>
+              <td>${contract.projectDetails?.city || "---"} / ${contract.projectDetails?.location || "---"}</td>
             </tr>
             <tr>
               <th>المساحة</th>
-              <td>${contract.projectDetails?.area ? `${contract.projectDetails.area} متر مربع` : '---'}</td>
+              <td>${contract.projectDetails?.area ? `${contract.projectDetails.area} متر مربع` : "---"}</td>
             </tr>
             <tr>
               <th>رقم الصك</th>
-              <td>${contract.projectDetails?.deedNumber || '---'}</td>
+              <td>${contract.projectDetails?.deedNumber || "---"}</td>
             </tr>
             <tr>
               <th>رقم القطعة</th>
-              <td>${contract.projectDetails?.plotNumber || '---'}</td>
+              <td>${contract.projectDetails?.plotNumber || "---"}</td>
             </tr>
           </tbody>
         </table>
@@ -562,23 +586,27 @@ export const generateContractHtml = (contract) => {
           <tbody>
             <tr>
               <th>الطرف الأول</th>
-              <td>${contract.partyA} <br><span style="font-size:9pt; color:#64748b;">(${contract.partyADetails?.capacity || 'مقدم الخدمة'}) - يمثله: ${contract.partyADetails?.representant || '---'}</span></td>
+              <td>${contract.partyA} <br><span style="font-size:9pt; color:#64748b;">(${contract.partyADetails?.capacity || "مقدم الخدمة"}) - يمثله: ${contract.partyADetails?.representant || "---"}</span></td>
             </tr>
             <tr>
               <th>الطرف الثاني</th>
-              <td>${contract.partyB || '---'} <br><span style="font-size:9pt; color:#64748b;">(${contract.partyBDetails?.capacity || 'العميل'}) - يمثله: ${contract.partyBDetails?.representant || '---'}</span></td>
+              <td>${contract.partyB || "---"} <br><span style="font-size:9pt; color:#64748b;">(${contract.partyBDetails?.capacity || "العميل"}) - يمثله: ${contract.partyBDetails?.representant || "---"}</span></td>
             </tr>
           </tbody>
         </table>
 
         <!-- QR Codes -->
         <div class="qr-container">
-          ${projectQrUrl ? `
+          ${
+            projectQrUrl
+              ? `
             <div class="qr-box">
               <img src="${projectQrUrl}" alt="موقع الأرض" />
               <div class="qr-label">موقع الأرض</div>
             </div>
-          ` : ''}
+          `
+              : ""
+          }
           <div class="qr-box">
             <img src="${companyQrUrl}" alt="عنوان الشركة" />
             <div class="qr-label">عنوان شركتنا</div>
@@ -593,20 +621,25 @@ export const generateContractHtml = (contract) => {
         <div class="dates-container">
           <div class="date-box">
             <div class="date-label">التاريخ الهجري</div>
-            <div class="date-value">${contract.hijriDate || '---'}</div>
+            <div class="date-value">${contract.hijriDate || "---"}</div>
           </div>
           <div class="date-box">
             <div class="date-label">التاريخ الميلادي</div>
-            <div class="date-value">${contract.gregorianDate || contract.date || '---'}</div>
+            <div class="date-value">${contract.gregorianDate || contract.date || "---"}</div>
           </div>
         </div>
 
-        ${contract.coverSettings?.showSummary !== false && (contract.coverSummary || contract.aiSummary) ? `
+        ${
+          contract.coverSettings?.showSummary !== false &&
+          (contract.coverSummary || contract.aiSummary)
+            ? `
           <div class="ai-summary-box" style="margin-top: auto; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: right; width: 100%; box-sizing: border-box;">
             <div class="ai-badge" style="font-size: 10pt; font-weight: 800; color: #065f46; margin-bottom: 5px;">✨ ملخص العقد</div>
-            <div class="ai-summary-text" style="font-size: 10pt; color: #475569; line-height: 1.6;">${(contract.aiSummary || contract.coverSummary || '').replace(/\n/g, '<br>')}</div>
+            <div class="ai-summary-text" style="font-size: 10pt; color: #475569; line-height: 1.6;">${(contract.aiSummary || contract.coverSummary || "").replace(/\n/g, "<br>")}</div>
           </div>
-        ` : ''}
+        `
+            : ""
+        }
       </div>
 
       <!-- PAGE 2: PREAMBLE & PARTIES -->
@@ -633,22 +666,22 @@ export const generateContractHtml = (contract) => {
             <div class="party-block">
               <div class="party-title">الطرف الأول: ${contract.partyA}</div>
               <div class="party-details">
-                <div><strong>يمثلها:</strong> ${contract.partyADetails?.representant || '-'}</div>
-                <div><strong>الصفة:</strong> ${contract.partyADetails?.capacity || 'مقدم الخدمة'}</div>
-                <div><strong>السجل التجاري:</strong> ${contract.partyADetails?.cr || '-'}</div>
-                <div><strong>العنوان:</strong> ${contract.partyADetails?.address || '-'}</div>
+                <div><strong>يمثلها:</strong> ${contract.partyADetails?.representant || "-"}</div>
+                <div><strong>الصفة:</strong> ${contract.partyADetails?.capacity || "مقدم الخدمة"}</div>
+                <div><strong>السجل التجاري:</strong> ${contract.partyADetails?.cr || "-"}</div>
+                <div><strong>العنوان:</strong> ${contract.partyADetails?.address || "-"}</div>
               </div>
             </div>
             
             <div class="party-block">
-              <div class="party-title">الطرف الثاني: ${contract.partyB || '..............................'}</div>
+              <div class="party-title">الطرف الثاني: ${contract.partyB || ".............................."}</div>
               <div class="party-details">
-                <div><strong>يمثلها:</strong> ${contract.partyBDetails?.representant || '-'}</div>
-                <div><strong>الصفة:</strong> ${contract.partyBDetails?.capacity || 'العميل'}</div>
-                <div><strong>الهوية/السجل:</strong> ${contract.partyBDetails?.idNumber || '-'}</div>
-                <div><strong>الجوال:</strong> <span dir="ltr">${contract.partyBDetails?.phone || '-'}</span></div>
-                <div><strong>البريد الإلكتروني:</strong> <span dir="ltr">${contract.partyBDetails?.email || '-'}</span></div>
-                <div><strong>العنوان:</strong> ${contract.partyBDetails?.address || '-'}</div>
+                <div><strong>يمثلها:</strong> ${contract.partyBDetails?.representant || "-"}</div>
+                <div><strong>الصفة:</strong> ${contract.partyBDetails?.capacity || "العميل"}</div>
+                <div><strong>الهوية/السجل:</strong> ${contract.partyBDetails?.idNumber || "-"}</div>
+                <div><strong>الجوال:</strong> <span dir="ltr">${contract.partyBDetails?.phone || "-"}</span></div>
+                <div><strong>البريد الإلكتروني:</strong> <span dir="ltr">${contract.partyBDetails?.email || "-"}</span></div>
+                <div><strong>العنوان:</strong> ${contract.partyBDetails?.address || "-"}</div>
               </div>
             </div>
           </div>
@@ -673,15 +706,18 @@ export const generateContractHtml = (contract) => {
               <span>بيانات المشروع ونطاق العمل</span>
             </div>
             <div class="clause-body">
-              <strong>اسم المشروع:</strong> ${contract.projectDetails?.name || '-'}<br/>
-              <strong>الموقع:</strong> ${contract.projectDetails?.city || '-'} - ${contract.projectDetails?.location || '-'}<br/>
-              <strong>رقم الصك:</strong> ${contract.projectDetails?.deedNumber || '-'} | <strong>رقم القطعة:</strong> ${contract.projectDetails?.plotNumber || '-'}<br/><br/>
+              <strong>اسم المشروع:</strong> ${contract.projectDetails?.name || "-"}<br/>
+              <strong>الموقع:</strong> ${contract.projectDetails?.city || "-"} - ${contract.projectDetails?.location || "-"}<br/>
+              <strong>رقم الصك:</strong> ${contract.projectDetails?.deedNumber || "-"} | <strong>رقم القطعة:</strong> ${contract.projectDetails?.plotNumber || "-"}<br/><br/>
               <strong>نطاق العمل التفصيلي:</strong><br/>
-              ${contract.isOnePageSummary && contract.aiSummary ? contract.aiSummary.replace(/\n/g, '<br/>') : (contract.terms || 'لم يتم تحديد نطاق العمل بعد.')}
+              ${contract.isOnePageSummary && contract.aiSummary ? contract.aiSummary.replace(/\n/g, "<br/>") : contract.terms || "لم يتم تحديد نطاق العمل بعد."}
             </div>
           </div>
 
-          ${contract.isOnePageSummary ? '' : `
+          ${
+            contract.isOnePageSummary
+              ? ""
+              : `
         </div>
 
         <div class="footer">
@@ -719,7 +755,8 @@ export const generateContractHtml = (contract) => {
         </div>
 
         <div class="content">
-          `}
+          `
+          }
           
           <div class="clause">
             <div class="clause-header">
@@ -753,7 +790,7 @@ export const generateContractHtml = (contract) => {
               </table>
 
               <strong>شروط وآلية الدفع:</strong><br/>
-              ${contract.paymentTerms || 'يتم الدفع حسب الاتفاق المبرم بين الطرفين.'}
+              ${contract.paymentTerms || "يتم الدفع حسب الاتفاق المبرم بين الطرفين."}
             </div>
           </div>
 
@@ -763,7 +800,7 @@ export const generateContractHtml = (contract) => {
               <span>التزامات الطرف الأول</span>
             </div>
             <div class="clause-body">
-              ${contract.partyAObligations || 'يلتزم الطرف الأول بتنفيذ الأعمال المتفق عليها وفقاً للأصول المهنية والمعايير الهندسية المعتمدة.'}
+              ${contract.partyAObligations || "يلتزم الطرف الأول بتنفيذ الأعمال المتفق عليها وفقاً للأصول المهنية والمعايير الهندسية المعتمدة."}
             </div>
           </div>
 
@@ -773,11 +810,13 @@ export const generateContractHtml = (contract) => {
               <span>التزامات الطرف الثاني</span>
             </div>
             <div class="clause-body">
-              ${contract.partyBObligations || 'يلتزم الطرف الثاني بتزويد الطرف الأول بكافة المستندات والمعلومات اللازمة، وسداد الدفعات المالية في مواعيدها.'}
+              ${contract.partyBObligations || "يلتزم الطرف الثاني بتزويد الطرف الأول بكافة المستندات والمعلومات اللازمة، وسداد الدفعات المالية في مواعيدها."}
             </div>
           </div>
 
-          ${contract.obligationsList && contract.obligationsList.length > 0 ? `
+          ${
+            contract.obligationsList && contract.obligationsList.length > 0
+              ? `
             <div class="clause">
               <div class="clause-header">
                 <span class="clause-number">البند الإضافي</span>
@@ -785,16 +824,22 @@ export const generateContractHtml = (contract) => {
               </div>
               <div class="clause-body">
                 <ul style="list-style-type: none; padding: 0;">
-                  ${contract.obligationsList.map(obs => `
+                  ${contract.obligationsList
+                    .map(
+                      (obs) => `
                     <li style="margin-bottom: 10px;">
-                      <strong>${obs.code} (${obs.party === 'A' ? 'الطرف الأول' : obs.party === 'B' ? 'الطرف الثاني' : 'مشترك'}):</strong>
+                      <strong>${obs.code} (${obs.party === "A" ? "الطرف الأول" : obs.party === "B" ? "الطرف الثاني" : "مشترك"}):</strong>
                       ${obs.content}
                     </li>
-                  `).join('')}
+                  `,
+                    )
+                    .join("")}
                 </ul>
               </div>
             </div>
-          ` : ''}
+          `
+              : ""
+          }
 
           <div class="clause">
             <div class="clause-header">
@@ -802,7 +847,7 @@ export const generateContractHtml = (contract) => {
               <span>الشروط العامة والجزاءات</span>
             </div>
             <div class="clause-body">
-              ${contract.generalConditions || 'لا توجد شروط إضافية.'}
+              ${contract.generalConditions || "لا توجد شروط إضافية."}
             </div>
           </div>
 
@@ -812,7 +857,7 @@ export const generateContractHtml = (contract) => {
               <span>القانون الحاكم وتسوية المنازعات</span>
             </div>
             <div class="clause-body">
-              ${contract.governingLaw || 'يخضع هذا العقد للأنظمة والقوانين المعمول بها في المملكة العربية السعودية. في حال نشوء أي خلاف يتم حله ودياً، وإلا يحال للجهات القضائية المختصة.'}
+              ${contract.governingLaw || "يخضع هذا العقد للأنظمة والقوانين المعمول بها في المملكة العربية السعودية. في حال نشوء أي خلاف يتم حله ودياً، وإلا يحال للجهات القضائية المختصة."}
             </div>
           </div>
 
@@ -858,51 +903,77 @@ export const generateContractHtml = (contract) => {
             <div class="signature-box">
               <div class="signature-title">الطرف الأول</div>
               <div style="font-weight: bold; margin-bottom: 5px;">${contract.partyA}</div>
-              <div style="font-size: 11pt; color: #475569;">الاسم: ${contract.partyADetails?.representant || ''}</div>
+              <div style="font-size: 11pt; color: #475569;">الاسم: ${contract.partyADetails?.representant || ""}</div>
               <div class="signature-line">التوقيع / الختم</div>
             </div>
             <div class="signature-box">
               <div class="signature-title">الطرف الثاني</div>
-              <div style="font-weight: bold; margin-bottom: 5px;">${contract.partyB || '..............................'}</div>
-              <div style="font-size: 11pt; color: #475569;">الاسم: ${contract.partyBDetails?.representant || ''}</div>
+              <div style="font-weight: bold; margin-bottom: 5px;">${contract.partyB || ".............................."}</div>
+              <div style="font-size: 11pt; color: #475569;">الاسم: ${contract.partyBDetails?.representant || ""}</div>
               <div class="signature-line">التوقيع / الختم</div>
             </div>
           </div>
 
-          ${(contract.witnesses && contract.witnesses.length > 0 && contract.witnesses[0].name) ? `
+          ${
+            contract.witnesses &&
+            contract.witnesses.length > 0 &&
+            contract.witnesses[0].name
+              ? `
             <div style="margin-top: 30px; font-weight: bold; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">الشهود:</div>
             <div class="witnesses-grid">
-              ${contract.witnesses.map((w, i) => w.name ? `
+              ${contract.witnesses
+                .map((w, i) =>
+                  w.name
+                    ? `
                 <div class="signature-box" style="padding: 15px;">
                   <div class="signature-title" style="font-size: 11pt;">الشاهد ${i + 1}</div>
                   <div style="font-weight: bold; font-size: 10pt;">الاسم: ${w.name}</div>
                   <div style="font-size: 10pt; color: #475569;">الهوية: ${w.id}</div>
                   <div class="signature-line" style="margin-top: 20px;">التوقيع</div>
                 </div>
-              ` : '').join('')}
+              `
+                    : "",
+                )
+                .join("")}
             </div>
-          ` : ''}
+          `
+              : ""
+          }
 
           <div class="qr-section">
-            ${contract.qrSettings?.enabled ? `
+            ${
+              contract.qrSettings?.enabled
+                ? `
               <div class="qr-box">
                 <img src="${qrImageUrl}" alt="ZATCA QR Code" />
                 <div class="qr-label">رمز التحقق (ZATCA)</div>
               </div>
-              ${projectQrUrl ? `
+              ${
+                projectQrUrl
+                  ? `
                 <div class="qr-box">
                   <img src="${projectQrUrl}" alt="Project Location QR" />
                   <div class="qr-label">موقع المشروع</div>
                 </div>
-              ` : ''}
-            ` : ''}
+              `
+                  : ""
+              }
+            `
+                : ""
+            }
           </div>
 
           <div style="margin-top: 40px; text-align: center; font-size: 10pt; color: #64748b; padding: 15px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;">
             <strong>طريقة الاعتماد:</strong> 
-            ${contract.approvalMethod === 'platform' ? 'تم الاعتماد عبر المنصة الرسمية (أبشر/نفاذ)' : 
-              contract.approvalMethod === 'email' ? 'تم الاعتماد عبر البريد الإلكتروني الموثق' :
-              contract.approvalMethod === 'whatsapp' ? 'تم الاعتماد عبر رسالة واتساب المعتمدة' : 'توقيع ورقي مباشر'}
+            ${
+              contract.approvalMethod === "platform"
+                ? "تم الاعتماد عبر المنصة الرسمية (أبشر/نفاذ)"
+                : contract.approvalMethod === "email"
+                  ? "تم الاعتماد عبر البريد الإلكتروني الموثق"
+                  : contract.approvalMethod === "whatsapp"
+                    ? "تم الاعتماد عبر رسالة واتساب المعتمدة"
+                    : "توقيع ورقي مباشر"
+            }
             <br/>
             حالة العقد الحالية: <strong style="color: #065f46;">${contract.status}</strong>
           </div>
@@ -917,11 +988,11 @@ export const generateContractHtml = (contract) => {
         <div class="contact-info-box">
           <h3>معلومات التواصل والدعم</h3>
           <div class="contact-details">
-            <div>📧 ${contract.backCoverSettings?.contactEmail || 'info@engineering-solutions.com'}</div>
-            <div dir="ltr">📱 ${contract.backCoverSettings?.contactPhone || '+966 50 000 0000'}</div>
-            <div>📍 ${contract.backCoverSettings?.address || 'المملكة العربية السعودية'}</div>
+            <div>📧 ${contract.backCoverSettings?.contactEmail || "info@engineering-solutions.com"}</div>
+            <div dir="ltr">📱 ${contract.backCoverSettings?.contactPhone || "+966 50 000 0000"}</div>
+            <div>📍 ${contract.backCoverSettings?.address || "المملكة العربية السعودية"}</div>
           </div>
-          ${contract.backCoverSettings?.additionalNotes ? `<div style="margin-top: 15px; font-size: 10pt; color: #64748b;">${contract.backCoverSettings.additionalNotes}</div>` : ''}
+          ${contract.backCoverSettings?.additionalNotes ? `<div style="margin-top: 15px; font-size: 10pt; color: #64748b;">${contract.backCoverSettings.additionalNotes}</div>` : ""}
         </div>
       </div>
 
