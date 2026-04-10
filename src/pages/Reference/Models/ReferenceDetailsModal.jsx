@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import api from "../../../api/axios";
@@ -13,7 +13,6 @@ import {
   MessageSquare,
   Filter,
   History,
-  ExternalLink,
   Share2,
   Loader2,
   Info,
@@ -22,8 +21,12 @@ import {
   Wind,
   Activity,
   CheckCircle2,
+  Paperclip,
+  FileText,
+  Eye,
 } from "lucide-react";
 
+// 💡 دالة تحويل الرابط للملفات
 const getFullUrl = (url) => {
   if (!url) return null;
   if (url.startsWith("http")) return url;
@@ -100,6 +103,42 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
     }
   };
 
+  // 🚀 استخراج ذكي للملخص، القواعد، والمستهدفين من النص المدمج (aiSummary)
+  const parsedAI = useMemo(() => {
+    if (!document || !document.aiSummary)
+      return { summary: "", rules: [], audience: "" };
+
+    let summary = document.aiSummary;
+    let rules = [];
+    let audience = "غير محدد";
+
+    try {
+      if (document.aiSummary.includes("⚠️ أهم الاشتراطات:")) {
+        const parts = document.aiSummary.split("⚠️ أهم الاشتراطات:");
+        summary = parts[0].replace("📌 الملخص:", "").trim();
+
+        const rulesPart = parts[1];
+        if (rulesPart.includes("🎯 المستهدفون:")) {
+          const subParts = rulesPart.split("🎯 المستهدفون:");
+          audience = subParts[1].replace(/[:\n]/g, "").trim();
+          rules = subParts[0]
+            .split(/\n-|\n•/)
+            .map((r) => r.replace(/^[-•]/, "").trim())
+            .filter(Boolean);
+        } else {
+          rules = rulesPart
+            .split(/\n-|\n•/)
+            .map((r) => r.replace(/^[-•]/, "").trim())
+            .filter(Boolean);
+        }
+      }
+    } catch (e) {
+      console.error("Error parsing AI summary", e);
+    }
+
+    return { summary, rules, audience };
+  }, [document]);
+
   if (!isOpen || !document) return null;
 
   const issueDate = document.issueDate
@@ -112,6 +151,11 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
     ? document.buildingTypes
     : ["الكل"];
   const districts = document.districts?.length ? document.districts : ["الكل"];
+
+  // معالجة الملفات المتعددة
+  const fileUrls = document.fileUrl
+    ? document.fileUrl.split(",").filter((url) => url.trim() !== "")
+    : [];
 
   return (
     <div
@@ -206,7 +250,7 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
           </div>
 
           <div className="space-y-8">
-            {/* التقرير التحليلي */}
+            {/* 🚀 التقرير التحليلي الشامل 🚀 */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="text-lg font-black text-slate-900 flex items-center gap-2 border-r-4 border-purple-500 pr-3">
@@ -219,9 +263,129 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
                   {document.analysisStatus || "غير محلل"}
                 </span>
               </div>
-              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 text-xs font-bold text-slate-700 leading-loose whitespace-pre-wrap shadow-sm">
-                {document.aiSummary ||
-                  "لم يتم توليد ملخص ذكي لهذا المستند حتى الآن."}
+              {/* 1. الملخص الذكي */}
+              <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 shadow-sm">
+                <h5 className="text-sm font-black text-emerald-900 mb-3 flex items-center gap-2">
+                  <Brain className="w-4 h-4 text-emerald-600" /> الملخص التنفيذي
+                  (AI)
+                </h5>
+                <div className="text-xs font-bold text-emerald-800 leading-loose whitespace-pre-wrap">
+                  {parsedAI.summary ||
+                    "لم يتم توليد ملخص ذكي لهذا المستند حتى الآن. اضغط على زر التحليل الذكي للبدء."}
+                </div>
+              </div>
+              {/* 2. النطاق والبروتوكولات المستخرجة */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* بطاقة النطاق والمستهدفون */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                  <h5 className="text-sm font-black text-slate-900 mb-4 flex items-center gap-2">
+                    <Target className="w-4 h-4 text-indigo-500" /> النطاق
+                    والمستهدفون
+                  </h5>
+                  <div className="space-y-3 text-xs font-bold text-slate-700 leading-relaxed">
+                    <p>
+                      <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded mr-1">
+                        المدينة والقطاع:
+                      </span>{" "}
+                      {document.city || "كافة المدن"} -{" "}
+                      {document.sector || "كافة القطاعات"}
+                    </p>
+                    <p>
+                      <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded mr-1">
+                        المعاملات:
+                      </span>{" "}
+                      {document.txType || "كافة المعاملات"}
+                    </p>
+                    <p>
+                      <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded mr-1">
+                        المباني المستهدفة:
+                      </span>{" "}
+                      {bldTypes.join("، ")}
+                    </p>
+                    {document.analysisStatus === "محلل" && (
+                      <p className="mt-2 text-slate-500 border-t border-slate-100 pt-2 flex items-start gap-2">
+                        <Info className="w-3.5 h-3.5 mt-0.5 text-slate-400 shrink-0" />
+                        <span className="text-indigo-800">
+                          {parsedAI.audience}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* البروتوكولات الفنية (مستخرجة من الذكاء الاصطناعي) */}
+                <div className="space-y-4">
+                  <div className="bg-cyan-50 border border-cyan-100 rounded-2xl p-5 shadow-sm">
+                    <h5 className="text-sm font-black text-cyan-900 mb-2 flex items-center gap-2">
+                      <Wind className="w-4 h-4 text-cyan-600" /> بروتوكول
+                      التشغيل (الرياح)
+                    </h5>
+                    <div className="text-[11px] font-bold text-cyan-800 mt-2 leading-relaxed">
+                      {document.windProtocol ? (
+                        <span className="flex items-start gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 text-cyan-500 shrink-0" />{" "}
+                          {document.windProtocol}
+                        </span>
+                      ) : (
+                        <span className="text-cyan-600/60">
+                          لم يُذكر بروتوكول محدد للرياح أو الطقس في هذا المستند.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 shadow-sm">
+                    <h5 className="text-sm font-black text-blue-900 mb-2 flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-blue-600" /> بروتوكول
+                      الرصد والامتثال
+                    </h5>
+                    <div className="text-[11px] font-bold text-blue-800 mt-2 leading-relaxed">
+                      {document.monitoringProtocol ? (
+                        <span className="flex items-start gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 text-blue-500 shrink-0" />{" "}
+                          {document.monitoringProtocol}
+                        </span>
+                      ) : (
+                        <span className="text-blue-600/60">
+                          لم يُذكر بروتوكول للرصد البيئي في هذا المستند.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-amber-50/50 border border-amber-200 rounded-3xl p-6 shadow-sm mt-4">
+                <h5 className="text-base font-black text-amber-900 mb-5 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-600" /> أهم
+                  الاشتراطات والقواعد الإلزامية (Key Rules)
+                </h5>
+
+                {/* 🚀 القراءة مباشرة من المصفوفة في الداتابيز */}
+                {document.keyRules && document.keyRules.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {document.keyRules.map((rule, index) => (
+                      <div
+                        key={index}
+                        className="flex items-start gap-3 bg-amber-100/40 p-3.5 rounded-xl border border-amber-100/50"
+                      >
+                        <div className="w-6 h-6 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center text-[11px] font-black shrink-0">
+                          {index + 1}
+                        </div>
+                        <p className="text-[11px] font-bold text-slate-700 leading-relaxed mt-0.5">
+                          {rule}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 bg-white/50 rounded-2xl border border-dashed border-amber-200">
+                    <p className="text-amber-700/60 text-sm font-bold">
+                      {document.analysisStatus === "قيد التحليل"
+                        ? "جاري استخراج القواعد الإلزامية..."
+                        : "لم يتم استخراج قواعد لهذا المستند."}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -251,17 +415,14 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
               </div>
             </div>
 
-            {/* 🚀 محددات الانطباق المحدثة بالكامل 🚀 */}
+            {/* محددات الانطباق التفصيلية */}
             <div className="space-y-4 p-5 bg-slate-50/50 rounded-3xl border border-slate-200">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-emerald-500" /> محددات
-                  الانطباق (Applicability Scope)
-                </h4>
-              </div>
+              <h4 className="text-sm font-black text-slate-900 flex items-center gap-2 mb-4">
+                <Filter className="w-4 h-4 text-emerald-500" /> محددات الانطباق
+                (Applicability Scope)
+              </h4>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* المعاملات والمباني */}
                 <div className="space-y-4 md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl">
                     <span className="text-[10px] font-bold text-slate-400">
@@ -289,7 +450,6 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
                   </div>
                 </div>
 
-                {/* العقار والأراضي */}
                 <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl md:col-span-1">
                   <span className="text-[10px] font-bold text-slate-400">
                     أنواع المباني
@@ -305,9 +465,10 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
                     ))}
                   </div>
                 </div>
+
                 <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl md:col-span-2">
                   <span className="text-[10px] font-bold text-slate-400">
-                    نطاق مساحة الأرض م² (من - إلى)
+                    نطاق مساحة الأرض م²
                   </span>
                   <div
                     className="text-xs font-bold text-slate-800 mt-1"
@@ -319,24 +480,16 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
                   </div>
                 </div>
 
-                {/* الموقع الجغرافي */}
                 <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl">
                   <span className="text-[10px] font-bold text-slate-400">
-                    المدينة
+                    المدينة / القطاع
                   </span>
                   <div className="text-xs font-bold text-slate-800 mt-1">
-                    {document.city || "الكل"}
+                    {document.city || "الكل"} - {document.sector || "الكل"}
                   </div>
                 </div>
-                <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl">
-                  <span className="text-[10px] font-bold text-slate-400">
-                    القطاع
-                  </span>
-                  <div className="text-xs font-bold text-slate-800 mt-1">
-                    {document.sector || "غير محدد"}
-                  </div>
-                </div>
-                <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl">
+
+                <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl md:col-span-2">
                   <span className="text-[10px] font-bold text-slate-400">
                     الأحياء
                   </span>
@@ -352,7 +505,6 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
                   </div>
                 </div>
 
-                {/* المقاسات والصلاحية */}
                 <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl">
                   <span className="text-[10px] font-bold text-slate-400">
                     عدد الأدوار
@@ -366,6 +518,7 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
                       : "غير محدد"}
                   </div>
                 </div>
+
                 <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl">
                   <span className="text-[10px] font-bold text-slate-400">
                     عرض الشارع (متر)
@@ -379,6 +532,7 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
                       : "غير محدد"}
                   </div>
                 </div>
+
                 <div className="space-y-1.5 p-3 bg-white border border-slate-100 rounded-xl">
                   <span className="text-[10px] font-bold text-slate-400">
                     الصلاحية الزمنية
@@ -395,8 +549,52 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
               </div>
             </div>
 
+            {/* 🚀 قسم المرفقات المتعددة 🚀 */}
+            <div className="space-y-4 pt-6 border-t border-slate-100">
+              <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                <Paperclip className="w-4 h-4 text-blue-500" /> المرفقات
+                والمستندات الأصلية
+              </h4>
+              {fileUrls.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {fileUrls.map((url, index) => {
+                    const fileName = url.split("/").pop();
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl hover:border-blue-300 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <div className="p-2 bg-blue-100 text-blue-600 rounded-lg shrink-0">
+                            <FileText className="w-4 h-4" />
+                          </div>
+                          <span
+                            className="text-xs font-bold text-slate-700 truncate"
+                            dir="ltr"
+                            title={fileName}
+                          >
+                            {fileName}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => window.open(getFullUrl(url), "_blank")}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-[10px] font-black rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors shrink-0"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> معاينة
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-6 bg-slate-50 border border-slate-200 border-dashed rounded-xl text-xs font-bold text-slate-400">
+                  لا توجد مرفقات مرتبطة بهذا المرجع.
+                </div>
+              )}
+            </div>
+
             {/* سجل التحديثات */}
-            <div className="pt-2">
+            <div className="pt-4 border-t border-slate-100">
               <button
                 onClick={() => setShowLogs(!showLogs)}
                 className="w-full flex items-center justify-between p-4 hover:bg-slate-50 border border-slate-200 rounded-2xl transition-colors group"
@@ -433,7 +631,7 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
                     >
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 uppercase">
-                          {log.userName.substring(0, 2)}
+                          {log.userName?.substring(0, 2)}
                         </div>
                         <div className="flex flex-col">
                           <span className="text-slate-800">{log.userName}</span>
@@ -454,18 +652,19 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex gap-3 p-4 border-t border-slate-100 bg-white shrink-0">
+        {/* Footer (أصبح للمشاركة فقط بعد نقل عرض الملفات للأعلى) */}
+        <div className="flex justify-end gap-3 p-4 border-t border-slate-100 bg-slate-50 shrink-0">
           <button
-            onClick={() =>
-              document.fileUrl
-                ? window.open(getFullUrl(document.fileUrl), "_blank")
-                : null
-            }
-            disabled={!document.fileUrl}
-            className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-slate-900 text-white rounded-2xl text-xs font-black hover:bg-slate-800 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={onClose}
+            className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[11px] font-black hover:bg-slate-100 transition-all shadow-sm"
           >
-            <ExternalLink className="w-4 h-4" /> فتح المستند الأصلي
+            إغلاق النافذة
+          </button>
+          <button
+            className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all shadow-sm"
+            title="مشاركة المرجع"
+          >
+            <Share2 className="w-4 h-4" />
           </button>
         </div>
       </div>

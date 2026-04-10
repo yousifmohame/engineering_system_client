@@ -81,7 +81,9 @@ export default function ReferenceLibraryScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("الكل");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState(null);
+
+  // 🚀 التحديث الديناميكي: نحفظ الـ ID فقط بدلاً من الكائن بأكمله
+  const [selectedDocumentId, setSelectedDocumentId] = useState(null);
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ["reference-documents"],
@@ -90,6 +92,13 @@ export default function ReferenceLibraryScreen() {
       return res.data?.data || [];
     },
   });
+
+  // 🚀 استخراج المستند الحي (Live Document) بناءً على الـ ID
+  // هذا يضمن أن التفاصيل تتحدث تلقائياً داخل المودال عند حدوث أي تغيير في الباك إند
+  const selectedDocument = useMemo(() => {
+    if (!selectedDocumentId) return null;
+    return documents.find((doc) => doc.id === selectedDocumentId) || null;
+  }, [documents, selectedDocumentId]);
 
   const filters = useMemo(() => {
     return [
@@ -269,7 +278,7 @@ export default function ReferenceLibraryScreen() {
                         return (
                           <tr
                             key={doc.id}
-                            onClick={() => setSelectedDocument(doc)}
+                            onClick={() => setSelectedDocumentId(doc.id)}
                             className="hover:bg-slate-50 transition-colors cursor-pointer"
                           >
                             <td className="p-4">
@@ -326,11 +335,10 @@ export default function ReferenceLibraryScreen() {
                               <div className="flex justify-center gap-2">
                                 {doc.fileUrl && (
                                   <button
-                                    // 💡 استخدام getFullUrl هنا 👇
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       window.open(
-                                        getFullUrl(doc.fileUrl),
+                                        getFullUrl(doc.fileUrl.split(",")[0]), // نفتح أول ملف في حال كان هناك عدة ملفات
                                         "_blank",
                                       );
                                     }}
@@ -369,14 +377,19 @@ export default function ReferenceLibraryScreen() {
         </div>
       </div>
 
-      <AddReferenceModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-      />
+      {/* 🚀 تدمير وإعادة بناء مودال الإضافة عند الفتح والإغلاق لضمان تنظيف الحقول بالكامل */}
+      {isAddModalOpen && (
+        <AddReferenceModal
+          isOpen={true}
+          onClose={() => setIsAddModalOpen(false)}
+        />
+      )}
+
+      {/* مودال التفاصيل أصبح يقرأ البيانات الحية المتجددة تلقائياً */}
       <ReferenceDetailsModal
         isOpen={!!selectedDocument}
         document={selectedDocument}
-        onClose={() => setSelectedDocument(null)}
+        onClose={() => setSelectedDocumentId(null)}
       />
     </div>
   );

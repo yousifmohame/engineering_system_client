@@ -8,6 +8,8 @@ import {
   Loader2,
   ChevronDown,
   Check,
+  FileText,
+  Trash2,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -129,7 +131,10 @@ export default function AddReferenceModal({ isOpen, onClose }) {
   const [source, setSource] = useState("");
   const [category, setCategory] = useState("اشتراطات");
   const [type, setType] = useState("");
-  const [file, setFile] = useState(null);
+
+  // 🌟 تعديل: دعم مصفوفة من الملفات بدلاً من ملف واحد
+  const [files, setFiles] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState(0); // 🌟 حالة نسبة الرفع
 
   const [txType, setTxType] = useState("");
   const [txMainCategory, setTxMainCategory] = useState("");
@@ -152,9 +157,8 @@ export default function AddReferenceModal({ isOpen, onClose }) {
   const [expiryDate, setExpiryDate] = useState("");
   const [autoAnalyze, setAutoAnalyze] = useState(true);
 
-  // 🚀 1. إصلاح مشكلة الكاش (تغيير الـ queryKey ليكون منفصلاً عن شاشة القطاعات)
   const { data: sectorMap = {}, isLoading: isLoadingDistricts } = useQuery({
-    queryKey: ["sectors-grouped-map"], // 👈 تم التغيير لتجنب تعارض الكاش مع الشاشة الأخرى
+    queryKey: ["sectors-grouped-map"],
     queryFn: async () => {
       try {
         const res = await api.get("/riyadh-zones");
@@ -197,6 +201,19 @@ export default function AddReferenceModal({ isOpen, onClose }) {
     }
   }, [sector, sectorMap]);
 
+  // 🌟 معالجة إضافة الملفات الجديدة للمصفوفة
+  const handleFileChange = (e) => {
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files);
+      setFiles((prev) => [...prev, ...selectedFiles]);
+    }
+  };
+
+  // 🌟 معالجة حذف ملف من المصفوفة
+  const removeFile = (indexToRemove) => {
+    setFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const formData = new FormData();
@@ -204,7 +221,11 @@ export default function AddReferenceModal({ isOpen, onClose }) {
       formData.append("source", source);
       formData.append("category", category);
       formData.append("type", type);
-      if (file) formData.append("file", file);
+
+      // 🌟 إضافة جميع الملفات للـ FormData تحت مفتاح 'files'
+      files.forEach((file) => {
+        formData.append("files", file);
+      });
 
       formData.append("txType", txType);
       formData.append("txMainCategory", txMainCategory);
@@ -227,17 +248,26 @@ export default function AddReferenceModal({ isOpen, onClose }) {
       if (expiryDate) formData.append("expiryDate", expiryDate);
       formData.append("autoAnalyze", autoAnalyze);
 
+      // 🌟 إرسال الطلب مع مراقبة نسبة التقدم (Progress)
       return await api.post("/references", formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total,
+          );
+          setUploadProgress(percentCompleted);
+        },
       });
     },
     onSuccess: () => {
       toast.success("تمت إضافة المرجع للمكتبة بنجاح");
       queryClient.invalidateQueries(["reference-documents"]);
+      setUploadProgress(0); // إعادة تعيين التقدم
       onClose();
     },
     onError: () => {
       toast.error("حدث خطأ أثناء حفظ المرجع");
+      setUploadProgress(0);
     },
   });
 
@@ -264,7 +294,8 @@ export default function AddReferenceModal({ isOpen, onClose }) {
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-200 rounded-xl transition-colors"
+            disabled={saveMutation.isPending}
+            className="p-2 hover:bg-slate-200 rounded-xl transition-colors disabled:opacity-50"
           >
             <X className="w-6 h-6 text-slate-500" />
           </button>
@@ -326,37 +357,87 @@ export default function AddReferenceModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          <div className="space-y-2">
+          {/* 🌟 منطقة رفع الملفات المتعددة */}
+          <div className="space-y-3">
             <label className="text-xs font-black text-slate-700">
-              المستند (PDF أو صورة)
+              المستندات والمرفقات (PDF، صور، ملفات مفتوحة الحجم)
             </label>
             <div
-              onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-colors cursor-pointer group ${file ? "border-emerald-400 bg-emerald-50/50" : "border-slate-200 bg-slate-50 hover:bg-emerald-50/30"}`}
+              onClick={() =>
+                !saveMutation.isPending && fileInputRef.current?.click()
+              }
+              className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-colors ${saveMutation.isPending ? "opacity-50 cursor-not-allowed bg-slate-100" : "cursor-pointer bg-slate-50 hover:bg-emerald-50/30 border-slate-300 hover:border-emerald-400"}`}
             >
-              <div className="p-4 bg-white rounded-2xl shadow-sm group-hover:scale-110 transition-transform">
-                <Upload
-                  className={`w-8 h-8 ${file ? "text-emerald-500" : "text-emerald-600"}`}
-                />
+              <div className="p-4 bg-white rounded-2xl shadow-sm transition-transform">
+                <Upload className="w-8 h-8 text-emerald-600" />
               </div>
               <div className="text-center">
-                <p
-                  className={`text-sm font-black ${file ? "text-emerald-700" : "text-slate-900"}`}
-                >
-                  {file ? file.name : "اسحب الملف هنا أو انقر للاختيار"}
+                <p className="text-sm font-black text-slate-900">
+                  اسحب الملفات هنا أو انقر للاختيار (يمكنك تحديد عدة ملفات)
                 </p>
                 <p className="text-[10px] font-bold text-slate-400 mt-1">
-                  يدعم PDF, PNG, JPG (الحد الأقصى 20MB)
+                  حجم مفتوح للملفات المتعددة
                 </p>
               </div>
               <input
                 ref={fileInputRef}
                 type="file"
+                multiple // 🌟 تفعيل الرفع المتعدد
                 accept=".pdf,image/*"
                 className="hidden"
-                onChange={(e) => setFile(e.target.files[0])}
+                onChange={handleFileChange}
+                disabled={saveMutation.isPending}
               />
             </div>
+
+            {/* 🌟 قائمة الملفات المختارة */}
+            {files.length > 0 && (
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {files.map((f, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl shadow-sm"
+                  >
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <FileText className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <span
+                        className="text-xs font-bold text-slate-700 truncate"
+                        dir="ltr"
+                      >
+                        {f.name}
+                      </span>
+                    </div>
+                    {!saveMutation.isPending && (
+                      <button
+                        type="button"
+                        onClick={() => removeFile(idx)}
+                        className="p-1 hover:bg-red-50 rounded-md transition-colors text-slate-400 hover:text-red-500"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 🌟 شريط التقدم عند الرفع */}
+            {saveMutation.isPending && (
+              <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                <div className="flex justify-between items-center text-xs font-bold">
+                  <span className="text-emerald-700 animate-pulse">
+                    جاري رفع الملفات ومعالجتها...
+                  </span>
+                  <span className="text-slate-600">{uploadProgress}%</span>
+                </div>
+                <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                  <div
+                    className="bg-emerald-600 h-2.5 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-6">
@@ -622,7 +703,8 @@ export default function AddReferenceModal({ isOpen, onClose }) {
                 <p
                   className={`text-[10px] font-bold transition-colors ${autoAnalyze ? "text-purple-600" : "text-slate-500"}`}
                 >
-                  سيقوم النظام باستخراج النص وتلخيصه وشرحه فور الرفع
+                  سيقوم النظام باستخراج النص وتلخيصه وشرحه فور الرفع لجميع
+                  المرفقات
                 </p>
               </div>
             </div>
@@ -640,19 +722,29 @@ export default function AddReferenceModal({ isOpen, onClose }) {
         <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
           <button
             onClick={onClose}
-            className="px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl text-sm font-black hover:bg-slate-100 transition-all"
+            disabled={saveMutation.isPending}
+            className="px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl text-sm font-black hover:bg-slate-100 transition-all disabled:opacity-50"
           >
             إلغاء
           </button>
           <button
             onClick={handleSubmit}
             disabled={saveMutation.isPending}
-            className="px-8 py-3 bg-emerald-600 text-white rounded-2xl text-sm font-black hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all disabled:opacity-50 flex items-center gap-2"
+            className="px-8 py-3 bg-emerald-600 text-white rounded-2xl text-sm font-black hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all disabled:opacity-50 flex items-center gap-2 relative overflow-hidden"
           >
-            {saveMutation.isPending && (
-              <Loader2 className="w-4 h-4 animate-spin" />
+            {saveMutation.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin relative z-10" />
+                <span className="relative z-10">جاري الرفع...</span>
+                {/* 🌟 تأثير تقدم لوني خلف الزر كبديل إضافي لشريط التقدم */}
+                <div
+                  className="absolute left-0 top-0 bottom-0 bg-emerald-800/40 transition-all duration-300 ease-out"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </>
+            ) : (
+              "حفظ وإضافة للمكتبة"
             )}
-            حفظ وإضافة للمكتبة
           </button>
         </div>
       </div>
