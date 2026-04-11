@@ -75,8 +75,8 @@ export default function AddTaskModal({ onClose, currentUser, taskToEdit }) {
 
   // 3. جلب بيانات الملكيات (الصكوك)
   const { data: deedsData } = useQuery({
-    queryKey: ["simple-ownerships-list"],
-    queryFn: () => api.get("/ownerships").then((res) => res.data),
+    queryKey: ["simple-properties-list"],
+    queryFn: () => api.get("/properties").then((res) => res.data),
   });
   const ownerships = deedsData?.data || [];
 
