@@ -19,7 +19,7 @@ import OwnershipScreenWrapper from "./pages/Property/OwnershipScreenWrapper";
 import Screen942_DocumentTypes from "./pages/Settings/Screen942_DocumentTypes"; 
 import QuotationsScreenWrapper from "./pages/Quotations/QuotationsScreenWrapper";
 import EmployeesManagement from "./pages/employees/EmployeesManagement";
-import RiyadhDivisionScreen from "./pages/Riyadh/RiyadhDivisionScreen";
+import RiyadhDivisionScreen from "./pages/Riyadh/RiyadhDivision/index";
 import Screen40_Sectors from "./pages/Riyadh/Screen40_Sectors";
 import Screen41_Districts from "./pages/Riyadh/Screen41_Districts";
 import ContractsScreen from "./pages/Contracts/ContractsScreen";
