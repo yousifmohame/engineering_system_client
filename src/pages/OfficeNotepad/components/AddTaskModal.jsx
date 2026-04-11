@@ -234,8 +234,8 @@ export default function AddTaskModal({ onClose, currentUser, taskToEdit }) {
                 <option value="">-- غير مرتبط --</option>
                 {transactions.map((tx) => (
                   <option key={tx.id} value={tx.id}>
-                    {tx.internalName || tx.transactionCode} |{" "}
-                    {tx.internalName || tx.transactionCode || "بدون عنوان"}
+                    {tx.code || tx.transactionCode} |{" "}
+                    {tx.internalName || tx.title || "بدون عنوان"}
                   </option>
                 ))}
               </select>
