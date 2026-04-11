@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "../../api/axios";
+import api from "../../api/axios"; // مسار הـ API الخاص بك
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "sonner";
 import {
@@ -10,15 +10,17 @@ import {
   TriangleAlert,
   ChartNoAxesColumn,
   Flag,
-  User,
   Edit2,
-  Upload,
   ListTodo,
   FolderOpen,
   EllipsisVertical,
   Loader2,
   Trash2,
   MessageSquare,
+  RotateCcw,
+  Play,
+  Snowflake,
+  X,
 } from "lucide-react";
 
 // استيراد المكونات المنفصلة
@@ -26,19 +28,22 @@ import AddTaskModal from "./components/AddTaskModal";
 import SubtasksModal from "./components/SubtasksModal";
 import CommentsModal from "./components/CommentsModal";
 import StatusConfirmModal from "./components/StatusConfirmModal";
-// في أعلى الملف بجانب المكونات الأخرى
 import TaskDetailsModal from "./components/TaskDetailsModal";
 
 // 💡 دالة مساعدة لحساب الأيام المتبقية
 const getRemainingDays = (dueDate, status) => {
   if (status === "completed") return "منجزة ✅";
+  if (status === "cancelled") return "ملغاة ❌";
   if (!dueDate) return "بدون موعد";
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const due = new Date(dueDate);
   due.setHours(0, 0, 0, 0);
+
   const diffTime = due - today;
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
   if (diffDays === 0) return "تنتهي اليوم ⚠️";
   if (diffDays < 0) return `متأخرة (${Math.abs(diffDays)} يوم) 🚨`;
   return `${diffDays} يوم متبقي`;
@@ -47,13 +52,15 @@ const getRemainingDays = (dueDate, status) => {
 export default function OfficeNotepadScreen() {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
+
+  // حالات البحث والفلترة
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [activeMenuId, setActiveMenuId] = useState(null); // لإدارة قائمة الإجراءات لكل سطر
-  // داخل المكون OfficeNotepadScreen أضف:
+
+  // حالات النوافذ
   const [selectedTaskToView, setSelectedTaskToView] = useState(null);
-  // حالات المودالات
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState(null);
   const [selectedTaskForSubtasks, setSelectedTaskForSubtasks] = useState(null);
@@ -84,6 +91,7 @@ export default function OfficeNotepadScreen() {
     onError: () => toast.error("فشل الحذف، قد تكون المهمة مرتبطة ببيانات أخرى"),
   });
 
+  // الإحصائيات
   const stats = useMemo(
     () => ({
       active: tasks.filter((t) => t.status === "active").length,
@@ -91,6 +99,7 @@ export default function OfficeNotepadScreen() {
       overdue: tasks.filter(
         (t) =>
           t.status !== "completed" &&
+          t.status !== "cancelled" &&
           t.dueDate &&
           new Date(t.dueDate) < new Date(),
       ).length,
@@ -98,6 +107,7 @@ export default function OfficeNotepadScreen() {
     [tasks],
   );
 
+  // الفلترة
   const filteredTasks = useMemo(
     () =>
       tasks.filter((t) => {
@@ -148,23 +158,59 @@ export default function OfficeNotepadScreen() {
       className="h-full flex flex-col bg-slate-50 p-2 md:p-4 overflow-hidden"
       dir="rtl"
     >
-      {/* Header & Stats (مختصرة للتركيز على الجدول) */}
+      {/* Header & Stats */}
       <div className="mb-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm shrink-0">
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-black text-slate-900 tracking-tight">
-            مفكرة المكتب
-          </h1>
-          <div className="flex items-center gap-4 text-xs font-bold">
-            <span className="text-blue-600">نشطة: {stats.active}</span>
-            <span className="text-emerald-600">مكتملة: {stats.completed}</span>
-            <span className="text-rose-600">متأخرة: {stats.overdue}</span>
+          <div>
+            <h1 className="text-lg font-black text-slate-900 tracking-tight">
+              مفكرة المكتب
+            </h1>
+            <p className="text-[10px] font-bold text-slate-500 mt-0.5">
+              مركز متابعة المهام الجماعي
+            </p>
+          </div>
+          <div className="h-8 w-px bg-slate-200 hidden md:block"></div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <div className="w-6 h-6 bg-blue-50 text-blue-600 rounded flex items-center justify-center">
+                <ChartNoAxesColumn className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <p className="text-[9px] font-bold text-slate-500">نشطة</p>
+                <p className="text-sm font-black text-slate-900 leading-none">
+                  {stats.active}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-6 h-6 bg-emerald-50 text-emerald-600 rounded flex items-center justify-center">
+                <Check className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <p className="text-[9px] font-bold text-slate-500">مكتملة</p>
+                <p className="text-sm font-black text-slate-900 leading-none">
+                  {stats.completed}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-6 h-6 bg-rose-50 text-rose-600 rounded flex items-center justify-center">
+                <TriangleAlert className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <p className="text-[9px] font-bold text-slate-500">متأخرة</p>
+                <p className="text-sm font-black text-slate-900 leading-none">
+                  {stats.overdue}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <input
               placeholder="بحث..."
-              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg pl-3 pr-8 py-1.5 focus:ring-2 focus:ring-emerald-500 w-48"
+              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 w-32 md:w-48"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -176,9 +222,9 @@ export default function OfficeNotepadScreen() {
               setTaskToEdit(null);
               setIsAddModalOpen(true);
             }}
-            className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-sm shadow-emerald-600/20"
+            className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition-all flex items-center gap-1.5 shadow-sm shadow-emerald-600/20"
           >
-            <Plus size={14} /> مهمة جديدة
+            <Plus className="w-3.5 h-3.5" /> مهمة جديدة
           </button>
         </div>
       </div>
@@ -211,7 +257,7 @@ export default function OfficeNotepadScreen() {
                   الموظفين
                 </th>
                 <th className="px-4 py-3 font-black text-slate-700 border-b border-slate-200 border-l border-slate-200 text-xs">
-                  ارتباط ملفات
+                  ارتباط (ملف/مجلد)
                 </th>
                 <th className="px-4 py-3 font-black text-slate-700 border-b border-slate-200 border-l border-slate-200 text-xs text-center">
                   الحالة
@@ -228,176 +274,311 @@ export default function OfficeNotepadScreen() {
                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-emerald-600" />
                   </td>
                 </tr>
-              ) : (
-                filteredTasks.map((task, idx) => (
-                  <tr
-                    key={task.id}
-                    className="hover:bg-slate-50 transition-colors group cursor-pointer"
-                    onClick={() => setSelectedTaskToView(task)}
+              ) : filteredTasks.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="10"
+                    className="p-10 text-center font-bold text-slate-400"
                   >
-                    <td className="px-2 py-3 border-l border-slate-200 text-center font-mono text-xs text-slate-400">
-                      {idx + 1}
-                    </td>
-                    <td className="px-4 py-3 border-l border-slate-200 font-bold text-slate-800">
-                      <div className="flex items-start gap-2">
-                        {getPriorityIcon(task.priority)}
-                        <div className="flex flex-col gap-1">
-                          <span
-                            className={`text-xs ${task.status === "completed" ? "line-through text-slate-400" : "text-slate-700"}`}
-                          >
-                            {task.description}
-                          </span>
-                          <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-md w-max">
-                            ⏳ {getRemainingDays(task.dueDate, task.status)}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 border-l border-slate-200 text-xs font-bold text-slate-600">
-                      {task.creatorName}
-                    </td>
-                    <td className="px-4 py-3 border-l border-slate-200 text-xs font-mono text-slate-500">
-                      {new Date(task.createdAt).toLocaleDateString("en-GB")}
-                    </td>
-                    <td className="px-4 py-3 border-l border-slate-200 text-xs font-mono font-bold text-slate-600">
-                      {task.dueDate
-                        ? new Date(task.dueDate).toLocaleDateString("en-GB")
-                        : "---"}
-                    </td>
-                    <td className="px-4 py-3 border-l border-slate-200 text-center" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => setSelectedTaskForSubtasks(task)}
-                        className="flex items-center justify-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-black w-full bg-blue-50 text-blue-700 border border-blue-200"
-                      >
-                        <ListTodo size={14} />{" "}
-                        {task.subTasks?.filter((s) => s.isCompleted).length ||
-                          0}
-                        /{task.subTasks?.length || 0}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 border-l border-slate-200">
-                      <div className="flex flex-wrap gap-1">
-                        {task.assignedEmployees?.map((emp, i) => (
-                          <span
-                            key={i}
-                            className="bg-slate-100 text-slate-600 text-[9px] font-bold px-1.5 py-0.5 rounded"
-                          >
-                            {emp.name}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 border-l border-slate-200 font-mono text-[10px]">
-                      {task.filePath ? (
-                        <div
-                          className="flex items-center gap-1.5 text-emerald-600 truncate max-w-[120px]"
-                          dir="ltr"
-                        >
-                          <FolderOpen size={12} />{" "}
-                          {task.filePath.split("/").pop()}
-                        </div>
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                    <td className="px-4 py-3 border-l border-slate-200 text-center">
-                      {getStatusBadge(task.status)}
-                    </td>
-                    <td
-                      className="px-4 py-3"
-                      onClick={(e) => e.stopPropagation()}
+                    لا توجد مهام مطابقة
+                  </td>
+                </tr>
+              ) : (
+                filteredTasks.map((task, idx) => {
+                  const isFrozen = task.status === "frozen";
+                  const isCompleted = task.status === "completed";
+                  const isCancelled = task.status === "cancelled";
+
+                  return (
+                    <tr
+                      key={task.id}
+                      className={`hover:bg-slate-50 transition-colors cursor-pointer ${isFrozen || isCancelled ? "opacity-70 grayscale-[0.3]" : ""}`}
+                      onClick={() => setSelectedTaskToView(task)}
                     >
-                      <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() =>
-                            setStatusConfirmModal({
-                              isOpen: true,
-                              task,
-                              newStatus: "completed",
-                            })
-                          }
-                          className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg"
-                        >
-                          <Check size={16} />
-                        </button>
-                        <button
-                          onClick={() => setSelectedTaskForComments(task)}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg relative"
-                        >
-                          <MessageSquare size={16} />
-                          {task.comments?.length > 0 && (
-                            <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-                          )}
-                        </button>
-                        <div className="relative">
-                          <button
-                            onClick={() =>
-                              setActiveMenuId(
-                                activeMenuId === task.id ? null : task.id,
-                              )
-                            }
-                            className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"
-                          >
-                            <EllipsisVertical size={16} />
-                          </button>
-                          {activeMenuId === task.id && (
-                            <>
-                              <div
-                                className="fixed inset-0 z-10"
-                                onClick={() => setActiveMenuId(null)}
-                              ></div>
-                              <div className="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 w-36 py-1 animate-in zoom-in-95 overflow-hidden font-bold">
-                                <button
-                                  onClick={() => {
-                                    setTaskToEdit(task);
-                                    setIsAddModalOpen(true);
-                                    setActiveMenuId(null);
-                                  }}
-                                  className="flex items-center gap-2 w-full text-right px-4 py-2 text-xs text-slate-700 hover:bg-slate-50"
-                                >
-                                  <Edit2 size={12} className="text-blue-500" />{" "}
-                                  تعديل
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    if (
-                                      window.confirm("حذف هذه المهمة نهائياً؟")
-                                    )
-                                      deleteMutation.mutate(task.id);
-                                    setActiveMenuId(null);
-                                  }}
-                                  className="flex items-center gap-2 w-full text-right px-4 py-2 text-xs text-rose-600 hover:bg-rose-50"
-                                >
-                                  <Trash2 size={12} /> حذف
-                                </button>
-                              </div>
-                            </>
-                          )}
+                      <td className="px-2 py-3 border-l border-slate-200 text-center font-mono text-xs text-slate-400">
+                        {idx + 1}
+                      </td>
+                      <td className="px-4 py-3 border-l border-slate-200 font-bold text-slate-800 min-w-[300px]">
+                        <div className="flex items-start gap-2">
+                          {getPriorityIcon(task.priority)}
+                          <div className="flex flex-col gap-1">
+                            <span
+                              className={`text-xs leading-relaxed ${isCompleted || isCancelled ? "line-through text-slate-400" : "text-slate-700"}`}
+                            >
+                              {task.description}
+                            </span>
+                            <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-md w-max">
+                              ⏳ {getRemainingDays(task.dueDate, task.status)}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="px-4 py-3 border-l border-slate-200 text-xs font-bold text-slate-600">
+                        {task.creatorName}
+                      </td>
+                      <td className="px-4 py-3 border-l border-slate-200 text-xs font-mono text-slate-500">
+                        {new Date(task.createdAt).toLocaleDateString("en-GB")}
+                      </td>
+                      <td className="px-4 py-3 border-l border-slate-200 text-xs font-mono font-bold text-slate-600">
+                        {task.dueDate
+                          ? new Date(task.dueDate).toLocaleDateString("en-GB")
+                          : "---"}
+                      </td>
+                      <td
+                        className="px-4 py-3 border-l border-slate-200 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          onClick={() => setSelectedTaskForSubtasks(task)}
+                          className="flex items-center justify-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-black w-full bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
+                        >
+                          <ListTodo size={14} />{" "}
+                          {task.subTasks?.filter((s) => s.isCompleted).length ||
+                            0}
+                          /{task.subTasks?.length || 0}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 border-l border-slate-200">
+                        <div className="flex flex-wrap gap-1">
+                          {task.assignedEmployees?.map((emp, i) => (
+                            <span
+                              key={i}
+                              className="bg-slate-100 text-slate-600 text-[9px] font-bold px-1.5 py-0.5 rounded"
+                            >
+                              {emp.name}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 border-l border-slate-200 font-mono text-[10px]">
+                        {task.filePath ? (
+                          <div
+                            className="flex items-center gap-1.5 text-emerald-600 truncate max-w-[120px]"
+                            dir="ltr"
+                            title={task.filePath}
+                          >
+                            <FolderOpen size={12} className="shrink-0" />
+                            {task.filePath.split("/").pop()}
+                          </div>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      <td className="px-4 py-3 border-l border-slate-200 text-center">
+                        {getStatusBadge(task.status)}
+                      </td>
+
+                      {/* --- الإجراءات (Actions) --- */}
+                      <td
+                        className="px-4 py-3"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-center gap-2">
+                          {/* زر الإنجاز السريع / أو إعادة التنشيط */}
+                          {isCompleted ? (
+                            <button
+                              onClick={() =>
+                                setStatusConfirmModal({
+                                  isOpen: true,
+                                  task,
+                                  newStatus: "active",
+                                })
+                              }
+                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold"
+                              title="إعادة المهمة للعمل"
+                            >
+                              <RotateCcw size={14} /> تنشيط
+                            </button>
+                          ) : (
+                            !isFrozen &&
+                            !isCancelled && (
+                              <button
+                                onClick={() =>
+                                  setStatusConfirmModal({
+                                    isOpen: true,
+                                    task,
+                                    newStatus: "completed",
+                                  })
+                                }
+                                className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                title="إتمام المهمة"
+                              >
+                                <Check size={18} />
+                              </button>
+                            )
+                          )}
+
+                          {/* زر التعليقات */}
+                          <button
+                            onClick={() => setSelectedTaskForComments(task)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg relative"
+                            title="الملاحظات والتعليقات"
+                          >
+                            <MessageSquare size={16} />
+                            {task.comments?.length > 0 && (
+                              <span className="absolute top-0 right-0 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
+                            )}
+                          </button>
+
+                          {/* قائمة الخيارات */}
+                          <div className="relative">
+                            <button
+                              onClick={() =>
+                                setActiveMenuId(
+                                  activeMenuId === task.id ? null : task.id,
+                                )
+                              }
+                              className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                              <EllipsisVertical size={16} />
+                            </button>
+
+                            {activeMenuId === task.id && (
+                              <>
+                                <div
+                                  className="fixed inset-0 z-10"
+                                  onClick={() => setActiveMenuId(null)}
+                                ></div>
+                                <div className="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 w-44 py-1 animate-in zoom-in-95 font-bold overflow-hidden">
+                                  {/* التعديل (متاح فقط للمهام النشطة) */}
+                                  {!isFrozen &&
+                                    !isCompleted &&
+                                    !isCancelled && (
+                                      <button
+                                        onClick={() => {
+                                          setTaskToEdit(task);
+                                          setIsAddModalOpen(true);
+                                          setActiveMenuId(null);
+                                        }}
+                                        className="flex items-center gap-2 w-full text-right px-4 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                                      >
+                                        <Edit2
+                                          size={12}
+                                          className="text-blue-500"
+                                        />{" "}
+                                        تعديل المهمة
+                                      </button>
+                                    )}
+
+                                  {/* خيارات التجميد / التنشيط */}
+                                  {isFrozen ? (
+                                    <button
+                                      onClick={() => {
+                                        setStatusConfirmModal({
+                                          isOpen: true,
+                                          task,
+                                          newStatus: "active",
+                                        });
+                                        setActiveMenuId(null);
+                                      }}
+                                      className="flex items-center gap-2 w-full text-right px-4 py-2 text-xs text-blue-700 hover:bg-blue-50"
+                                    >
+                                      <Play size={12} /> إعادة تنشيط
+                                    </button>
+                                  ) : (
+                                    !isCompleted &&
+                                    !isCancelled && (
+                                      <button
+                                        onClick={() => {
+                                          setStatusConfirmModal({
+                                            isOpen: true,
+                                            task,
+                                            newStatus: "frozen",
+                                          });
+                                          setActiveMenuId(null);
+                                        }}
+                                        className="flex items-center gap-2 w-full text-right px-4 py-2 text-xs text-cyan-700 hover:bg-cyan-50"
+                                      >
+                                        <Snowflake size={12} /> تجميد المهمة
+                                      </button>
+                                    )
+                                  )}
+
+                                  {/* خيارات الإلغاء / الاستعادة */}
+                                  {isCancelled ? (
+                                    <button
+                                      onClick={() => {
+                                        setStatusConfirmModal({
+                                          isOpen: true,
+                                          task,
+                                          newStatus: "active",
+                                        });
+                                        setActiveMenuId(null);
+                                      }}
+                                      className="flex items-center gap-2 w-full text-right px-4 py-2 text-xs text-blue-700 hover:bg-blue-50"
+                                    >
+                                      <RotateCcw size={12} /> استعادة المهمة
+                                    </button>
+                                  ) : (
+                                    !isCompleted && (
+                                      <button
+                                        onClick={() => {
+                                          setStatusConfirmModal({
+                                            isOpen: true,
+                                            task,
+                                            newStatus: "cancelled",
+                                          });
+                                          setActiveMenuId(null);
+                                        }}
+                                        className="flex items-center gap-2 w-full text-right px-4 py-2 text-xs text-rose-700 hover:bg-rose-50"
+                                      >
+                                        <X size={12} /> إلغاء المهمة
+                                      </button>
+                                    )
+                                  )}
+
+                                  <div className="border-t border-slate-100 my-1"></div>
+
+                                  {/* الحذف النهائي */}
+                                  <button
+                                    onClick={() => {
+                                      if (
+                                        window.confirm(
+                                          "هل أنت متأكد من حذف هذه المهمة نهائياً؟",
+                                        )
+                                      )
+                                        deleteMutation.mutate(task.id);
+                                      setActiveMenuId(null);
+                                    }}
+                                    className="flex items-center gap-2 w-full text-right px-4 py-2 text-xs text-rose-600 hover:bg-rose-50"
+                                  >
+                                    <Trash2 size={12} /> حذف السجل
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* --- النوافذ المنبثقة --- */}
+      {/* --- النوافذ المنبثقة المستوردة --- */}
       {isAddModalOpen && (
         <AddTaskModal
-          onClose={() => setIsAddModalOpen(false)}
+          onClose={() => {
+            setIsAddModalOpen(false);
+            setTaskToEdit(null);
+          }}
           currentUser={currentUser}
           taskToEdit={taskToEdit}
         />
       )}
+
       {selectedTaskForSubtasks && (
         <SubtasksModal
           task={selectedTaskForSubtasks}
           onClose={() => setSelectedTaskForSubtasks(null)}
+          currentUser={currentUser}
         />
       )}
+
       {selectedTaskForComments && (
         <CommentsModal
           task={selectedTaskForComments}
@@ -405,6 +586,7 @@ export default function OfficeNotepadScreen() {
           currentUser={currentUser}
         />
       )}
+
       {statusConfirmModal.isOpen && (
         <StatusConfirmModal
           config={statusConfirmModal}
@@ -414,7 +596,7 @@ export default function OfficeNotepadScreen() {
           currentUser={currentUser}
         />
       )}
-      {/* 🚀 النافذة المنبثقة الجديدة لعرض التفاصيل */}
+
       {selectedTaskToView && (
         <TaskDetailsModal
           task={selectedTaskToView}
