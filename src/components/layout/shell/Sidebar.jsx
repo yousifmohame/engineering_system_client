@@ -49,6 +49,7 @@ const MENU_CATEGORIES = [
       { id: "02", label: "التنبيهات", code: "SCR_02_VIEW" },
       { id: "109", label: "الروابط السريعه", code: "SCR_109_VIEW" },
       { id: "03", label: "المهام", code: "SCR_03_VIEW" },
+      { id: "030", label: "مفكره المكتب", code: "SCR_030_VIEW" },
       { id: "04", label: "الإحصائيات السريعة", code: "SCR_04_VIEW" },
     ],
   },
