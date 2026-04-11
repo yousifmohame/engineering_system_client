@@ -9,7 +9,7 @@ export default function CommentsModal({ task, onClose, currentUser }) {
 
   const addMutation = useMutation({
     mutationFn: (text) => api.post(`/office-tasks/${task.id}/comments`, { text, authorName: currentUser?.name || "مستخدم" }),
-    onSuccess: () => { queryClient.invalidateQueries(["office-tasks"]); setText(""); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["office-tasks"] }); setText(""); },
   });
 
   return (

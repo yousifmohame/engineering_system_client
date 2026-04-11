@@ -26,6 +26,8 @@ import AddTaskModal from "./components/AddTaskModal";
 import SubtasksModal from "./components/SubtasksModal";
 import CommentsModal from "./components/CommentsModal";
 import StatusConfirmModal from "./components/StatusConfirmModal";
+// في أعلى الملف بجانب المكونات الأخرى
+import TaskDetailsModal from "./components/TaskDetailsModal";
 
 // 💡 دالة مساعدة لحساب الأيام المتبقية
 const getRemainingDays = (dueDate, status) => {
@@ -49,7 +51,8 @@ export default function OfficeNotepadScreen() {
   const [filterPriority, setFilterPriority] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [activeMenuId, setActiveMenuId] = useState(null); // لإدارة قائمة الإجراءات لكل سطر
-
+  // داخل المكون OfficeNotepadScreen أضف:
+  const [selectedTaskToView, setSelectedTaskToView] = useState(null);
   // حالات المودالات
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState(null);
@@ -76,7 +79,7 @@ export default function OfficeNotepadScreen() {
     mutationFn: (id) => api.delete(`/office-tasks/${id}`),
     onSuccess: () => {
       toast.success("تم حذف المهمة بنجاح");
-      queryClient.invalidateQueries(["office-tasks"]);
+      queryClient.invalidateQueries({ queryKey: ["office-tasks"] });
     },
     onError: () => toast.error("فشل الحذف، قد تكون المهمة مرتبطة ببيانات أخرى"),
   });
@@ -229,7 +232,8 @@ export default function OfficeNotepadScreen() {
                 filteredTasks.map((task, idx) => (
                   <tr
                     key={task.id}
-                    className="hover:bg-slate-50 transition-colors group"
+                    className="hover:bg-slate-50 transition-colors group cursor-pointer"
+                    onClick={() => setSelectedTaskToView(task)}
                   >
                     <td className="px-2 py-3 border-l border-slate-200 text-center font-mono text-xs text-slate-400">
                       {idx + 1}
@@ -260,7 +264,7 @@ export default function OfficeNotepadScreen() {
                         ? new Date(task.dueDate).toLocaleDateString("en-GB")
                         : "---"}
                     </td>
-                    <td className="px-4 py-3 border-l border-slate-200 text-center">
+                    <td className="px-4 py-3 border-l border-slate-200 text-center" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => setSelectedTaskForSubtasks(task)}
                         className="flex items-center justify-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-black w-full bg-blue-50 text-blue-700 border border-blue-200"
@@ -299,7 +303,10 @@ export default function OfficeNotepadScreen() {
                     <td className="px-4 py-3 border-l border-slate-200 text-center">
                       {getStatusBadge(task.status)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td
+                      className="px-4 py-3"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div className="flex items-center justify-center gap-1">
                         <button
                           onClick={() =>
@@ -405,6 +412,13 @@ export default function OfficeNotepadScreen() {
             setStatusConfirmModal({ isOpen: false, task: null, newStatus: "" })
           }
           currentUser={currentUser}
+        />
+      )}
+      {/* 🚀 النافذة المنبثقة الجديدة لعرض التفاصيل */}
+      {selectedTaskToView && (
+        <TaskDetailsModal
+          task={selectedTaskToView}
+          onClose={() => setSelectedTaskToView(null)}
         />
       )}
     </div>

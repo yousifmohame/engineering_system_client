@@ -10,7 +10,7 @@ export default function StatusConfirmModal({ config, onClose, currentUser }) {
 
   const updateMutation = useMutation({
     mutationFn: () => api.put(`/office-tasks/${config.task.id}/status`, { status: config.newStatus, commentText: comment, authorName: currentUser?.name }),
-    onSuccess: () => { toast.success("تم تغيير الحالة"); queryClient.invalidateQueries(["office-tasks"]); onClose(); },
+    onSuccess: () => { toast.success("تم تغيير الحالة"); queryClient.invalidateQueries({ queryKey: ["office-tasks"] }); onClose(); },
   });
 
   const getStatusName = (st) => {

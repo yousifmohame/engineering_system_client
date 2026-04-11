@@ -68,7 +68,7 @@ export default function AddTaskModal({ onClose, currentUser, taskToEdit }) {
     },
     onSuccess: () => {
       toast.success(taskToEdit ? "تم تحديث المهمة" : "تمت إضافة المهمة بنجاح");
-      queryClient.invalidateQueries(["office-tasks"]);
+      queryClient.invalidateQueries({ queryKey: ["office-tasks"] });
       onClose();
     },
   });
@@ -152,7 +152,11 @@ export default function AddTaskModal({ onClose, currentUser, taskToEdit }) {
                 <div className="flex items-center gap-2 p-2.5 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl hover:border-emerald-500 transition-colors cursor-pointer text-center justify-center">
                   <Upload size={16} className="text-slate-400" />
                   <span className="text-xs text-slate-500 font-bold">
-                    {selectedFile ? selectedFile.name : "اختر ملفاً لرفعه"}
+                    {selectedFile
+                      ? selectedFile.name
+                      : formData.filePath
+                        ? "يوجد ملف مرفق بالفعل (انقر للتغيير)"
+                        : "اختر ملفاً لرفعه"}
                   </span>
                   <input
                     type="file"
