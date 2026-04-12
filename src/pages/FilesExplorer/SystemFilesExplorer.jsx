@@ -25,6 +25,7 @@ import {
   Upload,
   History,
   Activity,
+  Calendar,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -57,6 +58,24 @@ const SYSTEM_ROOT_FOLDERS = [
     color: "#f59e0b",
     bgClass: "bg-amber-50 text-amber-600 border-amber-200",
     desc: "أرشفة جميع المعاملات والمشاريع",
+    isSystemRoot: true,
+  },
+  {
+    id: "sys-notepad",
+    name: "مفكرة المكتب",
+    icon: Calendar,
+    color: "#74f50b",
+    bgClass: "bg-green-50 text-green-600 border-green-200",
+    desc: " ملفات نصية، ملاحظات، وقوائم المهام",
+    isSystemRoot: true,
+  },
+  {
+    id: "sys-riyadh-plans",
+    name: "مخططات الرياض",
+    icon: Activity,
+    color: "#06c274",
+    bgClass: "bg-rose-50 text-rose-600 border-rose-200",
+    desc: "مخططات، خرائط، وبيانات جغرافية لمدينة الرياض",
     isSystemRoot: true,
   },
   {

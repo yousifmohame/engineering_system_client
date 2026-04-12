@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "../../api/axios"; // مسار הـ API الخاص بك
+import api from "../../api/axios"; // مسار الـ API الخاص بك
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "sonner";
 import {
@@ -30,11 +30,11 @@ import CommentsModal from "./components/CommentsModal";
 import StatusConfirmModal from "./components/StatusConfirmModal";
 import TaskDetailsModal from "./components/TaskDetailsModal";
 
-// 💡 دالة مساعدة لحساب الأيام المتبقية
+// 💡 دالة مساعدة لحساب الأيام المتبقية (نسخة مختصرة للتكثيف)
 const getRemainingDays = (dueDate, status) => {
-  if (status === "completed") return "منجزة ✅";
-  if (status === "cancelled") return "ملغاة ❌";
-  if (!dueDate) return "بدون موعد";
+  if (status === "completed") return "منجزة";
+  if (status === "cancelled") return "ملغاة";
+  if (!dueDate) return "مفتوحة";
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -44,9 +44,9 @@ const getRemainingDays = (dueDate, status) => {
   const diffTime = due - today;
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return "تنتهي اليوم ⚠️";
-  if (diffDays < 0) return `متأخرة (${Math.abs(diffDays)} يوم) 🚨`;
-  return `${diffDays} يوم متبقي`;
+  if (diffDays === 0) return "اليوم ⚠️";
+  if (diffDays < 0) return `متأخرة (${Math.abs(diffDays)}ي)`;
+  return `${diffDays} يوم`;
 };
 
 export default function OfficeNotepadScreen() {
@@ -57,7 +57,7 @@ export default function OfficeNotepadScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
-  const [activeMenuId, setActiveMenuId] = useState(null); // لإدارة قائمة الإجراءات لكل سطر
+  const [activeMenuId, setActiveMenuId] = useState(null);
 
   // حالات النوافذ
   const [selectedTaskToView, setSelectedTaskToView] = useState(null);
@@ -85,10 +85,10 @@ export default function OfficeNotepadScreen() {
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/office-tasks/${id}`),
     onSuccess: () => {
-      toast.success("تم حذف المهمة بنجاح");
+      toast.success("تم الحذف");
       queryClient.invalidateQueries({ queryKey: ["office-tasks"] });
     },
-    onError: () => toast.error("فشل الحذف، قد تكون المهمة مرتبطة ببيانات أخرى"),
+    onError: () => toast.error("فشل الحذف"),
   });
 
   // الإحصائيات
@@ -107,17 +107,20 @@ export default function OfficeNotepadScreen() {
     [tasks],
   );
 
-  // الفلترة
+  // الفلترة (تبحث في العنوان والوصف)
   const filteredTasks = useMemo(
     () =>
       tasks.filter((t) => {
-        const matchSearch = t.description
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase());
+        const searchLower = searchQuery.toLowerCase();
+        const matchSearch =
+          (t.title && t.title.toLowerCase().includes(searchLower)) ||
+          (t.description && t.description.toLowerCase().includes(searchLower));
+
         const matchPriority = filterPriority
           ? t.priority === filterPriority
           : true;
         const matchStatus = filterStatus ? t.status === filterStatus : true;
+
         return matchSearch && matchPriority && matchStatus;
       }),
     [tasks, searchQuery, filterPriority, filterStatus],
@@ -125,28 +128,28 @@ export default function OfficeNotepadScreen() {
 
   const getPriorityIcon = (priority) => {
     if (priority === "high")
-      return <Flag className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />;
+      return <Flag className="w-3 h-3 text-rose-500 shrink-0" />;
     if (priority === "medium")
-      return <Flag className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />;
-    return <Flag className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />;
+      return <Flag className="w-3 h-3 text-amber-500 shrink-0" />;
+    return <Flag className="w-3 h-3 text-slate-400 shrink-0" />;
   };
 
   const getStatusBadge = (status) => {
     const classes = {
-      completed: "bg-emerald-100 text-emerald-700 border-emerald-200",
-      frozen: "bg-blue-100 text-blue-700 border-blue-200",
-      cancelled: "bg-slate-100 text-slate-700 border-slate-200",
-      active: "bg-amber-100 text-amber-700 border-amber-200",
+      completed: "bg-emerald-50 text-emerald-600 border-emerald-100",
+      frozen: "bg-blue-50 text-blue-600 border-blue-100",
+      cancelled: "bg-slate-50 text-slate-500 border-slate-100",
+      active: "bg-amber-50 text-amber-600 border-amber-100",
     };
     const names = {
-      completed: "مكتملة",
+      completed: "تمت",
       frozen: "مجمدة",
       cancelled: "ملغاة",
       active: "نشطة",
     };
     return (
       <span
-        className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${classes[status] || classes.active}`}
+        className={`px-1.5 py-0.5 rounded text-[9px] font-black border ${classes[status] || classes.active}`}
       >
         {names[status] || "نشطة"}
       </span>
@@ -155,132 +158,124 @@ export default function OfficeNotepadScreen() {
 
   return (
     <div
-      className="h-full flex flex-col bg-slate-50 p-2 md:p-4 overflow-hidden"
+      className="h-full flex flex-col bg-slate-50 p-1 md:p-2 overflow-hidden"
       dir="rtl"
     >
-      {/* Header & Stats */}
-      <div className="mb-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm shrink-0">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-lg font-black text-slate-900 tracking-tight">
+      {/* 🚀 Header & Stats (Ultra Compact) */}
+      <div className="mb-1.5 flex items-center justify-between gap-2 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:block border-l border-slate-100 pl-3">
+            <h1 className="text-sm font-black text-slate-900 leading-none">
               مفكرة المكتب
             </h1>
-            <p className="text-[10px] font-bold text-slate-500 mt-0.5">
-              مركز متابعة المهام الجماعي
+            <p className="text-[8px] font-bold text-slate-400">
+              نظام إدارة المهام
             </p>
           </div>
-          <div className="h-8 w-px bg-slate-200 hidden md:block"></div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
-              <div className="w-6 h-6 bg-blue-50 text-blue-600 rounded flex items-center justify-center">
-                <ChartNoAxesColumn className="w-3.5 h-3.5" />
-              </div>
-              <div>
-                <p className="text-[9px] font-bold text-slate-500">نشطة</p>
-                <p className="text-sm font-black text-slate-900 leading-none">
+              <ChartNoAxesColumn className="w-3 h-3 text-blue-500" />
+              <div className="flex flex-col">
+                <p className="text-[10px] font-black text-slate-700 leading-none">
                   {stats.active}
                 </p>
+                <p className="text-[7px] font-bold text-slate-400">نشطة</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-6 h-6 bg-emerald-50 text-emerald-600 rounded flex items-center justify-center">
-                <Check className="w-3.5 h-3.5" />
-              </div>
-              <div>
-                <p className="text-[9px] font-bold text-slate-500">مكتملة</p>
-                <p className="text-sm font-black text-slate-900 leading-none">
+              <Check className="w-3 h-3 text-emerald-500" />
+              <div className="flex flex-col">
+                <p className="text-[10px] font-black text-slate-700 leading-none">
                   {stats.completed}
                 </p>
+                <p className="text-[7px] font-bold text-slate-400">مكتملة</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-6 h-6 bg-rose-50 text-rose-600 rounded flex items-center justify-center">
-                <TriangleAlert className="w-3.5 h-3.5" />
-              </div>
-              <div>
-                <p className="text-[9px] font-bold text-slate-500">متأخرة</p>
-                <p className="text-sm font-black text-slate-900 leading-none">
+              <TriangleAlert className="w-3 h-3 text-rose-500" />
+              <div className="flex flex-col">
+                <p className="text-[10px] font-black text-slate-700 leading-none">
                   {stats.overdue}
                 </p>
+                <p className="text-[7px] font-bold text-slate-400">متأخرة</p>
               </div>
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+
+        <div className="flex items-center gap-1.5">
           <div className="relative">
             <input
               placeholder="بحث..."
-              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 w-32 md:w-48"
+              className="bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-bold rounded-md pl-2 pr-6 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-28 md:w-44"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-3 h-3 text-slate-400 absolute right-1.5 top-1/2 -translate-y-1/2" />
           </div>
           <button
             onClick={() => {
               setTaskToEdit(null);
               setIsAddModalOpen(true);
             }}
-            className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition-all flex items-center gap-1.5 shadow-sm shadow-emerald-600/20"
+            className="px-2.5 py-1 bg-emerald-600 text-white text-[10px] font-bold rounded-md hover:bg-emerald-700 transition-all flex items-center gap-1 shadow-sm"
           >
-            <Plus className="w-3.5 h-3.5" /> مهمة جديدة
+            <Plus className="w-3 h-3" /> مهمة
           </button>
         </div>
       </div>
 
-      {/* Table Area */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex-1 flex flex-col">
-        <div className="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar-slim">
-          <table className="w-full text-right text-sm border-collapse">
-            <thead className="bg-slate-100 sticky top-0 z-10 shadow-sm">
-              <tr>
-                <th className="px-2 py-3 font-black text-slate-700 border-b border-slate-200 border-l border-slate-200 w-10 text-center text-xs">
+      {/* 🚀 Table Area (Dense) */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex-1 flex flex-col">
+        <div className="overflow-auto flex-1 custom-scrollbar-slim">
+          <table className="w-full text-right text-[11px] border-collapse">
+            <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm">
+              <tr className="text-slate-500">
+                <th className="px-1 py-1.5 border-b border-l border-slate-100 w-8 text-center font-bold">
                   #
                 </th>
-                <th className="px-4 py-3 font-black text-slate-700 border-b border-slate-200 border-l border-slate-200 min-w-[250px] text-xs">
-                  وصف المهمة
+                <th className="px-2 py-1.5 border-b border-l border-slate-100 min-w-[200px] font-bold text-slate-700">
+                  عنوان المهمة
                 </th>
-                <th className="px-4 py-3 font-black text-slate-700 border-b border-slate-200 border-l border-slate-200 text-xs">
+                <th className="px-2 py-1.5 border-b border-l border-slate-100 w-20 font-bold">
                   المنشئ
                 </th>
-                <th className="px-4 py-3 font-black text-slate-700 border-b border-slate-200 border-l border-slate-200 text-xs">
-                  تاريخ الإنشاء
+                <th className="px-2 py-1.5 border-b border-l border-slate-100 w-20 font-bold">
+                  تاريخ
                 </th>
-                <th className="px-4 py-3 font-black text-slate-700 border-b border-slate-200 border-l border-slate-200 text-xs">
-                  تاريخ الإتمام
+                <th className="px-2 py-1.5 border-b border-l border-slate-100 w-20 text-center font-bold">
+                  الفرعية
                 </th>
-                <th className="px-4 py-3 font-black text-slate-700 border-b border-slate-200 border-l border-slate-200 text-xs text-center">
-                  المهام الفرعية
-                </th>
-                <th className="px-4 py-3 font-black text-slate-700 border-b border-slate-200 border-l border-slate-200 text-xs">
+                <th className="px-2 py-1.5 border-b border-l border-slate-100 font-bold">
                   الموظفين
                 </th>
-                <th className="px-4 py-3 font-black text-slate-700 border-b border-slate-200 border-l border-slate-200 text-xs">
-                  ارتباط (ملف/مجلد)
+                <th className="px-2 py-1.5 border-b border-l border-slate-100 w-16 text-center font-bold">
+                  ارتباط
                 </th>
-                <th className="px-4 py-3 font-black text-slate-700 border-b border-slate-200 border-l border-slate-200 text-xs text-center">
+                <th className="px-2 py-1.5 border-b border-l border-slate-100 w-16 text-center font-bold">
                   الحالة
                 </th>
-                <th className="px-4 py-3 font-black text-slate-700 border-b border-slate-200 text-xs text-center">
-                  الإجراءات
+                <th className="px-2 py-1.5 border-b border-slate-100 w-24 text-center font-bold">
+                  إجراء
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-slate-50">
               {isLoading ? (
                 <tr>
-                  <td colSpan="10" className="p-10 text-center">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-emerald-600" />
+                  <td colSpan="9" className="p-4 text-center">
+                    <Loader2 className="w-5 h-5 animate-spin mx-auto text-emerald-600" />
                   </td>
                 </tr>
               ) : filteredTasks.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="10"
-                    className="p-10 text-center font-bold text-slate-400"
+                    colSpan="9"
+                    className="p-4 text-center font-bold text-slate-300 italic"
                   >
-                    لا توجد مهام مطابقة
+                    لا توجد سجلات
                   </td>
                 </tr>
               ) : (
@@ -292,135 +287,114 @@ export default function OfficeNotepadScreen() {
                   return (
                     <tr
                       key={task.id}
-                      className={`hover:bg-slate-50 transition-colors cursor-pointer ${isFrozen || isCancelled ? "opacity-70 grayscale-[0.3]" : ""}`}
+                      className={`hover:bg-slate-50 transition-colors cursor-pointer ${isFrozen || isCancelled ? "opacity-60 grayscale-[0.2]" : ""}`}
                       onClick={() => setSelectedTaskToView(task)}
                     >
-                      <td className="px-2 py-3 border-l border-slate-200 text-center font-mono text-xs text-slate-400">
+                      <td className="px-1 py-1 border-l border-slate-50 text-center font-mono text-[10px] text-slate-400">
                         {idx + 1}
                       </td>
-                      <td className="px-4 py-3 border-l border-slate-200 font-bold text-slate-800 min-w-[300px]">
-                        <div className="flex items-start gap-2">
+                      <td className="px-2 py-1 border-l border-slate-50">
+                        <div className="flex items-center gap-1.5">
                           {getPriorityIcon(task.priority)}
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col">
                             <span
-                              className={`text-xs leading-relaxed ${isCompleted || isCancelled ? "line-through text-slate-400" : "text-slate-700"}`}
+                              className={`font-black text-slate-800 ${isCompleted || isCancelled ? "line-through text-slate-400" : ""}`}
                             >
-                              {task.description}
+                              {task.title || "بدون عنوان"}
                             </span>
-                            <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-md w-max">
-                              ⏳ {getRemainingDays(task.dueDate, task.status)}
+                            <span className="text-[8px] font-bold text-blue-500 bg-blue-50/50 px-1 rounded-sm w-fit">
+                              {getRemainingDays(task.dueDate, task.status)}
                             </span>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 border-l border-slate-200 text-xs font-bold text-slate-600">
+                      <td className="px-2 py-1 border-l border-slate-50 font-bold text-slate-600 truncate max-w-[80px]">
                         {task.creatorName}
                       </td>
-                      <td className="px-4 py-3 border-l border-slate-200 text-xs font-mono text-slate-500">
+                      <td className="px-2 py-1 border-l border-slate-50 font-mono text-[10px] text-slate-400">
                         {new Date(task.createdAt).toLocaleDateString("en-GB")}
                       </td>
-                      <td className="px-4 py-3 border-l border-slate-200 text-xs font-mono font-bold text-slate-600">
-                        {task.dueDate
-                          ? new Date(task.dueDate).toLocaleDateString("en-GB")
-                          : "---"}
-                      </td>
                       <td
-                        className="px-4 py-3 border-l border-slate-200 text-center"
+                        className="px-2 py-1 border-l border-slate-50 text-center"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <button
                           onClick={() => setSelectedTaskForSubtasks(task)}
-                          className="flex items-center justify-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-black w-full bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
+                          className="flex items-center justify-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 text-[9px] font-black"
                         >
-                          <ListTodo size={14} />{" "}
+                          <ListTodo size={10} />
                           {task.subTasks?.filter((s) => s.isCompleted).length ||
                             0}
                           /{task.subTasks?.length || 0}
                         </button>
                       </td>
-                      <td className="px-4 py-3 border-l border-slate-200">
-                        <div className="flex flex-wrap gap-1">
-                          {task.assignedEmployees?.map((emp, i) => (
+                      <td className="px-2 py-1 border-l border-slate-50">
+                        <div className="flex flex-wrap gap-0.5">
+                          {task.assignedEmployees?.slice(0, 2).map((emp, i) => (
                             <span
                               key={i}
-                              className="bg-slate-100 text-slate-600 text-[9px] font-bold px-1.5 py-0.5 rounded"
+                              className="bg-slate-100 text-slate-500 text-[8px] font-bold px-1 rounded leading-tight"
                             >
-                              {emp.name}
+                              {emp.name.split(" ")[0]}
                             </span>
                           ))}
+                          {task.assignedEmployees?.length > 2 && (
+                            <span className="text-[8px] text-slate-400">
+                              +{task.assignedEmployees.length - 2}
+                            </span>
+                          )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 border-l border-slate-200 font-mono text-[10px]">
+                      <td className="px-2 py-1 border-l border-slate-50 text-center">
                         {task.filePath ? (
-                          <div
-                            className="flex items-center gap-1.5 text-emerald-600 truncate max-w-[120px]"
-                            dir="ltr"
-                            title={task.filePath}
-                          >
-                            <FolderOpen size={12} className="shrink-0" />
-                            {task.filePath.split("/").pop()}
-                          </div>
+                          <FolderOpen
+                            size={12}
+                            className="text-emerald-500 mx-auto"
+                          />
                         ) : (
-                          "-"
+                          <span className="text-slate-200">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 border-l border-slate-200 text-center">
+                      <td className="px-2 py-1 border-l border-slate-50 text-center">
                         {getStatusBadge(task.status)}
                       </td>
 
                       {/* --- الإجراءات (Actions) --- */}
                       <td
-                        className="px-4 py-3"
+                        className="px-2 py-1 text-center"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="flex items-center justify-center gap-2">
-                          {/* زر الإنجاز السريع / أو إعادة التنشيط */}
-                          {isCompleted ? (
+                        <div className="flex items-center justify-center gap-1">
+                          {/* زر الإتمام السريع (يظهر فقط للمهمة النشطة) */}
+                          {!isCompleted && !isFrozen && !isCancelled && (
                             <button
                               onClick={() =>
                                 setStatusConfirmModal({
                                   isOpen: true,
                                   task,
-                                  newStatus: "active",
+                                  newStatus: "completed",
                                 })
                               }
-                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold"
-                              title="إعادة المهمة للعمل"
+                              className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
+                              title="إتمام المهمة"
                             >
-                              <RotateCcw size={14} /> تنشيط
+                              <Check size={14} />
                             </button>
-                          ) : (
-                            !isFrozen &&
-                            !isCancelled && (
-                              <button
-                                onClick={() =>
-                                  setStatusConfirmModal({
-                                    isOpen: true,
-                                    task,
-                                    newStatus: "completed",
-                                  })
-                                }
-                                className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                                title="إتمام المهمة"
-                              >
-                                <Check size={18} />
-                              </button>
-                            )
                           )}
 
                           {/* زر التعليقات */}
                           <button
                             onClick={() => setSelectedTaskForComments(task)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg relative"
-                            title="الملاحظات والتعليقات"
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded relative"
+                            title="الملاحظات"
                           >
-                            <MessageSquare size={16} />
+                            <MessageSquare size={13} />
                             {task.comments?.length > 0 && (
-                              <span className="absolute top-0 right-0 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
+                              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-rose-500 rounded-full border border-white"></span>
                             )}
                           </button>
 
-                          {/* قائمة الخيارات */}
+                          {/* قائمة الخيارات الثلاث نقط */}
                           <div className="relative">
                             <button
                               onClick={() =>
@@ -428,9 +402,9 @@ export default function OfficeNotepadScreen() {
                                   activeMenuId === task.id ? null : task.id,
                                 )
                               }
-                              className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"
+                              className="p-1 text-slate-400 hover:bg-slate-100 rounded transition-colors"
                             >
-                              <EllipsisVertical size={16} />
+                              <EllipsisVertical size={13} />
                             </button>
 
                             {activeMenuId === task.id && (
@@ -439,28 +413,28 @@ export default function OfficeNotepadScreen() {
                                   className="fixed inset-0 z-10"
                                   onClick={() => setActiveMenuId(null)}
                                 ></div>
-                                <div className="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 w-44 py-1 animate-in zoom-in-95 font-bold overflow-hidden">
-                                  {/* التعديل (متاح فقط للمهام النشطة) */}
-                                  {!isFrozen &&
-                                    !isCompleted &&
-                                    !isCancelled && (
+                                <div className="absolute left-0 top-full mt-0.5 bg-white border border-slate-200 rounded-lg shadow-xl z-20 w-36 py-1 font-bold text-[10px] overflow-hidden text-right animate-in zoom-in-95">
+                                  {/* 1. خيار التعديل */}
+                                  {!isCompleted &&
+                                    !isCancelled &&
+                                    !isFrozen && (
                                       <button
                                         onClick={() => {
                                           setTaskToEdit(task);
                                           setIsAddModalOpen(true);
                                           setActiveMenuId(null);
                                         }}
-                                        className="flex items-center gap-2 w-full text-right px-4 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                                        className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-slate-50 text-slate-700"
                                       >
                                         <Edit2
-                                          size={12}
+                                          size={10}
                                           className="text-blue-500"
                                         />{" "}
-                                        تعديل المهمة
+                                        تعديل البيانات
                                       </button>
                                     )}
 
-                                  {/* خيارات التجميد / التنشيط */}
+                                  {/* 2. خيارات تغيير الحالة (ديناميكية) */}
                                   {isFrozen ? (
                                     <button
                                       onClick={() => {
@@ -471,9 +445,9 @@ export default function OfficeNotepadScreen() {
                                         });
                                         setActiveMenuId(null);
                                       }}
-                                      className="flex items-center gap-2 w-full text-right px-4 py-2 text-xs text-blue-700 hover:bg-blue-50"
+                                      className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-blue-50 text-blue-700"
                                     >
-                                      <Play size={12} /> إعادة تنشيط
+                                      <Play size={10} /> استئناف (تنشيط)
                                     </button>
                                   ) : (
                                     !isCompleted &&
@@ -487,14 +461,13 @@ export default function OfficeNotepadScreen() {
                                           });
                                           setActiveMenuId(null);
                                         }}
-                                        className="flex items-center gap-2 w-full text-right px-4 py-2 text-xs text-cyan-700 hover:bg-cyan-50"
+                                        className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-cyan-50 text-cyan-700"
                                       >
-                                        <Snowflake size={12} /> تجميد المهمة
+                                        <Snowflake size={10} /> تجميد المهمة
                                       </button>
                                     )
                                   )}
 
-                                  {/* خيارات الإلغاء / الاستعادة */}
                                   {isCancelled ? (
                                     <button
                                       onClick={() => {
@@ -505,9 +478,9 @@ export default function OfficeNotepadScreen() {
                                         });
                                         setActiveMenuId(null);
                                       }}
-                                      className="flex items-center gap-2 w-full text-right px-4 py-2 text-xs text-blue-700 hover:bg-blue-50"
+                                      className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-blue-50 text-blue-700"
                                     >
-                                      <RotateCcw size={12} /> استعادة المهمة
+                                      <RotateCcw size={10} /> استعادة من الإلغاء
                                     </button>
                                   ) : (
                                     !isCompleted && (
@@ -520,29 +493,42 @@ export default function OfficeNotepadScreen() {
                                           });
                                           setActiveMenuId(null);
                                         }}
-                                        className="flex items-center gap-2 w-full text-right px-4 py-2 text-xs text-rose-700 hover:bg-rose-50"
+                                        className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-rose-50 text-rose-700"
                                       >
-                                        <X size={12} /> إلغاء المهمة
+                                        <X size={10} /> إلغاء المهمة
                                       </button>
                                     )
                                   )}
 
+                                  {/* إعادة المهمة للعمل إذا كانت مكتملة بالخطأ */}
+                                  {isCompleted && (
+                                    <button
+                                      onClick={() => {
+                                        setStatusConfirmModal({
+                                          isOpen: true,
+                                          task,
+                                          newStatus: "active",
+                                        });
+                                        setActiveMenuId(null);
+                                      }}
+                                      className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-blue-50 text-blue-700"
+                                    >
+                                      <RotateCcw size={10} /> إعادة فتح المهمة
+                                    </button>
+                                  )}
+
                                   <div className="border-t border-slate-100 my-1"></div>
 
-                                  {/* الحذف النهائي */}
+                                  {/* 3. خيار الحذف */}
                                   <button
                                     onClick={() => {
-                                      if (
-                                        window.confirm(
-                                          "هل أنت متأكد من حذف هذه المهمة نهائياً؟",
-                                        )
-                                      )
+                                      if (window.confirm("حذف المهمة نهائياً؟"))
                                         deleteMutation.mutate(task.id);
                                       setActiveMenuId(null);
                                     }}
-                                    className="flex items-center gap-2 w-full text-right px-4 py-2 text-xs text-rose-600 hover:bg-rose-50"
+                                    className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-rose-50 text-rose-600"
                                   >
-                                    <Trash2 size={12} /> حذف السجل
+                                    <Trash2 size={10} /> حذف السجل
                                   </button>
                                 </div>
                               </>
@@ -559,7 +545,7 @@ export default function OfficeNotepadScreen() {
         </div>
       </div>
 
-      {/* --- النوافذ المنبثقة المستوردة --- */}
+      {/* --- النوافذ المنبثقة --- */}
       {isAddModalOpen && (
         <AddTaskModal
           onClose={() => {

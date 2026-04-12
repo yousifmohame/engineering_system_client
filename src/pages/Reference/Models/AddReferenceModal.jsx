@@ -10,6 +10,7 @@ import {
   Check,
   FileText,
   Trash2,
+  Edit2, // أيقونة التعديل
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -46,9 +47,8 @@ const MultiSelectDropdown = ({
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target))
         setIsOpen(false);
-      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -122,7 +122,8 @@ const MultiSelectDropdown = ({
   );
 };
 
-export default function AddReferenceModal({ isOpen, onClose }) {
+// 🚀 تم استقبال documentToEdit هنا
+export default function AddReferenceModal({ isOpen, onClose, documentToEdit }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
 
@@ -132,9 +133,9 @@ export default function AddReferenceModal({ isOpen, onClose }) {
   const [category, setCategory] = useState("اشتراطات");
   const [type, setType] = useState("");
 
-  // 🌟 تعديل: دعم مصفوفة من الملفات بدلاً من ملف واحد
   const [files, setFiles] = useState([]);
-  const [uploadProgress, setUploadProgress] = useState(0); // 🌟 حالة نسبة الرفع
+  const [existingFiles, setExistingFiles] = useState([]); // لحفظ أسماء الملفات المرفوعة مسبقاً للعرض
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const [txType, setTxType] = useState("");
   const [txMainCategory, setTxMainCategory] = useState("");
@@ -157,19 +158,59 @@ export default function AddReferenceModal({ isOpen, onClose }) {
   const [expiryDate, setExpiryDate] = useState("");
   const [autoAnalyze, setAutoAnalyze] = useState(true);
 
+  // 🚀 تعبئة البيانات في حالة التعديل
+  useEffect(() => {
+    if (documentToEdit) {
+      setTitle(documentToEdit.title || "");
+      setSource(documentToEdit.source || "");
+      setCategory(documentToEdit.category || "اشتراطات");
+      setType(documentToEdit.type || "");
+
+      setTxType(documentToEdit.txType || "");
+      setTxMainCategory(documentToEdit.txMainCategory || "");
+      setTxSubCategory(documentToEdit.txSubCategory || "");
+
+      setBuildTypes(documentToEdit.buildingTypes || []);
+      setLandAreaFrom(documentToEdit.landAreaFrom || "");
+      setLandAreaTo(documentToEdit.landAreaTo || "");
+
+      setCity(documentToEdit.city || "");
+      setSector(documentToEdit.sector || "");
+      setDistricts(documentToEdit.districts || []);
+
+      setFloorsFrom(documentToEdit.floorsFrom || "");
+      setFloorsTo(documentToEdit.floorsTo || "");
+      setStreetFrom(documentToEdit.streetWidthFrom || "");
+      setStreetTo(documentToEdit.streetWidthTo || "");
+
+      setIssueDate(
+        documentToEdit.issueDate ? documentToEdit.issueDate.split("T")[0] : "",
+      );
+      setExpiryDate(
+        documentToEdit.expiryDate
+          ? documentToEdit.expiryDate.split("T")[0]
+          : "",
+      );
+      setAutoAnalyze(false); // نطفئ التحليل التلقائي في التعديل لتجنب استهلاك الكوتا بدون داعٍ
+
+      if (documentToEdit.fileUrl) {
+        const urls = documentToEdit.fileUrl.split(",");
+        setExistingFiles(urls.map((url) => url.split("/").pop()));
+      }
+    }
+  }, [documentToEdit]);
+
   const { data: sectorMap = {}, isLoading: isLoadingDistricts } = useQuery({
     queryKey: ["sectors-grouped-map"],
     queryFn: async () => {
       try {
         const res = await api.get("/riyadh-zones");
         const payload = res.data;
-
         const sectorsData = Array.isArray(payload)
           ? payload
           : Array.isArray(payload?.data)
             ? payload.data
             : [];
-
         const grouped = {};
         sectorsData.forEach((sectorObj) => {
           if (sectorObj.name) {
@@ -180,16 +221,16 @@ export default function AddReferenceModal({ isOpen, onClose }) {
         });
         return grouped;
       } catch (error) {
-        console.error("فشل جلب الأحياء والقطاعات", error);
         return {};
       }
     },
     staleTime: Infinity,
   });
 
-  const allDynamicDistricts = useMemo(() => {
-    return Object.values(sectorMap).flat().sort();
-  }, [sectorMap]);
+  const allDynamicDistricts = useMemo(
+    () => Object.values(sectorMap).flat().sort(),
+    [sectorMap],
+  );
 
   useEffect(() => {
     if (sector && sectorMap && Array.isArray(sectorMap[sector])) {
@@ -201,7 +242,6 @@ export default function AddReferenceModal({ isOpen, onClose }) {
     }
   }, [sector, sectorMap]);
 
-  // 🌟 معالجة إضافة الملفات الجديدة للمصفوفة
   const handleFileChange = (e) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
@@ -209,11 +249,10 @@ export default function AddReferenceModal({ isOpen, onClose }) {
     }
   };
 
-  // 🌟 معالجة حذف ملف من المصفوفة
-  const removeFile = (indexToRemove) => {
+  const removeFile = (indexToRemove) =>
     setFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
-  };
 
+  // 🚀 تعديل الـ Mutation ليدعم PUT في التعديل
   const saveMutation = useMutation({
     mutationFn: async () => {
       const formData = new FormData();
@@ -222,10 +261,7 @@ export default function AddReferenceModal({ isOpen, onClose }) {
       formData.append("category", category);
       formData.append("type", type);
 
-      // 🌟 إضافة جميع الملفات للـ FormData تحت مفتاح 'files'
-      files.forEach((file) => {
-        formData.append("files", file);
-      });
+      files.forEach((file) => formData.append("files", file));
 
       formData.append("txType", txType);
       formData.append("txMainCategory", txMainCategory);
@@ -248,21 +284,33 @@ export default function AddReferenceModal({ isOpen, onClose }) {
       if (expiryDate) formData.append("expiryDate", expiryDate);
       formData.append("autoAnalyze", autoAnalyze);
 
-      // 🌟 إرسال الطلب مع مراقبة نسبة التقدم (Progress)
-      return await api.post("/references", formData, {
+      const config = {
         headers: { "Content-Type": "multipart/form-data" },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total,
-          );
-          setUploadProgress(percentCompleted);
-        },
-      });
+        onUploadProgress: (progressEvent) =>
+          setUploadProgress(
+            Math.round((progressEvent.loaded * 100) / progressEvent.total),
+          ),
+      };
+
+      // اختيار المسار الصحيح بناءً على حالة التعديل
+      if (documentToEdit) {
+        return await api.put(
+          `/references/${documentToEdit.id}`,
+          formData,
+          config,
+        );
+      } else {
+        return await api.post("/references", formData, config);
+      }
     },
     onSuccess: () => {
-      toast.success("تمت إضافة المرجع للمكتبة بنجاح");
+      toast.success(
+        documentToEdit
+          ? "تم تحديث بيانات المرجع بنجاح"
+          : "تمت إضافة المرجع للمكتبة بنجاح",
+      );
       queryClient.invalidateQueries(["reference-documents"]);
-      setUploadProgress(0); // إعادة تعيين التقدم
+      setUploadProgress(0);
       onClose();
     },
     onError: () => {
@@ -273,9 +321,8 @@ export default function AddReferenceModal({ isOpen, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!title || !source || !category) {
+    if (!title || !source || !category)
       return toast.error("يرجى تعبئة الحقول الأساسية");
-    }
     saveMutation.mutate();
   };
 
@@ -289,8 +336,12 @@ export default function AddReferenceModal({ isOpen, onClose }) {
       <div className="bg-white w-full max-w-5xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 animate-in zoom-in-95">
         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
           <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
-            <Plus className="w-6 h-6 text-emerald-600" /> إضافة مرجع جديد
-            للمكتبة
+            {documentToEdit ? (
+              <Edit2 className="w-6 h-6 text-blue-600" />
+            ) : (
+              <Plus className="w-6 h-6 text-emerald-600" />
+            )}
+            {documentToEdit ? "تعديل بيانات المرجع" : "إضافة مرجع جديد للمكتبة"}
           </h2>
           <button
             onClick={onClose}
@@ -357,11 +408,19 @@ export default function AddReferenceModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          {/* 🌟 منطقة رفع الملفات المتعددة */}
           <div className="space-y-3">
             <label className="text-xs font-black text-slate-700">
-              المستندات والمرفقات (PDF، صور، ملفات مفتوحة الحجم)
+              المستندات والمرفقات (PDF، صور)
             </label>
+
+            {/* 🚀 إظهار الملفات القديمة إن وجدت */}
+            {documentToEdit && existingFiles.length > 0 && (
+              <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold text-blue-800">
+                يوجد {existingFiles.length} ملفات مرفوعة مسبقاً. لرفع ملفات
+                جديدة سيتم استبدال القديمة.
+              </div>
+            )}
+
             <div
               onClick={() =>
                 !saveMutation.isPending && fileInputRef.current?.click()
@@ -375,14 +434,11 @@ export default function AddReferenceModal({ isOpen, onClose }) {
                 <p className="text-sm font-black text-slate-900">
                   اسحب الملفات هنا أو انقر للاختيار (يمكنك تحديد عدة ملفات)
                 </p>
-                <p className="text-[10px] font-bold text-slate-400 mt-1">
-                  حجم مفتوح للملفات المتعددة
-                </p>
               </div>
               <input
                 ref={fileInputRef}
                 type="file"
-                multiple // 🌟 تفعيل الرفع المتعدد
+                multiple
                 accept=".pdf,image/*"
                 className="hidden"
                 onChange={handleFileChange}
@@ -390,7 +446,6 @@ export default function AddReferenceModal({ isOpen, onClose }) {
               />
             </div>
 
-            {/* 🌟 قائمة الملفات المختارة */}
             {files.length > 0 && (
               <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {files.map((f, idx) => (
@@ -421,12 +476,11 @@ export default function AddReferenceModal({ isOpen, onClose }) {
               </div>
             )}
 
-            {/* 🌟 شريط التقدم عند الرفع */}
             {saveMutation.isPending && (
               <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
                 <div className="flex justify-between items-center text-xs font-bold">
                   <span className="text-emerald-700 animate-pulse">
-                    جاري رفع الملفات ومعالجتها...
+                    جاري المعالجة...
                   </span>
                   <span className="text-slate-600">{uploadProgress}%</span>
                 </div>
@@ -588,7 +642,7 @@ export default function AddReferenceModal({ isOpen, onClose }) {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-slate-500">
-                      الأحياء (تعبئة تلقائية باختيار القطاع)
+                      الأحياء
                     </label>
                     <MultiSelectDropdown
                       isLoading={isLoadingDistricts}
@@ -703,8 +757,7 @@ export default function AddReferenceModal({ isOpen, onClose }) {
                 <p
                   className={`text-[10px] font-bold transition-colors ${autoAnalyze ? "text-purple-600" : "text-slate-500"}`}
                 >
-                  سيقوم النظام باستخراج النص وتلخيصه وشرحه فور الرفع لجميع
-                  المرفقات
+                  سيقوم النظام باستخراج النص وتلخيصه وشرحه فور الرفع
                 </p>
               </div>
             </div>
@@ -735,13 +788,14 @@ export default function AddReferenceModal({ isOpen, onClose }) {
             {saveMutation.isPending ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin relative z-10" />
-                <span className="relative z-10">جاري الرفع...</span>
-                {/* 🌟 تأثير تقدم لوني خلف الزر كبديل إضافي لشريط التقدم */}
+                <span className="relative z-10">جاري المعالجة...</span>
                 <div
                   className="absolute left-0 top-0 bottom-0 bg-emerald-800/40 transition-all duration-300 ease-out"
                   style={{ width: `${uploadProgress}%` }}
                 ></div>
               </>
+            ) : documentToEdit ? (
+              "حفظ التعديلات"
             ) : (
               "حفظ وإضافة للمكتبة"
             )}

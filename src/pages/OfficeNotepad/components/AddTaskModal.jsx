@@ -16,22 +16,15 @@ import {
   Building2,
   ClipboardList,
   MapPin,
+  Type, // 👈 أيقونة العنوان
 } from "lucide-react";
 import FileSelectorModal from "./FileSelectorModal";
 
-// =========================================================================
-// 🛠️ دالة معالجة الأسماء (لحل الخطأ #31)
-// =========================================================================
+// دالة معالجة الأسماء
 const getSafeName = (nameData) => {
   if (!nameData) return "غير محدد";
-
-  // إذا كان الاسم نصاً جاهزاً
   if (typeof nameData === "string") return nameData;
-
-  // إذا كان كائناً يحتوي على لغات (ar/en)
   if (nameData.ar && typeof nameData.ar === "string") return nameData.ar;
-
-  // إذا كان كائناً يحتوي على تفاصيل الاسم ( firstName, fatherName, familyName )
   if (typeof nameData === "object") {
     const { firstName, fatherName, grandFatherName, familyName } = nameData;
     const fullName = [firstName, fatherName, grandFatherName, familyName]
@@ -39,7 +32,6 @@ const getSafeName = (nameData) => {
       .join(" ");
     return fullName || "اسم غير معروف";
   }
-
   return "بيانات اسم غير صالحة";
 };
 
@@ -49,6 +41,7 @@ export default function AddTaskModal({ onClose, currentUser, taskToEdit }) {
   const [selectedFile, setSelectedFile] = useState(null);
 
   const [formData, setFormData] = useState({
+    title: "", // 👈 1. إضافة حقل العنوان
     description: "",
     dueDate: "",
     priority: "medium",
@@ -60,27 +53,23 @@ export default function AddTaskModal({ onClose, currentUser, taskToEdit }) {
     ownershipId: "",
   });
 
-  // 1. جلب بيانات العملاء
+  // جلب البيانات للربط
   const { data: clients = [] } = useQuery({
     queryKey: ["simple-clients-list"],
     queryFn: () => api.get("/clients").then((res) => res.data || []),
   });
-
-  // 2. جلب بيانات المعاملات
   const { data: transactionsData } = useQuery({
     queryKey: ["simple-transactions-list"],
     queryFn: () => api.get("/private-transactions").then((res) => res.data),
   });
   const transactions = transactionsData?.data || [];
-
-  // 3. جلب بيانات الملكيات (الصكوك)
   const { data: deedsData } = useQuery({
     queryKey: ["simple-properties-list"],
     queryFn: () => api.get("/properties").then((res) => res.data),
   });
   const ownerships = deedsData?.data || [];
 
-  // 💡 وظيفة اللصق من الكليبورد
+  // التعامل مع اللصق
   const handlePaste = useCallback((e) => {
     const items = e.clipboardData.items;
     for (let i = 0; i < items.length; i++) {
@@ -107,6 +96,7 @@ export default function AddTaskModal({ onClose, currentUser, taskToEdit }) {
   useEffect(() => {
     if (taskToEdit) {
       setFormData({
+        title: taskToEdit.title || "", // 👈 2. تعبئة العنوان عند التعديل
         description: taskToEdit.description || "",
         dueDate: taskToEdit.dueDate ? taskToEdit.dueDate.split("T")[0] : "",
         priority: taskToEdit.priority || "medium",
@@ -162,8 +152,8 @@ export default function AddTaskModal({ onClose, currentUser, taskToEdit }) {
               <ClipboardList className="text-blue-600" size={24} />
               {taskToEdit ? "تعديل بيانات المهمة" : "إضافة مهمة جديدة"}
             </h3>
-            <p className="text-[10px] font-bold text-slate-400 mt-1 leading-tight">
-              يرجى ربط المهمة بالسجل الصحيح لضمان دقة التقارير
+            <p className="text-[10px] font-bold text-slate-400 mt-1">
+              يرجى ملء البيانات بدقة لضمان سهولة التتبع
             </p>
           </div>
           <button
@@ -175,29 +165,45 @@ export default function AddTaskModal({ onClose, currentUser, taskToEdit }) {
         </div>
 
         <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar-slim bg-white">
+          {/* 👈 3. حقل عنوان المهمة (المختصر) */}
+          <div className="space-y-2">
+            <label className="text-sm font-black text-slate-700 flex items-center gap-2">
+              <Type size={16} className="text-blue-500" /> عنوان أو مختصر المهمة{" "}
+              <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.title}
+              onChange={(e) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
+              placeholder="مثال: إصدار رخصة بناء، تعديل كروكي، إلخ..."
+              className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all outline-none"
+            />
+          </div>
+
           {/* 1. وصف المهمة */}
           <div className="space-y-2">
             <label className="text-sm font-black text-slate-700 flex items-center gap-2">
-              <FileText size={16} className="text-blue-500" /> تفاصيل المهمة
-              المطلوبة <span className="text-rose-500">*</span>
+              <FileText size={16} className="text-blue-500" /> وصف العمل
+              التفصيلي <span className="text-rose-500">*</span>
             </label>
             <textarea
               value={formData.description}
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
-              placeholder="اكتب هنا تفاصيل العمل... (يمكنك استخدام Ctrl+V للصق الصور)"
-              className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-4 focus:ring-blue-50 focus:border-blue-400 min-h-[90px] resize-none transition-all"
+              placeholder="اكتب هنا كافة التعليمات والملاحظات..."
+              className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-4 focus:ring-blue-50 focus:border-blue-400 min-h-[90px] resize-none transition-all outline-none"
             />
           </div>
 
-          {/* 2. قسم الربط الذكي - تم التصحيح هنا */}
+          {/* 2. قسم الربط الذكي */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm">
             <div className="md:col-span-3 flex items-center gap-2 text-blue-800 text-xs font-black mb-1">
               <LinkIcon size={14} /> الربط مع قاعدة البيانات (اختياري)
             </div>
-
-            {/* العميل */}
             <div className="space-y-1">
               <label className="text-[10px] font-black text-slate-500 mr-1 flex items-center gap-1">
                 <User size={10} /> العميل
@@ -212,14 +218,11 @@ export default function AddTaskModal({ onClose, currentUser, taskToEdit }) {
                 <option value="">-- غير مرتبط --</option>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {/* ✅ استخدام دالة المعالجة هنا لحل الخطأ #31 */}
                     {getSafeName(c.name)}
                   </option>
                 ))}
               </select>
             </div>
-
-            {/* المعاملة */}
             <div className="space-y-1">
               <label className="text-[10px] font-black text-slate-500 mr-1 flex items-center gap-1">
                 <Building2 size={10} /> المعاملة
@@ -240,8 +243,6 @@ export default function AddTaskModal({ onClose, currentUser, taskToEdit }) {
                 ))}
               </select>
             </div>
-
-            {/* الملكية */}
             <div className="space-y-1">
               <label className="text-[10px] font-black text-slate-500 mr-1 flex items-center gap-1">
                 <MapPin size={10} /> الصك / الملكية
@@ -263,6 +264,7 @@ export default function AddTaskModal({ onClose, currentUser, taskToEdit }) {
             </div>
           </div>
 
+          {/* التواريخ والأولوية والملفات */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-black text-slate-700">
@@ -304,7 +306,7 @@ export default function AddTaskModal({ onClose, currentUser, taskToEdit }) {
               <label className="text-sm font-black text-slate-700 flex justify-between">
                 <span>رفع ملفات المهمة</span>
                 {selectedFile && (
-                  <span className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full animate-pulse">
+                  <span className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
                     مستند جاهز
                   </span>
                 )}
@@ -355,6 +357,7 @@ export default function AddTaskModal({ onClose, currentUser, taskToEdit }) {
             </div>
           </div>
 
+          {/* تعيين الموظفين */}
           <div className="space-y-3">
             <label className="text-sm font-black text-slate-700 flex items-center gap-2">
               <User size={16} className="text-blue-500" /> تعيين الموظفين
@@ -371,7 +374,7 @@ export default function AddTaskModal({ onClose, currentUser, taskToEdit }) {
                     checked={formData.assignedEmployees.some(
                       (e) => e.id === emp.id,
                     )}
-                    className="w-4 h-4 text-blue-600 rounded-md border-slate-300"
+                    className="w-4 h-4 text-blue-600 rounded-md"
                     onChange={(e) => {
                       const newEmps = e.target.checked
                         ? [
@@ -393,16 +396,19 @@ export default function AddTaskModal({ onClose, currentUser, taskToEdit }) {
           </div>
         </div>
 
+        {/* Footer */}
         <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl hover:bg-slate-100 transition-colors"
+            className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl hover:bg-slate-100"
           >
             إلغاء
           </button>
           <button
             onClick={() => saveMutation.mutate(formData)}
-            disabled={!formData.description || saveMutation.isPending}
+            disabled={
+              !formData.description || !formData.title || saveMutation.isPending
+            }
             className="px-10 py-2.5 bg-blue-600 text-white text-sm font-black rounded-xl hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-blue-200"
           >
             {saveMutation.isPending ? (

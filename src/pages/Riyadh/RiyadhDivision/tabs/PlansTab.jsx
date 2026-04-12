@@ -179,6 +179,23 @@ const PlansTab = () => {
     queryFn: async () => (await api.get("/riyadh-streets/plans")).data,
   });
 
+  // 🚀 جلب الإحصائيات الحقيقية للمخطط
+  const { data: realStats, isLoading: statsLoading } = useQuery({
+    queryKey: ["plan-real-stats", planModal.data?.planNumber],
+    queryFn: async () => {
+      // 💡 نستخدم params ليقوم Axios بتحويلها تلقائياً إلى ?planNumber=3020/أ
+      const res = await api.get("/riyadh-streets/plans/stats/overview", {
+        params: { planNumber: planModal.data.planNumber },
+      });
+      return res.data;
+    },
+    // يتفعل الطلب فقط إذا كان التاب مفتوحاً والمودال مفتوح ويوجد رقم مخطط
+    enabled:
+      planModal.isOpen &&
+      planModal.activeTab === "stats" &&
+      !!planModal.data?.planNumber,
+  });
+
   // 2. الميوتيشنز
   const planMutation = useMutation({
     mutationFn: async (payload) =>
@@ -422,8 +439,7 @@ const PlansTab = () => {
               </div>
 
               {/* Left Content Area */}
-              {/* Left Content Area */}
-              <div className="flex-1 flex flex-col overflow-hidden bg-white">
+              <div className="flex-1 flex p-4 flex-col overflow-hidden bg-white">
                 <form
                   id="planComplexForm"
                   onSubmit={handleSubmit}
@@ -431,7 +447,7 @@ const PlansTab = () => {
                 >
                   {/* === Tab 1: General Info === */}
                   {planModal.activeTab === "general" && (
-                    <div className="space-y-8 animate-in fade-in">
+                    <div className="flex-1 overflow-y-auto p-2 space-y-8 animate-in fade-in custom-scrollbar">
                       {/* Basic Codes */}
                       <section>
                         <h4 className="text-[13px] font-extrabold text-stone-800 mb-4 border-b pb-2 flex items-center gap-2">
@@ -890,64 +906,231 @@ const PlansTab = () => {
                     </div>
                   )}
 
-                  {/* === Tab 2: Stats === */}
+                  {/* === Tab 2: Stats (SCROLLABLE) === */}
                   {planModal.activeTab === "stats" && (
-                    <div className="space-y-6 animate-in fade-in">
-                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
-                        <AlertTriangle className="w-5 h-5 text-blue-600" />
-                        <p className="text-sm font-bold text-blue-800">
-                          هذه الإحصائيات يتم حسابها آلياً بناءً على المعاملات
-                          المرتبطة برقم هذا المخطط في النظام.
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white border border-stone-200 p-5 rounded-xl shadow-sm text-center">
-                          <span className="block text-[12px] font-bold text-stone-500 mb-2">
-                            عدد القطع التي لها معاملات
-                          </span>
-                          <span className="text-4xl font-black text-stone-800">
-                            142
-                          </span>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-10 animate-in fade-in custom-scrollbar">
+                      {statsLoading ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-stone-500">
+                          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-3" />
+                          <p className="font-bold">
+                            جاري تحليل بيانات المخطط...
+                          </p>
                         </div>
-                        <div className="bg-white border border-stone-200 p-5 rounded-xl shadow-sm text-center">
-                          <span className="block text-[12px] font-bold text-stone-500 mb-2">
-                            القطع التي لها ملفات ملكية
-                          </span>
-                          <span className="text-4xl font-black text-emerald-600">
-                            89
-                          </span>
-                        </div>
-                      </div>
-
-                      <h4 className="text-[13px] font-extrabold text-stone-800 mt-6 mb-4 border-b pb-2">
-                        المعاملات حسب الحالة
-                      </h4>
-                      <div className="grid grid-cols-4 gap-3">
-                        {["معتمدة", "تحت الإجراء", "مجمدة", "ملغاة"].map(
-                          (st, i) => (
-                            <div
-                              key={i}
-                              className="bg-stone-50 border border-stone-200 p-4 rounded-xl text-center"
-                            >
-                              <span className="block text-[11px] font-bold text-stone-600 mb-1">
-                                {st}
-                              </span>
-                              <span
-                                className={`text-xl font-black ${i === 0 ? "text-green-600" : i === 1 ? "text-blue-600" : i === 2 ? "text-orange-500" : "text-red-500"}`}
-                              >
-                                {Math.floor(Math.random() * 50)}
-                              </span>
+                      ) : (
+                        <>
+                          {/* 1. قسم البطاقات العلوية (الموجود مسبقاً) */}
+                          <div className="space-y-6">
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
+                              <AlertTriangle className="w-5 h-5 text-blue-600" />
+                              <p className="text-sm font-bold text-blue-800">
+                                إحصائيات وتحليل البيانات المرتبطة بالمخطط رقم (
+                                {planModal.data.planNumber})
+                              </p>
                             </div>
-                          ),
-                        )}
-                      </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="bg-white border border-stone-200 p-5 rounded-xl text-center shadow-sm">
+                                <span className="block text-[12px] font-bold text-stone-500 mb-2">
+                                  القطع التي عليها نشاط
+                                </span>
+                                <span className="text-4xl font-black text-stone-800">
+                                  {realStats?.plotsWithTransactions || 0}
+                                </span>
+                              </div>
+                              <div className="bg-white border border-stone-200 p-5 rounded-xl text-center shadow-sm">
+                                <span className="block text-[12px] font-bold text-stone-500 mb-2">
+                                  إجمالي صكوك الملكية
+                                </span>
+                                <span className="text-4xl font-black text-emerald-600">
+                                  {realStats?.propertiesCount || 0}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-4 gap-3">
+                              {[
+                                {
+                                  label: "مكتملة",
+                                  count: realStats?.statusCounts?.completed,
+                                  color: "text-green-600",
+                                  bg: "bg-green-50",
+                                },
+                                {
+                                  label: "تحت الإجراء",
+                                  count: realStats?.statusCounts?.pending,
+                                  color: "text-blue-600",
+                                  bg: "bg-blue-50",
+                                },
+                                {
+                                  label: "مسودة",
+                                  count: realStats?.statusCounts?.draft,
+                                  color: "text-orange-500",
+                                  bg: "bg-orange-50",
+                                },
+                                {
+                                  label: "ملغاة",
+                                  count: realStats?.statusCounts?.cancelled,
+                                  color: "text-red-600",
+                                  bg: "bg-red-50",
+                                },
+                              ].map((st, i) => (
+                                <div
+                                  key={i}
+                                  className={`${st.bg} border border-stone-100 p-4 rounded-xl text-center`}
+                                >
+                                  <span className="block text-[11px] font-bold text-stone-600 mb-1">
+                                    {st.label}
+                                  </span>
+                                  <span
+                                    className={`text-xl font-black ${st.color}`}
+                                  >
+                                    {st.count || 0}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* 🚀 2. جدول المعاملات المرتبطة */}
+                          <div className="space-y-4">
+                            <h4 className="text-[14px] font-black text-stone-800 flex items-center gap-2 px-1">
+                              <FileText size={18} className="text-blue-600" />{" "}
+                              المعاملات المرتبطة بالمخطط
+                            </h4>
+                            <div className="border border-stone-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                              <table className="w-full text-right text-[11px]">
+                                <thead className="bg-stone-50 border-b border-stone-100 text-stone-500 font-bold">
+                                  <tr>
+                                    <th className="p-3">رقم المعاملة</th>
+                                    <th className="p-3">
+                                      اسم المعاملة / العميل
+                                    </th>
+                                    <th className="p-3 text-center">القطع</th>
+                                    <th className="p-3 text-center">الحالة</th>
+                                    <th className="p-3">تاريخ الإضافة</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-stone-50">
+                                  {realStats?.transactions?.map((tx) => (
+                                    <tr
+                                      key={tx.id}
+                                      className="hover:bg-blue-50/30 transition-colors"
+                                    >
+                                      <td className="p-3 font-mono font-bold text-blue-700">
+                                        {tx.transactionCode}
+                                      </td>
+                                      <td className="p-3">
+                                        <div className="font-black text-stone-800">
+                                          {tx.title}
+                                        </div>
+                                        <div className="text-[10px] text-stone-400">
+                                          {tx.client?.name?.ar ||
+                                            tx.client?.name}
+                                        </div>
+                                      </td>
+                                      <td className="p-3 text-center font-mono font-bold">
+                                        {Array.isArray(tx.plots)
+                                          ? tx.plots.join(", ")
+                                          : tx.plots || "-"}
+                                      </td>
+                                      <td className="p-3 text-center">
+                                        <span className="px-2 py-0.5 rounded-lg bg-stone-100 text-stone-600 font-bold border border-stone-200">
+                                          {tx.status}
+                                        </span>
+                                      </td>
+                                      <td className="p-3 text-stone-400 font-mono">
+                                        {new Date(
+                                          tx.createdAt,
+                                        ).toLocaleDateString("en-GB")}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                  {realStats?.transactions?.length === 0 && (
+                                    <tr>
+                                      <td
+                                        colSpan="5"
+                                        className="p-8 text-center text-stone-400 font-bold italic"
+                                      >
+                                        لا توجد معاملات مسجلة لهذا المخطط
+                                      </td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+
+                          {/* 🚀 3. جدول الملكيات المرتبطة */}
+                          <div className="space-y-4 pt-4">
+                            <h4 className="text-[14px] font-black text-stone-800 flex items-center gap-2 px-1">
+                              <Layers size={18} className="text-emerald-600" />{" "}
+                              سجل الملكيات (الصكوك) المسجلة
+                            </h4>
+                            <div className="border border-stone-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                              <table className="w-full text-right text-[11px]">
+                                <thead className="bg-stone-50 border-b border-stone-100 text-stone-500 font-bold">
+                                  <tr>
+                                    <th className="p-3">رقم الصك</th>
+                                    <th className="p-3">المالك المسجل</th>
+                                    <th className="p-3 text-center">المساحة</th>
+                                    <th className="p-3 text-center">الحالة</th>
+                                    <th className="p-3">تاريخ التحديث</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-stone-50">
+                                  {realStats?.properties?.map((prop) => (
+                                    <tr
+                                      key={prop.id}
+                                      className="hover:bg-emerald-50/30 transition-colors"
+                                    >
+                                      <td className="p-3 font-mono font-bold text-emerald-700">
+                                        {prop.deedNumber || "بدون صك"}
+                                      </td>
+                                      <td className="p-3 font-black text-stone-800">
+                                        {prop.client?.name?.ar ||
+                                          prop.client?.name}
+                                      </td>
+                                      <td className="p-3 text-center font-mono font-bold">
+                                        {prop.area ? `${prop.area} م²` : "-"}
+                                      </td>
+                                      <td className="p-3 text-center">
+                                        <span
+                                          className={`px-2 py-0.5 rounded-lg font-bold border ${prop.status === "Active" ? "bg-green-50 text-green-700 border-green-100" : "bg-stone-100 text-stone-500"}`}
+                                        >
+                                          {prop.status === "Active"
+                                            ? "نشط"
+                                            : prop.status}
+                                        </span>
+                                      </td>
+                                      <td className="p-3 text-stone-400 font-mono">
+                                        {new Date(
+                                          prop.updatedAt,
+                                        ).toLocaleDateString("en-GB")}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                  {realStats?.properties?.length === 0 && (
+                                    <tr>
+                                      <td
+                                        colSpan="5"
+                                        className="p-8 text-center text-stone-400 font-bold italic"
+                                      >
+                                        لا توجد ملكيات مرتبطة بهذا المخطط
+                                      </td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
 
                   {/* === Tab 3: Files === */}
                   {planModal.activeTab === "files" && (
-                    <div className="space-y-6 animate-in fade-in">
+                    <div className="flex-1 overflow-y-auto p-2 space-y-6 animate-in fade-in custom-scrollbar">
                       <div className="flex justify-between items-end border-b border-stone-200 pb-3">
                         <div>
                           <h4 className="text-[14px] font-extrabold text-stone-800">
@@ -1050,7 +1233,7 @@ const PlansTab = () => {
 
                   {/* === Tab: Special Regulations (تنظيمات خاصة) === */}
                   {planModal.activeTab === "special_reg" && (
-                    <div className="space-y-6 animate-in fade-in h-full flex flex-col">
+                    <div className="space-y-6 animate-in fade-in h-full flex flex-col overflow-hidden">
                       <div className="flex items-center gap-3 border-b border-stone-200 pb-3">
                         <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center">
                           <ShieldAlert className="w-5 h-5" />
@@ -1238,21 +1421,43 @@ const PlansTab = () => {
 
                   {/* === Tab 4: Notes === */}
                   {planModal.activeTab === "notes" && (
-                    <div className="space-y-4 animate-in fade-in h-full flex flex-col">
-                      <h4 className="text-[13px] font-extrabold text-stone-800 border-b pb-2">
-                        ملاحظات حرة
-                      </h4>
-                      <textarea
-                        placeholder="اكتب أية ملاحظات عامة حول هذا المخطط، قيود، أو تنبيهات للإدارات الأخرى..."
-                        value={planModal.data.notes}
-                        onChange={(e) =>
-                          setPlanModal((p) => ({
-                            ...p,
-                            data: { ...p.data, notes: e.target.value },
-                          }))
-                        }
-                        className="w-full flex-1 min-h-[300px] p-4 bg-stone-50 border border-stone-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 text-sm leading-relaxed resize-none"
-                      />
+                    <div className="space-y-5 animate-in fade-in h-full flex flex-col overflow-hidden">
+                      <div className="flex items-center gap-2 border-b border-stone-100 pb-3">
+                        <div className="w-1.5 h-6 bg-blue-600 rounded-full"></div>
+                        <h4 className="text-[15px] font-black text-stone-900 tracking-tight">
+                          الملاحظات العامة والقيود الفنية
+                        </h4>
+                      </div>
+
+                      <div className="flex-1 relative group">
+                        <textarea
+                          placeholder="اكتب هنا أية ملاحظات تنظيمية، قيود فنية، أو تنبيهات إدارية تخص هذا المخطط..."
+                          value={planModal.data.notes}
+                          onChange={(e) =>
+                            setPlanModal((p) => ({
+                              ...p,
+                              data: { ...p.data, notes: e.target.value },
+                            }))
+                          }
+                          className="w-full h-full min-h-[400px] p-5 bg-stone-50/50 border border-stone-200 
+                   rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500/50 
+                   focus:bg-white text-[14.5px] font-bold text-stone-700 leading-[1.8] 
+                   resize-none transition-all duration-300 placeholder:text-stone-400 placeholder:font-medium"
+                        />
+
+                        {/* لمسة احترافية: عداد كلمات أو علامة مائية بسيطة في الزاوية */}
+                        <div className="absolute bottom-4 left-4 pointer-events-none opacity-20">
+                          <FileText size={40} className="text-stone-400" />
+                        </div>
+                      </div>
+
+                      <div className="bg-amber-50 rounded-xl p-3 border border-amber-100/50 flex items-start gap-3">
+                        <Info size={16} className="text-amber-600 mt-0.5" />
+                        <p className="text-[11px] font-bold text-amber-800 leading-relaxed">
+                          تنبيه: هذه الملاحظات تظهر لجميع الإدارات المرتبطة بهذا
+                          المخطط، يرجى تحري الدقة عند تدوين القيود الفنية.
+                        </p>
+                      </div>
                     </div>
                   )}
 
