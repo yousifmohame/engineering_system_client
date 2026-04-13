@@ -32,7 +32,7 @@ import {
   UploadCloud,
   Building,
   Bug,
-  CheckCircle,
+  MessageSquare,
   ChevronDown,
   ShieldCheck,
   ClipboardList,
@@ -48,6 +48,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
+import { RequestDataTab } from "./tabs/RequestDataTab";
 
 // 💡 1. استيراد المساعدات
 import {
@@ -76,6 +77,7 @@ import { RemoteTab } from "./tabs/RemoteTab";
 import { CoopOfficeTab } from "./tabs/CoopOfficeTab";
 import { TasksTab } from "./tabs/TasksTab";
 import { CommentsTab } from "./tabs/CommentsTab";
+import { AuthorityNotesTab } from "./tabs/AuthorityNotesTab";
 
 // 💡 3. استيراد النوافذ المنبثقة الفرعية (Modals)
 import {
@@ -238,6 +240,22 @@ export const TransactionDetailsModal = ({
     bankAccountId: "",
     isDepositedToSafe: false,
     receiptFile: null,
+  });
+
+  const [requestDataForm, setRequestDataForm] = useState({
+    designerOffice: "",
+    supervisorOffice: "",
+    electronicLicenseNumber: "",
+    electronicLicenseHijriYear: "",
+    electronicLicenseDate: "",
+    oldLicenseNumber: "",
+    oldLicenseHijriYear: "",
+    oldLicenseDate: "",
+    requestNumber: "",
+    requestYear: "",
+    serviceNumber: "",
+    serviceYear: "",
+    responsibleEmployee: currentUser,
   });
 
   const [isAddAgentOpen, setIsAddAgentOpen] = useState(false);
@@ -409,6 +427,27 @@ export const TransactionDetailsModal = ({
         approvalAttachments: existingStatusData.approvalAttachments || [],
         approvalDate: existingStatusData.approvalDate || null,
       });
+
+      const reqData = tx.requestData || {};
+      setRequestDataForm({
+        designerOffice: reqData.designerOffice || "",
+        supervisorOffice: reqData.supervisorOffice || "",
+        electronicLicenseNumber: reqData.electronicLicenseNumber || "",
+        electronicLicenseHijriYear: reqData.electronicLicenseHijriYear || "",
+        electronicLicenseDate: reqData.electronicLicenseDate
+          ? reqData.electronicLicenseDate.split("T")[0]
+          : "",
+        oldLicenseNumber: reqData.oldLicenseNumber || "",
+        oldLicenseHijriYear: reqData.oldLicenseHijriYear || "",
+        oldLicenseDate: reqData.oldLicenseDate
+          ? reqData.oldLicenseDate.split("T")[0]
+          : "",
+        requestNumber: reqData.requestNumber || "",
+        requestYear: reqData.requestYear || "",
+        serviceNumber: reqData.serviceNumber || "",
+        serviceYear: reqData.serviceYear || "",
+        responsibleEmployee: reqData.responsibleEmployee || currentUser,
+      });
     }
   }, [tx, clients]);
 
@@ -547,6 +586,13 @@ export const TransactionDetailsModal = ({
     } catch (error) {
       toast.error("حدث خطأ أثناء فتح الملف");
     }
+  };
+
+  const saveRequestDataEdits = () => {
+    // نرسل requestData ككائن منفصل في الـ Body ليلتقطه الباك إند الحديث
+    updateTxMutation.mutate({
+      requestData: requestDataForm,
+    });
   };
 
   const saveBasicEdits = (passedData) => {
@@ -1093,6 +1139,10 @@ export const TransactionDetailsModal = ({
     isSuperAdmin: user?.role === "ADMIN" || user?.email === "admin@wms.com",
     addTaskMutation,
     submitTaskMutation,
+    requestDataForm,
+    setRequestDataForm,
+    saveRequestDataEdits,
+    isApprovalRequest: tx?.type?.includes("تصحيح وضع"),
   };
 
   // 💡 دالة التصيير المحدثة للشريط الجانبي (Sidebar)
@@ -1323,6 +1373,12 @@ export const TransactionDetailsModal = ({
                   "#2563eb",
                 )}
                 {renderTabButton(
+                  "request_data",
+                  "بيانات الطلب والرخصة",
+                  ClipboardList,
+                  "#0891b2",
+                )}
+                {renderTabButton(
                   "status",
                   "حالة المعاملة والتوجيهات",
                   History,
@@ -1340,6 +1396,12 @@ export const TransactionDetailsModal = ({
                   "المرفقات الأساسية",
                   Paperclip,
                   "#64748b",
+                )}
+                {renderTabButton(
+                  "authority_notes",
+                  "ملاحظات الجهات والإفادات",
+                  MessageSquare,
+                  "#8b5cf6",
                 )}
                 {renderTabButton(
                   "comments",
@@ -1528,9 +1590,15 @@ export const TransactionDetailsModal = ({
             <div className="p-6 max-w-7xl mx-auto min-h-full">
               {/* المكونات الأساسية المتوفرة حالياً */}
               {activeTab === "basic" && <BasicTab {...tabContext} />}
+              {activeTab === "request_data" && (
+                <RequestDataTab {...tabContext} />
+              )}
               {activeTab === "status" && <StatusTab {...tabContext} />}
               {activeTab === "financial" && <FinancialTab {...tabContext} />}
               {activeTab === "brokers" && <BrokersTab {...tabContext} />}
+              {activeTab === "authority_notes" && (
+                <AuthorityNotesTab {...tabContext} />
+              )}
               {activeTab === "comments" && <CommentsTab {...tabContext} />}
               {activeTab === "coop_office" && <CoopOfficeTab {...tabContext} />}
               {activeTab === "agents" && <AgentsTab {...tabContext} />}
@@ -1548,6 +1616,7 @@ export const TransactionDetailsModal = ({
               {/* عناصر نائبة (Placeholders) للتبويبات الجديدة الفارغة */}
               {![
                 "basic",
+                "request_data",
                 "status",
                 "financial",
                 "brokers",
@@ -1561,6 +1630,7 @@ export const TransactionDetailsModal = ({
                 "attachments",
                 "dates",
                 "comments",
+                "authority_notes",
                 "logs",
               ].includes(activeTab) && (
                 <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-slate-400 bg-white rounded-2xl border border-slate-200 border-dashed">

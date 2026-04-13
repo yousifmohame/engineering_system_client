@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../api/axios";
+import { useMutation } from "@tanstack/react-query";
 
 // ==========================================
 // 💡 المكونات المنبثقة المبسطة (Inline Modal)
@@ -102,6 +103,7 @@ export default function InboxCenter() {
         setAccounts(accRes.data?.data || []);
       }
 
+      // جلب الرسائل من السيرفر الحي
       const imapRes = await api.get(`/email/sync?page=${pageNumber}&limit=50`);
       const liveMsgs = (imapRes.data?.data || []).map((m) => ({
         ...m,
@@ -112,20 +114,35 @@ export default function InboxCenter() {
       else setHasMore(true);
 
       if (pageNumber === 1) {
+        // جلب الرسائل من قاعدة البيانات
         const dbRes = await api.get("/email/messages");
         const dbMsgs = (dbRes.data?.data || []).map((m) => ({
           ...m,
           date: new Date(m.date),
+          // تحويل id قاعدة البيانات إلى uid إذا لم يكن موجوداً لتسهيل المقارنة
+          uid: m.messageId || m.id,
         }));
 
-        setMessages([...liveMsgs, ...dbMsgs]);
+        // 🚀 دمج ذكي بدون تكرار باستخدام Map و messageId أو uid
+        const combinedMap = new Map();
+
+        // إعطاء الأولوية لرسائل قاعدة البيانات (لأنها تحتوي على التحليلات والتعديلات)
+        dbMsgs.forEach((msg) => combinedMap.set(msg.uid, msg));
+
+        // إضافة الرسائل الحية فقط إذا لم تكن موجودة في الداتابيز
+        liveMsgs.forEach((msg) => {
+          if (!combinedMap.has(msg.id)) {
+            combinedMap.set(msg.id, msg);
+          }
+        });
+
+        setMessages(Array.from(combinedMap.values()));
       } else {
         setMessages((prev) => {
-          const combined = [...prev, ...liveMsgs];
-          const uniqueMessages = Array.from(
-            new Map(combined.map((item) => [item.id, item])).values(),
-          );
-          return uniqueMessages;
+          const combinedMap = new Map();
+          prev.forEach((msg) => combinedMap.set(msg.messageId || msg.id, msg));
+          liveMsgs.forEach((msg) => combinedMap.set(msg.id, msg));
+          return Array.from(combinedMap.values());
         });
       }
 
@@ -210,7 +227,7 @@ export default function InboxCenter() {
   });
 
   const sortedMessages = [...filteredMessages].sort(
-    (a, b) => b.date.getTime() - a.date.getTime(),
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
 
   // تحديث عداد الغير مقروء ليحسب فقط الرسائل الصالحة (المفلترة من السبام)
@@ -240,6 +257,33 @@ export default function InboxCenter() {
       toast.error("حدث خطأ أثناء التحديث");
     }
   };
+
+  const analyzeMutation = useMutation({
+    // 👇 التعديل هنا: استخدام المعرف المتاح أياً كان اسمه
+    mutationFn: (msg) =>
+      api.post(
+        `/email/messages/${msg.id || msg.messageId || msg.uid}/analyze`,
+        {
+          subject: msg.subject,
+          body: msg.body,
+          text: msg.text,
+          from: msg.from,
+          date: msg.date,
+        },
+      ),
+    onSuccess: (res) => {
+      toast.success("تم تحليل الرسالة واستخراج البيانات");
+      setSelectedMessage({ ...selectedMessage, ...res.data.data });
+      setMessages(
+        messages.map((m) =>
+          m.id === res.data.data.messageId || m.id === res.data.data.id
+            ? { ...m, ...res.data.data }
+            : m,
+        ),
+      );
+    },
+    onError: () => toast.error("فشل تحليل الرسالة"),
+  });
 
   const handleToggleStar = (msg) => {
     updateMessageInDB(msg, { isStarred: !msg.isStarred });
@@ -310,16 +354,22 @@ export default function InboxCenter() {
   };
 
   const formatDate = (date) => {
-    const diffMins = Math.floor(
-      (new Date().getTime() - date.getTime()) / 60000,
-    );
+    const d = new Date(date); // 👈 الحل هنا
+
+    const diffMins = Math.floor((new Date().getTime() - d.getTime()) / 60000);
+
     let timeAgo =
       diffMins < 60
         ? `منذ ${diffMins} دقيقة`
         : diffMins < 1440
           ? `منذ ${Math.floor(diffMins / 60)} ساعة`
           : `منذ ${Math.floor(diffMins / 1440)} يوم`;
-    return `${timeAgo} • ${date.toLocaleDateString("ar-SA", { year: "numeric", month: "2-digit", day: "2-digit" })}`;
+
+    return `${timeAgo} • ${d.toLocaleDateString("ar-SA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    })}`;
   };
 
   return (
@@ -616,6 +666,143 @@ export default function InboxCenter() {
                       {selectedMessage.body ||
                         selectedMessage.text ||
                         "لا يوجد نص لعرضه"}
+                    </div>
+                  )}
+                </div>
+
+                {/* 🚀 قسم الذكاء الاصطناعي 🚀 */}
+                <div className="p-4 bg-slate-50 border-t border-slate-100">
+                  {!selectedMessage.isAnalyzed ? (
+                    <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-purple-200 rounded-xl bg-purple-50/30">
+                      <Sparkles className="w-8 h-8 text-purple-400 mb-3" />
+                      <h3 className="text-sm font-bold text-purple-900 mb-1">
+                        تحليل ذكي للبيانات
+                      </h3>
+                      <p className="text-xs text-slate-500 mb-4 text-center max-w-sm">
+                        سيقوم النظام بقراءة الرسالة واستخراج رقم الطلب، الخدمة،
+                        اسم المالك، والإفادة لربطها بالمعاملات تلقائياً.
+                      </p>
+                      {/* الكود الصحيح: */}
+                      <button
+                        onClick={() => analyzeMutation.mutate(selectedMessage)}
+                        disabled={analyzeMutation.isPending}
+                        className="flex items-center gap-2 px-5 py-2 bg-purple-600 text-white text-xs font-bold rounded-lg hover:bg-purple-700 shadow-md shadow-purple-200 transition-all disabled:opacity-50"
+                      >
+                        {analyzeMutation.isPending ? (
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Bot className="w-4 h-4" />
+                        )}
+                        بدء استخراج البيانات
+                      </button>
+                    </div>
+                  ) : (
+                    // 🚀 عرض البيانات المستخرجة
+                    <div className="bg-gradient-to-l from-purple-50 to-blue-50 border border-purple-200 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-5 h-5 text-purple-600" />
+                          <h3 className="text-sm font-bold text-purple-900">
+                            البيانات المستخرجة آلياً
+                          </h3>
+                          <span className="px-2 py-0.5 bg-purple-200 text-purple-800 text-[10px] font-bold rounded">
+                            AI Analyzed
+                          </span>
+                        </div>
+                        <button
+                          onClick={() =>
+                            analyzeMutation.mutate(selectedMessage)
+                          }
+                          disabled={analyzeMutation.isPending}
+                          className="text-[10px] text-purple-600 hover:text-purple-800 font-bold underline"
+                        >
+                          إعادة التحليل
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        {[
+                          {
+                            label: "رقم الطلب",
+                            value: selectedMessage.reqNumber,
+                          },
+                          {
+                            label: "سنة الطلب",
+                            value: selectedMessage.reqYear,
+                          },
+                          {
+                            label: "اسم المالك",
+                            value: selectedMessage.ownerName,
+                          },
+                          {
+                            label: "نوع الخدمة",
+                            value: selectedMessage.serviceType,
+                          },
+                          { label: "الجهة", value: selectedMessage.entityName },
+                          {
+                            label: "وقت الإطلاع",
+                            value: selectedMessage.viewTime,
+                          },
+                        ].map((item, idx) =>
+                          item.value ? (
+                            <div
+                              key={idx}
+                              className="p-3 bg-white border border-purple-100 rounded-lg shadow-sm"
+                            >
+                              <div className="text-[10px] text-slate-500 mb-1">
+                                {item.label}
+                              </div>
+                              <div
+                                className="text-xs font-bold text-slate-900 truncate"
+                                title={item.value}
+                              >
+                                {item.value}
+                              </div>
+                            </div>
+                          ) : null,
+                        )}
+                      </div>
+
+                      {selectedMessage.replyText && (
+                        <div className="p-3 bg-white border border-purple-100 rounded-lg shadow-sm mb-4">
+                          <div className="text-[10px] text-slate-500 mb-1">
+                            محتوى الإفادة / التحديث
+                          </div>
+                          <div className="text-sm font-bold text-slate-900 leading-relaxed">
+                            {selectedMessage.replyText}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 🚀 قسم الربط الذكي بالمعاملات */}
+                      {selectedMessage.linkedTxId ? (
+                        <div className="p-3 bg-white border rounded-lg border-green-300">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <span className="text-sm font-bold text-slate-900">
+                              تم إيجاد معاملة مطابقة
+                            </span>
+                            <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-green-100 text-green-700">
+                              تطابق {selectedMessage.matchConfidence}%
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-600 mb-2">
+                            رقم المعاملة في النظام:{" "}
+                            {selectedMessage.linkedTxId.slice(-6)}
+                          </div>
+                          <button className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700">
+                            فتح المعاملة وإرفاق الإفادة
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-start gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                          <AlertCircle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1 text-xs text-orange-800 font-bold leading-relaxed">
+                            لم يتم العثور على معاملة مطابقة تلقائياً لهذا الطلب.
+                            يمكنك البحث عن المعاملة يدوياً لربطها.
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
