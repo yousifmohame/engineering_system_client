@@ -4,7 +4,7 @@ import { clsx } from "clsx";
 import AccessControl from "../../AccessControl";
 import { useAuth } from "../../../context/AuthContext";
 import { usePermissionBuilder } from "../../../context/PermissionBuilderContext";
-import { DEFAULT_MENU_CATEGORIES } from "../../../constants/menuConstants"; // 💡 استيراد
+import { DEFAULT_MENU_CATEGORIES } from "../../../constants/menuConstants";
 
 import {
   LayoutDashboard,
@@ -38,7 +38,6 @@ const formatScreenId = (id) => {
 };
 
 const Sidebar = () => {
-  // 💡 إضافة: جلب sidebarConfig من الـ Store
   const { activeScreenId, openScreen, sidebarConfig } = useAppStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [openCategories, setOpenCategories] = useState([
@@ -52,15 +51,16 @@ const Sidebar = () => {
   const userPermissions = user?.permissions || [];
   const isSuperAdmin = user?.email === "admin@wms.com";
 
-  // 💡 إعداد المتغيرات الديناميكية للمظهر مع قيم افتراضية مطابقة لتصميمك الأصلي
+  // المتغيرات الديناميكية للمظهر
   const sbWidth = sidebarConfig?.width || 280;
   const sbBgColor = sidebarConfig?.bgColor || "#293241";
-  const sbTextColor = sidebarConfig?.textColor || "#cbd5e1"; // slate-300
-  const sbActiveColor = sidebarConfig?.activeColor || "#2563eb"; // blue-600
+  const sbTextColor = sidebarConfig?.textColor || "#cbd5e1";
+  const sbActiveColor = sidebarConfig?.activeColor || "#2563eb";
 
   const logoUrl = sidebarConfig?.logoUrl || "/logo.jpeg";
   const customLabels = sidebarConfig?.customLabels || {};
   const categoryOrder = sidebarConfig?.categoryOrder || [];
+  const itemOrder = sidebarConfig?.itemOrder || {}; // 💡 جلب ترتيب الشاشات
 
   const toggleCategory = (categoryId) => {
     setOpenCategories((prev) =>
@@ -71,17 +71,34 @@ const Sidebar = () => {
   };
 
   const filteredCategories = useMemo(() => {
-    // 1. إنشاء نسخة من المصفوفة مع تطبيق الأسماء المخصصة (Custom Labels)
-    let processedCategories = DEFAULT_MENU_CATEGORIES.map((category) => ({
-      ...category,
-      title: customLabels[category.id] || category.title,
-      items: category.items.map((item) => ({
+    // 1. إنشاء نسخة من المصفوفة مع تطبيق الأسماء المخصصة (Custom Labels) وترتيب الشاشات (itemOrder)
+    let processedCategories = DEFAULT_MENU_CATEGORIES.map((category) => {
+      // تطبيق الأسماء المخصصة على الشاشات
+      let processedItems = category.items.map((item) => ({
         ...item,
-        label: customLabels[item.id] || item.label, // تطبيق الاسم المخصص للشاشة إن وجد
-      })),
-    }));
+        label: customLabels[item.id] || item.label,
+      }));
 
-    // 2. تطبيق الترتيب المخصص (Sorting)
+      // 💡 ترتيب الشاشات الفرعية داخل هذا القسم بناءً على itemOrder
+      const currentItemOrder = itemOrder[category.id] || [];
+      if (currentItemOrder.length > 0) {
+        processedItems.sort((a, b) => {
+          let indexA = currentItemOrder.indexOf(a.id);
+          let indexB = currentItemOrder.indexOf(b.id);
+          if (indexA === -1) indexA = 999;
+          if (indexB === -1) indexB = 999;
+          return indexA - indexB;
+        });
+      }
+
+      return {
+        ...category,
+        title: customLabels[category.id] || category.title,
+        items: processedItems, // استخدام الشاشات بعد تسميتها وترتيبها
+      };
+    });
+
+    // 2. تطبيق الترتيب المخصص للأقسام الرئيسية (Category Sorting)
     if (categoryOrder.length > 0) {
       processedCategories.sort((a, b) => {
         let indexA = categoryOrder.indexOf(a.id);
@@ -111,7 +128,7 @@ const Sidebar = () => {
         }
         return { ...category, items: filteredItems };
       })
-      .filter((category) => category.items.length > 0);
+      .filter((category) => category.items.length > 0); // إخفاء الأقسام الفارغة
   }, [
     searchQuery,
     isSuperAdmin,
@@ -119,6 +136,7 @@ const Sidebar = () => {
     userPermissions,
     customLabels,
     categoryOrder,
+    itemOrder, // 💡 إضافة itemOrder كمراقب للتحديث
   ]);
 
   return (
@@ -137,7 +155,7 @@ const Sidebar = () => {
           className="h-[72px] rounded-lg border-b border-white/5 overflow-hidden flex items-center justify-center p-1"
         >
           <img
-            src={logoUrl} // 💡 الشعار المخصص
+            src={logoUrl}
             alt="Company Logo"
             className="max-h-full max-w-full object-contain"
           />
@@ -158,7 +176,7 @@ const Sidebar = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
-              backgroundColor: "rgba(0,0,0,0.2)", // لون أغمق للبحث
+              backgroundColor: "rgba(0,0,0,0.2)",
               color: sbTextColor,
             }}
             className="w-full border border-white/10 text-[11px] rounded-lg py-2 pr-9 pl-3 focus:outline-none focus:border-white/30 transition-colors placeholder:opacity-50"
@@ -192,7 +210,6 @@ const Sidebar = () => {
                         <button
                           onClick={() => openScreen(item.id, item.label)}
                           style={{
-                            // 💡 تطبيق لون الـ Active برمجياً
                             backgroundColor: isActive
                               ? sbActiveColor
                               : "transparent",
@@ -277,7 +294,6 @@ const Sidebar = () => {
                         <button
                           onClick={() => openScreen(item.id, item.label)}
                           style={{
-                            // 💡 تطبيق الألوان الفرعية
                             backgroundColor: isActive
                               ? sbActiveColor
                               : "transparent",

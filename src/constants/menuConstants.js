@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 
 export const DEFAULT_MENU_CATEGORIES = [
-  // ... (نفس مصفوفة MENU_CATEGORIES الخاصة بك بدون أي تغيير) ...
   {
     id: "CAT_DASHBOARD",
     title: "الشاشة الحالية: الرئيسية",
