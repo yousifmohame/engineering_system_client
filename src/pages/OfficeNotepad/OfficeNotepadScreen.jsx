@@ -328,23 +328,49 @@ export default function OfficeNotepadScreen() {
                           /{task.subTasks?.length || 0}
                         </button>
                       </td>
+
+                      {/* 🚀 🚀 🚀 التعديل الجوهري هنا (الكود الآمن لمعالجة الموظفين) 🚀 🚀 🚀 */}
                       <td className="px-2 py-1 border-l border-slate-50">
-                        <div className="flex flex-wrap gap-0.5">
-                          {task.assignedEmployees?.slice(0, 2).map((emp, i) => (
-                            <span
-                              key={i}
-                              className="bg-slate-100 text-slate-500 text-[8px] font-bold px-1 rounded leading-tight"
-                            >
-                              {emp.name.split(" ")[0]}
-                            </span>
-                          ))}
-                          {task.assignedEmployees?.length > 2 && (
-                            <span className="text-[8px] text-slate-400">
-                              +{task.assignedEmployees.length - 2}
-                            </span>
-                          )}
-                        </div>
+                        {(() => {
+                          let employeesArray = [];
+                          // إذا كانت مصفوفة فعلية
+                          if (Array.isArray(task.assignedEmployees)) {
+                            employeesArray = task.assignedEmployees;
+                          }
+                          // إذا كانت نص (String) يحتوي على JSON (كما يحدث عند الإضافة التلقائية)
+                          else if (typeof task.assignedEmployees === "string") {
+                            try {
+                              employeesArray = JSON.parse(
+                                task.assignedEmployees,
+                              );
+                              if (!Array.isArray(employeesArray))
+                                employeesArray = [];
+                            } catch (e) {
+                              employeesArray = [];
+                            }
+                          }
+
+                          return (
+                            <div className="flex flex-wrap gap-0.5">
+                              {employeesArray.slice(0, 2).map((emp, i) => (
+                                <span
+                                  key={i}
+                                  className="bg-slate-100 text-slate-500 text-[8px] font-bold px-1 rounded leading-tight"
+                                >
+                                  {emp.name ? emp.name.split(" ")[0] : "موظف"}
+                                </span>
+                              ))}
+                              {employeesArray.length > 2 && (
+                                <span className="text-[8px] text-slate-400">
+                                  +{employeesArray.length - 2}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
+                      {/* 🚀 🚀 🚀 نهاية التعديل 🚀 🚀 🚀 */}
+
                       <td className="px-2 py-1 border-l border-slate-50 text-center">
                         {task.filePath ? (
                           <FolderOpen

@@ -78,6 +78,23 @@ export default function TaskDetailsModal({ task, onClose }) {
     return `متبقي ${diffDays} يوم`;
   };
 
+  // 🚀 🚀 🚀 دالة آمنة لتحويل الموظفين المعينين إلى مصفوفة
+  const getSafeEmployeesArray = () => {
+    if (!task.assignedEmployees) return [];
+    if (Array.isArray(task.assignedEmployees)) return task.assignedEmployees;
+    if (typeof task.assignedEmployees === "string") {
+      try {
+        const parsed = JSON.parse(task.assignedEmployees);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  const safeEmployees = getSafeEmployeesArray();
+
   return (
     <div
       className="fixed inset-0 bg-slate-900/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in"
@@ -120,19 +137,19 @@ export default function TaskDetailsModal({ task, onClose }) {
             </div>
           </div>
 
-          {/* الموظفين المعينين */}
-          {task.assignedEmployees?.length > 0 && (
+          {/* الموظفين المعينين - استخدام المصفوفة الآمنة */}
+          {safeEmployees.length > 0 && (
             <div className="space-y-2 border-t border-slate-100 pt-4">
               <div className="text-slate-500 font-bold text-xs flex items-center gap-2">
                 <User size={14} /> الموظفين المسؤولين عن التنفيذ:
               </div>
               <div className="flex flex-wrap gap-2">
-                {task.assignedEmployees.map((emp, i) => (
+                {safeEmployees.map((emp, i) => (
                   <span
                     key={i}
                     className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm"
                   >
-                    {emp.name}
+                    {emp.name || emp}
                   </span>
                 ))}
               </div>
@@ -150,7 +167,7 @@ export default function TaskDetailsModal({ task, onClose }) {
                 {task.client && (
                   <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-start gap-2">
                     <User size={14} className="text-blue-500 mt-0.5 shrink-0" />
-                    <div>
+                    <div className="overflow-hidden">
                       <p className="text-[9px] text-slate-400 font-bold">
                         العميل المرتبط
                       </p>
@@ -169,13 +186,13 @@ export default function TaskDetailsModal({ task, onClose }) {
                       size={14}
                       className="text-indigo-500 mt-0.5 shrink-0"
                     />
-                    <div>
+                    <div className="overflow-hidden">
                       <p className="text-[9px] text-slate-400 font-bold">
                         المعاملة المرتبطة
                       </p>
                       <p
                         className="text-xs font-black text-slate-800 truncate"
-                        title={task.transaction.title}
+                        title={task.transaction.transactionCode}
                       >
                         {task.transaction.transactionCode}
                       </p>
@@ -191,7 +208,7 @@ export default function TaskDetailsModal({ task, onClose }) {
                       size={14}
                       className="text-emerald-500 mt-0.5 shrink-0"
                     />
-                    <div>
+                    <div className="overflow-hidden">
                       <p className="text-[9px] text-slate-400 font-bold">
                         ملف الصك/الملكية
                       </p>
@@ -283,7 +300,7 @@ export default function TaskDetailsModal({ task, onClose }) {
                   <a
                     href={
                       task.filePath.startsWith("/")
-                        ? `${import.meta.env.VITE_API_URL}${task.filePath}`
+                        ? `${import.meta.env.VITE_API_URL || "https://details-worksystem1.com/api"}${task.filePath}`
                         : task.filePath
                     }
                     target="_blank"
