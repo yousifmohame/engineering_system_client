@@ -46,6 +46,8 @@ import {
   Landmark,
   PenLine,
   EyeOff,
+  Menu,
+  FolderOpen,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -91,6 +93,8 @@ import {
   PayTaskModal,
 } from "./TransactionModals";
 
+import FolderViewerWindow from "../../../pages/Transactions/TransactionFiles/components/FolderViewerWindow";
+
 export const TransactionDetailsModal = ({
   isOpen,
   onClose,
@@ -107,6 +111,23 @@ export const TransactionDetailsModal = ({
     documents: true,
     financial: true,
     others: false,
+  });
+
+  // حالة التحكم بالشريط الجانبي في الموبايل
+  const [isSidebarOpenMobile, setIsSidebarOpenMobile] = useState(false);
+
+  // حالة التحكم بنافذة مدير الملفات
+  const [isFolderViewerOpen, setIsFolderViewerOpen] = useState(false);
+
+  // 🚀 جلب الفئات (Categories) لاستخدامها في نافذة إدارة الملفات
+  const { data: categories = [] } = useQuery({
+    queryKey: ["transaction-categories"],
+    queryFn: async () => {
+      // ✅ تم تصحيح المسار ليتطابق مع إعدادات الباك إند
+      const res = await api.get("/files/categories");
+      return res.data?.data || [];
+    },
+    enabled: isOpen,
   });
 
   const toggleSidebarGroup = (group) => {
@@ -138,6 +159,68 @@ export const TransactionDetailsModal = ({
     if (!initialTx) return null;
     return transactionsData.find((t) => t.id === initialTx.id) || initialTx;
   }, [transactionsData, initialTx]);
+
+  // 🚀 تهيئة كائن المعاملة ليتطابق مع ما تتوقعه نافذة FolderViewerWindow
+  const formattedTransactionForFolderViewer = useMemo(() => {
+    if (!tx) return null;
+
+    const rawName =
+      tx.clientName || tx.client || tx.ownerNames || "عميل غير محدد";
+    const cleanName = rawName.split("-")[0].split("(")[0].trim();
+    const nameParts = cleanName.split(" ").filter((part) => part.trim() !== "");
+
+    let firstName = "عميل";
+    let lastName = "";
+
+    if (nameParts.length === 1) {
+      firstName = nameParts[0];
+    } else if (nameParts.length === 2) {
+      firstName = nameParts[0];
+      lastName = nameParts[1];
+    } else if (nameParts.length > 2) {
+      firstName = nameParts.slice(0, nameParts.length - 1).join(" ");
+      lastName = nameParts[nameParts.length - 1];
+    }
+
+    const isWord = /^[a-zA-Z\u0600-\u06FF\s]+$/.test(lastName);
+    if (!isWord && lastName !== "") {
+      firstName = cleanName;
+      lastName = "";
+    }
+
+    return {
+      id: tx.id,
+      transactionId: tx.id,
+      transactionCode: tx.ref || tx.transactionCode || tx.id.substring(0, 8),
+      ownerFirstName: firstName,
+      ownerLastName: lastName,
+      transactionType: tx.type || tx.category || "معاملة",
+      district: tx.districtName || tx.district || "غير محدد",
+      sector: tx.sector || "غير محدد",
+      commonName: tx.internalName || "",
+      officeName: tx.office || tx.source || "غير محدد",
+      supervisingOffice: tx.supervisingOffice || "غير محدد",
+      financialStatus: tx.financialStatus || "غير مسدد",
+      technicalStatus: tx.technicalStatus || "قيد المراجعة",
+      proceduralStatus: tx.proceduralStatus || tx.status || "جارية",
+      brokerName: tx.mediator || "",
+      agentName:
+        Array.isArray(tx.agents) && tx.agents.length > 0
+          ? tx.agents.map((a) => a.name).join(" و ")
+          : "",
+      createdAt: tx.created || tx.createdAt || "—",
+      modifiedAt: tx.updated || tx.modifiedAt || tx.created || "—",
+      clientPhone: tx.phone && !tx.phone.includes("غير متوفر") ? tx.phone : "",
+      clientEmail: tx.email || tx.client?.email || "",
+      isUrgent: tx.isUrgent || false,
+      locked: tx.locked || false,
+      hasLinked:
+        tx.linkedParentId ||
+        (tx.linkedChildren && tx.linkedChildren.length > 0) ||
+        false,
+      totalSize: tx.totalSize || 0,
+    };
+  }, [tx]);
 
   const { data: exchangeRates = [] } = useQuery({
     queryKey: ["exchange-rates"],
@@ -606,6 +689,78 @@ export const TransactionDetailsModal = ({
       toast.error("حدث خطأ أثناء فتح الملف");
     }
   };
+
+  // ==========================================================
+  // 💡 4. Handlers & Dynamic Data
+  // ==========================================================
+
+  // 🚀 تحديد المراحل ديناميكياً بناءً على النوع
+  const getDynamicPipeline = () => {
+    const type = tx?.type || "";
+    if (type.includes("رخصة بناء") || type.includes("اصدار")) {
+      return [
+        "إنشاء الطلب",
+        "الدراسات الفنية",
+        "الإدارة المالية",
+        "الاعتماد وإصدار الرخصة",
+      ];
+    } else if (type.includes("فرز") || type.includes("دمج")) {
+      return [
+        "إنشاء الطلب",
+        "الرفع المساحي",
+        "الإدارة المالية",
+        "اعتماد الأمانة",
+      ];
+    } else {
+      return [
+        "إنشاء الطلب",
+        "المتابعة والمراجعة",
+        "التحصيل والتسوية",
+        "الإغلاق",
+      ];
+    }
+  };
+  const dynamicPipeline = getDynamicPipeline();
+
+  // 🚀 دالة لتحديد المرحلة النشطة (Active Step Index) بناءً على حالة المعاملة
+  const getActiveStepIndex = () => {
+    if (!tx) return 0;
+
+    const status = tx.status || "جارية";
+
+    // إذا كانت مكتملة، كل المراحل تعتبر مكتملة (نأخذ آخر مرحلة)
+    if (status === "مكتملة") return dynamicPipeline.length - 1;
+
+    // حالة مبدئية
+    if (status === "جديدة") return 0;
+
+    // إذا كانت جارية، نتحقق من نسبة التحصيل أو المهام كتقدير للمرحلة الحالية
+    // (يمكنك تخصيص هذه الشروط بناءً على نظامك)
+    if (status === "جارية") {
+      // إذا كان هناك تسوية جزئية أو تحصيل
+      if (collectionPercent > 0 && collectionPercent < 100)
+        return Math.min(2, dynamicPipeline.length - 2);
+      // إذا كان التحصيل مكتمل ولم تغلق بعد
+      if (collectionPercent === 100)
+        return Math.min(3, dynamicPipeline.length - 1);
+
+      // الافتراضي للـ "جارية" هو المرحلة الثانية
+      return 1;
+    }
+
+    // الافتراضي
+    return 0;
+  };
+
+  const activeStepIndex = getActiveStepIndex();
+
+  // 🚀 تحديد ظهور التبويبات بناءً على النوع (مثال: الدراسات الفنية للرخص فقط)
+  const needsEngineeringStudies =
+    tx?.type?.includes("بناء") ||
+    tx?.type?.includes("اصدار") ||
+    tx?.type?.includes("تعديل");
+  const needsPledges =
+    tx?.type?.includes("بناء") || tx?.type?.includes("اشراف");
 
   const saveRequestDataEdits = () => {
     // نرسل requestData ككائن منفصل في الـ Body ليلتقطه الباك إند الحديث
@@ -1169,7 +1324,10 @@ export const TransactionDetailsModal = ({
     const isActive = activeTab === id;
     return (
       <button
-        onClick={() => setActiveTab(id)}
+        onClick={() => {
+          setActiveTab(id);
+          setIsSidebarOpenMobile(false); // 👈 إغلاق القائمة في الموبايل عند الضغط
+        }}
         className={`flex items-center gap-3 px-6 py-2.5 relative transition-all duration-200 text-right group w-full ${
           isActive
             ? "font-black bg-blue-50/80"
@@ -1291,42 +1449,72 @@ export const TransactionDetailsModal = ({
         payRemoteTaskMutation={payRemoteTaskMutation}
       />
 
+      {/* 🚀 نافذة ملفات المعاملة */}
+      {isFolderViewerOpen && formattedTransactionForFolderViewer && (
+        <FolderViewerWindow
+          transaction={formattedTransactionForFolderViewer} // 👈 التمرير بالشكل المهيأ
+          categories={categories}
+          user={user} // 👈 تمرير المستخدم كما في الملف الأصلي
+          onClose={() => setIsFolderViewerOpen(false)}
+        />
+      )}
+
       {/* --- Main Modal Container --- */}
       <div
         className="bg-white rounded-2xl flex flex-col overflow-hidden shadow-2xl relative w-[98vw] max-w-[1600px] h-[95vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 shrink-0">
-          <div className="flex items-center gap-4">
-            <span className="text-[var(--wms-accent-blue)] bg-blue-100 border border-blue-200 px-3 py-1 rounded-lg font-mono text-[14px] font-black">
+        {/* --- Header (Responsive) --- */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 bg-gray-50 shrink-0 gap-3">
+          <div className="flex items-center gap-2 md:gap-4 flex-wrap">
+            {/* زر القائمة الجانبية للموبايل */}
+            <button
+              onClick={() => setIsSidebarOpenMobile(!isSidebarOpenMobile)}
+              className="md:hidden p-1.5 bg-white border border-gray-200 rounded-lg text-gray-600"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            <span className="text-blue-600 bg-blue-100 border border-blue-200 px-2 md:px-3 py-1 rounded-lg font-mono text-xs md:text-sm font-black">
               {tx.ref || tx.id?.slice(-6)}
             </span>
-            <span className="text-[var(--wms-text)] text-[16px] font-black flex items-center gap-2">
-              <User className="w-5 h-5 text-gray-400" />
+            <span className="text-slate-800 text-sm md:text-[16px] font-black flex items-center gap-1.5 md:gap-2">
+              <User className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />{" "}
               {safeText(tx.client || tx.owner)}
             </span>
-            <span className="text-gray-400 text-sm font-bold border-r border-gray-300 pr-4">
+            <span className="text-gray-400 text-xs md:text-sm font-bold sm:border-r border-gray-300 sm:pr-4">
               {tx.type}
             </span>
             {isFrozen && (
-              <span className="px-3 py-1 rounded-full bg-slate-200 text-slate-700 text-[11px] font-bold flex items-center gap-1.5">
-                <Archive className="w-3.5 h-3.5" /> مجمّدة مؤقتاً
+              <span className="px-2 py-1 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold flex items-center gap-1">
+                <Archive className="w-3 h-3" /> مجمّدة
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 self-end sm:self-auto overflow-x-auto pb-1 sm:pb-0">
+            {/* 🚀 الزر الجديد: ملفات المعاملة */}
+            <button
+              onClick={() => setIsFolderViewerOpen(true)}
+              className="flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 text-[10px] md:text-xs font-black transition-colors shadow-sm whitespace-nowrap"
+            >
+              <FolderOpen className="w-3.5 h-3.5 md:w-4 md:h-4" />{" "}
+              <span>ملفات المعاملة</span>
+            </button>
+
             <button
               onClick={() => freezeMutation.mutate(tx.id)}
               disabled={freezeMutation.isPending}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-bold transition-colors shadow-sm"
+              className="flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-[10px] md:text-xs font-bold transition-colors shadow-sm whitespace-nowrap"
             >
               {isFrozen ? (
-                <RefreshCw className="w-4 h-4 text-green-600" />
+                <RefreshCw className="w-3.5 h-3.5 md:w-4 md:h-4 text-green-600" />
               ) : (
-                <Archive className="w-4 h-4 text-amber-600" />
+                <Archive className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-600" />
               )}
-              <span>{isFrozen ? "تنشيط المعاملة" : "تجميد"}</span>
+              <span className="hidden sm:inline">
+                {isFrozen ? "تنشيط" : "تجميد"}
+              </span>
             </button>
             <button
               onClick={() => {
@@ -1334,45 +1522,62 @@ export const TransactionDetailsModal = ({
                   deleteMutation.mutate(tx.id);
               }}
               disabled={deleteMutation.isPending}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 text-xs font-bold transition-colors shadow-sm"
+              className="flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 text-[10px] md:text-xs font-bold transition-colors shadow-sm whitespace-nowrap"
             >
-              <Trash2 className="w-4 h-4" /> <span>حذف نهائي</span>
+              <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />{" "}
+              <span className="hidden sm:inline">حذف</span>
             </button>
-            <div className="w-px h-8 bg-gray-200 mx-2"></div>
+            <div className="hidden sm:block w-px h-6 bg-gray-200 mx-1"></div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors border border-transparent hover:border-red-100"
+              className="p-1.5 md:p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors border border-transparent hover:border-red-100 shrink-0"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5 md:w-6 md:h-6" />
             </button>
           </div>
         </div>
 
-        {/* Pipeline Strip */}
-        <div className="flex items-center gap-1 px-4 py-2 border-b border-[var(--wms-border)] bg-[var(--wms-surface-2)] shrink-0 overflow-x-auto custom-scrollbar-slim">
-          {[
-            "إنشاء الطلب",
-            "الدراسات الفنية",
-            "الإدارة المالية",
-            "التحصيل والتسوية",
-            "الاعتماد والإغلاق",
-          ].map((step, i, arr) => (
-            <React.Fragment key={step}>
-              <div
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap ${i === 0 ? "text-green-700 bg-green-100 border border-green-200" : "text-gray-500 bg-white border border-gray-200 hover:bg-gray-50"}`}
-              >
-                {i === 0 ? (
-                  <Check className="w-3.5 h-3.5" />
-                ) : (
-                  <Circle className="w-3 h-3" />
-                )}{" "}
-                <span>{step}</span>
-              </div>
-              {i < arr.length - 1 && (
-                <ArrowLeftRight className="w-3 h-3 text-gray-300 mx-1 shrink-0" />
-              )}
-            </React.Fragment>
-          ))}
+        {/* 🚀 Pipeline Strip (Dynamic & Interactive) */}
+        <div className="flex items-center gap-1 px-4 py-2 border-b border-[var(--wms-border)] bg-slate-50 shrink-0 overflow-x-auto custom-scrollbar-slim">
+          {dynamicPipeline.map((step, i, arr) => {
+            // تحديد حالة المرحلة بناءً على الـ index
+            const isCompleted =
+              i < activeStepIndex ||
+              (i === activeStepIndex && tx.status === "مكتملة");
+            const isActive = i === activeStepIndex && tx.status !== "مكتملة";
+
+            return (
+              <React.Fragment key={step}>
+                <div
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-colors
+                    ${
+                      isCompleted
+                        ? "text-emerald-700 bg-emerald-100 border border-emerald-200"
+                        : isActive
+                          ? "text-blue-700 bg-blue-100 border border-blue-200 ring-2 ring-blue-100 ring-offset-1"
+                          : "text-slate-500 bg-white border border-slate-200"
+                    }`}
+                >
+                  {isCompleted ? (
+                    <Check className="w-3.5 h-3.5" />
+                  ) : isActive ? (
+                    <Activity className="w-3 h-3 animate-pulse" /> // أيقونة متحركة للمرحلة الحالية
+                  ) : (
+                    <Circle className="w-2.5 h-2.5" />
+                  )}{" "}
+                  <span>{step}</span>
+                </div>
+
+                {/* السهم بين المراحل */}
+                {i < arr.length - 1 && (
+                  <ArrowLeftRight
+                    className={`w-2.5 h-2.5 md:w-3 md:h-3 mx-0.5 md:mx-1 shrink-0 transition-colors
+                      ${i < activeStepIndex ? "text-emerald-400" : "text-slate-300"}`}
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
         </div>
 
         {/* Layout Wrapper for Sidebar and Content */}
@@ -1605,8 +1810,10 @@ export const TransactionDetailsModal = ({
           </div>
 
           {/* 💡 Dynamic Content Area (Left in RTL) */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar-slim relative">
-            <div className="p-6 max-w-7xl mx-auto min-h-full">
+          <div
+            className={`flex-1 overflow-y-auto custom-scrollbar-slim relative ${isSidebarOpenMobile ? "hidden md:block" : "block"}`}
+          >
+            <div className="p-3 md:p-6 mx-auto min-h-full w-full">
               {/* المكونات الأساسية المتوفرة حالياً */}
               {activeTab === "basic" && <BasicTab {...tabContext} />}
               {activeTab === "request_data" && (
