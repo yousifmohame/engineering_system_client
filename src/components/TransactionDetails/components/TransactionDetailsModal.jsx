@@ -1617,7 +1617,7 @@ export const TransactionDetailsModal = ({
                 {renderTabButton("remote", "العمل عن بعد", Monitor, "#059669")}
                 {renderTabButton(
                   "attachments",
-                  "المرفقات الأساسية",
+                  "ملفات المعاملة",
                   Paperclip,
                   "#64748b",
                 )}
