@@ -48,7 +48,6 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
-import { RequestDataTab } from "./tabs/RequestDataTab";
 
 // 💡 1. استيراد المساعدات
 import {
@@ -61,6 +60,7 @@ import {
 
 // 💡 2. استيراد التبويبات المقسمة
 import { BasicTab } from "./tabs/BasicTab";
+import { RequestDataTab } from "./tabs/RequestDataTab";
 import { StatusTab } from "./tabs/StatusTab";
 import { AttachmentsTab } from "./tabs/AttachmentsTab";
 import { LogsTab } from "./tabs/LogsTab";
@@ -256,6 +256,15 @@ export const TransactionDetailsModal = ({
     serviceNumber: "",
     serviceYear: "",
     responsibleEmployee: currentUser,
+    surveyRequestNumber: "",
+    surveyRequestYear: "",
+    surveyServiceNumber: "",
+    surveyServiceYear: "",
+    surveyReportNumber: "",
+    surveyReportDate: "",
+    contractNumber: "",
+    contractApprovalDate: "",
+    contractApprovedBy: "",
   });
 
   const [isAddAgentOpen, setIsAddAgentOpen] = useState(false);
@@ -353,14 +362,12 @@ export const TransactionDetailsModal = ({
         (c) => (c.name?.ar || c.name) === safeText(tx.client),
       );
 
-      // 💡 استخراج الملاك الإضافيين ليكونوا جاهزين في فورم التعديل
       let additionalOwners = [];
       if (
         tx.detailedOwnersList &&
         Array.isArray(tx.detailedOwnersList) &&
         tx.detailedOwnersList.length > 1
       ) {
-        // نستثني المالك الرئيسي، ونأخذ الباقين
         additionalOwners = tx.detailedOwnersList
           .filter((o) => !o.isPrimary)
           .map((o) => ({
@@ -376,9 +383,7 @@ export const TransactionDetailsModal = ({
           .padStart(2, "0"),
         clientId: currentClient?.id || "",
         clientName: safeText(tx.client || tx.owner),
-
-        additionalOwners: additionalOwners, // 👈 تم الإضافة هنا
-
+        additionalOwners: additionalOwners,
         district: tx.district || "",
         districtId: "",
         sector: tx.sector || "",
@@ -447,6 +452,20 @@ export const TransactionDetailsModal = ({
         serviceNumber: reqData.serviceNumber || "",
         serviceYear: reqData.serviceYear || "",
         responsibleEmployee: reqData.responsibleEmployee || currentUser,
+        // 🚀 تم إضافة الحقول الجديدة هنا لتتم قراءتها بنجاح عند فتح المعاملة
+        surveyRequestNumber: reqData.surveyRequestNumber || "",
+        surveyRequestYear: reqData.surveyRequestYear || "",
+        surveyServiceNumber: reqData.surveyServiceNumber || "",
+        surveyServiceYear: reqData.surveyServiceYear || "",
+        surveyReportNumber: reqData.surveyReportNumber || "",
+        surveyReportDate: reqData.surveyReportDate
+          ? reqData.surveyReportDate.split("T")[0]
+          : "",
+        contractNumber: reqData.contractNumber || "",
+        contractApprovalDate: reqData.contractApprovalDate
+          ? reqData.contractApprovalDate.split("T")[0]
+          : "",
+        contractApprovedBy: reqData.contractApprovedBy || "",
       });
     }
   }, [tx, clients]);
