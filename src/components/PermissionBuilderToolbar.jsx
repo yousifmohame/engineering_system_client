@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { usePermissionBuilder } from "../context/PermissionBuilderContext";
-import { useAuth } from "../context/AuthContext"; // 👈 1. استيراد سياق المصادقة
+import { useAuth } from "../context/AuthContext";
 import { ShieldAlert, X } from "lucide-react";
 import api from "../api/axios";
 
@@ -8,28 +8,56 @@ const PermissionBuilderToolbar = () => {
   const { isBuilderMode, setIsBuilderMode, activeRoleId, setActiveRoleId } = usePermissionBuilder();
   const [roles, setRoles] = useState([]);
   
-  // 👈 2. جلب بيانات المستخدم الحالي
+  // 👈 1. إنشاء مرجع (ref) لنتمكن من قياس ارتفاع الشريط برمجياً
+  const toolbarRef = useRef(null);
+  
   const { user } = useAuth(); 
+  const isSuperAdmin = user?.email === "admin@wms.com"; 
 
-  // 👈 3. تحديد المدير العام بناءً على الإيميل (نفس الإيميل الذي استخدمناه في السايدبار)
-  const isSuperAdmin = user?.email === "admin@wms.com"; // ⚠️ ضع إيميلك الحقيقي هنا
-
-  // جلب الأدوار لملء القائمة المنسدلة
+  // جلب الأدوار
   useEffect(() => {
-    // أضفنا شرط isSuperAdmin هنا لعدم استهلاك السيرفر بطلبات من موظفين عاديين
     if (isBuilderMode && isSuperAdmin) {
       api.get("/roles").then(res => setRoles(res.data)).catch(console.error);
     }
   }, [isBuilderMode, isSuperAdmin]);
 
-  // 👈 4. السطر السحري الحامي: إذا لم يكن المدير، لا ترسم أي شيء إطلاقاً!
+  // 👈 2. التأثير (Effect) المسؤول عن إزاحة الصفحة للأسفل
+  useEffect(() => {
+    // إذا لم يكن وضع البناء فعالاً، قم بتصفير الإزاحة وتوقف
+    if (!isSuperAdmin || !isBuilderMode) {
+      document.body.style.paddingTop = "0px";
+      return;
+    }
+
+    // دالة لتحديث الـ Padding بناءً على الارتفاع الفعلي للشريط
+    const updateBodyPadding = () => {
+      if (toolbarRef.current) {
+        const height = toolbarRef.current.offsetHeight;
+        document.body.style.paddingTop = `${height}px`;
+        // إضافة انتقال ناعم (Transition) لعملية الإزاحة
+        document.body.style.transition = "padding-top 0.3s ease-in-out";
+      }
+    };
+
+    // استدعاء الدالة لأول مرة عند فتح الشريط
+    updateBodyPadding();
+
+    // 👈 مراقبة تغير حجم الشريط (مفيد جداً عند تصغير/تكبير الشاشة أو فتحها من الجوال)
+    const resizeObserver = new ResizeObserver(() => updateBodyPadding());
+    if (toolbarRef.current) {
+      resizeObserver.observe(toolbarRef.current);
+    }
+
+    // 👈 التنظيف (Cleanup) عند إغلاق الشريط أو مغادرة الصفحة
+    return () => {
+      resizeObserver.disconnect();
+      document.body.style.paddingTop = "0px";
+    };
+  }, [isBuilderMode, isSuperAdmin]);
+
   if (!isSuperAdmin) {
     return null;
   }
-
-  // ==========================================
-  // من هنا ورايح، الأكواد لن تنفذ ولن تظهر إلا للمدير العام
-  // ==========================================
 
   // الزر العائم لتفعيل وضع البناء
   if (!isBuilderMode) {
@@ -46,7 +74,11 @@ const PermissionBuilderToolbar = () => {
 
   // الشريط العلوي أثناء وضع البناء
   return (
-    <div className="fixed top-0 left-0 right-0 z-[9999] bg-slate-900 text-white p-3 shadow-2xl flex flex-wrap justify-between items-center border-b-4 border-red-500" dir="rtl">
+    <div 
+      ref={toolbarRef} // 👈 3. ربط الـ Ref بالشريط ليتم قياسه
+      className="fixed top-0 left-0 right-0 z-[9999] bg-slate-900 text-white p-3 shadow-2xl flex flex-wrap justify-between items-center border-b-4 border-red-500" 
+      dir="rtl"
+    >
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 font-bold text-red-400 animate-pulse">
           <ShieldAlert className="w-5 h-5" /> وضع تعيين الصلاحيات نشط

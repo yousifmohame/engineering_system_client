@@ -30,6 +30,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { SearchableSelect } from "../TransactionSharedUI";
+import AccessControl from "../../../../components/AccessControl";
 
 // Helper: لتحويل الأرقام العربية إلى إنجليزية
 const toEnglishNumbers = (str) => {
@@ -201,6 +202,12 @@ export const BasicTab = ({
         <h3 className="font-bold text-gray-800 flex items-center gap-2">
           <FileText className="w-5 h-5 text-blue-600" /> البيانات الرئيسية
         </h3>
+        <AccessControl
+              code="EDIT_TRANSACTION_42"
+              name="تعديل البيانات الأساسية للمعاملة"
+              moduleName="تفاصيل المعاملة"
+              tabName="البيانات الأساسية"
+            >
         <button
           onClick={() => {
             if (!isEditingBasic) {
@@ -235,6 +242,7 @@ export const BasicTab = ({
           )}
           {isEditingBasic ? "إلغاء التعديل" : "تعديل البيانات"}
         </button>
+        </AccessControl>
       </div>
 
       {/* 💡 الشريط العلوي: منشئ المعاملة وتفاصيل الوقت والتأخير */}
