@@ -459,6 +459,8 @@ export const TransactionDetailsModal = ({
           }));
       }
 
+      const initialHasAgreement = tx.hasAgreement || tx.requestData?.hasAgreement || false;
+
       setEditFormData({
         year: new Date(tx.created || tx.date).getFullYear().toString(),
         month: (new Date(tx.created || tx.date).getMonth() + 1)
@@ -520,6 +522,7 @@ export const TransactionDetailsModal = ({
       setRequestDataForm({
         designerOffice: reqData.designerOffice || "",
         supervisorOffice: reqData.supervisorOffice || "",
+        hasAgreement: initialHasAgreement,
         electronicLicenseNumber: reqData.electronicLicenseNumber || "",
         electronicLicenseHijriYear: reqData.electronicLicenseHijriYear || "",
         electronicLicenseDate: reqData.electronicLicenseDate
@@ -763,9 +766,14 @@ export const TransactionDetailsModal = ({
     tx?.type?.includes("بناء") || tx?.type?.includes("اشراف");
 
   const saveRequestDataEdits = () => {
-    // نرسل requestData ككائن منفصل في الـ Body ليلتقطه الباك إند الحديث
+    // 💡 نستخرج الحقول التي يجب أن ترسل بشكل مباشر خارج كائن requestData
+    const { designerOffice, supervisorOffice, hasAgreement, ...restRequestData } = requestDataForm;
+
     updateTxMutation.mutate({
-      requestData: requestDataForm,
+      requestData: requestDataForm, // نرسل كامل الكائن لدعم التوافقية السابقة
+      designerOfficeId: designerOffice, // إرسال صريح للحقل المخصص
+      supervisorOfficeId: supervisorOffice, // إرسال صريح للحقل المخصص
+      hasAgreement: hasAgreement, // إرسال صريح للاتفاقية
     });
   };
 

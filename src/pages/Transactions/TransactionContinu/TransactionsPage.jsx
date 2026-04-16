@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import api from "../../../api/axios";
 import { useAppStore } from "../../../stores/useAppStore";
 import { useAuth } from "../../../context/AuthContext";
@@ -16,28 +16,24 @@ import {
   SlidersHorizontal,
   Plus,
   Download,
-  EyeOff,
   RefreshCw,
   Square,
-  Settings2,
   Pin,
   ArrowRight,
   ArrowLeft,
-  ChartColumn,
   Loader2,
   ChevronDown,
   Lock,
   Filter,
-  X, // 👈 استيراد أيقونة الإغلاق
+  X,
   Activity,
+  Users,
 } from "lucide-react";
 
 // =========================================================================
 // مكون الصفحة الرئيسي (الجدول والداشبورد)
 // =========================================================================
 const TransactionsPage = ({ onClose }) => {
-  // 👈 استقبال onClose كـ prop
-  const queryClient = useQueryClient();
   const { openScreens, activeScreenId } = useAppStore();
   const activeScreen = openScreens.find((s) => s.id === activeScreenId);
   const activeSector = activeScreen?.props?.sector || "الكل";
@@ -65,8 +61,9 @@ const TransactionsPage = ({ onClose }) => {
   if (hasRemainingAccess) totalVisibleColumns++;
   if (hasCollStatusAccess) totalVisibleColumns++;
 
-  const [activeSourceFilter, setActiveSourceFilter] = useState("الكل");
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeClientFilter, setActiveClientFilter] = useState("الكل");
+  const [activeStatusFilter, setActiveStatusFilter] = useState("الكل");
 
   // State للفلاتر المتقدمة
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -93,68 +90,111 @@ const TransactionsPage = ({ onClose }) => {
     },
   });
 
-  const { data: persons = [] } = useQuery({
-    queryKey: ["persons-directory"],
+  // جلب المكاتب لترجمة الـ IDs إلى أسماء عند الفلترة
+  const { data: coopOffices = [] } = useQuery({
+    queryKey: ["coop-offices-list"],
     queryFn: async () => {
-      const res = await api.get("/persons");
+      const res = await api.get("/coop-offices");
       return res.data?.data || [];
     },
   });
 
-  const filterSources = useMemo(() => {
-    const sourcesSet = new Set();
-    sourcesSet.add("الكل");
-    sourcesSet.add("مكتب ديتيلز");
+  const uniqueClients = useMemo(() => {
+    const clients = transactionsData
+      .map((tx) => tx.client || tx.owner)
+      .filter(Boolean);
+    return ["الكل", ...new Set(clients)].sort();
+  }, [transactionsData]);
 
-    persons.forEach((person) => {
-      if (
-        person.role === "وسيط المكتب الهندسي" ||
-        person.role === "مكتب خارجي" ||
-        person.role === "شركة"
-      ) {
-        sourcesSet.add(person.name);
-      }
-    });
-
-    transactionsData.forEach((tx) => {
-      const source = tx.sourceName || tx.source;
-      if (source && source !== "مباشر" && source !== "غير محدد")
-        sourcesSet.add(source);
-    });
-
-    return Array.from(sourcesSet);
-  }, [persons, transactionsData]);
+  const uniqueStatuses = useMemo(() => {
+    const statuses = transactionsData
+      .map(
+        (tx) =>
+          tx.status ||
+          tx.transactionStatus ||
+          tx.notes?.transactionStatusData?.currentStatus ||
+          tx.notes?.status ||
+          "مسجلة",
+      )
+      .filter(Boolean);
+    return ["الكل", ...new Set(statuses)].sort();
+  }, [transactionsData]);
 
   // فلترة البيانات
   const filteredTransactions = useMemo(() => {
     return transactionsData.filter((tx) => {
+      // ===================================================================
+      // 💡 القاعدة الإجبارية الصارمة مع Console.log للتحقق 💡
+      // ===================================================================
+      const hasAgreement =
+        tx.requestData?.hasAgreement === true || tx.hasAgreement === true;
+
+      // أخذ الـ IDs إذا كانت موجودة، وإلا تركها فارغة تماماً
+      const dId = (tx.designerOfficeId || tx.requestData?.designerOffice || "").toString().trim();
+      const sId = (tx.supervisorOfficeId || tx.requestData?.supervisorOffice || "").toString().trim();
+
+      // البحث عن الأسماء في قائمة المكاتب
+      const dOffice = coopOffices.find((o) => o.id === dId || o.name === dId);
+      const sOffice = coopOffices.find((o) => o.id === sId || o.name === sId);
+
+      // استخراج الاسم النهائي (إذا لم يوجد مكتب، سيكون النص فارغاً)
+      const designerName = dOffice ? dOffice.name.toLowerCase() : dId.toLowerCase();
+      const supervisorName = sOffice ? sOffice.name.toLowerCase() : sId.toLowerCase();
+
+      // التحقق مما إذا كان الاسم يحتوي صراحة على كلمة "ديتيلز" ويجب أن لا يكون فارغاً
+      const isDesignerDetails = designerName !== "" && designerName.includes("ديتيلز");
+      const isSupervisorDetails = supervisorName !== "" && supervisorName.includes("ديتيلز");
+
+      // إعداد طباعة لاختبار المعاملة قبل الإرجاع
+      console.log(`🔎 فحص المعاملة: [${tx.ref || tx.id}] | الاسم المتداول: ${tx.internalName}`);
+      console.log(`   - الاتفاقية: ${hasAgreement}`);
+      console.log(`   - المصمم: ID(${dId}) -> Name(${designerName}) -> هل هو ديتيلز؟ ${isDesignerDetails}`);
+      console.log(`   - المشرف: ID(${sId}) -> Name(${supervisorName}) -> هل هو ديتيلز؟ ${isSupervisorDetails}`);
+
+      // الشرط الإجباري الصارم: إذا لم يكن هناك اتفاقية، والمصمم ليس ديتيلز، والمشرف ليس ديتيلز -> ارفض المعاملة!
+      if (!hasAgreement && !isDesignerDetails && !isSupervisorDetails) {
+        console.log(`   ❌ تم رفض المعاملة: لا يوجد اتفاقية والمكاتب ليست ديتيلز.`);
+        return false;
+      }
+      
+      console.log(`   ✅ المعاملة مقبولة في الفلتر الإجباري.`);
+      // ===================================================================
+
       const internalName = tx.internalName || tx.notes?.internalName || "";
+      const txClientName = tx.client || tx.owner || "";
+      const sysStat =
+        tx.status ||
+        tx.transactionStatus ||
+        tx.notes?.transactionStatusData?.currentStatus ||
+        tx.notes?.status ||
+        "مسجلة";
 
       const matchesSearch =
         searchQuery === "" ||
         tx.ref?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tx.client?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        txClientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         tx.district?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         internalName.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesSource =
-        activeSourceFilter === "الكل" ||
-        tx.sourceName === activeSourceFilter ||
-        tx.sourceType === activeSourceFilter ||
-        tx.source === activeSourceFilter;
+      const matchesClient =
+        activeClientFilter === "الكل" || txClientName === activeClientFilter;
+
+      const matchesStatus =
+        activeStatusFilter === "الكل" || sysStat === activeStatusFilter;
 
       const matchesSector =
         activeSector === "الكل" || tx.sector?.includes(activeSector);
 
       const matchesType =
         advFilters.type === "الكل" || tx.type === advFilters.type;
-      const sysStat = tx.status || tx.transactionStatus || "مسجلة";
+
       const matchesSysStatus =
         advFilters.sysStatus === "الكل" || sysStat === advFilters.sysStatus;
 
       return (
         matchesSearch &&
-        matchesSource &&
+        matchesClient &&
+        matchesStatus &&
         matchesSector &&
         matchesType &&
         matchesSysStatus
@@ -163,9 +203,11 @@ const TransactionsPage = ({ onClose }) => {
   }, [
     transactionsData,
     searchQuery,
-    activeSourceFilter,
+    activeClientFilter,
+    activeStatusFilter,
     activeSector,
     advFilters,
+    coopOffices,
   ]);
 
   // حساب المجاميع
@@ -177,7 +219,7 @@ const TransactionsPage = ({ onClose }) => {
         acc.remainingAmount += parseFloat(tx.remainingAmount) || 0;
         return acc;
       },
-      { totalFees: 0, paidAmount: 0, remainingAmount: 0 },
+      { totalFees: 0, paidAmount: 0, remainingAmount: 0 }
     );
   }, [filteredTransactions]);
 
@@ -219,7 +261,7 @@ const TransactionsPage = ({ onClose }) => {
 
         row.push(
           tx.status || tx.transactionStatus || "مسجلة",
-          tx.created || tx.date,
+          tx.created || tx.date
         );
 
         return row
@@ -234,7 +276,7 @@ const TransactionsPage = ({ onClose }) => {
       link.setAttribute("href", url);
       link.setAttribute(
         "download",
-        `Transactions_Export_${new Date().toLocaleDateString("en-GB")}.csv`,
+        `Transactions_Export_${new Date().toLocaleDateString("en-GB")}.csv`
       );
       document.body.appendChild(link);
       link.click();
@@ -256,7 +298,7 @@ const TransactionsPage = ({ onClose }) => {
       className="flex flex-col h-full overflow-hidden bg-[var(--wms-bg-0)] font-sans"
       dir="rtl"
     >
-      {/* 💡 🚀 Header مع زر الإغلاق 🚀 💡 */}
+      {/* 💡 Header */}
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-md bg-purple-100 text-purple-600 flex items-center justify-center">
@@ -267,12 +309,11 @@ const TransactionsPage = ({ onClose }) => {
               متابعة المعاملات
             </h2>
             <p className="text-[10px] text-gray-500 font-semibold">
-              إدارة المعاملات التي تحت الإجراء
+              إدارة المعاملات المعتمدة لديتيلز
             </p>
           </div>
         </div>
 
-        {/* زر الإغلاق الذي يستدعي onClose */}
         {onClose && (
           <button
             onClick={onClose}
@@ -327,6 +368,38 @@ const TransactionsPage = ({ onClose }) => {
             />
           </div>
 
+          <div className="relative flex items-center">
+            <Users className="absolute right-2 w-3.5 h-3.5 text-blue-500 pointer-events-none" />
+            <select
+              value={activeClientFilter}
+              onChange={(e) => setActiveClientFilter(e.target.value)}
+              className="appearance-none bg-white border border-gray-200 rounded-md pr-7 pl-6 h-[32px] text-[11px] font-semibold text-gray-700 outline-none focus:border-blue-500 cursor-pointer min-w-[140px] max-w-[200px] truncate"
+            >
+              {uniqueClients.map((client) => (
+                <option key={client} value={client}>
+                  {client === "الكل" ? "جميع العملاء" : client}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute left-2 w-3 h-3 text-gray-400 pointer-events-none" />
+          </div>
+
+          <div className="relative flex items-center">
+            <Activity className="absolute right-2 w-3.5 h-3.5 text-amber-500 pointer-events-none" />
+            <select
+              value={activeStatusFilter}
+              onChange={(e) => setActiveStatusFilter(e.target.value)}
+              className="appearance-none bg-white border border-gray-200 rounded-md pr-7 pl-6 h-[32px] text-[11px] font-semibold text-gray-700 outline-none focus:border-blue-500 cursor-pointer min-w-[130px]"
+            >
+              {uniqueStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {status === "الكل" ? "كل الحالات" : status}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute left-2 w-3 h-3 text-gray-400 pointer-events-none" />
+          </div>
+
           <button
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
             className={`flex items-center gap-1.5 px-3 rounded-md border h-[32px] text-[11px] font-semibold transition-colors ${showAdvancedFilters ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"}`}
@@ -348,50 +421,47 @@ const TransactionsPage = ({ onClose }) => {
           <div className="flex-1"></div>
 
           {/* ملخص المبالغ العلوية */}
-          <div className="flex items-center gap-3 text-[11px]">
+          <div className="hidden lg:flex items-center gap-3 text-[11px] bg-white border border-gray-100 px-3 py-1.5 rounded-md shadow-sm">
             <span className="text-gray-500">
               الإجمالي:{" "}
               <span className="text-gray-800 font-mono font-bold">
-                {transactionsData.length}
+                {filteredTransactions.length}
               </span>
             </span>
-
             {hasPaidAccess && (
-              <span className="text-gray-500">
+              <span className="text-gray-500 border-r border-gray-200 pr-3">
                 محصّل:{" "}
                 <span className="font-mono font-bold text-green-600">
                   {
-                    transactionsData.filter(
+                    filteredTransactions.filter(
                       (tx) =>
                         (tx.collectionAmount || tx.paidAmount) >=
                           (tx.totalPrice || tx.totalFees) &&
-                        (tx.totalPrice || tx.totalFees) > 0,
+                        (tx.totalPrice || tx.totalFees) > 0
                     ).length
                   }
                 </span>
               </span>
             )}
-
             {hasRemainingAccess && (
-              <span className="text-gray-500">
+              <span className="text-gray-500 border-r border-gray-200 pr-3">
                 معلّق:{" "}
                 <span className="font-mono font-bold text-amber-500">
                   {
-                    transactionsData.filter(
+                    filteredTransactions.filter(
                       (tx) =>
                         (tx.collectionAmount || tx.paidAmount) > 0 &&
                         (tx.collectionAmount || tx.paidAmount) <
-                          (tx.totalPrice || tx.totalFees),
+                          (tx.totalPrice || tx.totalFees)
                     ).length
                   }
                 </span>
               </span>
             )}
-
             {hasTotalAccess && (
-              <span className="text-gray-500">
+              <span className="text-gray-500 border-r border-gray-200 pr-3">
                 إجمالي الأتعاب:{" "}
-                <span className="font-mono font-bold text-green-600">
+                <span className="font-mono font-bold text-blue-600">
                   {totals.totalFees.toLocaleString()}
                 </span>
               </span>
@@ -478,28 +548,8 @@ const TransactionsPage = ({ onClose }) => {
           </div>
         )}
 
-        {/* شريط ملخص مصادر المعاملات */}
-        <div className="shrink-0 space-y-1.5">
-          <div className="flex items-center gap-1.5 px-1 flex-wrap">
-            <span className="text-gray-400 text-[10px]">فلتر المصدر:</span>
-            {filterSources.map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setActiveSourceFilter(filter)}
-                className={`px-2.5 py-0.5 rounded-md cursor-pointer transition-colors text-[10px] font-semibold ${
-                  activeSourceFilter === filter
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "bg-white border border-gray-200 text-gray-500 hover:text-gray-800 hover:bg-gray-50"
-                }`}
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* الجدول الرئيسي */}
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden flex-1 flex flex-col focus:outline-none shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden flex-1 flex flex-col focus:outline-none shadow-sm mt-2">
           <div className="flex-1 overflow-auto custom-scrollbar-slim relative min-h-0">
             <table className="w-full border-collapse text-[12px] min-w-[1300px]">
               <thead className="sticky top-0 z-30">
@@ -791,7 +841,7 @@ const TransactionsPage = ({ onClose }) => {
                       colSpan={totalVisibleColumns}
                       className="text-center py-10 text-gray-400 font-bold"
                     >
-                      لا توجد معاملات مطابقة للبحث
+                      لا توجد معاملات مطابقة
                     </td>
                   </tr>
                 )}
@@ -834,24 +884,6 @@ const TransactionsPage = ({ onClose }) => {
                 </tr>
               </tfoot>
             </table>
-          </div>
-
-          <div className="flex items-center justify-between px-3 py-1.5 border-t border-gray-200 shrink-0 text-[11px] bg-gray-50">
-            <span className="text-gray-500">
-              عرض {filteredTransactions.length > 0 ? 1 : 0}-
-              {filteredTransactions.length} من {filteredTransactions.length}
-            </span>
-            <div className="flex items-center gap-1">
-              <button className="p-1 rounded hover:bg-gray-200 text-gray-500">
-                <ArrowRight className="w-4 h-4" />
-              </button>
-              <span className="px-2 py-0.5 rounded bg-blue-600 text-white text-center min-w-[24px]">
-                1
-              </span>
-              <button className="p-1 rounded hover:bg-gray-200 text-gray-500">
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-            </div>
           </div>
         </div>
       </div>

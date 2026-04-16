@@ -341,6 +341,22 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
     return opts;
   }, [riyadhZones]);
 
+  // 💡 تجهيز خيارات مصدر المعاملة الخارجي (موظفين، وسطاء، معقبين فقط)
+  const sourcePersonsOptions = useMemo(() => {
+    return persons
+      .filter((e) =>
+        [
+          "موظف",
+          "مدير",
+          "موظف عن بعد",
+          "وسيط",
+          "معقب",
+          "وسيط المكتب الهندسي",
+        ].includes(e.role),
+      )
+      .map((p) => ({ label: p.name, value: p.id }));
+  }, [persons]);
+
   // تصفية الموظفين حسب الأدوار
   const brokers = useMemo(
     () => persons.filter((e) => e.role === "وسيط"),
@@ -382,28 +398,11 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
     },
   });
 
-  // 💡 تم إصلاح مسار إضافة المكتب المتعاون ليطابق الباك إند
-  const quickAddOffice = useMutation({
-    mutationFn: async (name) =>
-      await api.post("/coop-offices", {
-        name: name,
-        isLinkedToSystem: "غير مفعل",
-        monthlyAmount: 0,
-      }),
-    onSuccess: () => {
-      toast.success("تمت إضافة المكتب بنجاح!");
-      queryClient.invalidateQueries(["coop-offices-modal"]);
-    },
-    onError: (err) => {
-      toast.error("حدث خطأ أثناء إضافة المكتب!");
-    },
-  });
-
   const quickAddBroker = useMutation({
     mutationFn: async (name) =>
       await api.post("/persons", { name, role: "وسيط", phone: "0500000000" }),
     onSuccess: () => {
-      toast.success("تمت إضافة الوسيط!");
+      toast.success("تمت إضافة الوسيط/المصدر بنجاح!");
       queryClient.invalidateQueries(["persons-directory-modal"]);
     },
   });
@@ -415,7 +414,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
     internalName: "",
     isInternalNameHidden: false,
 
-    owners: [{ ...initialOwnerState }], // 👈 دعم تعدد الملاك
+    owners: [{ ...initialOwnerState }],
 
     districtName: "",
     districtId: "",
@@ -425,14 +424,27 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
     surveyType: "برفع",
     plots: [""],
     plan: "",
-    landArea: "", // 👈 حقل المساحة الجديد
+    landArea: "",
     oldDeed: "",
-    serviceNo: "",
-    requestNo: "",
-    licenseNo: "",
+
+    // 💡 حقول الأرقام والتواريخ المفصلة
+    serviceNumber: "",
+    serviceYear: "",
+    serviceDate: "",
+    requestNumber: "",
+    requestYear: "",
+    requestDate: "",
+    electronicLicenseNumber: "",
+    electronicLicenseHijriYear: "",
+    electronicLicenseDate: "",
+
+    designerOffice: "",
+    supervisorOffice: "",
+    hasAgreement: false, // 💡 حقل الاتفاقية الجديد
 
     entities: [],
-    externalSource: "مكتب ديتيلز",
+    externalSource: "", // سيتم تخزين الاسم هنا للـ SmartField
+    sourcePersonId: "", // 💡 سيتم تخزين الـ ID هنا لإرساله للباك إند
 
     feeType: "نهائي",
     isFeeDelayed: false,
@@ -455,7 +467,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
 
     receivedAttachments: [],
     customAttachments: [],
-    comments: [""], // 👈 2. مصفوفة التعليقات المبدئية
+    comments: [""],
   };
 
   const [formData, setFormData] = useState(initialForm);
@@ -537,7 +549,6 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
     setFormData((p) => ({ ...p, customAttachments: newAtt }));
   };
 
-  // 👈 3. دوال التعامل مع التعليقات
   const addCommentRow = () =>
     setFormData((p) => ({ ...p, comments: [...p.comments, ""] }));
   const removeCommentRow = (idx) =>
@@ -572,13 +583,11 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
       ? formData.owners[0].newClient.type
       : undefined;
 
-    // 💡 مصفوفة جديدة لحفظ بيانات الشركاء (الملاك) بشكل مفصل
     let detailedOwners = [];
 
     for (let i = 0; i < formData.owners.length; i++) {
       let o = formData.owners[i];
 
-      // 💡 المالك الرئيسي جديد
       if (i === 0 && o.isNewClient) {
         let name =
           o.newClient.type.includes("شركة") || o.newClient.type.includes("جهة")
@@ -590,24 +599,20 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
         finalNames.push(name.trim());
         if (o.newClient.idNumber) finalIds.push(o.newClient.idNumber);
 
-        // إضافة للمصفوفة المفصلة
         detailedOwners.push({
-          clientId: null, // سيتكفل الباك إند بإنشائه وتعيين ה-ID له
+          clientId: null,
           ownerName: name.trim(),
           idNumber: o.newClient.idNumber || "",
           isPrimary: true,
         });
-      }
-      // 💡 مالك مسجل (سواء كان الرئيسي أو شريك إضافي)
-      else {
+      } else {
         if (!o.clientId || !o.ownerName)
           return toast.error(`الرجاء اختيار المالك رقم ${i + 1} من القائمة`);
 
         finalNames.push(o.ownerName);
 
-        // إضافة للمصفوفة المفصلة
         detailedOwners.push({
-          clientId: o.clientId, // يجب أن يمتلك ID حقيقي
+          clientId: o.clientId,
           ownerName: o.ownerName,
           idNumber: "",
           isPrimary: i === 0,
@@ -629,16 +634,16 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
       ...formData.customAttachments.filter((a) => a.trim() !== ""),
     ];
 
-    // تصفية التعليقات الصالحة
     const validComments = formData.comments
       .filter((c) => c.trim() !== "")
       .map((text) => ({
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         text: text,
-        user: currentUser || "المنشئ",
+        user: "المنشئ",
         date: new Date().toISOString(),
       }));
 
+    // 💡 توجيه وتهيئة الـ Payload
     const payload = {
       ...formData,
       ownerName: finalOwnerName,
@@ -647,7 +652,30 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
       clientType: primaryClientType,
       plots: validPlots,
       receivedAttachmentsList: validAttachments,
-      source: formData.externalSource,
+
+      // 💡 الحقول الجديدة المعدلة
+      designerOfficeId: formData.designerOffice || undefined,
+      supervisorOfficeId: formData.supervisorOffice || undefined,
+      hasAgreement: formData.hasAgreement,
+      sourcePersonId: formData.sourcePersonId || undefined,
+
+      serviceNumber: formData.serviceNumber,
+      serviceYear: formData.serviceYear,
+      serviceDate: formData.serviceDate
+        ? new Date(formData.serviceDate).toISOString()
+        : undefined,
+      requestNumber: formData.requestNumber,
+      requestYear: formData.requestYear,
+      requestDate: formData.requestDate
+        ? new Date(formData.requestDate).toISOString()
+        : undefined,
+      electronicLicenseNumber: formData.electronicLicenseNumber,
+      electronicLicenseHijriYear: formData.electronicLicenseHijriYear,
+      electronicLicenseDate: formData.electronicLicenseDate
+        ? new Date(formData.electronicLicenseDate).toISOString()
+        : undefined,
+
+      source: formData.externalSource, // كاحتياطي للنصوص الحرة
       district: formData.districtName,
       brokerId: formData.brokerId || undefined,
       totalFees: formData.isFeeDelayed ? 0 : parseNumber(formData.totalFees),
@@ -664,7 +692,6 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
           taxAmount: taxAmount,
         },
         transactionComments: validComments,
-        // 💡 👈 إرسال مصفوفة الملاك المفصلة للباك إند
         detailedOwnersList: detailedOwners,
       },
     };
@@ -741,7 +768,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
             />
           </section>
 
-          {/* 👈 6. قسم التعليقات المبدئية (جديد) */}
+          {/* قسم التعليقات المبدئية */}
           <section className="bg-orange-50/50 p-5 rounded-xl border border-orange-200 shadow-sm">
             <div className="flex items-center justify-between mb-4 border-b border-orange-100 pb-3">
               <h3 className="text-sm font-black text-orange-800 flex items-center gap-2">
@@ -783,7 +810,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
             </p>
           </section>
 
-          {/* 2. بيانات المُلّاك (متعدد) */}
+          {/* 2. بيانات المُلّاك */}
           <section className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
               <h3 className="text-sm font-black text-blue-800 flex items-center gap-2">
@@ -812,7 +839,6 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                     </button>
                   )}
 
-                  {/* 💡 خيارات المالك الجديد تظهر للمالك الرئيسي فقط */}
                   {index === 0 ? (
                     <div className="flex gap-4 mb-4">
                       <label
@@ -1007,7 +1033,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
             </div>
           </section>
 
-          {/* 3. الموقع والعقار */}
+          {/* 3. الموقع والعقار والتفاصيل المفصلة */}
           <section className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
             <h3 className="text-sm font-black text-purple-800 mb-4 flex items-center gap-2 border-b border-gray-100 pb-3">
               <MapPin className="w-4 h-4" /> الموقع، المخطط، وتفاصيل الطلب
@@ -1102,7 +1128,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-5">
+            <div className="grid grid-cols-3 gap-5 mb-5">
               {/* القطع */}
               <div className="col-span-3 md:col-span-1 border border-gray-200 rounded-xl p-3 bg-gray-50">
                 <div className="flex items-center justify-between mb-2">
@@ -1182,13 +1208,12 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                     placeholder="أدخل الصك"
                   />
                 </div>
-                {/* 👈 حقل المساحة الجديد */}
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1.5">
                     مساحة الأرض (م²)
                   </label>
                   <input
-                    type="text" // غيرناه إلى text ليقبل التحويل اللحظي
+                    type="text"
                     value={formData.landArea}
                     onChange={(e) =>
                       setFormData({
@@ -1200,58 +1225,139 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                     placeholder="المساحة"
                   />
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                    رقم الخدمة (بلدي/إحكام)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.serviceNo}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        serviceNo: toEnglishNumbers(e.target.value),
-                      })
-                    }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-mono focus:border-purple-500 outline-none bg-gray-50 focus:bg-white"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                    رقم الطلب / الرخصة
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={formData.requestNo}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          requestNo: toEnglishNumbers(e.target.value),
-                        })
-                      }
-                      className="w-1/2 border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-mono focus:border-purple-500 outline-none bg-gray-50 focus:bg-white"
-                      placeholder="رقم الطلب"
-                    />
-                    <input
-                      type="text"
-                      value={formData.licenseNo}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          licenseNo: toEnglishNumbers(e.target.value),
-                        })
-                      }
-                      className="w-1/2 border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-mono focus:border-purple-500 outline-none bg-gray-50 focus:bg-white"
-                      placeholder="رقم الرخصة"
-                    />
-                  </div>
-                </div>
               </div>
             </div>
 
-            <div className="mt-4 border-t border-gray-100 pt-4 grid grid-cols-2 gap-6">
+            {/* 💡 الحقول الجديدة المفصلة للأرقام والتواريخ */}
+            <div className="col-span-4 mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-gray-100 pt-5">
+              {/* بيانات الخدمة */}
+              <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex flex-col gap-3">
+                <label className="text-[11px] font-black text-blue-800 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5" /> بيانات الخدمة
+                  (بلدي/إحكام)
+                </label>
+                <input
+                  type="text"
+                  placeholder="رقم الخدمة"
+                  value={formData.serviceNumber}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      serviceNumber: toEnglishNumbers(e.target.value),
+                    })
+                  }
+                  className="w-full border border-blue-200 rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-blue-500 bg-white"
+                />
+                <input
+                  type="text"
+                  placeholder="سنة الخدمة"
+                  value={formData.serviceYear}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      serviceYear: toEnglishNumbers(e.target.value),
+                    })
+                  }
+                  className="w-full border border-blue-200 rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-blue-500 bg-white"
+                />
+                <input
+                  type="date"
+                  value={formData.serviceDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, serviceDate: e.target.value })
+                  }
+                  className="w-full border border-blue-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-500 bg-white text-gray-700 cursor-pointer"
+                  title="تاريخ الخدمة"
+                />
+              </div>
+
+              {/* بيانات الطلب */}
+              <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 flex flex-col gap-3">
+                <label className="text-[11px] font-black text-emerald-800 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5" /> بيانات الطلب
+                </label>
+                <input
+                  type="text"
+                  placeholder="رقم الطلب"
+                  value={formData.requestNumber}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      requestNumber: toEnglishNumbers(e.target.value),
+                    })
+                  }
+                  className="w-full border border-emerald-200 rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-emerald-500 bg-white"
+                />
+                <input
+                  type="text"
+                  placeholder="سنة الطلب"
+                  value={formData.requestYear}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      requestYear: toEnglishNumbers(e.target.value),
+                    })
+                  }
+                  className="w-full border border-emerald-200 rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-emerald-500 bg-white"
+                />
+                <input
+                  type="date"
+                  value={formData.requestDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, requestDate: e.target.value })
+                  }
+                  className="w-full border border-emerald-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-emerald-500 bg-white text-gray-700 cursor-pointer"
+                  title="تاريخ الطلب"
+                />
+              </div>
+
+              {/* بيانات الرخصة */}
+              <div className="bg-purple-50/50 p-4 rounded-xl border border-purple-100 flex flex-col gap-3">
+                <label className="text-[11px] font-black text-purple-800 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5" /> بيانات الرخصة الإلكترونية
+                </label>
+                <input
+                  type="text"
+                  placeholder="رقم الرخصة"
+                  value={formData.electronicLicenseNumber}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      electronicLicenseNumber: toEnglishNumbers(e.target.value),
+                    })
+                  }
+                  className="w-full border border-purple-200 rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-purple-500 bg-white"
+                />
+                <input
+                  type="text"
+                  placeholder="السنة (هجري)"
+                  value={formData.electronicLicenseHijriYear}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      electronicLicenseHijriYear: toEnglishNumbers(
+                        e.target.value,
+                      ),
+                    })
+                  }
+                  className="w-full border border-purple-200 rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-purple-500 bg-white"
+                />
+                <input
+                  type="date"
+                  value={formData.electronicLicenseDate}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      electronicLicenseDate: e.target.value,
+                    })
+                  }
+                  className="w-full border border-purple-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-purple-500 bg-white text-gray-700 cursor-pointer"
+                  title="تاريخ الرخصة"
+                />
+              </div>
+            </div>
+
+            <div className="mt-5 border-t border-gray-100 pt-5 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block mb-2 text-gray-700 text-xs font-bold">
                   الجهات المرتبطة بالمعاملة
@@ -1277,24 +1383,96 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                   )}
                 </div>
               </div>
+
+              {/* 💡 مصدر المعاملة الخارجي المحدّث (موظفين، وسطاء، معقبين فقط) */}
               <div>
                 <SmartLinkedField
-                  label="مصدر المعاملة الخارجي"
+                  label="مصدر المعاملة الخارجي (موظف / وسيط / معقب)"
                   value={formData.externalSource}
-                  onChange={(val) =>
-                    setFormData({ ...formData, externalSource: val })
-                  }
-                  options={offices.map((o) => ({ label: o.name, value: o.id }))}
-                  listId="external-sources-list"
-                  placeholder="اكتب اسم المكتب أو الجهة المحيلة..."
+                  onChange={(val) => {
+                    const found = sourcePersonsOptions.find(
+                      (o) => o.label === val || o.label.includes(val),
+                    );
+                    setFormData({
+                      ...formData,
+                      externalSource: val,
+                      sourcePersonId: found ? found.value : "",
+                    });
+                  }}
+                  options={sourcePersonsOptions}
+                  listId="external-sources-persons-list"
+                  placeholder="اكتب أو اختر اسم المصدر..."
                   matchFn={(opt, val) =>
-                    opt.label === val || val === "مكتب ديتيلز"
+                    opt.label === val || opt.label.includes(val)
                   }
-                  isAdding={quickAddOffice.isPending}
+                  isAdding={quickAddBroker.isPending}
                   onQuickAdd={() =>
-                    quickAddOffice.mutate(formData.externalSource)
+                    quickAddBroker.mutate(formData.externalSource)
                   }
                 />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                  المكتب المصمم
+                </label>
+                <select
+                  value={formData.designerOffice}
+                  onChange={(e) =>
+                    setFormData({ ...formData, designerOffice: e.target.value })
+                  }
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2.5 text-xs focus:border-blue-500 outline-none"
+                >
+                  <option value="">-- بدون / غير محدد --</option>
+                  {offices.map((off) => (
+                    <option key={off.id} value={off.id}>
+                      {off.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                  المكتب المشرف
+                </label>
+                <select
+                  value={formData.supervisorOffice}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      supervisorOffice: e.target.value,
+                    })
+                  }
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2.5 text-xs focus:border-blue-500 outline-none"
+                >
+                  <option value="">-- بدون / غير محدد --</option>
+                  {offices.map((off) => (
+                    <option key={off.id} value={off.id}>
+                      {off.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 💡 حقل الاتفاقية الجديد */}
+              <div className="col-span-1 md:col-span-2 mt-1">
+                <label className="flex items-center gap-2 cursor-pointer px-4 py-3 bg-indigo-50/70 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors w-fit">
+                  <input
+                    type="checkbox"
+                    className="accent-indigo-600 w-4 h-4 rounded"
+                    checked={formData.hasAgreement}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        hasAgreement: e.target.checked,
+                      })
+                    }
+                  />
+                  <span className="text-xs font-black text-indigo-800">
+                    هذه المعاملة تتم بموجب اتفاقية قائمة بين هذا المكتب وشركتنا
+                  </span>
+                </label>
               </div>
             </div>
           </section>
