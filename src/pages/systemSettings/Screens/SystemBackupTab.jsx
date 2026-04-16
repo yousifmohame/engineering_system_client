@@ -1,9 +1,9 @@
 import React from "react";
 import { toast } from "sonner";
-import api from "../../api/axios";
+import api from "../../../api/axios";
 import { Database, FolderArchive, AlertTriangle, Download, Server } from "lucide-react";
 
-export default function SystemBackup() {
+export default function SystemBackupTab() {
 
   const handleDbBackup = async () => {
     toast.info("جاري تجهيز وتنزيل قاعدة البيانات، يرجى الانتظار...");

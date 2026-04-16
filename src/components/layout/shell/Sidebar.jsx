@@ -6,31 +6,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { usePermissionBuilder } from "../../../context/PermissionBuilderContext";
 import { DEFAULT_MENU_CATEGORIES } from "../../../constants/menuConstants";
 
-import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  FolderOpen,
-  BrainCircuit,
-  Wallet,
-  Building2,
-  Handshake,
-  UserCog,
-  Map as MapIcon,
-  BarChart3,
-  ScrollText,
-  Cpu,
-  Laptop,
-  Award,
-  Globe,
-  Settings,
-  FileSliders,
-  Sliders,
-  Zap,
-  Search,
-  Star,
-  MessageCircle,
-} from "lucide-react";
+import { Map as MapIcon, Search, Star } from "lucide-react";
 
 const formatScreenId = (id) => {
   if (isNaN(id)) return id;

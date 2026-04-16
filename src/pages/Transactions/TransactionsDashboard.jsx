@@ -35,6 +35,7 @@ import api from "../../api/axios";
 // 💡 🚀 استيراد مكون مدير الملفات
 import TransactionFilesManager from "./TransactionFiles/index";
 import TransactionsPage from "./TransactionContinu/TransactionsPage";
+import {CreateTransactionModal} from "../../components/CreateTransactionModal";
 
 // ==========================================
 // 💡 تعريف المسارات (Paths Configuration)
@@ -261,8 +262,9 @@ export default function TransactionsDashboard({ onOpenPath }) {
   const [hoveredPath, setHoveredPath] = useState(null);
   const [showFilesManager, setShowFilesManager] = useState(false);
   const [showTransactionsPage, setShowTransactionsPage] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const { data: transactions = [] } = useQuery({
+  const { data: transactions = [], refetch } = useQuery({
     queryKey: ["transactions-dashboard"],
     queryFn: async () => {
       const res = await api.get("/private-transactions");
@@ -278,6 +280,11 @@ export default function TransactionsDashboard({ onOpenPath }) {
     if (pathId === "055-PATH-01") {
       // 👈 إضافة هذا الشرط الجديد
       setShowTransactionsPage(true);
+      return;
+    }
+    if (pathId === "055-PATH-03") {
+      // 💡 تفعيل المودال هنا
+      setIsCreateModalOpen(true);
       return;
     }
     if (onOpenPath) {
@@ -658,6 +665,15 @@ export default function TransactionsDashboard({ onOpenPath }) {
           })}
         </div>
       </div>
+
+      {/* مودال إنشاء معاملة */}
+      {isCreateModalOpen && (
+        <CreateTransactionModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          refetchTable={refetch} // 💡 سيقوم بتحديث أرقام الداشبورد فور الإضافة
+        />
+      )}
 
       {/* 💡 🚀 الحل السحري: وضع المودال في fixed-container ليظهر كشاشة مستقلة فوق الداشبورد */}
       {showFilesManager && (

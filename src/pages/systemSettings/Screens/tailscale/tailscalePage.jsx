@@ -17,7 +17,7 @@ import {
   Smartphone,
 } from "lucide-react";
 import { toast } from "sonner";
-import api from "../../api/axios"; // تأكد من مسار الـ API الصحيح لديك
+import api from "../../../../api/axios"; // تأكد من مسار الـ API الصحيح لديك
 
 export default function TailscaleIntegrationScreen() {
   const [isLoading, setIsLoading] = useState(true);

@@ -3,21 +3,16 @@ import {
   Users,
   FileText,
   FolderOpen,
-  BrainCircuit,
   Wallet,
   Building2,
   Handshake,
-  UserCog,
   Map as MapIcon,
   BarChart3,
   ScrollText,
-  Cpu,
   Laptop,
   Award,
-  Globe,
   Settings,
   FileSliders,
-  Sliders,
   Zap,
   MessageCircle,
 } from "lucide-react";
@@ -137,12 +132,6 @@ export const DEFAULT_MENU_CATEGORIES = [
     ],
   },
   {
-    id: "CAT_AI_ANALYTICS",
-    title: "تحليلات الذكاء الصناعي",
-    icon: BrainCircuit,
-    items: [{ id: "22", label: "تحليلات AI الشاملة", code: "SCR_22_VIEW" }],
-  },
-  {
     id: "CAT_ACCOUNTING_PORTAL",
     title: "بوابة المحاسبة",
     icon: Building2,
@@ -195,17 +184,6 @@ export const DEFAULT_MENU_CATEGORIES = [
     ],
   },
   {
-    id: "CAT_AI_MGMT",
-    title: "إدارة الذكاء الصناعي",
-    icon: Cpu,
-    items: [
-      { id: "53", label: "إدارة الذكاء الصناعي", code: "SCR_53_VIEW" },
-      { id: "54", label: "مزودات AI", code: "SCR_54_VIEW" },
-      { id: "55", label: "استهلاك التوكن", code: "SCR_55_VIEW" },
-      { id: "57", label: "سياسات AI", code: "SCR_57_VIEW" },
-    ],
-  },
-  {
     id: "CAT_ASSETS",
     title: "أصول المكتب",
     icon: Laptop,
@@ -229,25 +207,10 @@ export const DEFAULT_MENU_CATEGORIES = [
     ],
   },
   {
-    id: "CAT_WEBSITE",
-    title: "الموقع الإلكتروني",
-    icon: Globe,
-    items: [
-      { id: "67", label: "إدارة الموقع", code: "SCR_67_VIEW" },
-      { id: "68", label: "حقن بيانات الموقع", code: "SCR_68_VIEW" },
-      { id: "69", label: "إحصائيات الموقع", code: "SCR_69_VIEW" },
-      { id: "70", label: "خريطة المشاريع", code: "SCR_70_VIEW" },
-    ],
-  },
-  {
     id: "CAT_SYS_SETTINGS",
     title: "إدارة النظام",
     icon: Settings,
-    items: [
-      { id: "71", label: "إعدادات النظام", code: "SCR_71_VIEW" },
-      { id: "73", label: "النسخ الاحتياطي", code: "SCR_73_VIEW" },
-      { id: "74", label: "مراقبة الموارد", code: "SCR_74_VIEW" },
-    ],
+    items: [{ id: "71", label: "إعدادات النظام", code: "SCR_71_VIEW" }],
   },
   {
     id: "CAT_REPORT_SETTINGS",
@@ -258,26 +221,6 @@ export const DEFAULT_MENU_CATEGORIES = [
       { id: "77", label: "تكويد التقارير", code: "SCR_77_VIEW" },
       { id: "78", label: "التوقيع الرقمي", code: "SCR_78_VIEW" },
       { id: "79", label: "تشفير التقارير", code: "SCR_79_VIEW" },
-    ],
-  },
-  {
-    id: "CAT_GENERAL_SETTINGS",
-    title: "الإعدادات العامة",
-    icon: Sliders,
-    items: [
-      { id: "SET", label: "إعدادات عامة", code: "SCREEN_SET_VIEW" },
-      { id: "83", label: "اعدادات Tailscale", code: "SCR_83_VIEW" },
-    ],
-  },
-  {
-    id: "CAT_QUICK_TOOLS",
-    title: "أدوات المطور",
-    icon: Zap,
-    items: [
-      { id: "84", label: "البحث الشامل", code: "SCR_84_VIEW" },
-      { id: "85", label: "رفع ملفات سريع", code: "SCR_85_VIEW" },
-      { id: "86", label: "إنشاء معاملة سريع", code: "SCR_86_VIEW" },
-      { id: "87", label: "إنشاء عميل سريع", code: "SCR_87_VIEW" },
     ],
   },
 ];

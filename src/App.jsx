@@ -13,10 +13,8 @@ import SystemFooter from "./components/layout/shell/SystemFooter";
 // --- Pages / Screens ---
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import TransactionsScreenWrapper from "./pages/Transactions/TransactionsScreenWrapper";
 import ClientsScreenWrapper from "./pages/Clients/ClientsScreenWrapper";
 import OwnershipScreenWrapper from "./pages/Property/OwnershipScreenWrapper";
-import Screen942_DocumentTypes from "./pages/Settings/Screen942_DocumentTypes";
 import QuotationsScreenWrapper from "./pages/Quotations/QuotationsScreenWrapper";
 import RiyadhDivisionScreen from "./pages/Riyadh/RiyadhDivision/index";
 import Screen40_Sectors from "./pages/Riyadh/Screen40_Sectors";
@@ -25,9 +23,8 @@ import ContractsScreen from "./pages/Contracts/ContractsScreen";
 import { Screen860IntermediaryOffices } from "./pages/intermediaryOfficesPage";
 import BrokersPage from "./pages/BrokersPage";
 import PartnersPage from "./pages/PartnersPage";
-import HardwareMonitor from "./pages/systemSettings/HardwareMonitor";
-import SystemBackup from "./pages/systemSettings/SystemBackup";
-import SystemSettings from "./pages/systemSettings/SystemSettings";
+
+import SystemSettingsWrapper from "./pages/systemSettings/SystemSettingsWrapper";
 import BuildingPermitsRegistry from "./pages/Permits/BuildingPermitsRegistry";
 import OurOfficePermits from "./pages/Permits/OurOfficePermits";
 import TransactionsDashboard from "./pages/Transactions/TransactionsDashboard";
@@ -37,7 +34,6 @@ import EmailNotificationsCenter from "./pages/Emails/NotificationsCenter";
 import InboxCenter from "./pages/Emails/InboxCenter";
 import FileRequest from "./pages/Emails/FileRequest";
 import EmailSettingsScreen from "./pages/Emails/EmailSettingsScreen";
-import TailscalePage from "./pages/tailscale/tailscalePage";
 import QuickLinksScreen from "./pages/QuickLinksScreen";
 import ReferenceLibraryScreen from "./pages/Reference/ReferenceLibraryScreen";
 import ContractsManagementScreen from "./pages/ContractsManagement/ContractsManagementScreen";
@@ -92,7 +88,7 @@ const AppContent = () => {
   useEffect(() => {
     fetchSidebarConfig();
   }, []);
-  
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50 flex-col gap-4">
@@ -126,8 +122,6 @@ const AppContent = () => {
     "31",
     "32",
     "71",
-    "73",
-    "74",
     "09",
     "0010",
     "10",
@@ -137,7 +131,6 @@ const AppContent = () => {
     "99",
     "100",
     "101",
-    "83",
     "109",
     "112",
     "170",
@@ -182,11 +175,7 @@ const AppContent = () => {
             >
               <Dashboard />
             </div>
-            <div
-              className={activeScreenId === "055" ? "block h-full" : "hidden"}
-            >
-              <TransactionsScreenWrapper />
-            </div>
+            
             <div
               className={activeScreenId === "300" ? "block h-full" : "hidden"}
             >
@@ -202,11 +191,7 @@ const AppContent = () => {
             >
               <QuotationsScreenWrapper />
             </div>
-            <div
-              className={activeScreenId === "942" ? "block h-full" : "hidden"}
-            >
-              <Screen942_DocumentTypes />
-            </div>
+
             <div
               className={activeScreenId === "39" ? "block h-full" : "hidden"}
             >
@@ -245,18 +230,9 @@ const AppContent = () => {
             <div
               className={activeScreenId === "71" ? "block h-full" : "hidden"}
             >
-              <SystemSettings />
+              <SystemSettingsWrapper />
             </div>
-            <div
-              className={activeScreenId === "73" ? "block h-full" : "hidden"}
-            >
-              <SystemBackup />
-            </div>
-            <div
-              className={activeScreenId === "74" ? "block h-full" : "hidden"}
-            >
-              <HardwareMonitor />
-            </div>
+
             <div
               className={activeScreenId === "09" ? "block h-full" : "hidden"}
             >
@@ -302,11 +278,7 @@ const AppContent = () => {
             >
               <EmailSettingsScreen />
             </div>
-            <div
-              className={activeScreenId === "83" ? "block h-full" : "hidden"}
-            >
-              <TailscalePage />
-            </div>
+
             <div
               className={activeScreenId === "109" ? "block h-full" : "hidden"}
             >
