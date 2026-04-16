@@ -3,11 +3,12 @@ import { useAppStore } from "../../stores/useAppStore";
 
 // استيراد الشاشة الرئيسية والمكونات الفرعية
 import HRDashboard from "./HRDashboard";
-import InternalFormsTab from "./components/InternalFormsTab";
+import InternalFormsTab from "./screens/InternalForms/InternalFormsTab";
+import EmployeesManagement from "./screens/employees/EmployeesManagement";
 
 const HRScreenWrapper = () => {
   // ⚠️ الكود الخاص بشاشة الموارد البشرية في نظامك هو 817
-  const screenId = "817";
+  const screenId = "88";
 
   const { activeTabPerScreen, setActiveTab, addTab, removeTab } = useAppStore();
   const activeTabId = activeTabPerScreen[screenId] || "DASHBOARD_HR";
@@ -94,7 +95,7 @@ const HRScreenWrapper = () => {
     if (activeTabId === "HR_EMPLOYEES")
       return (
         <div className="p-6 h-full flex justify-center items-center text-slate-400 font-bold text-xl">
-          إدارة الموظفين (قيد التطوير)
+          <EmployeesManagement />
         </div>
       );
     if (activeTabId === "HR_PAYROLL")

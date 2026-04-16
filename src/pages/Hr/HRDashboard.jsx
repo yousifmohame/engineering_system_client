@@ -1,31 +1,61 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
-  TriangleAlert, ChevronDown, Users, FilePlus, FileCheck, DollarSign,
-  Ticket, CircleUser, Briefcase, Loader2,
+  TriangleAlert,
+  ChevronDown,
+  Users,
+  FilePlus,
+  FileCheck,
+  DollarSign,
+  Ticket,
+  CircleUser,
+  Briefcase,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../api/axios";
 
 // 💡 1. تأكد من استقبال onNavigate هنا
 export default function HRDashboard({ onNavigate }) {
-  
   const [dashboardStats, setDashboardStats] = useState({
     activeFormsCount: 0,
     formsLoading: true,
+
+    // 💡 إضافة حالات الموظفين
+    activeEmployeesCount: 0,
+    totalEmployeesCount: 0,
+    employeesLoading: true,
   });
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await api.get("/forms/templates");
-        const templates = response.data.data;
+        // 💡 جلب النماذج والموظفين في نفس الوقت (بشكل متوازي لسرعة الأداء)
+        const [formsRes, employeesRes] = await Promise.all([
+          api.get("/forms/templates"),
+          api.get("/employees"),
+        ]);
+
+        const templates = formsRes.data?.data || [];
+        // قد يكون الرد الخاص بالموظفين موجوداً في .data أو مباشرة حسب إعدادات الـ API الخاص بك
+        const employees = employeesRes.data?.data || employeesRes.data || [];
+
         setDashboardStats({
           activeFormsCount: templates.filter((t) => t.isActive).length,
           formsLoading: false,
+
+          // 💡 حساب إحصائيات الموظفين
+          activeEmployeesCount: employees.filter((e) => e.status === "active")
+            .length,
+          totalEmployeesCount: employees.length,
+          employeesLoading: false,
         });
       } catch (error) {
         console.error("Error fetching stats:", error);
-        setDashboardStats((prev) => ({ ...prev, formsLoading: false }));
+        setDashboardStats((prev) => ({
+          ...prev,
+          formsLoading: false,
+          employeesLoading: false,
+        }));
       }
     };
     fetchStats();
@@ -35,26 +65,38 @@ export default function HRDashboard({ onNavigate }) {
     () => [
       {
         id: 1,
-        targetId: "HR_EMPLOYEES", // 💡 2. الكود الذي سيفتح التاب الجديد
+        targetId: "HR_EMPLOYEES",
         title: "إدارة الموظفين",
         desc: "بيانات الموظفين وملفاتهم",
-        stat: "14 نشط",
+        stat: `${dashboardStats.activeEmployeesCount} نشط`,
         gradient: "from-blue-500 to-blue-700",
         icon: Users,
-        actions: [{ count: "17", badgeColor: "bg-amber-500" }],
+        actions: [
+          {
+            // 💡 عرض عدد الموظفين الحقيقي في الشارة العلوية
+            count: dashboardStats.employeesLoading
+              ? "..."
+              : dashboardStats.totalEmployeesCount.toString(),
+            badgeColor: "bg-blue-500",
+          },
+        ],
       },
       {
         id: 2,
-        targetId: "HR_INTERNAL_FORMS", 
+        targetId: "HR_INTERNAL_FORMS",
         title: "النماذج الداخلية",
         desc: "تصميم وطباعة النماذج",
         stat: "نظام ديناميكي",
         gradient: "from-indigo-600 to-purple-700",
         icon: FilePlus,
-        actions: [{
-          count: dashboardStats.formsLoading ? "..." : dashboardStats.activeFormsCount.toString(),
-          badgeColor: "bg-emerald-500",
-        }],
+        actions: [
+          {
+            count: dashboardStats.formsLoading
+              ? "..."
+              : dashboardStats.activeFormsCount.toString(),
+            badgeColor: "bg-emerald-500",
+          },
+        ],
       },
       {
         id: 3,
@@ -97,23 +139,17 @@ export default function HRDashboard({ onNavigate }) {
         actions: [],
       },
     ],
-    [dashboardStats]
+    [dashboardStats],
   );
 
   return (
     <div className="flex flex-col h-full bg-slate-50 font-[Tajawal]" dir="rtl">
-      {/* شريط التنبيهات */}
-      <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border-b-2 border-red-300 shrink-0">
-        <TriangleAlert size={14} className="text-red-600 animate-pulse" />
-        <span className="text-[11px] font-bold text-red-900">22 تنبيه نشط</span>
-      </div>
-
       <div className="flex-1 overflow-auto p-4 md:p-8 bg-slate-50">
         <div className="max-w-7xl mx-auto animate-in fade-in duration-300">
-          
           <div className="mb-6 border-b border-slate-200 pb-4">
             <h2 className="text-xl md:text-2xl font-black text-slate-900 flex items-center gap-2">
-              <Briefcase className="text-blue-600 w-6 h-6 md:w-8 md:h-8" /> إدارة الموارد البشرية
+              <Briefcase className="text-blue-600 w-6 h-6 md:w-8 md:h-8" />{" "}
+              إدارة الموارد البشرية
             </h2>
             <p className="text-xs md:text-sm font-bold text-slate-500 mt-1.5">
               اختر الوحدة المطلوبة من القائمة للبدء في إدارتها
@@ -125,7 +161,6 @@ export default function HRDashboard({ onNavigate }) {
               <button
                 key={module.id}
                 onClick={() => {
-                  // 💡 3. استدعاء دالة التنقل عند الضغط
                   if (module.targetId && onNavigate) {
                     onNavigate(module.targetId);
                   }
@@ -133,16 +168,32 @@ export default function HRDashboard({ onNavigate }) {
                 className="relative flex flex-col items-center justify-center p-5 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-400 hover:-translate-y-1.5 transition-all duration-300 group"
               >
                 {module.actions && module.actions.length > 0 && (
-                  <div className={`absolute top-3 right-3 px-2 py-0.5 rounded text-[10px] font-bold text-white shadow-sm ${module.actions[0].badgeColor}`}>
-                    {module.actions[0].count === "..." ? <Loader2 size={10} className="animate-spin inline" /> : module.actions[0].count}
+                  <div
+                    className={`absolute top-3 right-3 px-2 py-0.5 rounded text-[10px] font-bold text-white shadow-sm ${module.actions[0].badgeColor}`}
+                  >
+                    {module.actions[0].count === "..." ? (
+                      <Loader2 size={10} className="animate-spin inline" />
+                    ) : (
+                      module.actions[0].count
+                    )}
                   </div>
                 )}
-                <div className={`w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center mb-4 bg-gradient-to-br ${module.gradient} shadow-inner group-hover:scale-110 transition-transform duration-300`}>
+                <div
+                  className={`w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center mb-4 bg-gradient-to-br ${module.gradient} shadow-inner group-hover:scale-110 transition-transform duration-300`}
+                >
                   <module.icon className="text-white w-8 h-8 md:w-10 md:h-10" />
                 </div>
                 <div className="flex flex-col items-center gap-1 w-full">
-                  <h3 className="font-black text-[13px] md:text-[15px] text-slate-800 text-center leading-tight">{module.title}</h3>
-                  <p className="text-[10px] md:text-[11px] font-bold text-slate-400 text-center line-clamp-2 w-full mt-1">{module.desc}</p>
+                  <h3 className="font-black text-[13px] md:text-[15px] text-slate-800 text-center leading-tight">
+                    {module.title}
+                  </h3>
+                  <p className="text-[10px] md:text-[11px] font-bold text-slate-400 text-center line-clamp-2 w-full mt-1">
+                    {module.desc}
+                  </p>
+                </div>
+                {/* 💡 إعادة شريط الإحصائية السفلي ليظهر حالة الموظفين (نشط) */}
+                <div className="mt-4 w-full bg-slate-50 border border-slate-100 rounded-lg py-1.5 px-2 text-center text-[9px] md:text-[10px] font-bold text-slate-600 truncate group-hover:bg-blue-50 group-hover:text-blue-700 transition-colors">
+                  {module.stat}
                 </div>
               </button>
             ))}

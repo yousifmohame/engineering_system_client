@@ -160,17 +160,6 @@ export const DEFAULT_MENU_CATEGORIES = [
     ],
   },
   {
-    id: "CAT_HR",
-    title: "الموظفين",
-    icon: UserCog,
-    items: [
-      { id: "817", label: "سجل الموظفين والأدوار", code: "SCREEN_817_VIEW" },
-      { id: "35", label: "الحضور والانصراف", code: "SCR_35_VIEW" },
-      { id: "36", label: "تسويات الموظفين", code: "SCR_36_VIEW" },
-      { id: "37", label: "الموظفون عن بعد", code: "SCR_37_VIEW" },
-    ],
-  },
-  {
     id: "CAT_RIYADH",
     title: "تقسيم مدينة الرياض",
     icon: MapIcon,

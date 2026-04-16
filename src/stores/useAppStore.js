@@ -15,7 +15,7 @@ export const SCREENS = {
   815: { id: "815", title: "عروض الأسعار", icon: "FileSignature" },
   942: { id: "942", title: "المستندات والقوالب", icon: "FileCode" },
   285: { id: "285", title: "المشاريع", icon: "Briefcase" },
-  817: { id: "800", title: "الموارد البشرية", icon: "Briefcase" },
+  88: { id: "88", title: "الموارد البشرية", icon: "Briefcase" },
 
   937: { id: "937", title: "إدارة المعقبين", icon: "Truck" },
   939: { id: "939", title: "شوارع الرياض", icon: "Map" },
@@ -90,7 +90,7 @@ export const useAppStore = create((set, get) => ({
         closable: false,
       },
     ],
-    817: [
+    88: [
       {
         id: "DASHBOARD_HR",
         title: "لوحة الموارد البشرية",
@@ -108,7 +108,7 @@ export const useAppStore = create((set, get) => ({
     815: "QUOTATIONS_DASH",
     942: "942-MAIN",
     SET: "SET-SERVER",
-    817: "DASHBOARD_HR",
+    88: "DASHBOARD_HR",
   },
 
   // ==========================================

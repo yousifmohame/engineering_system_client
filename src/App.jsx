@@ -18,7 +18,6 @@ import ClientsScreenWrapper from "./pages/Clients/ClientsScreenWrapper";
 import OwnershipScreenWrapper from "./pages/Property/OwnershipScreenWrapper";
 import Screen942_DocumentTypes from "./pages/Settings/Screen942_DocumentTypes";
 import QuotationsScreenWrapper from "./pages/Quotations/QuotationsScreenWrapper";
-import EmployeesManagement from "./pages/employees/EmployeesManagement";
 import RiyadhDivisionScreen from "./pages/Riyadh/RiyadhDivision/index";
 import Screen40_Sectors from "./pages/Riyadh/Screen40_Sectors";
 import Screen41_Districts from "./pages/Riyadh/Screen41_Districts";
@@ -116,7 +115,6 @@ const AppContent = () => {
     "055",
     "300",
     "310",
-    "817",
     "815",
     "942",
     "SET",
@@ -198,11 +196,6 @@ const AppContent = () => {
               className={activeScreenId === "310" ? "block h-full" : "hidden"}
             >
               <OwnershipScreenWrapper />
-            </div>
-            <div
-              className={activeScreenId === "817" ? "block h-full" : "hidden"}
-            >
-              <EmployeesManagement />
             </div>
             <div
               className={activeScreenId === "815" ? "block h-full" : "hidden"}
