@@ -32,7 +32,7 @@ import SystemSettings from "./pages/systemSettings/SystemSettings";
 import BuildingPermitsRegistry from "./pages/Permits/BuildingPermitsRegistry";
 import OurOfficePermits from "./pages/Permits/OurOfficePermits";
 import TransactionsDashboard from "./pages/Transactions/TransactionsDashboard";
-import HRDashboard from "./pages/Hr/HRDashboard";
+import HRScreenWrapper from "./pages/Hr/HRScreenWrapper";
 import SystemFilesExplorer from "./pages/FilesExplorer/SystemFilesExplorer";
 import EmailNotificationsCenter from "./pages/Emails/NotificationsCenter";
 import InboxCenter from "./pages/Emails/InboxCenter";
@@ -282,7 +282,7 @@ const AppContent = () => {
             <div
               className={activeScreenId === "88" ? "block h-full" : "hidden"}
             >
-              <HRDashboard />
+              <HRScreenWrapper />
             </div>
             <div
               className={activeScreenId === "16" ? "block h-full" : "hidden"}

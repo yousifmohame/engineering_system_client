@@ -29,9 +29,9 @@ import {
   Map,
   AlertCircle,
   FolderCog,
-  UploadCloud,
+  Receipt,
   Building,
-  Bug,
+  FileSignature,
   MessageSquare,
   ChevronDown,
   ShieldCheck,
@@ -1773,6 +1773,49 @@ export const TransactionDetailsModal = ({
                       "حساب الوسطاء",
                       Handshake,
                       "#0891b2",
+                    )}
+                  </AccessControl>
+                  <AccessControl
+                    code="Transaction_TAB_QUOTATION_31"
+                    name="عرض السعر"
+                    moduleName="المعاملات"
+                    tabName="عرض السعر"
+                  >
+                    {renderTabButton(
+                      "quotation",
+                      "عرض السعر",
+                      FileText,
+                      "#0ea5e9",
+                    )}
+                  </AccessControl>
+
+                  {/* عقد المعاملة مع المالك */}
+                  <AccessControl
+                    code="Transaction_TAB_OWNER_CONTRACT_32"
+                    name="عقد المعاملة مع المالك"
+                    moduleName="المعاملات"
+                    tabName="عقد المعاملة مع المالك"
+                  >
+                    {renderTabButton(
+                      "owner_contract",
+                      "عقد المعاملة مع المالك",
+                      FileSignature,
+                      "#f59e0b",
+                    )}
+                  </AccessControl>
+
+                  {/* فواتير أتعاب المعاملة */}
+                  <AccessControl
+                    code="Transaction_TAB_FEES_INVOICES_33"
+                    name="فواتير أتعاب المعاملة"
+                    moduleName="المعاملات"
+                    tabName="فواتير أتعاب المعاملة"
+                  >
+                    {renderTabButton(
+                      "fees_invoices",
+                      "فواتير أتعاب المعاملة",
+                      Receipt,
+                      "#10b981",
                     )}
                   </AccessControl>
                   <AccessControl
