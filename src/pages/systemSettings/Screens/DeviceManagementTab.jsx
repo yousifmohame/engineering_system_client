@@ -24,7 +24,7 @@ import {
   FileText,
   Activity,
   Wrench,
-  Calendar,
+  Wand2,
   CheckCircle2,
   Package,
   Network,
@@ -49,8 +49,7 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-const categories = [
-  { id: "All", label: "الكل", icon: Package },
+const defaultCategories = [
   { id: "Computer", label: "أجهزة كمبيوتر", icon: Monitor },
   { id: "Printer", label: "طابعات", icon: Printer },
   { id: "Server", label: "خوادم", icon: Server },
@@ -69,6 +68,7 @@ const emptyDeviceForm = {
   assignedTo: "",
   purchaseDate: "",
   purchasePrice: "",
+  depreciationRate: "",
   vendor: "",
   warrantyEnd: "",
   invoiceAttachment: "",
@@ -94,14 +94,16 @@ export const getFullUrl = (url) => {
 
 export default function DevicesMain() {
   const queryClient = useQueryClient();
+  const fileInputRef = useRef(null);
+  const aiImageInputRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [isDeviceModalOpen, setIsDeviceModalOpen] = useState(false);
   const [deviceModalMode, setDeviceModalMode] = useState("add");
   const [deviceForm, setDeviceForm] = useState(emptyDeviceForm);
+  const [isAIExtracting, setIsAIExtracting] = useState(false);
 
-  const fileInputRef = useRef(null);
   const [isStickerModalOpen, setIsStickerModalOpen] = useState(false);
   const [isAddMaintenanceOpen, setIsAddMaintenanceOpen] = useState(false);
   const [newMaintenance, setNewMaintenance] = useState({
@@ -128,6 +130,35 @@ export default function DevicesMain() {
     },
   });
 
+  // 💡 جلب سجل الأشخاص لاختيار العهدة (الموظفين)
+  const { data: persons = [] } = useQuery({
+    queryKey: ["persons-directory"],
+    queryFn: async () => {
+      const res = await api.get("/persons");
+      return res.data?.data || [];
+    },
+  });
+
+  const { data: customCategories = [] } = useQuery({
+    queryKey: ["device-categories"],
+    queryFn: async () => {
+      const res = await api.get("/devices/categories");
+      return res.data?.data || [];
+    },
+  });
+
+  // 2. دمج التصنيفات الافتراضية مع التصنيفات القادمة من قاعدة البيانات
+  const allCategories = [
+    ...defaultCategories,
+    ...customCategories.map(cat => ({
+      id: cat.value,
+      label: cat.label,
+      icon: Package // نستخدم أيقونة افتراضية للتصنيفات المخصصة
+    }))
+  ];
+
+  const staffOnly = persons.filter((p) => p.role === "موظف" || p.role === "شريك");
+
   const addDeviceMutation = useMutation({
     mutationFn: (deviceData) => api.post("/devices", deviceData),
     onSuccess: () => {
@@ -136,6 +167,18 @@ export default function DevicesMain() {
       setIsDeviceModalOpen(false);
       setDeviceForm(emptyDeviceForm);
     },
+  });
+
+  // 3. دالة الحفظ في الباك إند
+  const addCategoryMutation = useMutation({
+    mutationFn: (newCat) => api.post("/devices/categories", newCat),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["device-categories"]);
+      toast.success("تم إضافة التصنيف بنجاح وحفظه في النظام");
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "حدث خطأ أثناء إضافة التصنيف");
+    }
   });
 
   const updateDeviceMutation = useMutation({
@@ -171,6 +214,8 @@ export default function DevicesMain() {
     setDeviceForm(emptyDeviceForm);
     setIsDeviceModalOpen(true);
   };
+
+  
 
   const handleOpenEditModal = (device, e) => {
     if (e) e.stopPropagation();
@@ -318,6 +363,63 @@ export default function DevicesMain() {
     setIsStickerModalOpen(true);
   };
 
+  const calculateCurrentValue = (price, date, rate) => {
+    if (!price || !date || !rate) return null;
+    const yearsElapsed =
+      (new Date() - new Date(date)) / (1000 * 60 * 60 * 24 * 365.25);
+    if (yearsElapsed < 0) return price;
+    const depreciationAmount =
+      parseFloat(price) * (parseFloat(rate) / 100) * yearsElapsed;
+    const currentValue = parseFloat(price) - depreciationAmount;
+    return currentValue > 0 ? currentValue.toFixed(2) : 0;
+  };
+
+  const handleAddCategory = () => {
+    const newCatLabel = prompt("أدخل اسم التصنيف الجديد (مثال: شاشات، كابلات، راوترات):");
+    if (newCatLabel && newCatLabel.trim()) {
+      const value = newCatLabel.trim().replace(/\s+/g, "-"); // تحويل المسافات لشرطات للاستخدام كـ ID
+      
+      // التحقق من عدم وجود التصنيف مسبقاً
+      if (allCategories.some(c => c.id === value || c.label === newCatLabel.trim())) {
+        return toast.error("هذا التصنيف موجود مسبقاً");
+      }
+
+      // إرسال الطلب للباك إند
+      addCategoryMutation.mutate({ label: newCatLabel.trim(), value });
+    }
+  };
+
+  // 🚀 دالة استخراج المواصفات من الصورة عبر الباك إند (AI)
+  const handleAIImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsAIExtracting(true);
+    const formData = new FormData();
+    formData.append("image", file); // اسم الحقل 'image' كما هو في الراوت
+
+    try {
+      const res = await api.post("/devices/extract-specs", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (res.data?.success) {
+        // تحديث الحقول بالمواصفات المستخرجة
+        setDeviceForm((prev) => ({
+          ...prev,
+          specs: { ...prev.specs, ...res.data.data },
+        }));
+        toast.success("تم استخراج المواصفات بنجاح ✨");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("تعذر قراءة الصورة، يرجى المحاولة بصورة أوضح");
+    } finally {
+      setIsAIExtracting(false);
+      if (aiImageInputRef.current) aiImageInputRef.current.value = ""; // تصفير المدخل
+    }
+  };
+
   const handleExportCSV = () => {
     const headers = [
       "Device Code",
@@ -372,20 +474,12 @@ export default function DevicesMain() {
   });
 
   const getDeviceIcon = (type, className = "w-6 h-6") => {
-    switch (type) {
-      case "Computer":
-        return <Monitor className={className} />;
-      case "Printer":
-        return <Printer className={className} />;
-      case "Server":
-        return <Server className={className} />;
-      case "Camera":
-        return <Video className={className} />;
-      case "Network":
-        return <Wifi className={className} />;
-      default:
-        return <Package className={className} />;
+    const cat = allCategories.find((c) => c.id === type);
+    if (cat) {
+      const Icon = cat.icon;
+      return <Icon className={className} />;
     }
+    return <Package className={className} />;
   };
 
   const getStatusColor = (status) => {
@@ -510,15 +604,28 @@ export default function DevicesMain() {
           />
         </div>
         <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto custom-scrollbar">
-          {categories.map((cat) => (
+          <button
+            onClick={() => setSelectedCategory("All")}
+            className={cn(
+              "px-4 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 border",
+              selectedCategory === "All"
+                ? "bg-slate-900 text-white border-slate-900"
+                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50",
+            )}
+          >
+            <Package className="w-4 h-4" /> الكل
+          </button>
+
+          {/* 💡 التصنيفات الديناميكية */}
+          {allCategories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
               className={cn(
                 "px-4 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 border",
                 selectedCategory === cat.id
-                  ? "bg-slate-900 text-white border-slate-900 shadow-md"
-                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300",
+                  ? "bg-slate-900 text-white border-slate-900"
+                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50",
               )}
             >
               <cat.icon
@@ -528,10 +635,19 @@ export default function DevicesMain() {
                     ? "text-emerald-400"
                     : "text-slate-400",
                 )}
-              />
+              />{" "}
               {cat.label}
             </button>
           ))}
+
+          {/* 💡 زر إضافة تصنيف جديد */}
+          <button
+            onClick={handleAddCategory}
+            className="px-3 py-2.5 rounded-xl text-sm font-bold bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-colors shrink-0"
+            title="إضافة تصنيف جديد"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -616,6 +732,15 @@ export default function DevicesMain() {
                       {device.assignedTo || "—"}
                     </span>
                   </div>
+                  {/* 💡 عرض القيمة الدفترية المتبقية إذا كان هناك إهلاك */}
+                  {device.depreciationRate && device.purchasePrice && (
+                     <div className="flex justify-between items-center text-xs border-b border-slate-100 pb-2">
+                       <span className="text-slate-500 font-bold">القيمة الحالية</span>
+                       <span className={cn("font-bold font-mono", calculateCurrentValue(device.purchasePrice, device.purchaseDate, device.depreciationRate) <= 0 ? "text-red-500" : "text-emerald-600")}>
+                         {calculateCurrentValue(device.purchasePrice, device.purchaseDate, device.depreciationRate)} ريال
+                       </span>
+                     </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-auto">
@@ -1955,13 +2080,13 @@ export default function DevicesMain() {
                 <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
                   {deviceModalMode === "add" ? (
                     <>
-                      <Plus className="w-6 h-6 text-emerald-600" /> إضافة جهاز
-                      أو أصل جديد
+                      <Plus className="w-6 h-6 text-emerald-600" /> إضافة أصل
+                      جديد
                     </>
                   ) : (
                     <>
                       <Edit className="w-6 h-6 text-blue-600" /> تعديل بيانات
-                      الجهاز
+                      الأصل
                     </>
                   )}
                 </h2>
@@ -2000,12 +2125,12 @@ export default function DevicesMain() {
                               name: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:border-emerald-500"
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-slate-500 mb-1.5">
-                          نوع الجهاز *
+                          التصنيف *
                         </label>
                         <select
                           value={deviceForm.type}
@@ -2017,11 +2142,11 @@ export default function DevicesMain() {
                           }
                           className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                         >
-                          <option value="Computer">كمبيوتر</option>
-                          <option value="Server">خادم</option>
-                          <option value="Printer">طابعة</option>
-                          <option value="Network">جهاز شبكة</option>
-                          <option value="Camera">كاميرا</option>
+                          {allCategories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.label}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div>
@@ -2075,12 +2200,13 @@ export default function DevicesMain() {
                           className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                         />
                       </div>
+
+                      {/* 💡 العهدة من قائمة الموظفين */}
                       <div>
                         <label className="block text-xs font-bold text-slate-500 mb-1.5">
                           العهدة (مخصص لـ)
                         </label>
-                        <input
-                          type="text"
+                        <select
                           value={deviceForm.assignedTo}
                           onChange={(e) =>
                             setDeviceForm({
@@ -2088,12 +2214,20 @@ export default function DevicesMain() {
                               assignedTo: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
-                        />
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500 cursor-pointer"
+                        >
+                          <option value="">-- غير مخصص (جهاز عام) --</option>
+                          {staffOnly.map((emp) => (
+                            <option key={emp.id} value={emp.name}>
+                              {emp.name} ({emp.role})
+                            </option>
+                          ))}
+                        </select>
                       </div>
+
                       <div>
                         <label className="block text-xs font-bold text-slate-500 mb-1.5">
-                          الموقع
+                          الموقع الفعلي
                         </label>
                         <input
                           type="text"
@@ -2107,37 +2241,157 @@ export default function DevicesMain() {
                           className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                         />
                       </div>
+                    </div>
+                  </section>
+
+                  {/* 🚀 الإهلاك المالي (Financials & Depreciation) */}
+                  <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <DollarSign className="w-5 h-5 text-emerald-600" /> بيانات
+                      الشراء والإهلاك
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
                         <label className="block text-xs font-bold text-slate-500 mb-1.5">
-                          الحالة
+                          سعر الشراء (ريال)
                         </label>
-                        <select
-                          value={deviceForm.status}
+                        <input
+                          type="number"
+                          value={deviceForm.purchasePrice}
                           onChange={(e) =>
                             setDeviceForm({
                               ...deviceForm,
-                              status: e.target.value,
+                              purchasePrice: e.target.value,
                             })
                           }
                           className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                          تاريخ الشراء
+                        </label>
+                        <input
+                          type="date"
+                          value={deviceForm.purchaseDate}
+                          onChange={(e) =>
+                            setDeviceForm({
+                              ...deviceForm,
+                              purchaseDate: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                          معدل الإهلاك السنوي (%)
+                        </label>
+                        <select
+                          value={deviceForm.depreciationRate}
+                          onChange={(e) =>
+                            setDeviceForm({
+                              ...deviceForm,
+                              depreciationRate: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500 cursor-pointer"
                         >
-                          <option value="Active">نشط</option>
-                          <option value="Warning">تحذير</option>
-                          <option value="Offline">غير متصل</option>
+                          <option value="">بدون إهلاك</option>
+                          <option value="20">
+                            20% سنوياً (ينتهي بعد 5 سنوات)
+                          </option>
+                          <option value="25">
+                            25% سنوياً (ينتهي بعد 4 سنوات)
+                          </option>
+                          <option value="33.33">
+                            33.3% سنوياً (ينتهي بعد 3 سنوات)
+                          </option>
+                          <option value="50">
+                            50% سنوياً (ينتهي بعد سنتين)
+                          </option>
                         </select>
+                      </div>
+                      <div className="flex flex-col justify-end">
+                        {deviceForm.purchasePrice &&
+                        deviceForm.purchaseDate &&
+                        deviceForm.depreciationRate ? (
+                          <div className="bg-slate-100 p-3 rounded-xl border border-slate-200 flex justify-between items-center">
+                            <span className="text-xs font-bold text-slate-600">
+                              القيمة الدفترية الحالية:
+                            </span>
+                            <span
+                              className={cn(
+                                "font-mono font-black",
+                                calculateCurrentValue(
+                                  deviceForm.purchasePrice,
+                                  deviceForm.purchaseDate,
+                                  deviceForm.depreciationRate,
+                                ) <= 0
+                                  ? "text-red-500"
+                                  : "text-emerald-600",
+                              )}
+                            >
+                              {calculateCurrentValue(
+                                deviceForm.purchasePrice,
+                                deviceForm.purchaseDate,
+                                deviceForm.depreciationRate,
+                              )}{" "}
+                              ريال
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-slate-400 font-bold p-3">
+                            أكمل البيانات لحساب القيمة الحالية
+                          </div>
+                        )}
                       </div>
                     </div>
                   </section>
 
-                  {/* Specs */}
+                  {/* 🚀 المواصفات + الذكاء الاصطناعي */}
                   {(deviceForm.type === "Computer" ||
                     deviceForm.type === "Server") && (
-                    <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <Cpu className="w-5 h-5 text-emerald-600" /> المواصفات
-                        التقنية
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                      <div className="flex items-center justify-between mb-4 relative z-10">
+                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                          <Cpu className="w-5 h-5 text-emerald-600" /> المواصفات
+                          التقنية
+                        </h3>
+
+                        {/* زر استخراج المواصفات بالذكاء الاصطناعي */}
+                        <input
+                          type="file"
+                          ref={aiImageInputRef}
+                          className="hidden"
+                          accept="image/*"
+                          onChange={handleAIImageUpload}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => aiImageInputRef.current?.click()}
+                          disabled={isAIExtracting}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 hover:from-purple-200 hover:to-blue-200 rounded-lg text-xs font-bold transition-all border border-purple-200 shadow-sm disabled:opacity-50"
+                        >
+                          {isAIExtracting ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Wand2 className="w-3.5 h-3.5" />
+                          )}
+                          استخراج تلقائي (صورة) 🪄
+                        </button>
+                      </div>
+
+                      {isAIExtracting && (
+                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
+                          <BrainCircuit className="w-10 h-10 text-purple-500 animate-pulse mb-2" />
+                          <div className="text-sm font-black text-purple-800">
+                            جاري تحليل الصورة وقراءة المواصفات...
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 relative z-10">
                         <div>
                           <label className="block text-xs font-bold text-slate-500 mb-1.5">
                             المعالج (CPU)
@@ -2236,95 +2490,6 @@ export default function DevicesMain() {
                       </div>
                     </section>
                   )}
-
-                  {/* Network & Purchase */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <Network className="w-5 h-5 text-emerald-600" /> الشبكة
-                      </h3>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1.5">
-                            IP الداخلي
-                          </label>
-                          <input
-                            type="text"
-                            value={deviceForm.network?.internalIp || ""}
-                            onChange={(e) =>
-                              setDeviceForm({
-                                ...deviceForm,
-                                network: {
-                                  ...deviceForm.network,
-                                  internalIp: e.target.value,
-                                },
-                              })
-                            }
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold font-mono focus:outline-none focus:border-emerald-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1.5">
-                            عنوان MAC
-                          </label>
-                          <input
-                            type="text"
-                            value={deviceForm.network?.mac || ""}
-                            onChange={(e) =>
-                              setDeviceForm({
-                                ...deviceForm,
-                                network: {
-                                  ...deviceForm.network,
-                                  mac: e.target.value,
-                                },
-                              })
-                            }
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold font-mono focus:outline-none focus:border-emerald-500"
-                          />
-                        </div>
-                      </div>
-                    </section>
-                    <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <DollarSign className="w-5 h-5 text-emerald-600" />{" "}
-                        الشراء والضمان
-                      </h3>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1.5">
-                            تاريخ الشراء
-                          </label>
-                          <input
-                            type="date"
-                            value={deviceForm.purchaseDate || ""}
-                            onChange={(e) =>
-                              setDeviceForm({
-                                ...deviceForm,
-                                purchaseDate: e.target.value,
-                              })
-                            }
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1.5">
-                            نهاية الضمان
-                          </label>
-                          <input
-                            type="date"
-                            value={deviceForm.warrantyEnd || ""}
-                            onChange={(e) =>
-                              setDeviceForm({
-                                ...deviceForm,
-                                warrantyEnd: e.target.value,
-                              })
-                            }
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
-                          />
-                        </div>
-                      </div>
-                    </section>
-                  </div>
                 </form>
               </div>
 
@@ -2342,7 +2507,7 @@ export default function DevicesMain() {
                   }
                   type="submit"
                   form="device-form"
-                  className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-black hover:bg-emerald-500 transition-all shadow-md active:scale-95 flex items-center gap-2 disabled:opacity-50"
+                  className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-black hover:bg-emerald-500 transition-all flex items-center gap-2 shadow-md"
                 >
                   {addDeviceMutation.isPending ||
                   updateDeviceMutation.isPending ? (
@@ -2351,8 +2516,8 @@ export default function DevicesMain() {
                     <Save className="w-4 h-4" />
                   )}
                   {deviceModalMode === "add"
-                    ? "حفظ وإضافة الجهاز"
-                    : "تحديث بيانات الجهاز"}
+                    ? "حفظ وإضافة الأصل"
+                    : "تحديث البيانات"}
                 </button>
               </div>
             </motion.div>
