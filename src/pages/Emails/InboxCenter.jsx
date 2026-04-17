@@ -306,6 +306,22 @@ export default function InboxCenter() {
     }
   };
 
+  // 🚀 دالة الحذف النهائي من قاعدة البيانات
+  const deletePermanentlyMutation = useMutation({
+    mutationFn: (msgId) => api.delete(`/email/messages/${msgId}/permanent`),
+    onSuccess: (_, msgId) => {
+      toast.success("تم الحذف النهائي بنجاح");
+      // إزالة الرسالة من الشاشة
+      setMessages(
+        messages.filter(
+          (m) => m.id !== msgId && m.messageId !== msgId && m.uid !== msgId,
+        ),
+      );
+      setSelectedMessage(null);
+    },
+    onError: () => toast.error("حدث خطأ أثناء الحذف النهائي"),
+  });
+
   // ==========================================
   // 🚀 الذكاء الاصطناعي (تحليل الرسائل الواردة)
   // ==========================================
@@ -448,6 +464,24 @@ export default function InboxCenter() {
     setPage(1);
     fetchEmails(1);
     toast.success("تم التحديث وجلب أحدث الرسائل");
+  };
+
+  const handleDelete = (msg) => {
+    // إذا كنا في تاب المهملات، نقوم بالحذف النهائي
+    if (currentView === "trash") {
+      if (
+        window.confirm(
+          "هل أنت متأكد من حذف هذه الرسالة نهائياً؟ لا يمكن التراجع عن هذا الإجراء.",
+        )
+      ) {
+        deletePermanentlyMutation.mutate(msg.id || msg.messageId || msg.uid);
+      }
+    } else {
+      // نقل للمهملات (Soft Delete)
+      updateMessageInDB(msg, { isDeleted: true, isArchived: false });
+      toast.success("تم النقل إلى المهملات");
+      if (selectedMessage?.id === msg.id) setSelectedMessage(null);
+    }
   };
 
   const handleScroll = (e) => {
@@ -681,26 +715,54 @@ export default function InboxCenter() {
 
                       {/* أدوات سريعة */}
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-white shadow-sm border border-gray-100 rounded-lg p-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            updateMessageInDB(msg, { isArchived: true });
-                          }}
-                          className="p-1.5 text-gray-400 hover:text-gray-700 rounded"
-                          title="أرشفة"
-                        >
-                          <Archive className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            updateMessageInDB(msg, { isDeleted: true });
-                          }}
-                          className="p-1.5 text-gray-400 hover:text-red-600 rounded"
-                          title="حذف"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {currentView === "trash" ? (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateMessageInDB(msg, { isDeleted: false });
+                                toast.success("تم الاسترجاع للوارد");
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-emerald-600 rounded"
+                              title="استرجاع"
+                            >
+                              <Inbox className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(msg);
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-red-600 rounded"
+                              title="حذف نهائي"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateMessageInDB(msg, { isArchived: true });
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-gray-700 rounded"
+                              title="أرشفة"
+                            >
+                              <Archive className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(msg);
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-red-600 rounded"
+                              title="نقل للمهملات"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
