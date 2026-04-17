@@ -22,7 +22,7 @@ const GlobalScreenTabs = () => {
   };
 
   return (
-    <div className="h-[40px] bg-[#0f172a] flex items-end px-2 border-b border-slate-800 select-none">
+    <div className="h-[40px] bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 shadow-xl border-t-2 border-red-600 flex items-end px-2 select-none">
       {/* App Icon */}
       <div className="h-full flex items-center px-2 text-slate-500 flex-shrink-0">
         <Layers className="w-4.5 h-4.5" />

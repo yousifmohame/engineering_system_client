@@ -1,122 +1,148 @@
-import React, { useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import { Building2, Lock, User, Loader2 } from "lucide-react"; // 👈 استبدال Mail بـ User
+import React, { useState } from 'react';
+import { LogIn, Eye, EyeOff, Building2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
-  // 👈 تغيير الاسم لـ identifier ليعبر عن أي طريقة دخول
-  const [identifier, setIdentifier] = useState(""); 
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  
   const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setIsSubmitting(true);
+    setError('');
+    setIsLoading(true);
 
-    // 👈 إرسال الـ identifier بدلاً من الإيميل
-    const result = await login(identifier, password);
-
-    if (!result.success) {
-      setError(result.message);
-      setIsSubmitting(false);
+    try {
+      const result = await login(identifier, password);
+      if (!result?.success && result?.message) {
+        setError(result.message);
+      }
+    } catch (err) {
+      setError(err?.message || 'حدث خطأ أثناء تسجيل الدخول');
+    } finally {
+      setIsLoading(false);
     }
-    // التوجيه سيتم تلقائياً من داخل AuthContext عند النجاح
   };
 
   return (
-    <div
-      className="min-h-screen bg-slate-900 flex items-center justify-center p-4 direction-rtl"
+    <div 
+      className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-red-900 flex items-center justify-center px-4"
       dir="rtl"
     >
-      {/* الخلفية الزخرفية */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-blue-600/10 blur-[100px] rounded-full"></div>
-        <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-emerald-600/10 blur-[100px] rounded-full"></div>
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative z-10">
-        {/* الهيدر */}
-        <div className="bg-slate-50 p-8 text-center border-b border-gray-100">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-600/30">
-            <Building2 className="w-8 h-8 text-white" />
+      <div className="max-w-md w-full space-y-8">
+        
+        {/* الشعار والعنوان */}
+        <div className="text-center">
+          <div className="flex justify-center mb-8 mt-4">
+            <img 
+              src="/logo.jpeg" 
+              alt="الشعار" 
+              className="h-20 rounded-xl w-auto object-contain mb-2"
+              onError={(e) => {
+                const target = e.target;
+                target.style.display = 'none';
+                const fallback = target.nextElementSibling;
+                if (fallback) fallback.style.display = 'flex';
+              }}
+            />
+            <div className="w-20 h-20 bg-gradient-to-br from-red-600 to-red-700 rounded-xl hidden items-center justify-center shadow-2xl">
+              <Building2 className="text-white w-10 h-10" />
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h2 className="text-3xl font-bold text-white mb-4 mt-2">
             النظام الهندسي المتكامل
-          </h1>
-          <p className="text-gray-500 text-sm mt-2">
+          </h2>
+          <p className="text-gray-300 mb-6">
             قم بتسجيل الدخول للمتابعة
           </p>
         </div>
 
-        {/* النموذج */}
-        <div className="p-8">
+        {/* بطاقة النموذج الزجاجية */}
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
           <form onSubmit={handleSubmit} className="space-y-6">
+            
+            {/* رسالة الخطأ */}
             {error && (
-              <div className="p-3 bg-red-50 text-red-600 text-sm font-bold rounded-lg border border-red-100 text-center">
+              <div className="p-3 bg-red-500/20 border border-red-500/50 text-red-200 text-sm rounded-lg text-center">
                 {error}
               </div>
             )}
 
-            <div className="space-y-2">
-              {/* 👈 تحديث الوصف ليعكس الخيارات الجديدة */}
-              <label className="text-sm font-bold text-gray-700 block text-right">
+            {/* حقل معرف الدخول */}
+            <div>
+              <label className="block text-sm font-medium text-gray-200 mb-2 text-right">
                 بيانات الدخول (الرقم الوظيفي، الجوال، الإيميل)
               </label>
-              <div className="relative">
-                <User className="absolute right-3 top-3 w-5 h-5 text-gray-400" />
-                <input
-                  type="text" // 👈 تحويله من email إلى text ليقبل أرقام وحروف
-                  required
-                  dir="ltr" // 👈 جعله LTR لسهولة كتابة الأرقام والإنجليزية
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  className="w-full pr-10 pl-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-left font-mono text-sm"
-                  placeholder="EMP-1001 أو 05XXXXXXXX"
-                />
-              </div>
+              <input
+                type="text"
+                required
+                dir="ltr"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-gray-300 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 text-left font-mono text-sm"
+                placeholder="EMP-1001 أو 05XXXXXXXX"
+              />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 block text-right">
+            {/* حقل كلمة المرور */}
+            <div>
+              <label className="block text-sm font-medium text-gray-200 mb-2 text-right">
                 كلمة المرور
               </label>
               <div className="relative">
-                <Lock className="absolute right-3 top-3 w-5 h-5 text-gray-400" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   dir="ltr"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pr-10 pl-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-left font-mono"
+                  className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-gray-300 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 pr-12 text-left font-mono"
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300 hover:text-white transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
             </div>
 
+            {/* زر الدخول */}
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-lg transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-3 px-4 rounded-lg font-medium hover:from-red-700 hover:to-red-800 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 space-x-reverse"
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  جاري التحقق...
-                </>
+              {isLoading ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
               ) : (
-                "تسجيل الدخول"
+                <>
+                  <LogIn size={20} />
+                  <span>تسجيل الدخول</span>
+                </>
               )}
             </button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-gray-400 font-bold">
-            الإصدار 2.0.0 - جميع الحقوق محفوظة
+          {/* معلومات إضافية */}
+          <div className="mt-6 pt-4 border-t border-white/20">
+            <p className="text-sm text-gray-300 text-center">
+              يدعم الدخول بالرقم الوظيفي أو رقم الجوال أو البريد الإلكتروني
+            </p>
           </div>
         </div>
+
+        {/* التذييل */}
+        <p className="text-center text-gray-400 text-sm mt-8 mb-12">
+          الإصدار 2.0.0 - جميع الحقوق محفوظة © 2024
+        </p>
       </div>
     </div>
   );
