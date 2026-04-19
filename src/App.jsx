@@ -33,8 +33,9 @@ import HRScreenWrapper from "./pages/Hr/HRScreenWrapper";
 import SystemFilesExplorer from "./pages/FilesExplorer/SystemFilesExplorer";
 import EmailNotificationsCenter from "./pages/Emails/NotificationsCenter";
 import InboxCenter from "./pages/Emails/InboxCenter";
-import FileRequest from "./pages/Emails/FileRequest";
-import ClientUploadPage from './pages/Emails/ClientUploadPage'; // 👈 استيراد الصفحة الجديدة
+import FileRequest from "./pages/Emails/FileManagement/DocumentTransferCenter";
+import ClientRequestWrapper from './pages/Emails/FileManagement/Components/ClientRequestWrapper';
+import ClientDownloadWrapper from './pages/Emails/FileManagement/Components/ClientDownloadWrapper';
 import EmailSettingsScreen from "./pages/Emails/EmailSettingsScreen";
 import QuickLinksScreen from "./pages/QuickLinksScreen";
 import ReferenceLibraryScreen from "./pages/Reference/ReferenceLibraryScreen";
@@ -304,9 +305,7 @@ const AppContent = () => {
               <OfficeNotepadScreen />
             </div>
             <div
-              className={
-                activeScreenId === "58" ? "block h-full" : "hidden"
-              }
+              className={activeScreenId === "58" ? "block h-full" : "hidden"}
             >
               <DetailsOfficeDashboard />
             </div>
@@ -336,18 +335,20 @@ function App() {
         <PermissionBuilderProvider>
           {/* 👈 السحر هنا: استخدام Routes لفصل صفحة العميل عن النظام الداخلي */}
           <Routes>
-            
             {/* 🟢 1. المسار العام للعميل (لا يطلب تسجيل دخول، وبدون قوائم أو سايدبار) */}
-            <Route path="/upload/:shortLink" element={<ClientUploadPage />} />
+            <Route path="/req/:shortLink" element={<ClientRequestWrapper />} />
+            <Route path="/s/:shortLink" element={<ClientDownloadWrapper />} />
 
             {/* 🔴 2. باقي النظام الداخلي (شاشات الموظفين والـ Auth) */}
-            <Route path="*" element={
-              <>
-                <AppContent />
-                <PermissionBuilderToolbar />
-              </>
-            } />
-
+            <Route
+              path="*"
+              element={
+                <>
+                  <AppContent />
+                  <PermissionBuilderToolbar />
+                </>
+              }
+            />
           </Routes>
         </PermissionBuilderProvider>
       </AuthProvider>
