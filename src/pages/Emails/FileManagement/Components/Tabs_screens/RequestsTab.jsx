@@ -20,7 +20,7 @@ import {
   X,
   Save,
 } from "lucide-react";
-import { AIActionButton } from "../../Components/ai/AIActionButton"; // 💡 تأكد من المسار
+import { AIActionButton } from "../ai/AIActionButton"; // 💡 تأكد من المسار
 import { toast } from "sonner";
 
 export default function RequestsTab({

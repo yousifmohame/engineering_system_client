@@ -15,7 +15,7 @@ import {
   Trash2,
   Loader2,
 } from "lucide-react";
-import { AIActionButton } from "../../Components/ai/AIActionButton";
+import { AIActionButton } from "../ai/AIActionButton";
 
 // 💡 دالة تحويل الروابط للعمل بشكل صحيح مع الباك إند
 export const getFullUrl = (url) => {
@@ -66,7 +66,7 @@ export default function InboxTab({ inboxFiles = [], setAnalyzingFile }) {
     },
     onSettled: () => {
       setIsDeleting(null);
-    }
+    },
   });
 
   const handleDelete = (e, id) => {
@@ -77,10 +77,11 @@ export default function InboxTab({ inboxFiles = [], setAnalyzingFile }) {
   };
 
   // 💡 فلترة الملفات بناءً على البحث
-  const filteredFiles = inboxFiles.filter(f => 
-    (f.fileName && f.fileName.includes(searchTerm)) ||
-    (f.originalName && f.originalName.includes(searchTerm)) ||
-    (f.senderName && f.senderName.includes(searchTerm))
+  const filteredFiles = inboxFiles.filter(
+    (f) =>
+      (f.fileName && f.fileName.includes(searchTerm)) ||
+      (f.originalName && f.originalName.includes(searchTerm)) ||
+      (f.senderName && f.senderName.includes(searchTerm)),
   );
 
   return (
@@ -163,10 +164,13 @@ export default function InboxTab({ inboxFiles = [], setAnalyzingFile }) {
                   size="sm"
                   variant="outline"
                   onClick={() =>
-                    setAnalyzingFile({ name: file.originalName || file.fileName, id: file.id })
+                    setAnalyzingFile({
+                      name: file.originalName || file.fileName,
+                      id: file.id,
+                    })
                   }
                 />
-                
+
                 <div className="flex items-center gap-2 flex-1 sm:flex-none justify-end mx-2">
                   {file.isSafe ? (
                     <span className="px-2.5 py-1 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-700 flex items-center gap-1">

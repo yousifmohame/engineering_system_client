@@ -24,12 +24,12 @@ import {
   Trash2,
   Sparkles, // 💡 أضفنا أيقونة الذكاء الاصطناعي
 } from "lucide-react";
-import ExternalDownloadPage from "../../Components/ExternalDownloadPage";
-import TemplateSenderModal from "../../Components/TemplateSenderModal";
-import ContactPicker from "../../Components/ContactPicker";
+import ExternalDownloadPage from "../ExternalDownloadPage";
+import TemplateSenderModal from "../TemplateSenderModal";
+import ContactPicker from "../ContactPicker";
 
 // 💡 استدعاء هوك المصادقة لجلب بيانات المستخدم
-import {useAuth} from "../../../../../context/AuthContext";
+import { useAuth } from "../../../../../context/AuthContext";
 
 export default function SendPackageModal({ onClose }) {
   const queryClient = useQueryClient();

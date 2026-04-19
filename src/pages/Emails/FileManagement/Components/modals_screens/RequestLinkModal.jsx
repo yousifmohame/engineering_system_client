@@ -25,10 +25,10 @@ import {
   Copy,
   Loader2,
 } from "lucide-react";
-import ExternalUploadPage from "../../Components/ExternalUploadPage";
-import TemplateSenderModal from "../../Components/TemplateSenderModal";
-import ContactPicker from "../../Components/ContactPicker";
-import {useAuth} from "../../../../../context/AuthContext"; // 💡 جلب بيانات الموظف المسجل
+import ExternalUploadPage from "../ExternalUploadPage";
+import TemplateSenderModal from "../TemplateSenderModal";
+import ContactPicker from "../ContactPicker";
+import { useAuth } from "../../../../../context/AuthContext"; // 💡 جلب بيانات الموظف المسجل
 
 export default function RequestLinkModal({ onClose }) {
   const queryClient = useQueryClient();

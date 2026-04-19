@@ -16,14 +16,14 @@ import {
 import { toast } from "sonner";
 
 // المكونات الفرعية المقسمة
-import RequestLinkModal from "./components/modals/RequestLinkModal";
-import SendPackageModal from "./components/modals/SendPackageModal";
-import RequestsTab from "./components/tabs/RequestsTab";
-import InboxTab from "./components/tabs/InboxTab";
-import SettingsTab from "./components/tabs/SettingsTab";
-import StatsTab from "./components/tabs/StatsTab";
-import HistoryTab from "./components/tabs/HistoryTab";
-import TemplatesTab from "./components/tabs/TemplatesTab"; // 🚀 استدعاء شاشة القوالب الحقيقية
+import RequestLinkModal from "./Components/modals_screens/RequestLinkModal";
+import SendPackageModal from "./Components/modals_screens/SendPackageModal";
+import RequestsTab from "./Components/Tabs_screens/RequestsTab";
+import InboxTab from "./Components/Tabs_screens/InboxTab";
+import SettingsTab from "./Components/Tabs_screens/SettingsTab";
+import StatsTab from "./Components/Tabs_screens/StatsTab";
+import HistoryTab from "./Components/Tabs_screens/HistoryTab";
+import TemplatesTab from "./Components/Tabs_screens/TemplatesTab"; // 🚀 استدعاء شاشة القوالب الحقيقية
 import { FileAnalysisPanel } from "./Components/ai/FileAnalysisPanel";
 
 export default function DocumentTransferCenter() {
@@ -219,7 +219,6 @@ export default function DocumentTransferCenter() {
 
             {/* 🚀 تم استبدال الـ EmptyState بالمكون الفعلي TemplatesTab */}
             {activeTab === "templates" && <TemplatesTab />}
-
           </div>
         </div>
       </div>
