@@ -3,7 +3,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { useAppStore } from "./stores/useAppStore";
 import { Toaster } from "sonner";
-
+// أضف هذا الاستيراد في أعلى الملف
+import { Routes, Route } from "react-router-dom";
 // --- Components (Layout & Shell) ---
 import Sidebar from "./components/layout/shell/Sidebar";
 import GlobalScreenTabs from "./components/layout/shell/GlobalScreenTabs";
@@ -33,6 +34,7 @@ import SystemFilesExplorer from "./pages/FilesExplorer/SystemFilesExplorer";
 import EmailNotificationsCenter from "./pages/Emails/NotificationsCenter";
 import InboxCenter from "./pages/Emails/InboxCenter";
 import FileRequest from "./pages/Emails/FileRequest";
+import ClientUploadPage from './pages/Emails/ClientUploadPage'; // 👈 استيراد الصفحة الجديدة
 import EmailSettingsScreen from "./pages/Emails/EmailSettingsScreen";
 import QuickLinksScreen from "./pages/QuickLinksScreen";
 import ReferenceLibraryScreen from "./pages/Reference/ReferenceLibraryScreen";
@@ -324,13 +326,29 @@ const AppContent = () => {
   );
 };
 
+// ==========================================
+// 💡 تغليف النظام وتوجيه مسار العميل الخارجي
+// ==========================================
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <PermissionBuilderProvider>
-          <AppContent />
-          <PermissionBuilderToolbar />
+          {/* 👈 السحر هنا: استخدام Routes لفصل صفحة العميل عن النظام الداخلي */}
+          <Routes>
+            
+            {/* 🟢 1. المسار العام للعميل (لا يطلب تسجيل دخول، وبدون قوائم أو سايدبار) */}
+            <Route path="/upload/:shortLink" element={<ClientUploadPage />} />
+
+            {/* 🔴 2. باقي النظام الداخلي (شاشات الموظفين والـ Auth) */}
+            <Route path="*" element={
+              <>
+                <AppContent />
+                <PermissionBuilderToolbar />
+              </>
+            } />
+
+          </Routes>
         </PermissionBuilderProvider>
       </AuthProvider>
     </QueryClientProvider>
