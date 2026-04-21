@@ -98,7 +98,7 @@ export const DEFAULT_MENU_CATEGORIES = [
       { id: "20", label: "مركز استقبال الملفات", code: "SCR_20_VIEW" },
       { id: "21", label: "الملفات المؤرشفة", code: "SCR_21_VIEW" },
       { id: "90", label: "أرشيف المخططات", code: "SCR_90_VIEW" },
-      { id: "91", label: "أدلة واشتراطات وتعاميم", code: "SCR_91_VIEW" },
+      { id: "91", label: "محاضر اجتماعات العميل", code: "SCR_91_VIEW" },
     ],
   },
   {

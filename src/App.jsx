@@ -34,14 +34,16 @@ import SystemFilesExplorer from "./pages/FilesExplorer/SystemFilesExplorer";
 import EmailNotificationsCenter from "./pages/Emails/NotificationsCenter";
 import InboxCenter from "./pages/Emails/InboxCenter";
 import FileRequest from "./pages/Emails/FileManagement/DocumentTransferCenter";
-import ClientRequestWrapper from './pages/Emails/FileManagement/Components/ClientRequestWrapper';
-import ClientDownloadWrapper from './pages/Emails/FileManagement/Components/ClientDownloadWrapper';
+import ClientRequestWrapper from "./pages/Emails/FileManagement/Components/ClientRequestWrapper";
+import ClientDownloadWrapper from "./pages/Emails/FileManagement/Components/ClientDownloadWrapper";
 import EmailSettingsScreen from "./pages/Emails/EmailSettingsScreen";
 import QuickLinksScreen from "./pages/QuickLinksScreen";
 import ReferenceLibraryScreen from "./pages/Reference/ReferenceLibraryScreen";
 import ContractsManagementScreen from "./pages/ContractsManagement/ContractsManagementScreen";
 import OfficeNotepadScreen from "./pages/OfficeNotepad/OfficeNotepadScreen";
 import DetailsOfficeDashboard from "./pages/DetailsOffice/DetailsOfficeDashboard";
+import MeetingsMain from "./pages/MeetingMinute/MeetingsMain";
+import MinuteVerificationPage from "./pages/verify/MinuteVerificationPage";
 
 // --- Icons & Context ---
 import { Wrench } from "lucide-react"; // 👈 استيراد أيقونة شاشة الصيانة
@@ -140,6 +142,7 @@ const AppContent = () => {
     "170",
     "030",
     "58",
+    "91", // 👈 شاشة محاضر اجتماعات العميل
   ];
   // فحص هل الشاشة المطلوبة مبرمجة أم لا
   const isImplemented = implementedScreens.includes(activeScreenId);
@@ -309,6 +312,12 @@ const AppContent = () => {
             >
               <DetailsOfficeDashboard />
             </div>
+            <div
+              className={activeScreenId === "91" ? "block h-full" : "hidden"}
+            >
+              <MeetingsMain />
+            </div>
+
             {/* --- 👈 السحر هنا: شاشة Fallback لأي كود غير مبرمج --- */}
             {!isImplemented && (
               <div className="block h-full">
@@ -338,7 +347,10 @@ function App() {
             {/* 🟢 1. المسار العام للعميل (لا يطلب تسجيل دخول، وبدون قوائم أو سايدبار) */}
             <Route path="/req/:shortLink" element={<ClientRequestWrapper />} />
             <Route path="/s/:shortLink" element={<ClientDownloadWrapper />} />
-
+            <Route
+              path="/verify/:refNumber"
+              element={<MinuteVerificationPage />}
+            />
             {/* 🔴 2. باقي النظام الداخلي (شاشات الموظفين والـ Auth) */}
             <Route
               path="*"
