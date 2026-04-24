@@ -17,7 +17,9 @@ import {
   MapPin,
   Eye,
   Paperclip,
-  
+  FolderOpen,
+  ClipboardList,
+  CalendarDays
 } from "lucide-react";
 import {
   getClientName,
@@ -31,6 +33,7 @@ import {
 // ==========================================
 export const Step0ClientProperty = ({ props }) => {
   const {
+    // Client & Property (الأساسيات)
     selectedClient,
     setSelectedClient,
     selectedProperty,
@@ -43,17 +46,37 @@ export const Step0ClientProperty = ({ props }) => {
     propertiesData,
     clientsLoading,
     propertiesLoading,
+
+    // Transactions (المعاملات)
+    selectedTransaction,
+    setSelectedTransaction,
+    transactionSearch,
+    setTransactionSearch,
+    transactionsData,
+    transactionsLoading,
+
+    // Meetings (محاضر الاجتماعات)
+    selectedMeeting,
+    setSelectedMeeting,
+    meetingSearch,
+    setMeetingSearch,
+    meetingsData,
+    meetingsLoading,
   } = props;
 
   return (
     <div className="animate-in fade-in duration-300">
-      <div className="text-[15px] font-bold text-slate-800 mb-4 flex items-center gap-2">
+      <div className="text-[15px] font-bold text-slate-800 mb-5 flex items-center gap-2">
         <Building className="w-5 h-5 text-blue-600" />
-        الخطوة 0 — تحديد الملكية والعميل (الأساس)
+        الخطوة 0 — تحديد الملكية، العميل والارتباطات
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* اختيار الملكية */}
+      {/* ========================================== */}
+      {/* تخطيط عمودي: جميع العناصر تحت بعضها */}
+      {/* ========================================== */}
+      <div className="flex flex-col gap-2">
+        
+        {/* 1️⃣ اختيار الملكية */}
         <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 bottom-0 right-0 w-1 bg-cyan-500"></div>
           <div className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
@@ -69,7 +92,7 @@ export const Step0ClientProperty = ({ props }) => {
               className="w-full py-2.5 pr-9 pl-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200"
             />
           </div>
-          <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+          <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-1">
             {propertiesLoading ? (
               <div className="p-4 flex justify-center">
                 <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
@@ -115,7 +138,10 @@ export const Step0ClientProperty = ({ props }) => {
           </div>
         </div>
 
-        {/* اختيار العميل */}
+        {/* فاصل بصري اختياري */}
+        <div className="h-px bg-gradient-to-l from-transparent via-slate-200 to-transparent"></div>
+
+        {/* 2️⃣ اختيار العميل */}
         <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 bottom-0 right-0 w-1 bg-blue-500"></div>
           <div className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
@@ -131,7 +157,7 @@ export const Step0ClientProperty = ({ props }) => {
               className="w-full py-2.5 pr-9 pl-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
             />
           </div>
-          <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+          <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-1">
             {clientsLoading ? (
               <div className="p-4 flex justify-center">
                 <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
@@ -174,12 +200,129 @@ export const Step0ClientProperty = ({ props }) => {
             )}
           </div>
         </div>
+
+        {/* فاصل بصري اختياري */}
+        <div className="h-px bg-gradient-to-l from-transparent via-slate-200 to-transparent"></div>
+
+        {/* 3️⃣ اختيار المعاملة (اختياري) */}
+        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 bottom-0 right-0 w-1 bg-purple-500"></div>
+          <div className="text-sm font-bold text-slate-700 mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FolderOpen className="w-4 h-4 text-purple-500" /> ربط بمعاملة قائمة
+            </div>
+            <span className="text-[9px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded">اختياري</span>
+          </div>
+          <div className="relative mb-3">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={transactionSearch || ""}
+              onChange={(e) => setTransactionSearch && setTransactionSearch(e.target.value)}
+              placeholder="بحث برقم المعاملة، الوصف..."
+              className="w-full py-2 pr-9 pl-3 border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200"
+            />
+          </div>
+          <div className="flex flex-col gap-2 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
+            {transactionsLoading ? (
+              <div className="p-4 flex justify-center">
+                <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
+              </div>
+            ) : transactionsData?.length > 0 ? (
+              transactionsData.map((txn) => (
+                <div
+                  key={txn.id}
+                  onClick={() => setSelectedTransaction && setSelectedTransaction(txn.ref)}
+                  className={`flex flex-col gap-1 p-2.5 rounded-xl cursor-pointer border transition-all ${
+                    selectedTransaction === txn.ref
+                      ? "border-purple-500 bg-purple-50 text-purple-800 shadow-sm"
+                      : "border-slate-100 bg-white hover:bg-slate-50 hover:border-slate-200"
+                  }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="font-bold text-xs text-purple-700 truncate max-w-[180px]">
+                      {txn.client || txn.description || "معاملة بدون وصف"}
+                    </div>
+                    <div className="font-mono text-[9px] text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-100">
+                      {txn.referenceNumber || txn.ref}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-[10px] text-slate-400 text-center p-4">
+                لا توجد معاملات مطابقة
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* فاصل بصري اختياري */}
+        <div className="h-px bg-gradient-to-l from-transparent via-slate-200 to-transparent"></div>
+
+        {/* 4️⃣ اختيار محضر الاجتماع (اختياري) */}
+        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 bottom-0 right-0 w-1 bg-amber-500"></div>
+          <div className="text-sm font-bold text-slate-700 mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="w-4 h-4 text-amber-500" /> الاستناد لمحضر اجتماع العميل
+            </div>
+            <span className="text-[9px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded">اختياري</span>
+          </div>
+          <div className="relative mb-3">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={meetingSearch || ""}
+              onChange={(e) => setMeetingSearch && setMeetingSearch(e.target.value)}
+              placeholder="بحث بعنوان المحضر، التاريخ..."
+              className="w-full py-2 pr-9 pl-3 border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-200"
+            />
+          </div>
+          <div className="flex flex-col gap-2 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
+            {meetingsLoading ? (
+              <div className="p-4 flex justify-center">
+                <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
+              </div>
+            ) : meetingsData?.length > 0 ? (
+              meetingsData.map((meeting) => (
+                <div
+                  key={meeting.id}
+                  onClick={() => setSelectedMeeting && setSelectedMeeting(meeting.id)}
+                  className={`flex flex-col gap-1 p-2.5 rounded-xl cursor-pointer border transition-all ${
+                    selectedMeeting === meeting.id
+                      ? "border-amber-500 bg-amber-50 text-amber-800 shadow-sm"
+                      : "border-slate-100 bg-white hover:bg-slate-50 hover:border-slate-200"
+                  }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="font-bold text-xs text-amber-700 truncate ">
+                      {meeting.title || "محضر اجتماع"}
+                    </div>
+                    <div className="flex items-center gap-1 text-[9px] text-slate-500 font-mono">
+                      <CalendarDays className="w-3 h-3" />
+                      {meeting.meetingDate ? new Date(meeting.meetingDate).toLocaleDateString("ar-SA") : "---"}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-[10px] text-slate-400 text-center p-4">
+                {selectedClient ? "لا توجد محاضر اجتماعات لهذا العميل" : "يرجى تحديد العميل لعرض المحاضر المرتبطة"}
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
 
-      <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-2 text-xs text-blue-800">
-        <Sparkles className="w-4 h-4 text-blue-500" />
-        <strong>نصيحة:</strong> اختيار ملف الملكية أولاً سيقوم بتحديد العميل
-        المالك لها تلقائياً.
+      {/* 💡 نصيحة السفلية */}
+      <div className="mt-6 p-4 bg-gradient-to-l from-blue-50 to-cyan-50 border border-blue-100 rounded-xl flex items-start gap-3 text-xs text-blue-800">
+        <Sparkles className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+        <div>
+          <strong>نصيحة احترافية:</strong> اختيار ملف الملكية أولاً سيقوم بتحديد العميل المالك لها تلقائياً. 
+          ربط عرض السعر بمحضر اجتماع يُسهل الرجوع للاتفاقيات المبدئية ويُحسّن تتبع حالة الملف.
+        </div>
       </div>
     </div>
   );

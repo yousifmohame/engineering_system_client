@@ -20,7 +20,7 @@ import {
   Step2Template,
   Step3Items,
   Step4Tax,
-  Step5Payments, // أضفنا استيراد خطوة الدفعات
+  Step5Payments,
   Step6Attachments,
   Step7Terms,
   Step8Review,
@@ -31,18 +31,26 @@ const CreateQuotationWizard = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
 
   // ==========================================
-  // States - الخطوة 0
+  // States - الخطوة 0 (الملكية، العميل، الارتباطات)
   // ==========================================
   const [selectedClient, setSelectedClient] = useState("");
   const [selectedProperty, setSelectedProperty] = useState("");
   const [clientSearch, setClientSearch] = useState("");
   const [propertySearch, setPropertySearch] = useState("");
 
+  // حالات المعاملات (Transactions)
+  const [selectedTransaction, setSelectedTransaction] = useState("");
+  const [transactionSearch, setTransactionSearch] = useState("");
+
+  // حالات محاضر الاجتماع (Meeting Minutes)
+  const [selectedMeeting, setSelectedMeeting] = useState("");
+  const [meetingSearch, setMeetingSearch] = useState("");
+
   // ==========================================
   // States - الخطوة 1
   // ==========================================
   const [issueDate, setIssueDate] = useState(
-    new Date().toISOString().split("T")[0],
+    new Date().toISOString().split("T")[0]
   );
   const [validityDays, setValidityDays] = useState(30);
   const [isRenewable, setIsRenewable] = useState(false);
@@ -83,15 +91,17 @@ const CreateQuotationWizard = ({ onComplete }) => {
   // States - الخطوة 7 (الشروط)
   // ==========================================
   const [termsText, setTermsText] = useState(
-    "1. الدفعة المقدمة غير مستردة.\n2. الرسوم الحكومية على المالك.",
+    "1. الدفعة المقدمة غير مستردة.\n2. الرسوم الحكومية على المالك."
   );
   const [clientTitle, setClientTitle] = useState("المواطن");
   const [handlingMethod, setHandlingMethod] = useState("المالك مباشرة");
   const [selectedPresetTerm, setSelectedPresetTerm] = useState("manual");
 
   // ==========================================
-  // API Queries
+  // API Queries (جلب البيانات من السيرفر)
   // ==========================================
+  
+  // 1. العملاء
   const { data: clientsData, isLoading: clientsLoading } = useQuery({
     queryKey: ["clients", clientSearch],
     queryFn: async () =>
@@ -99,6 +109,7 @@ const CreateQuotationWizard = ({ onComplete }) => {
         .data,
   });
 
+  // 2. الملكيات
   const { data: propertiesData, isLoading: propertiesLoading } = useQuery({
     queryKey: ["properties", propertySearch],
     queryFn: async () =>
@@ -106,11 +117,36 @@ const CreateQuotationWizard = ({ onComplete }) => {
         .data?.data || [],
   });
 
+  // 3. المعاملات (Transactions)
+  const { data: transactionsData, isLoading: transactionsLoading } = useQuery({
+    queryKey: ["transactions", transactionSearch, selectedClient],
+    queryFn: async () => {
+      const params = { search: transactionSearch };
+      // إذا تم اختيار عميل، يمكننا فلترة المعاملات الخاصة به فقط
+      if (selectedClient) params.clientId = selectedClient; 
+      const res = await axios.get("/private-transactions", { params });
+      return res.data?.data || res.data || [];
+    },
+  });
+
+  // 4. محاضر الاجتماع (Meeting Minutes)
+  const { data: meetingsData, isLoading: meetingsLoading } = useQuery({
+    queryKey: ["meeting-minutes", meetingSearch, selectedClient],
+    queryFn: async () => {
+      const params = { search: meetingSearch };
+      if (selectedClient) params.clientId = selectedClient;
+      const res = await axios.get("/meeting-minutes", { params });
+      return res.data?.data || res.data || [];
+    },
+  });
+
+  // 5. نماذج عروض السعر
   const { data: serverTemplates = [], isLoading: templatesLoading } = useQuery({
     queryKey: ["quotation-templates"],
     queryFn: async () => (await axios.get("/quotation-templates")).data.data,
   });
 
+  // 6. مكتبة البنود
   const { data: serverItems = [], isLoading: libItemsLoading } = useQuery({
     queryKey: ["library-items"],
     queryFn: async () =>
@@ -133,7 +169,7 @@ const CreateQuotationWizard = ({ onComplete }) => {
   // ==========================================
   const subtotal = items.reduce(
     (sum, item) => sum + (item.qty * item.price - item.discount),
-    0,
+    0
   );
   const taxAmount = subtotal * (taxRate / 100);
   const grandTotal = subtotal + taxAmount;
@@ -174,8 +210,8 @@ const CreateQuotationWizard = ({ onComplete }) => {
               [field]:
                 field === "title" || field === "unit" ? value : Number(value),
             }
-          : i,
-      ),
+          : i
+      )
     );
 
   const removeItem = (id) => setItems(items.filter((i) => i.id !== id));
@@ -202,7 +238,7 @@ const CreateQuotationWizard = ({ onComplete }) => {
     setAcceptedMethods((prev) =>
       prev.includes(method)
         ? prev.filter((m) => m !== method)
-        : [...prev, method],
+        : [...prev, method]
     );
   };
 
@@ -237,8 +273,15 @@ const CreateQuotationWizard = ({ onComplete }) => {
     }
 
     const payload = {
+      // الأساسيات
       clientId: selectedClient || null,
       propertyId: selectedProperty || null,
+      
+      // الارتباطات المضافة حديثاً
+      transactionId: selectedTransaction || null,
+      meetingMinuteId: selectedMeeting || null,
+
+      // التواريخ والمعلومات
       issueDate,
       validityDays: validityDays === "unlimited" ? 30 : validityDays,
       isRenewable,
@@ -251,6 +294,8 @@ const CreateQuotationWizard = ({ onComplete }) => {
       serviceYear,
       licenseNumber,
       licenseYear,
+
+      // البنود
       items: items.map((i) => ({
         title: i.title,
         category: i.category || "عام",
@@ -260,10 +305,14 @@ const CreateQuotationWizard = ({ onComplete }) => {
         discount: i.discount,
         discountType: "PERCENTAGE",
       })),
+
+      // الماليات
       taxRate,
       officeTaxBearing,
       payments: paymentsList,
       acceptedMethods,
+
+      // الشروط والنواقص
       missingDocs,
       showMissingDocs,
       terms: termsText,
@@ -276,98 +325,69 @@ const CreateQuotationWizard = ({ onComplete }) => {
   };
 
   // ==========================================
-  // تجميع الـ Props لتمريرها بأسلوب نظيف
+  // تجميع الـ Props لتمريرها للخطوات الفرعية
   // ==========================================
   const stepProps = {
-    // Step 0
-    selectedClient,
-    setSelectedClient,
-    selectedProperty,
-    setSelectedProperty,
-    clientSearch,
-    setClientSearch,
-    propertySearch,
-    setPropertySearch,
-    clientsData,
-    propertiesData,
-    clientsLoading,
-    propertiesLoading,
+    // Step 0 (شاملة العملاء، الملكيات، المعاملات، والمحاضر)
+    selectedClient, setSelectedClient,
+    selectedProperty, setSelectedProperty,
+    clientSearch, setClientSearch,
+    propertySearch, setPropertySearch,
+    clientsData, propertiesData,
+    clientsLoading, propertiesLoading,
+    
+    selectedTransaction, setSelectedTransaction,
+    transactionSearch, setTransactionSearch,
+    transactionsData, transactionsLoading,
+    
+    selectedMeeting, setSelectedMeeting,
+    meetingSearch, setMeetingSearch,
+    meetingsData, meetingsLoading,
 
     // Step 1
-    issueDate,
-    setIssueDate,
-    validityDays,
-    setValidityDays,
-    isRenewable,
-    setIsRenewable,
-    transactionType,
-    setTransactionType,
-    licenseNumber,
-    setLicenseNumber,
-    licenseYear,
-    setLicenseYear,
-    serviceYear,
-    setServiceYear,
-    serviceNumber,
-    setServiceNumber,
+    issueDate, setIssueDate,
+    validityDays, setValidityDays,
+    isRenewable, setIsRenewable,
+    transactionType, setTransactionType,
+    licenseNumber, setLicenseNumber,
+    licenseYear, setLicenseYear,
+    serviceYear, setServiceYear,
+    serviceNumber, setServiceNumber,
     licenseYearsList: generateHijriYears(1400, getCurrentHijriYear()),
 
     // Step 2
-    templateType,
-    setTemplateType,
-    selectedTemplate,
-    setSelectedTemplate,
-    serverTemplates,
-    templatesLoading,
-    showClientCode,
-    setShowClientCode,
-    showPropertyCode,
-    setShowPropertyCode,
+    templateType, setTemplateType,
+    selectedTemplate, setSelectedTemplate,
+    serverTemplates, templatesLoading,
+    showClientCode, setShowClientCode,
+    showPropertyCode, setShowPropertyCode,
 
     // Step 3
-    items,
-    setItems,
-    handleItemChange,
-    removeItem,
-    addItemFromLibrary,
-    serverItems,
-    libItemsLoading,
-    subtotal,
+    items, setItems,
+    handleItemChange, removeItem, addItemFromLibrary,
+    serverItems, libItemsLoading, subtotal,
 
     // Step 4
-    taxRate,
-    setTaxRate,
-    officeTaxBearing,
-    setOfficeTaxBearing,
-    taxAmount,
-    grandTotal,
+    taxRate, setTaxRate,
+    officeTaxBearing, setOfficeTaxBearing,
+    taxAmount, grandTotal,
 
     // Step 5
-    paymentCount,
-    setPaymentCount,
-    paymentsList,
-    acceptedMethods,
-    toggleMethod,
+    paymentCount, setPaymentCount,
+    paymentsList, acceptedMethods, toggleMethod,
 
     // Step 6
-    missingDocs,
-    setMissingDocs,
-    showMissingDocs,
-    setShowMissingDocs,
+    missingDocs, setMissingDocs,
+    showMissingDocs, setShowMissingDocs,
 
     // Step 7
-    termsText,
-    setTermsText,
-    clientTitle,
-    setClientTitle,
-    handlingMethod,
-    setHandlingMethod,
-    selectedPresetTerm,
-    setSelectedPresetTerm,
+    termsText, setTermsText,
+    clientTitle, setClientTitle,
+    handlingMethod, setHandlingMethod,
+    selectedPresetTerm, setSelectedPresetTerm,
 
     // Step 8
-    handleSave,
-    saveMutation,
+    handleSave, saveMutation,
   };
 
   // بيانات المعاينة للجانب الأيسر
@@ -377,7 +397,7 @@ const CreateQuotationWizard = ({ onComplete }) => {
     validityDays,
     clientTitle: clientTitle || "المواطن",
     clientNameForPreview: getClientName(
-      clientsData?.find((c) => c.id === selectedClient),
+      clientsData?.find((c) => c.id === selectedClient)
     ),
     propertyCodeForPreview:
       propertiesData?.find((p) => p.id === selectedProperty)?.code ||
@@ -393,13 +413,13 @@ const CreateQuotationWizard = ({ onComplete }) => {
     termsText,
     missingDocs,
     showMissingDocs,
-    paymentsList, // التعديل الذي قمنا به لضمان ظهور الدفعات في المعاينة
+    paymentsList,
   };
 
   return (
     <div className="flex flex-col h-full bg-slate-50 font-sans" dir="rtl">
       <div className="flex-1 overflow-hidden p-4 md:p-5 flex gap-6">
-        {/* الجانب الأيمن (الخطوات) 60% */}
+        {/* الجانب الأيمن (الخطوات) 50% */}
         <div className="w-[50%] flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           {/* شريط الخطوات العلوية */}
           <div className="flex items-center gap-1 p-4 border-b border-slate-100 overflow-x-auto custom-scrollbar bg-slate-50">
@@ -413,7 +433,7 @@ const CreateQuotationWizard = ({ onComplete }) => {
                   onClick={() => setCurrentStep(step.id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-none text-[10px] font-bold whitespace-nowrap transition-colors ${
                     isActive
-                      ? "bg-blue-600 text-white"
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
                       : isCompleted
                         ? "bg-emerald-100 text-emerald-600"
                         : "bg-slate-100 text-slate-500 hover:bg-slate-200"
@@ -443,11 +463,11 @@ const CreateQuotationWizard = ({ onComplete }) => {
             <button
               disabled={currentStep === 0}
               onClick={() => setCurrentStep((p) => p - 1)}
-              className="px-5 py-2.5 bg-slate-100 text-slate-500 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-slate-200 disabled:opacity-40 transition-colors"
+              className="px-5 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-slate-200 disabled:opacity-40 transition-colors"
             >
               <ChevronRight className="w-4 h-4" /> السابق
             </button>
-            <div className="text-[10px] font-bold text-slate-400 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
+            <div className="text-[10px] font-bold text-slate-500 bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
               الخطوة {currentStep + 1} من {STEPS.length}
             </div>
             <button
@@ -455,14 +475,14 @@ const CreateQuotationWizard = ({ onComplete }) => {
                 setCurrentStep((p) => Math.min(STEPS.length - 1, p + 1))
               }
               disabled={currentStep === 8}
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700 disabled:opacity-40 transition-colors shadow-sm"
+              className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700 disabled:opacity-40 transition-colors shadow-sm"
             >
               التالي <ChevronLeft className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* الجانب الأيسر (المعاينة الحية للورقة A4) 40% */}
+        {/* الجانب الأيسر (المعاينة الحية للورقة A4) 50% */}
         <LivePreview data={previewData} />
       </div>
     </div>
