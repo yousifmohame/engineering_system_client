@@ -1,7 +1,7 @@
 import React from "react";
 import { useAppStore } from "../../stores/useAppStore";
 import QuotationsDashboard from "./QuotationsDashboard";
-import CreateQuotationWizard from "./CreateQuotationWizard";
+import CreateQuotationWizard from "./CreateQuotation/CreateQuotationWizard";
 import QuotationsDirectory from "./QuotationsDirectory"; // 👈 استيراد الدليل
 import QuotationsTemplates from "./QuotationsTemplates"; // 👈 استيراد النماذج
 import QuotationsItems from "./QuotationsItems";

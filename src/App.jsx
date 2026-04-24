@@ -44,6 +44,7 @@ import OfficeNotepadScreen from "./pages/OfficeNotepad/OfficeNotepadScreen";
 import DetailsOfficeDashboard from "./pages/DetailsOffice/DetailsOfficeDashboard";
 import MeetingsMain from "./pages/MeetingMinute/MeetingsMain";
 import MinuteVerificationPage from "./pages/verify/MinuteVerificationPage";
+import ElectronicDocumentation from "./pages/ElectronicDocumentation/index";
 
 // --- Icons & Context ---
 import { Wrench } from "lucide-react"; // 👈 استيراد أيقونة شاشة الصيانة
@@ -142,7 +143,8 @@ const AppContent = () => {
     "170",
     "030",
     "58",
-    "91", // 👈 شاشة محاضر اجتماعات العميل
+    "91",
+    "20"
   ];
   // فحص هل الشاشة المطلوبة مبرمجة أم لا
   const isImplemented = implementedScreens.includes(activeScreenId);
@@ -316,6 +318,11 @@ const AppContent = () => {
               className={activeScreenId === "91" ? "block h-full" : "hidden"}
             >
               <MeetingsMain />
+            </div>
+            <div
+              className={activeScreenId === "20" ? "block h-full" : "hidden"}
+            >
+              <ElectronicDocumentation />
             </div>
 
             {/* --- 👈 السحر هنا: شاشة Fallback لأي كود غير مبرمج --- */}
