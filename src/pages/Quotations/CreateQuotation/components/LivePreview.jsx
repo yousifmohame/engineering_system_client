@@ -1,19 +1,15 @@
 import React, { useState, useRef } from "react";
 import { 
   Eye, 
-  QrCode, 
   Printer, 
   Edit3, 
   Check, 
-  Phone, 
-  Mail, 
-  Globe, 
-  MapPin,
   ZoomIn,
   ZoomOut,
   Landmark,
   Wallet,
-  Banknote
+  Banknote,
+  ShieldCheck
 } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 
@@ -22,45 +18,63 @@ export const LivePreview = ({ data }) => {
   const [zoomScale, setZoomScale] = useState(0.7);
   const componentRef = useRef(null);
 
-  // فك كافة البيانات القادمة من المكون الأب (شاملة كل حقول الخطوات)
+  // ==========================================
+  // فك كافة البيانات القادمة من المكون الأب
+  // ==========================================
   const {
     templateType,
     issueDate,
     validityDays,
     clientTitle,
     clientNameForPreview,
-    clientCodeForPreview, // من الخطوة 0
-    propertyCodeForPreview, // من الخطوة 0
-    showClientCode, // من الخطوة 2
-    showPropertyCode, // من الخطوة 2
-    transactionType, // من الخطوة 1
-    licenseNumber, // من الخطوة 1
-    licenseYear, // من الخطوة 1
-    serviceNumber, // من الخطوة 1
-    serviceYear, // من الخطوة 1
-    items, // من الخطوة 3
-    subtotal, // من الخطوة 3
-    taxRate, // من الخطوة 4
-    taxAmount, // من الخطوة 4
-    grandTotal, // من الخطوة 4
-    officeTaxBearing, // من الخطوة 4
-    paymentsList, // من الخطوة 5
-    acceptedMethods = [], // من الخطوة 5
-    termsText, // من الخطوة 7
-    showMissingDocs, // من الخطوة 6
-    missingDocs, // من الخطوة 6
+    clientCodeForPreview,
+    showClientCode,
+    showPropertyCode,
+    propertyCodeForPreview,
+    transactionType, 
+    licenseNumber, 
+    licenseYear, 
+    serviceNumber, 
+    serviceYear, 
+    termsText, 
+    items = [], 
+    subtotal, 
+    taxRate, 
+    taxAmount, 
+    grandTotal, 
+    officeTaxBearing, 
+    paymentsList = [], 
+    acceptedMethods = [], 
+    showMissingDocs, 
+    missingDocs, 
+    stampType = "NONE",
   } = data;
 
-  // صياغة نص المقدمة الافتراضي ليتكيف مع كافة المدخلات
-  const introText = `إشارة إلى طلبكم بخصوص تقديم عرض سعر خدمات (${transactionType || "الخدمات الهندسية"}) ${
-    showPropertyCode ? `لقطعة الأرض التابعة للملف رقم (${propertyCodeForPreview || "---"})` : "الخاصة بعقاركم"
-  }، ${
-    licenseNumber ? `وفقاً لرخصة البناء رقم (${licenseNumber})` : ""
-  } ${
-    licenseYear ? `لسنة (${licenseYear} هـ)` : ""
-  } ${
-    serviceNumber ? `ورقم الطلب (${serviceNumber}) لسنة (${serviceYear} هـ)` : ""
-  }، فإنه يسرنا تقديم العرض المالي والفني لإنهاء الأعمال المطلوبة على أن يكون نطاق العمل كما يلي:`;
+  // صياغة نص المقدمة الافتراضي
+  const generateIntroText = () => {
+    let intro = `إشارة إلى طلبكم بخصوص تقديم عرض سعر خدمات (${transactionType || "الخدمات الهندسية والاستشارية"})`;
+    if (showPropertyCode && propertyCodeForPreview) {
+      intro += ` لقطعة الأرض التابعة للملف رقم (${propertyCodeForPreview})`;
+    } else {
+      intro += ` الخاصة بعقاركم`;
+    }
+    if (licenseNumber) {
+      intro += `، وفقاً لرخصة البناء رقم (${licenseNumber})${licenseYear ? ` لسنة (${licenseYear} هـ)` : ""}`;
+    }
+    if (serviceNumber) {
+      intro += ` وموجب الطلب رقم (${serviceNumber})${serviceYear ? ` لسنة (${serviceYear} هـ)` : ""}`;
+    }
+    intro += `، فإنه يسرنا تقديم العرض المالي والفني لإنهاء الأعمال المطلوبة على أن يكون نطاق العمل كما يلي:`;
+    return intro;
+  };
+
+  const introText = generateIntroText();
+
+  // توليد الرقم المرجعي ونص الصلاحية للفوتر
+  const refNumber = `QT-${Date.now().toString().slice(-5)}`;
+  const validityText = validityDays === "unlimited" || validityDays === "custom" 
+    ? "غير محدد" 
+    : `(${validityDays}) يوماً`;
 
   // دوال الطباعة والتكبير
   const handlePrint = useReactToPrint({
@@ -122,7 +136,7 @@ export const LivePreview = ({ data }) => {
               : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200"
             }`}
           >
-            {isEditMode ? <><Check className="w-4 h-4" /> حفظ التعديلات</> : <><Edit3 className="w-4 h-4" /> تعديل النص</>}
+            {isEditMode ? <><Check className="w-4 h-4" /> حفظ التعديلات</> : <><Edit3 className="w-4 h-4" /> تحرير النص المباشر</>}
           </button>
 
           <button 
@@ -153,7 +167,7 @@ export const LivePreview = ({ data }) => {
             style={{
               width: "210mm",
               minHeight: "297mm",
-              paddingBottom: "40mm", // تعويض مساحة الفوتر
+              paddingBottom: "50mm", // زيادة المساحة لتستوعب الفوتر الجديد
             }}
             dir="rtl"
           >
@@ -165,9 +179,9 @@ export const LivePreview = ({ data }) => {
                   <div className="w-32 h-12 flex items-center justify-center mb-2">
                     <img src="/logo.jpeg" alt="Logo" className="max-w-full max-h-full object-contain" />
                   </div>
-                  <h1 className="font-black text-[13px] text-blue-900">مكتب الاستشارات الهندسية</h1>
+                  <h1 className="font-black text-[13px] text-blue-900">بلاك كيوب للإستشارات الهندسية</h1>
                   <h2 className="text-[8px] text-slate-500 uppercase tracking-widest mt-0.5">
-                    Engineering Consultant
+                    Black Cube Engineering
                   </h2>
                 </div>
                 
@@ -175,8 +189,7 @@ export const LivePreview = ({ data }) => {
                   <h3 className="text-2xl font-black text-blue-900 mb-3 tracking-tighter">عرض سعر خدمات</h3>
                   <div className="text-[10px] font-bold text-slate-700 space-y-1.5">
                     <p className="flex justify-between gap-6"><span>التاريخ:</span> <span>{issueDate}</span></p>
-                    <p className="flex justify-between gap-6"><span>المرجع:</span> <span className="font-mono text-blue-700">QT-{Date.now().toString().slice(-5)}</span></p>
-                    <p className="flex justify-between gap-6"><span>الصلاحية:</span> <span>{validityDays === "unlimited" || validityDays === "custom" ? "غير محدد" : `${validityDays} يوماً`}</span></p>
+                    <p className="flex justify-between gap-6"><span>المرجع:</span> <span className="font-mono text-blue-700">{refNumber}</span></p>
                   </div>
                 </div>
               </div>
@@ -190,7 +203,7 @@ export const LivePreview = ({ data }) => {
                     suppressContentEditableWarning={true}
                     className={`text-[13px] font-black text-slate-900 flex items-center gap-2 ${isEditMode ? "bg-yellow-50 border-b border-dashed border-yellow-400 outline-none px-2" : ""}`}
                   >
-                    {clientTitle !== "لقب مخصص" ? `${clientTitle} ` : ""}{clientNameForPreview}
+                    {clientTitle !== "لقب مخصص" && clientTitle ? `${clientTitle} ` : ""}{clientNameForPreview || "اسم العميل"}
                     {showClientCode && clientCodeForPreview && (
                       <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[9px] font-mono border border-slate-200">
                         {clientCodeForPreview}
@@ -250,7 +263,7 @@ export const LivePreview = ({ data }) => {
                         الإجمالي بدون ضريبة القيمة المضافة %{taxRate}
                       </td>
                       <td className="border border-blue-900 p-2 font-black font-mono text-blue-900">
-                        {subtotal?.toLocaleString()} ريال
+                        {subtotal?.toLocaleString() || 0} ريال
                       </td>
                     </tr>
                     <tr>
@@ -259,7 +272,7 @@ export const LivePreview = ({ data }) => {
                         {officeTaxBearing > 0 && <span className="text-[9px] text-emerald-600 mr-2">(المكتب يتحمل {officeTaxBearing}% من الضريبة)</span>}
                       </td>
                       <td className="border border-blue-900 p-2 font-bold font-mono text-slate-600">
-                        {taxAmount?.toLocaleString()} ريال
+                        {taxAmount?.toLocaleString() || 0} ريال
                       </td>
                     </tr>
                     <tr className="bg-blue-900 text-white">
@@ -267,7 +280,7 @@ export const LivePreview = ({ data }) => {
                         الإجمالي شامل ضريبة القيمة المضافة
                       </td>
                       <td className="border border-blue-900 p-2.5 font-black font-mono text-[12px]">
-                        {grandTotal?.toLocaleString()} ريال
+                        {grandTotal?.toLocaleString() || 0} ريال
                       </td>
                     </tr>
                   </tbody>
@@ -275,7 +288,7 @@ export const LivePreview = ({ data }) => {
               </div>
 
               {/* --- جدول الدفعات وطرق الدفع --- */}
-              {((paymentsList && paymentsList.length > 0) || acceptedMethods.length > 0) && (
+              {((paymentsList && paymentsList.length > 0) || (acceptedMethods && acceptedMethods.length > 0)) && (
                 <div className="mb-8 grid grid-cols-12 gap-6 items-start">
                   {paymentsList && paymentsList.length > 0 && (
                     <div className="col-span-8">
@@ -294,7 +307,7 @@ export const LivePreview = ({ data }) => {
                             <tr key={p.id}>
                               <td className="border border-slate-300 p-1.5 font-bold bg-slate-50">{p.label}</td>
                               <td className="border border-slate-300 p-1.5 text-slate-600 font-mono">{p.percentage}%</td>
-                              <td className="border border-slate-300 p-1.5 font-mono font-black text-blue-900">{p.amount.toLocaleString()}</td>
+                              <td className="border border-slate-300 p-1.5 font-mono font-black text-blue-900">{(p.amount || 0).toLocaleString()}</td>
                               <td className="border border-slate-300 p-1.5 text-right font-bold text-slate-700">{p.condition}</td>
                             </tr>
                           ))}
@@ -303,7 +316,7 @@ export const LivePreview = ({ data }) => {
                     </div>
                   )}
 
-                  {acceptedMethods.length > 0 && (
+                  {acceptedMethods && acceptedMethods.length > 0 && (
                     <div className="col-span-4">
                       <h4 className="text-[12px] font-black text-blue-900 mb-2">طرق الدفع :</h4>
                       <div className="flex flex-col gap-1.5">
@@ -346,60 +359,75 @@ export const LivePreview = ({ data }) => {
                     <p className="text-[11px] font-black text-blue-900">توقيع العميل / الممثل</p>
                     <div className="border-b-2 border-slate-300 w-48 mx-auto border-dashed"></div>
                   </div>
-                  <div className="space-y-12 relative">
-                    <p className="text-[11px] font-black text-blue-900">توقيع وختم المكتب</p>
-                    <div className="border-b-2 border-slate-300 w-48 mx-auto border-dashed relative z-10"></div>
-                    {/* ختم رقمي خلفية لتجنب المساحة الفارغة */}
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 opacity-[0.1] -rotate-12 pointer-events-none">
-                      <div className="w-24 h-24 rounded-full border-[4px] border-blue-900 flex items-center justify-center p-1">
-                        <div className="w-full h-full rounded-full border-2 border-blue-900 border-dashed flex items-center justify-center">
-                          <span className="text-[8px] font-black text-blue-900 text-center tracking-tighter uppercase">Approved<br/>System</span>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="space-y-12 relative flex flex-col items-center">
+                    <p className="text-[11px] font-black text-blue-900 z-20 bg-white px-2">توقيع وختم المكتب</p>
+                    <div className="border-b-2 border-slate-300 w-48 mx-auto border-dashed relative z-10 hidden"></div>
+                    {/* هنا يمكن دمج مكون OfficialStamp إذا كان مطلوباً */}
                   </div>
                 </div>
               </div>
 
-              {/* --- الفوتر الاحترافي المطابق للصورة --- */}
-              <div className="absolute bottom-0 left-0 right-0 h-[35mm] bg-white border-t-[5px] border-[#0e2a47] px-[15mm] py-4 overflow-hidden">
-                 <div className="grid grid-cols-3 gap-4 items-center h-full text-[#0e2a47]">
-                    {/* العنوان */}
-                    <div className="flex items-center justify-start gap-3">
-                      <div className="p-2.5 bg-[#0e2a47] rounded-full text-white shrink-0 shadow-sm">
-                        <MapPin className="w-5 h-5" />
-                      </div>
-                      <div className="text-[10px] font-black leading-relaxed">
-                        الرياض - حي المشاعل<br/>طريق الحائر - مدينة الرياض
-                      </div>
+              {/* ========================================== */}
+              {/* الفوتر الجديد بناءً على طلبك */}
+              {/* ========================================== */}
+              <div className="absolute bottom-0 left-0 right-0 bg-white px-[15mm] pb-[10mm] pt-4">
+                {/* الجزء العلوي من الفوتر */}
+                <div className="border-t border-slate-200 pt-6 flex justify-between items-end text-[10px] text-slate-500 font-sans print:border-slate-300 break-inside-avoid">
+                  
+                  {/* يسار: الرقم المرجعي والنص */}
+                  <div className="flex flex-col gap-1 w-1/3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-800 tracking-tight">الرقم المرجعي:</span>
+                      <span className="font-mono text-xs">{refNumber}</span>
                     </div>
-                    {/* التواصل */}
-                    <div className="flex flex-col items-center justify-center border-x border-[#0e2a47]/20 h-full space-y-2.5 px-2">
-                      <div className="flex items-center gap-2 text-[11px] font-black">
-                        <Phone className="w-4 h-4" /> <span className="font-mono">0547267500</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-[11px] font-black">
-                        <Mail className="w-4 h-4" /> <span className="font-mono">info@blackcube.sa</span>
-                      </div>
+                    <p className="leading-relaxed opacity-75 max-w-xs">
+                      صلاحية هذا العرض هي {validityText} من تاريخ الإصدار. جميع الأسعار خاضعة لضريبة القيمة المضافة حسب الأنظمة المتبعة.
+                    </p>
+                  </div>
+
+                  {/* المنتصف: الباركود */}
+                  <div className="flex flex-col items-center gap-1 w-1/3">
+                    <div className="h-10 mb-1 w-[135px] flex items-center justify-center opacity-80">
+                      {/* باركود برمجي عبر CSS للطباعة الدقيقة */}
+                      <div className="w-full h-[35px] bg-[repeating-linear-gradient(90deg,#000_0,#000_2px,transparent_0,transparent_4px,transparent_6px,#000_6px,#000_8px,transparent_8px,transparent_10px)]"></div>
                     </div>
-                    {/* الويب */}
-                    <div className="flex items-center justify-end gap-3 text-left">
-                      <div className="text-[10px] font-black leading-relaxed text-right font-mono">
-                        www.blackcube.sa<br/>@BlackCube_Eng
-                      </div>
-                      <div className="p-2.5 bg-[#0e2a47] rounded-full text-white shrink-0 shadow-sm">
-                        <Globe className="w-5 h-5" />
-                      </div>
+                    <span className="font-mono text-[9px] tracking-[0.2em]">{refNumber}</span>
+                  </div>
+
+                  {/* يمين: QR ورقم الصفحة */}
+                  <div className="flex justify-end gap-6 items-end w-1/3">
+                    <div className="bg-white p-1 border border-slate-100 rounded shadow-sm">
+                      {/* رمز QR كـ SVG للاحتفاظ بالدقة */}
+                      <svg height="60" width="60" viewBox="0 0 21 21" role="img">
+                        <path fill="#FFFFFF" d="M0,0 h21v21H0z" shapeRendering="crispEdges"></path>
+                        <path fill="#000000" d="M0 0h7v1H0zM9 0h1v1H9zM11 0h2v1H11zM14,0 h7v1H14zM0 1h1v1H0zM6 1h1v1H6zM8 1h2v1H8zM14 1h1v1H14zM20,1 h1v1H20zM0 2h1v1H0zM2 2h3v1H2zM6 2h1v1H6zM8 2h1v1H8zM10 2h1v1H10zM12 2h1v1H12zM14 2h1v1H14zM16 2h3v1H16zM20,2 h1v1H20zM0 3h1v1H0zM2 3h3v1H2zM6 3h1v1H6zM8 3h2v1H8zM12 3h1v1H12zM14 3h1v1H14zM16 3h3v1H16zM20,3 h1v1H20zM0 4h1v1H0zM2 4h3v1H2zM6 4h1v1H6zM8 4h1v1H8zM11 4h1v1H11zM14 4h1v1H14zM16 4h3v1H16zM20,4 h1v1H20zM0 5h1v1H0zM6 5h1v1H6zM8 5h5v1H8zM14 5h1v1H14zM20,5 h1v1H20zM0 6h7v1H0zM8 6h1v1H8zM10 6h1v1H10zM12 6h1v1H12zM14,6 h7v1H14zM9 7h1v1H9zM12 7h1v1H12zM2 8h1v1H2zM5 8h7v1H5zM13 8h1v1H13zM15 8h5v1H15zM0 9h2v1H0zM3 9h3v1H3zM7 9h1v1H7zM9 9h3v1H9zM18,9 h3v1H18zM0 10h4v1H0zM5 10h2v1H5zM8 10h2v1H8zM11 10h3v1H11zM17 10h3v1H17zM0 11h2v1H0zM3 11h3v1H3zM7 11h1v1H7zM9 11h4v1H9zM16 11h1v1H16zM19,11 h2v1H19zM0 12h3v1H0zM4 12h4v1H4zM9 12h2v1H9zM12 12h3v1H12zM19 12h1v1H19zM8 13h3v1H8zM13 13h1v1H13zM15 13h1v1H15zM0 14h7v1H0zM8 14h1v1H8zM10 14h1v1H10zM12 14h1v1H12zM15 14h2v1H15zM0 15h1v1H0zM6 15h1v1H6zM8 15h3v1H8zM15 15h1v1H15zM20,15 h1v1H20zM0 16h1v1H0zM2 16h3v1H2zM6 16h1v1H6zM10 16h1v1H10zM14,16 h7v1H14zM0 17h1v1H0zM2 17h3v1H2zM6 17h1v1H6zM12 17h3v1H12zM0 18h1v1H0zM2 18h3v1H2zM6 18h1v1H6zM8 18h1v1H8zM11 18h2v1H11zM14 18h1v1H14zM17,18 h4v1H17zM0 19h1v1H0zM6 19h1v1H6zM10 19h2v1H10zM16 19h1v1H16zM20,19 h1v1H20zM0 20h7v1H0zM12 20h1v1H12zM14 20h1v1H14zM17,20 h4v1H17z" shapeRendering="crispEdges"></path>
+                      </svg>
                     </div>
-                 </div>
-                 
-                 {/* باركود التحقق السفلي */}
-                 <div className="absolute bottom-2 left-[15mm] right-[15mm] flex justify-between items-center opacity-30">
-                    <div className="text-[7px] font-mono font-bold tracking-widest uppercase">Remix Enterprise Resources Planning System</div>
-                    <div className="flex items-center gap-1">
-                      <QrCode className="w-5 h-5 text-[#0e2a47]" />
+                    <div className="text-left font-black text-slate-900 border-r-2 border-slate-900 pr-4 h-full flex flex-col justify-center">
+                      <div className="text-xs uppercase tracking-widest text-slate-400 mb-0.5">Page</div>
+                      <div className="text-lg leading-none print:hidden">1 <span className="text-slate-300 mx-1">/</span> 1</div>
+                      <div className="text-lg leading-none hidden print:block css-page-number"></div>
                     </div>
-                 </div>
+                  </div>
+                </div>
+
+                {/* الجزء السفلي من الفوتر */}
+                <div className="mt-4 pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-[10px] text-slate-500 font-bold gap-2">
+                  <div className="flex gap-4">
+                    <span className="flex items-center gap-1"><span className="text-slate-400">هاتف:</span> 0547267500</span>
+                    <span className="flex items-center gap-1"><span className="text-slate-400">بريد:</span> info@blackcube.sa</span>
+                    <span className="flex items-center gap-1"><span className="text-slate-400">الموقع:</span> www.blackcube.sa</span>
+                  </div>
+                  
+                  <div className="text-[9px] text-slate-400 max-w-md text-center hidden md:block">
+                    صلاحية هذا العرض هي {validityText} من تاريخ الإصدار. جميع الأسعار خاضعة لضريبة القيمة المضافة.
+                  </div>
+
+                  <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100/50">
+                    <ShieldCheck className="w-3 h-3" />
+                    <span className="uppercase tracking-widest text-[8px] font-black">Secure Digital Original</span>
+                  </div>
+                </div>
               </div>
 
             </div>

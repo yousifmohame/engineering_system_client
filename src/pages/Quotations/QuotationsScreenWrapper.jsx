@@ -3,7 +3,7 @@ import { useAppStore } from "../../stores/useAppStore";
 import QuotationsDashboard from "./QuotationsDashboard";
 import CreateQuotationWizard from "./CreateQuotation/CreateQuotationWizard";
 import QuotationsDirectory from "./QuotationsDirectory"; // 👈 استيراد الدليل
-import QuotationsTemplates from "./QuotationsTemplates"; // 👈 استيراد النماذج
+import QuotationsTemplates from "./Templates/index"; // 👈 استيراد النماذج
 import QuotationsItems from "./QuotationsItems";
 import QuotationsApprovals from "./QuotationsApprovals";
 import QuotationsPayments from "./QuotationsPayments";

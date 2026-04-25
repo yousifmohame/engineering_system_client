@@ -10,9 +10,9 @@ import {
 } from "lucide-react";
 
 export const STEPS = [
-  { id: 0, label: "الملكية والعميل", icon: Building },
-  { id: 1, label: "البيانات", icon: FileText },
-  { id: 2, label: "النموذج", icon: Eye },
+  { id: 0, label: "النموذج", icon: Eye },
+  { id: 1, label: "الملكية والعميل", icon: Building },
+  { id: 2, label: "البيانات", icon: FileText },
   { id: 3, label: "البنود", icon: Receipt },
   { id: 4, label: "الضريبة", icon: CreditCard },
   { id: 5, label: "الدفعات", icon: CreditCard },

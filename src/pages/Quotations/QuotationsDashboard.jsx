@@ -40,97 +40,73 @@ const QuotationsDashboard = () => {
   const { addTab } = useAppStore();
   const SCREEN_ID = "815";
 
-  const openCreateTab = () => {
+  // ... (نفس دوال فتح التابات بدون تغيير)
+  const openCreateTab = () =>
     addTab(SCREEN_ID, {
       id: `CREATE-QUOTATION-${Date.now()}`,
       title: "إنشاء عرض سعر",
       type: "create-quotation",
       closable: true,
     });
-  };
-
-  const openDirectoryTab = () => {
+  const openDirectoryTab = () =>
     addTab(SCREEN_ID, {
       id: `QUOTATIONS-DIRECTORY`,
       title: "دليل العروض",
       type: "directory",
       closable: true,
     });
-  };
-
-  // 👈 دالة فتح تاب نماذج العروض
-  const openTemplatesTab = () => {
+  const openTemplatesTab = () =>
     addTab(SCREEN_ID, {
       id: `QUOTATIONS-TEMPLATES`,
       title: "نماذج عروض الأسعار",
       type: "templates",
       closable: true,
     });
-  };
-
-  const openItemsTab = () => {
+  const openItemsTab = () =>
     addTab(SCREEN_ID, {
       id: `QUOTATIONS-ITEMS`,
       title: "البنود والمجموعات",
       type: "items",
       closable: true,
     });
-  };
-
-  const openApprovalsTab = () => {
+  const openApprovalsTab = () =>
     addTab(SCREEN_ID, {
       id: `QUOTATIONS-APPROVALS`,
       title: "الاعتماد والمراجعة",
       type: "approvals",
       closable: true,
     });
-  };
-
-  const openPaymentsTab = () => {
+  const openPaymentsTab = () =>
     addTab(SCREEN_ID, {
       id: `QUOTATIONS-PAYMENTS`,
       title: "الدفعات والتحصيل",
       type: "payments",
       closable: true,
     });
-  };
-
-  const openReportsTab = () => {
+  const openReportsTab = () =>
     addTab(SCREEN_ID, {
       id: `QUOTATIONS-REPORTS`,
       title: "تقارير عروض الأسعار",
       type: "reports",
       closable: true,
     });
-  };
-
-  const openCancellationsTab = () => {
+  const openCancellationsTab = () =>
     addTab(SCREEN_ID, {
       id: `QUOTATIONS-CANCELLATIONS`,
       title: "الملغاة والاسترجاع",
       type: "cancellations",
       closable: true,
     });
-  };
 
-  // ==========================================
-  // جلب الإحصائيات الحقيقية من السيرفر
-  // ==========================================
-  const {
-    data: statsData,
-    isLoading,
-    isError,
-  } = useQuery({
+  const { data: statsData, isLoading } = useQuery({
     queryKey: ["quotations-stats"],
     queryFn: async () => {
       const response = await axios.get("/quotations/stats");
       return response.data.data;
     },
-    // تحديث البيانات كل دقيقة تلقائياً
     refetchInterval: 60000,
   });
 
-  // قيم افتراضية في حال التحميل أو الخطأ
   const stats = statsData || {
     totalQuotations: 0,
     pendingApproval: 0,
@@ -151,52 +127,49 @@ const QuotationsDashboard = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-screen bg-slate-50">
-        <div className="flex flex-col items-center gap-3 text-blue-600">
-          <Loader2 className="w-8 h-8 animate-spin" />
-          <span className="font-bold text-sm">جاري تحميل الإحصائيات...</span>
-        </div>
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="p-5 md:p-6 bg-slate-50 min-h-screen" dir="rtl">
-      {/* 1. إجراءات سريعة */}
-      <div className="flex flex-wrap items-center gap-2 mb-5 p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
-        <div className="text-xs font-bold text-slate-500 ml-2 whitespace-nowrap">
+    <div className="p-3 md:p-4 bg-slate-50 min-h-screen" dir="rtl">
+      {/* 1. إجراءات سريعة - أكثر كثافة */}
+      <div className="flex flex-wrap items-center gap-1.5 mb-3 p-2 bg-white rounded-lg border border-slate-200 shadow-sm">
+        <div className="text-[11px] font-bold text-slate-500 ml-1 whitespace-nowrap">
           إجراءات سريعة:
         </div>
         <button
           onClick={openCreateTab}
-          className="px-3.5 py-1.5 bg-blue-500 text-white border-none rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1.5 hover:bg-blue-600 transition-colors"
+          className="px-2.5 py-1 bg-blue-500 text-white rounded text-[11px] font-bold flex items-center gap-1 hover:bg-blue-600 transition-colors"
         >
-          <Plus className="w-3.5 h-3.5" /> عرض سعر جديد
+          <Plus className="w-3 h-3" /> عرض سعر جديد
         </button>
-        <button className="px-3.5 py-1.5 bg-violet-50 text-violet-600 border border-violet-200 rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1.5 hover:bg-violet-100 transition-colors">
-          <Upload className="w-3.5 h-3.5" /> استيراد عرض خارجي (PDF)
+        <button className="px-2.5 py-1 bg-violet-50 text-violet-600 border border-violet-200 rounded text-[11px] font-bold flex items-center gap-1 hover:bg-violet-100 transition-colors">
+          <Upload className="w-3 h-3" /> استيراد (PDF)
         </button>
-        <button className="px-3.5 py-1.5 bg-cyan-50 text-cyan-700 border border-cyan-200 rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1.5 hover:bg-cyan-100 transition-colors">
-          <Download className="w-3.5 h-3.5" /> تصدير سريع
+        <button className="px-2.5 py-1 bg-cyan-50 text-cyan-700 border border-cyan-200 rounded text-[11px] font-bold flex items-center gap-1 hover:bg-cyan-100 transition-colors">
+          <Download className="w-3 h-3" /> تصدير سريع
         </button>
-        <button className="px-3.5 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1.5 relative hover:bg-emerald-100 transition-colors">
-          <Stamp className="w-3.5 h-3.5" /> تسجيل موافقة المالك
+        <button className="px-2.5 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded text-[11px] font-bold flex items-center gap-1 relative hover:bg-emerald-100 transition-colors">
+          <Stamp className="w-3 h-3" /> موافقة المالك
           {stats.awaitingSignature > 0 && (
-            <span className="px-1.5 py-0.5 bg-red-600 text-white rounded-md text-[10px] font-bold ml-1">
+            <span className="px-1 py-0.5 bg-red-600 text-white rounded text-[9px] font-bold ml-1">
               {stats.awaitingSignature}
             </span>
           )}
         </button>
         <div className="flex-1"></div>
-        <button className="px-3.5 py-1.5 bg-slate-50 text-slate-500 border border-slate-300 rounded-lg text-xs cursor-pointer flex items-center gap-1.5 hover:bg-slate-100 transition-colors">
-          <Search className="w-3.5 h-3.5" /> بحث سريع
-          <span className="px-1.5 py-0.5 bg-slate-200 rounded text-[9px] font-mono">
+        <button className="px-2.5 py-1 bg-slate-50 text-slate-500 border border-slate-300 rounded text-[11px] flex items-center gap-1 hover:bg-slate-100 transition-colors">
+          <Search className="w-3 h-3" /> بحث{" "}
+          <span className="px-1 bg-slate-200 rounded text-[8px] font-mono">
             Ctrl+K
           </span>
         </button>
       </div>
 
-      {/* 2. الإحصائيات العلوية - الصف الأول */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+      {/* 2. الإحصائيات 8 بطاقات في سطر واحد للشاشات الكبيرة */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 mb-3">
         <StatCard
           color="blue"
           icon={ClipboardList}
@@ -207,24 +180,20 @@ const QuotationsDashboard = () => {
           color="indigo"
           icon={FileSearch}
           count={stats.pendingApproval}
-          label="قيد المراجعة / الاعتماد الداخلي"
+          label="قيد المراجعة"
         />
         <StatCard
           color="amber"
           icon={PenTool}
           count={stats.awaitingSignature}
-          label="بانتظار توقيع المالك"
+          label="بانتظار التوقيع"
         />
         <StatCard
           color="emerald"
           icon={CircleDollarSign}
           count={stats.approvedPendingPayment}
-          label="معتمدة بانتظار الدفع"
+          label="بانتظار الدفع"
         />
-      </div>
-
-      {/* 3. الإحصائيات العلوية - الصف الثاني */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         <StatCard
           color="yellow"
           icon={Hourglass}
@@ -251,11 +220,11 @@ const QuotationsDashboard = () => {
         />
       </div>
 
-      {/* 4. الملخص المالي */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
+      {/* 3. الملخص المالي ومؤشرات الأداء في سطر واحد معاً */}
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-2 mb-3">
         <FinancialCard
           color="blue"
-          label="إجمالي قيمة العروض (النشطة)"
+          label="إجمالي قيمة العروض"
           amount={stats.totalValue.toLocaleString()}
         />
         <FinancialCard
@@ -263,14 +232,10 @@ const QuotationsDashboard = () => {
           label="إجمالي المحصّل (تقريبي)"
           amount={stats.totalCollected.toLocaleString()}
         />
-      </div>
-
-      {/* 5. مؤشرات الأداء */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         <MetricCard
           color="violet"
           icon={Stamp}
-          label="متوسط مدة الموافقة"
+          label="متوسط الموافقة"
           value={stats.avgApprovalDays}
           unit="يوم"
         />
@@ -289,53 +254,53 @@ const QuotationsDashboard = () => {
         <MetricCard
           color="sky"
           icon={Send}
-          label="إجمالي العروض المُرسلة"
+          label="العروض المُرسلة"
           value={stats.totalSent}
         />
       </div>
 
-      {/* 6. لوحة التحكم - الأزرار المركزية */}
-      <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-sm mb-5">
-        <div className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-          <ClipboardList className="w-4 h-4 text-blue-600" /> لوحة التحكم — عروض
-          الأسعار
+      {/* 4. لوحة التحكم - شبكة الأزرار المكثفة (8 في السطر للشاشات الكبيرة جداً) */}
+      <div className="p-3 md:p-4 bg-white rounded-lg border border-slate-200 shadow-sm">
+        <div className="text-xs font-bold text-slate-800 mb-3 flex items-center gap-1.5">
+          <ClipboardList className="w-3.5 h-3.5 text-blue-600" /> العمليات
+          والخدمات
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
           <DashboardButton
             color="blue"
             icon={FileText}
             label="دليل العروض"
-            code="815-B01"
+            code="815-B"
             badge={stats.totalQuotations}
-            onClick={openDirectoryTab} // 👈 ربط الدالة هنا
+            onClick={openDirectoryTab}
           />
           <DashboardButton
             color="green"
             icon={FilePlus}
-            label="إنشاء عرض سعر"
-            code="815-A01"
+            label="إنشاء عرض"
+            code="815-A"
             onClick={openCreateTab}
           />
           <DashboardButton
             color="violet"
             icon={Layout}
             label="نماذج العروض"
-            code="815-T01"
-            onClick={openTemplatesTab} // 👈 ربط الدالة هنا
+            code="815-T"
+            onClick={openTemplatesTab}
           />
           <DashboardButton
             color="orange"
             icon={Package}
             label="البنود والمجموعات"
-            code="815-I01"
+            code="815-I"
             onClick={openItemsTab}
           />
           <DashboardButton
             color="cyan"
             icon={ShieldCheck}
             label="الاعتماد والمراجعة"
-            code="815-W01"
+            code="815-W"
             badge={stats.pendingApproval}
             onClick={openApprovalsTab}
           />
@@ -343,21 +308,21 @@ const QuotationsDashboard = () => {
             color="emerald"
             icon={CreditCard}
             label="الدفعات والتحصيل"
-            code="815-P01"
+            code="815-P"
             onClick={openPaymentsTab}
           />
           <DashboardButton
             color="indigo"
             icon={BarChart3}
             label="تقارير العروض"
-            code="815-R01"
+            code="815-R"
             onClick={openReportsTab}
           />
           <DashboardButton
             color="red"
             icon={RotateCcw}
-            label="الملغاة / الاسترجاع"
-            code="815-C01"
+            label="الملغاة/الاسترجاع"
+            code="815-C"
             badge={stats.cancelled}
             onClick={openCancellationsTab}
           />
@@ -365,54 +330,54 @@ const QuotationsDashboard = () => {
             color="slate"
             icon={Settings}
             label="الإعدادات"
-            code="815-S01"
+            code="815-S"
             readyForDev
           />
           <DashboardButton
             color="amber"
             icon={Bell}
-            label="الإشعارات والتنبيهات"
-            code="815-N01"
+            label="الإشعارات"
+            code="815-N"
           />
           <DashboardButton
             color="slate"
             icon={ScrollText}
             label="سجل التدقيق"
-            code="815-L01"
+            code="815-L"
           />
           <DashboardButton
             color="cyan"
             icon={Archive}
             label="التصدير والأرشفة"
-            code="815-X01"
+            code="815-X"
             readyForDev
           />
           <DashboardButton
             color="pink"
             icon={Link2}
             label="ربط العملاء"
-            code="815-CL01"
+            code="815-CL"
             readyForDev
           />
           <DashboardButton
             color="violet"
             icon={Sparkles}
             label="المساعد الذكي"
-            code="815-AI01"
+            code="815-AI"
             readyForDev
           />
           <DashboardButton
             color="sky"
             icon={TrendingUp}
             label="التحليلات"
-            code="815-D01"
+            code="815-D"
             readyForDev
           />
           <DashboardButton
             color="yellow"
             icon={Bookmark}
-            label="المفضلة والقوالب السريعة"
-            code="815-M01"
+            label="القوالب السريعة"
+            code="815-M"
             badge="1"
             readyForDev
           />
@@ -422,43 +387,50 @@ const QuotationsDashboard = () => {
   );
 };
 
-// ... المكونات المساعدة (StatCard, FinancialCard, MetricCard, DashboardButton) تبقى كما هي بدون تغيير ...
+// ==========================================
+// المكونات المساعدة - تم تكثيفها بشدة
+// ==========================================
+
 const StatCard = ({ color, icon: Icon, count, label }) => {
   const colorMap = {
-    blue: "border-t-blue-500 text-blue-500",
-    indigo: "border-t-indigo-600 text-indigo-600",
-    amber: "border-t-amber-500 text-amber-500",
-    emerald: "border-t-emerald-600 text-emerald-600",
-    yellow: "border-t-yellow-500 text-yellow-500",
-    green: "border-t-green-600 text-green-600",
-    orange: "border-t-orange-500 text-orange-500",
-    red: "border-t-red-600 text-red-600",
+    blue: "border-t-blue-500 text-blue-500 bg-blue-50/30",
+    indigo: "border-t-indigo-500 text-indigo-500 bg-indigo-50/30",
+    amber: "border-t-amber-500 text-amber-500 bg-amber-50/30",
+    emerald: "border-t-emerald-500 text-emerald-500 bg-emerald-50/30",
+    yellow: "border-t-yellow-500 text-yellow-500 bg-yellow-50/30",
+    green: "border-t-green-500 text-green-500 bg-green-50/30",
+    orange: "border-t-orange-500 text-orange-500 bg-orange-50/30",
+    red: "border-t-red-500 text-red-500 bg-red-50/30",
   };
   return (
     <div
-      className={`p-3.5 bg-white rounded-xl border-x border-b border-slate-200 border-t-[3px] shadow-sm text-center cursor-pointer hover:-translate-y-0.5 hover:shadow-md transition-all ${colorMap[color]}`}
+      className={`p-2 rounded-lg border border-slate-200 border-t-2 shadow-sm text-center flex flex-col items-center justify-center ${colorMap[color]}`}
     >
-      <div className="mb-1.5 flex justify-center">
-        <Icon className="w-5 h-5" />
+      <div className="flex items-center gap-1.5 mb-1">
+        <Icon className="w-3.5 h-3.5" />
+        <span className="text-lg font-bold leading-none text-slate-800">
+          {count}
+        </span>
       </div>
-      <div className="text-[22px] font-bold leading-none mb-1">{count}</div>
-      <div className="text-[10px] text-slate-500 mt-1">{label}</div>
+      <div className="text-[9.5px] font-medium text-slate-500 leading-tight truncate w-full">
+        {label}
+      </div>
     </div>
   );
 };
 
 const FinancialCard = ({ color, label, amount }) => {
-  const colorMap = {
-    blue: "border-r-blue-500 text-blue-700",
-    green: "border-r-green-600 text-green-600",
-  };
+  const colorMap = { blue: "border-r-blue-500", green: "border-r-green-500" };
+  const textMap = { blue: "text-blue-700", green: "text-green-700" };
+
   return (
     <div
-      className={`p-4 bg-white rounded-xl border-y border-l border-r-4 border-slate-200 shadow-sm ${colorMap[color]}`}
+      className={`p-2.5 bg-white rounded-lg border border-slate-200 border-r-4 shadow-sm flex flex-col justify-center ${colorMap[color]}`}
     >
-      <div className="text-xs text-slate-500 mb-1">{label}</div>
-      <div className="text-[26px] font-bold">
-        {amount} <span className="text-[13px] font-normal">ر.س</span>
+      <div className="text-[10px] text-slate-500 mb-0.5">{label}</div>
+      <div className={`text-lg font-bold leading-none ${textMap[color]}`}>
+        {amount}{" "}
+        <span className="text-[10px] font-normal text-slate-400">ر.س</span>
       </div>
     </div>
   );
@@ -466,27 +438,31 @@ const FinancialCard = ({ color, label, amount }) => {
 
 const MetricCard = ({ color, icon: Icon, label, value, unit }) => {
   const colorMap = {
-    violet: "border-r-violet-500 text-violet-500 bg-violet-50",
-    emerald: "border-r-emerald-600 text-emerald-600 bg-emerald-50",
-    red: "border-r-red-600 text-red-600 bg-red-50",
-    sky: "border-r-sky-600 text-sky-600 bg-sky-50",
+    violet: "border-r-violet-500 text-violet-600 bg-violet-50/50",
+    emerald: "border-r-emerald-500 text-emerald-600 bg-emerald-50/50",
+    red: "border-r-red-500 text-red-600 bg-red-50/50",
+    sky: "border-r-sky-500 text-sky-600 bg-sky-50/50",
   };
+  const bgClass = colorMap[color].split(" ")[2];
+
   return (
     <div
-      className={`p-3 bg-white rounded-xl border-y border-l border-r-4 border-slate-200 shadow-sm flex items-center gap-3 ${colorMap[color].split(" ")[0]}`}
+      className={`p-2 bg-white rounded-lg border border-slate-200 border-r-4 shadow-sm flex items-center gap-2 ${colorMap[color].split(" ")[0]}`}
     >
       <div
-        className={`w-9 h-9 rounded-lg flex items-center justify-center ${colorMap[color].split(" ").slice(1).join(" ")}`}
+        className={`w-7 h-7 rounded bg-white shadow-sm flex items-center justify-center ${colorMap[color].split(" ")[1]}`}
       >
-        <Icon className="w-5 h-5" />
+        <Icon className="w-3.5 h-3.5" />
       </div>
-      <div>
-        <div className="text-[11px] text-slate-500">{label}</div>
-        <div
-          className={`text-[20px] font-bold ${colorMap[color].split(" ")[1]}`}
-        >
+      <div className="flex-1 overflow-hidden">
+        <div className="text-[9.5px] text-slate-500 truncate">{label}</div>
+        <div className="text-sm font-bold text-slate-800 leading-tight">
           {value}{" "}
-          {unit && <span className="text-[11px] font-normal">{unit}</span>}
+          {unit && (
+            <span className="text-[9px] font-normal text-slate-400">
+              {unit}
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -503,7 +479,7 @@ const DashboardButton = ({
   onClick,
 }) => {
   const colorMap = {
-    blue: "bg-blue-50 text-blue-500 border-blue-100",
+    blue: "bg-blue-50 text-blue-600 border-blue-100",
     green: "bg-green-50 text-green-600 border-green-100",
     violet: "bg-violet-50 text-violet-600 border-violet-100",
     orange: "bg-orange-50 text-orange-500 border-orange-100",
@@ -518,14 +494,15 @@ const DashboardButton = ({
     yellow: "bg-yellow-50 text-yellow-600 border-yellow-100",
   };
   const selectedColor = colorMap[color] || colorMap.slate;
+
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center justify-center p-4 bg-white border-[1.5px] rounded-xl cursor-pointer hover:shadow-md transition-all duration-200 relative min-h-[110px] ${selectedColor.split(" ").slice(2).join(" ")} hover:scale-[1.02]`}
+      className={`flex flex-col items-center justify-center p-2.5 bg-white border rounded-lg cursor-pointer hover:bg-slate-50 transition-colors relative min-h-[85px] hover:border-slate-300`}
     >
       {badge && (
         <span
-          className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 text-white rounded-[10px] text-[10px] font-bold ${selectedColor.split(" ")[1].replace("text", "bg")}`}
+          className={`absolute top-1 right-1 px-1.5 py-0.5 text-white rounded text-[9px] font-bold leading-none ${selectedColor.split(" ")[1].replace("text", "bg")}`}
         >
           {badge}
         </span>
@@ -533,18 +510,18 @@ const DashboardButton = ({
       {readyForDev && (
         <span
           title="جاهز للتطوير"
-          className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-slate-300"
+          className="absolute top-1.5 left-1.5 w-1.5 h-1.5 rounded-full bg-slate-300"
         ></span>
       )}
       <div
-        className={`w-11 h-11 rounded-xl flex items-center justify-center mb-2 ${selectedColor.split(" ").slice(0, 2).join(" ")}`}
+        className={`w-8 h-8 rounded-lg flex items-center justify-center mb-1.5 ${selectedColor.split(" ").slice(0, 2).join(" ")}`}
       >
-        <Icon className="w-6 h-6" />
+        <Icon className="w-4 h-4" />
       </div>
-      <div className="text-[12px] font-bold text-slate-800 text-center leading-tight">
+      <div className="text-[10.5px] font-bold text-slate-700 text-center leading-tight w-full truncate px-1">
         {label}
       </div>
-      <div className="text-[9px] text-slate-400 font-mono mt-0.5">{code}</div>
+      <div className="text-[8px] text-slate-400 font-mono mt-1">{code}</div>
     </button>
   );
 };
