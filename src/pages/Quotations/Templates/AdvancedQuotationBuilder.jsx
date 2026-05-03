@@ -6,9 +6,11 @@ import { Loader2 } from "lucide-react";
 import BuilderSidebar from "./components/BuilderSidebar";
 import A4Preview from "./components/A4Preview";
 import { DEFAULT_TEMPLATE } from "./constants";
+import { useAuth } from "../../../context/AuthContext"; // استيراد useAuth
 
 export default function AdvancedQuotationBuilder({ templateId, onBack }) {
   const queryClient = useQueryClient();
+  const { user } = useAuth(); // جلب بيانات المستخدم الحالي
   const [template, setTemplate] = useState(DEFAULT_TEMPLATE);
 
   const { data: fetchedTemplate, isLoading: isFetching } = useQuery({
@@ -70,6 +72,7 @@ export default function AdvancedQuotationBuilder({ templateId, onBack }) {
       },
       options: template.table,
       defaultTerms: template.terms.text,
+      employeeId: user?.id, // تمرير معرف الموظف ليتم تسجيله كمنشئ أو معدل
     };
     saveMutation.mutate(payload);
   };
