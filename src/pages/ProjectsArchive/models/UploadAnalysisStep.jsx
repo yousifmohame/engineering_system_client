@@ -9,15 +9,20 @@ import {
   FileCheck,
   Minimize2,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  PenTool // 👈 استيراد أيقونة الإدخال اليدوي
 } from "lucide-react";
-import api from "../../../api/axios"; // تأكد من مسار الأكسيوس لديك
+import api from "../../../api/axios"; 
+import { useAuth } from "../../../context/AuthContext"; // 👈 1. استيراد سياق المصادقة
 
 export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
+  // 👈 2. جلب بيانات المستخدم المسجل دخوله
+  const { user } = useAuth(); 
+
   const [files, setFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   
-  // حالات الرفع: 'idle' | 'uploading' | 'success' | 'error'
+  // حالات الرفع: 'idle' | 'uploading' | 'success' | 'error' | 'manual_creating'
   const [uploadStatus, setUploadStatus] = useState('idle');
   const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -59,7 +64,7 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
     return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
   };
 
-  // ===================== دالة الإرسال للسيرفر =====================
+  // ===================== 3. دالة الإرسال للسيرفر (مع الذكاء الاصطناعي) =====================
   const startAnalysis = async (runInBackground = false) => {
     if (files.length === 0) return;
     setUploadStatus('uploading');
@@ -70,6 +75,11 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
       files.forEach((file) => {
         formData.append("files", file);
       });
+
+      // 👈 إضافة معرّف المستخدم إذا كان موجوداً
+      if (user?.id) {
+        formData.append("archivedById", user.id);
+      }
 
       const response = await api.post("/archived-projects", formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -82,12 +92,11 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
       if (response.data.success) {
         setUploadStatus('success');
         
-        // إعطاء المستخدم فرصة لرؤية علامة النجاح لمدة ثانية قبل الانتقال
         setTimeout(() => {
           if (runInBackground && onClose) {
-            onClose(); // إغلاق المودال بالكامل والعودة للجدول
+            onClose(); 
           } else {
-            onAnalysisStarted(response.data.data.projectId); // الانتقال لشاشة التفاصيل
+            onAnalysisStarted(response.data.data.projectId); 
           }
         }, 1200);
       }
@@ -97,12 +106,38 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
     }
   };
 
-  // ===================== شاشة تقدم الرفع (Uploading State) =====================
-  if (uploadStatus === 'uploading' || uploadStatus === 'success') {
+  // ===================== 4. دالة الإدخال اليدوي =====================
+  const handleManualEntry = async () => {
+    setUploadStatus('manual_creating');
+    try {
+      // نرسل طلب للباك إند لإنشاء مشروع فارغ بدون تحليل AI
+      const payload = {};
+      if (user?.id) payload.archivedById = user.id;
+
+      const response = await api.post("/archived-projects/manual", payload);
+      
+      if (response.data.success) {
+        // الانتقال فوراً لشاشة التفاصيل بالمشروع الفارغ
+        onAnalysisStarted(response.data.data.projectId);
+      }
+    } catch (error) {
+      console.error("Error creating manual project:", error);
+      setUploadStatus('error');
+    }
+  };
+
+  // ===================== شاشات التحميل والخطأ =====================
+  if (uploadStatus === 'uploading' || uploadStatus === 'success' || uploadStatus === 'manual_creating') {
     return (
       <div className="flex-1 p-8 flex flex-col items-center justify-center bg-slate-50/50">
         <div className="max-w-md w-full bg-white p-8 rounded-3xl border border-slate-100 shadow-xl text-center">
-          {uploadStatus === 'uploading' ? (
+          {uploadStatus === 'manual_creating' ? (
+            <>
+              <Loader2 className="w-16 h-16 text-indigo-600 animate-spin mx-auto mb-6" />
+              <h3 className="text-xl font-black text-slate-800 mb-2">جاري تجهيز الملف...</h3>
+              <p className="text-sm font-bold text-slate-500">سيتم توجيهك لشاشة إدخال البيانات يدوياً.</p>
+            </>
+          ) : uploadStatus === 'uploading' ? (
             <>
               <div className="relative w-20 h-20 mx-auto mb-6">
                 <svg className="animate-spin w-full h-full text-indigo-100" viewBox="0 0 24 24">
@@ -116,7 +151,6 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
               <h3 className="text-xl font-black text-slate-800 mb-2">جاري رفع الملفات للسيرفر...</h3>
               <p className="text-sm font-bold text-slate-500 mb-8">سيبدأ الذكاء الاصطناعي بالتحليل فور اكتمال الرفع.</p>
               
-              {/* زر العمل في الخلفية */}
               <button 
                 onClick={() => onClose()} 
                 className="w-full py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-black transition-colors flex items-center justify-center gap-2"
@@ -139,7 +173,6 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
     );
   }
 
-  // ===================== شاشة الخطأ (Error State) =====================
   if (uploadStatus === 'error') {
     return (
       <div className="flex-1 p-8 flex flex-col items-center justify-center">
@@ -147,13 +180,13 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
           <div className="w-20 h-20 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <AlertCircle className="w-10 h-10" />
           </div>
-          <h3 className="text-xl font-black text-slate-800 mb-2">حدث خطأ أثناء الرفع</h3>
-          <p className="text-sm font-bold text-slate-500 mb-8">تعذر إرسال الملفات للسيرفر، يرجى المحاولة مرة أخرى.</p>
+          <h3 className="text-xl font-black text-slate-800 mb-2">حدث خطأ</h3>
+          <p className="text-sm font-bold text-slate-500 mb-8">تعذر إكمال العملية، يرجى المحاولة مرة أخرى.</p>
           <button 
             onClick={() => setUploadStatus('idle')} 
             className="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-sm font-black transition-colors"
           >
-            إعادة المحاولة
+            العودة
           </button>
         </div>
       </div>
@@ -174,7 +207,7 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
             المستندات الهندسية والقانونية
           </h2>
           <p className="text-sm font-bold text-slate-500 max-w-lg mx-auto leading-relaxed">
-            ارفع رخص البناء، الصكوك، والكروكيات. سيقوم محرك الذكاء الاصطناعي (Gemini AI) بقراءة وتفريغ البيانات تلقائياً بدقة عالية.
+            ارفع رخص البناء، الصكوك، والكروكيات. سيقوم محرك الذكاء الاصطناعي (Gemini AI) بقراءة وتفريغ البيانات تلقائياً.
           </p>
         </div>
 
@@ -183,13 +216,12 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}
           onDrop={onDrop}
-          className={`relative overflow-hidden transition-all duration-300 ease-out border-2 border-dashed rounded-3xl p-10 flex flex-col items-center justify-center text-center mb-8
+          className={`relative overflow-hidden transition-all duration-300 ease-out border-2 border-dashed rounded-3xl p-10 flex flex-col items-center justify-center text-center mb-6
             ${isDragging 
               ? "border-indigo-500 bg-indigo-50 scale-[1.02] shadow-xl shadow-indigo-100" 
               : "border-slate-300 bg-white hover:border-indigo-400 hover:bg-slate-50/50"
             }`}
         >
-          {/* دائرة خلفية للزينة */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
           
           <div className="relative z-10">
@@ -209,7 +241,7 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
 
         {/* قائمة الملفات */}
         {files.length > 0 && (
-          <div className="mb-8 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+          <div className="mb-6 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
             <h4 className="text-xs font-black text-slate-700 mb-4 px-2 flex items-center gap-2">
               <span className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px]">
                 {files.length}
@@ -231,7 +263,6 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
                   <button 
                     onClick={() => removeFile(index)} 
                     className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shrink-0"
-                    title="حذف الملف"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -242,26 +273,34 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
         )}
 
         {/* أزرار الإجراءات */}
-        <div className="flex flex-col sm:flex-row justify-center gap-3">
-          {/* زر المتابعة الفورية */}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row justify-center gap-3">
+            <button
+              onClick={() => startAnalysis(false)}
+              disabled={files.length === 0}
+              className="px-8 py-4 bg-indigo-600 text-white rounded-xl text-sm font-black shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:bg-indigo-700 hover:shadow-[0_0_25px_rgba(79,70,229,0.4)] disabled:opacity-50 disabled:shadow-none transition-all flex items-center justify-center gap-2 active:scale-95"
+            >
+              <Brain className="w-5 h-5" />
+              تحليل فوري ومراجعة النتائج
+            </button>
+            
+            <button
+              onClick={() => startAnalysis(true)}
+              disabled={files.length === 0}
+              className="px-6 py-4 bg-white text-slate-700 border border-slate-200 rounded-xl text-sm font-black shadow-sm hover:bg-slate-50 disabled:opacity-50 transition-all flex items-center justify-center gap-2 active:scale-95"
+            >
+              <Minimize2 className="w-4 h-4 text-slate-400" />
+              تحليل في الخلفية وإغلاق
+            </button>
+          </div>
+
+          {/* 👈 زر الإدخال اليدوي */}
           <button
-            onClick={() => startAnalysis(false)}
-            disabled={files.length === 0}
-            className="px-8 py-4 bg-indigo-600 text-white rounded-xl text-sm font-black shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:bg-indigo-700 hover:shadow-[0_0_25px_rgba(79,70,229,0.4)] disabled:opacity-50 disabled:shadow-none transition-all flex items-center justify-center gap-2 active:scale-95"
+            onClick={handleManualEntry}
+            className="mt-2 mx-auto px-6 py-2.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2"
           >
-            <Brain className="w-5 h-5" />
-            تحليل فوري ومراجعة النتائج
-          </button>
-          
-          {/* زر العمل في الخلفية */}
-          <button
-            onClick={() => startAnalysis(true)}
-            disabled={files.length === 0}
-            className="px-6 py-4 bg-white text-slate-700 border border-slate-200 rounded-xl text-sm font-black shadow-sm hover:bg-slate-50 disabled:opacity-50 transition-all flex items-center justify-center gap-2 active:scale-95"
-            title="إرسال الملفات والعودة لعملك، سيعمل الذكاء الاصطناعي في الخلفية"
-          >
-            <Minimize2 className="w-4 h-4 text-slate-400" />
-            تحليل في الخلفية وإغلاق
+            <PenTool className="w-4 h-4" />
+            لا تملك مخططات الآن؟ تخطى وأدخل البيانات يدوياً
           </button>
         </div>
 
