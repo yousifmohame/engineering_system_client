@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FolderArchive,
   RefreshCw,
@@ -10,488 +10,363 @@ import {
   Filter,
   Eye,
   Layers,
+  Loader2,
+  Trash2,
+  PenLine,
+  Building2,
+  CalendarDays,
+  Clock,
+  MapPin,
+  Scale
 } from "lucide-react";
-
+import axios from "../../api/axios"; // تأكد من مسار axios لديك
 import AddReferenceProjectModal from "./models/AddReferenceProjectModal";
-// ==========================================
-// بيانات تجريبية (Mock Data) مطابقة للتصميم
-// ==========================================
-const mockProjects = [
-  {
-    id: 1,
-    code: "ARC-2023-001",
-    name: "تصميم فندق المشرق",
-    tags: ["مرجع قوي", "مرجع تجاري", "به ملفات قوية"],
-    status: "نشط",
-    statusColor: "sky",
-    privacy: "عادي",
-    privacyColor: "slate",
-    ownerName: "شركة الفنادق العربية",
-    ownerType: "اعتباري (شركة)",
-    designerOffice: "مكتب العمارة المتقدمة للاستشارات",
-    supervisorOffice: "شركة الإشراف الهندسي المحدودة",
-    transactionType: "رخصة بناء جديدة",
-    licenseNo: "1444001290",
-    licenseYear: "1444",
-    district: "العليا",
-    sector: "شمال الرياض",
-    street: "شارع العليا العام",
-    width: "40م",
-    landArea: "2500 م2",
-    plotsCount: "1",
-    aboveGnd: "8",
-    belowGnd: "2",
-    mainUse: "تجاري",
-    subUse: "فندقي",
-    serviceNo: "S-77012",
-    serviceYear: "2023",
-    filesCount: 14,
-    date: "2023-05-12",
-    time: "14:30",
-    uploader: "فهد العتيبي",
-    age: 345,
-    aiStatus: "مكتمل",
-  },
-  {
-    id: 2,
-    code: "ARC-2024-002",
-    name: "مقر الإدارة العامة (مشروع وزاري)",
-    tags: ["مشروع وزاري", "مرجع تجاري", "مشابه متكرر الاستخدام"],
-    status: "نشط",
-    statusColor: "sky",
-    privacy: "داخلي",
-    privacyColor: "amber",
-    ownerName: "وزارة الموارد",
-    ownerType: "حكومي",
-    designerOffice: "مكتب الإبداع المعماري",
-    supervisorOffice: "(نفسه للإشراف)",
-    transactionType: "مخططات تنفيذية",
-    licenseNo: "",
-    licenseYear: "",
-    district: "الصحافة",
-    sector: "شمال الرياض",
-    street: "طريق الملك فهد",
-    width: "80م",
-    landArea: "7000 م2",
-    plotsCount: "1",
-    aboveGnd: "12",
-    belowGnd: "3",
-    mainUse: "حكومي",
-    subUse: "مكاتب",
-    serviceNo: "S-88123",
-    serviceYear: "2024",
-    filesCount: 45,
-    date: "2024-01-10",
-    time: "11:00",
-    uploader: "سعد العبدالله",
-    age: 45,
-    aiStatus: "مكتمل",
-  },
-];
+import ReferenceDetailsModal from "./models/ReferenceDetailsModal";
 
 export default function ProjectsArchiveScreen() {
+  const [projects, setProjects] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // حالات النوافذ المنبثقة
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
+
+  // 1. جلب البيانات من الباك إند
+  const fetchProjects = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axios.get("/archived-projects");
+      if (response.data.success) {
+        setProjects(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching archived projects:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  // 2. دالة فتح تفاصيل المشروع (للتعديل أو العرض)
+  const openProjectDetails = (id) => {
+    setSelectedProjectId(id);
+  };
+
+  // 3. دالة الحذف
+  const handleDelete = async (id, e) => {
+    e.stopPropagation(); // لمنع فتح تفاصيل المشروع عند الضغط على زر الحذف
+    
+    if (!window.confirm("هل أنت متأكد من حذف هذا المشروع نهائياً من الأرشيف؟ سيتم حذف كافة الملفات المرتبطة به.")) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await axios.delete(`/archived-projects/${id}`);
+      // تحديث القائمة بعد الحذف
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      alert("حدث خطأ أثناء محاولة الحذف.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // 4. دالة مساعدة لحساب عمر المشروع بالأيام
+  const getDaysAgo = (dateString) => {
+    const createdDate = new Date(dateString);
+    const today = new Date();
+    const diffTime = Math.abs(today - createdDate);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays === 0 ? "اليوم" : `${diffDays} يوم`;
+  };
+
+  // تصفية المشاريع بناءً على البحث
+  const filteredProjects = projects.filter(
+    (p) =>
+      (p.title && p.title.includes(searchTerm)) ||
+      (p.archiveCode && p.archiveCode.includes(searchTerm)) ||
+      (p.client?.name && p.client.name.includes(searchTerm)) ||
+      (p.licenseNumber && p.licenseNumber.includes(searchTerm))
+  );
 
   return (
     <div className="flex-1 block h-full">
-      <div className="h-full flex flex-col bg-slate-50 font-sans" dir="rtl">
+      <div className="h-full flex flex-col bg-[#f8fafc] font-sans" dir="rtl">
+        
         {/* ======================= Header ======================= */}
         <div className="bg-white border-b border-slate-200 px-6 py-4 shrink-0 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
-            <h1 className="text-xl font-black text-slate-800 flex items-center gap-3">
-              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
-                <FolderArchive className="w-6 h-6" />
+            <h1 className="text-xl font-black text-slate-800 flex items-center gap-3 tracking-tight">
+              <div className="p-2.5 bg-gradient-to-br from-indigo-50 to-blue-50 text-indigo-600 rounded-xl border border-indigo-100/50 shadow-sm">
+                <FolderArchive className="w-5 h-5" />
               </div>
-              أرشيف المشاريع (المرجع المركزي)
+              أرشيف المشاريع المركزي
             </h1>
-            <p className="text-xs font-bold text-slate-500 mt-1 max-w-xl">
-              شاشة بحثية كثيفة (Excel-like) مصممة لاستعراض قواعد بيانات المشاريع
-              المنتهية والمرجعية للبحث عن التشابهات أو استدعاء ملفات.
+            <p className="text-[11px] font-bold text-slate-500 mt-1.5 max-w-xl leading-relaxed">
+              شاشة البيانات الكثيفة (Excel-View) المخصصة لاستعراض وإدارة المشاريع الهندسية المنتهية والمرجعية، مدعومة بالذكاء الاصطناعي.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="bg-slate-100 flex items-center gap-4 px-4 py-2 rounded-xl border border-slate-200 ml-4">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* الإحصائيات السريعة */}
+            <div className="bg-slate-50 flex items-center gap-4 px-4 py-2 rounded-xl border border-slate-200 ml-2 shadow-sm">
               <div className="flex flex-col text-center">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  إجمالي المشاريع
-                </span>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">إجمالي الأرشيف</span>
                 <span className="text-sm font-black text-slate-800">
-                  14,204
+                  {isLoading ? "..." : projects.length}
                 </span>
               </div>
-              <div className="w-px h-6 bg-slate-300"></div>
+              <div className="w-px h-6 bg-slate-200"></div>
               <div className="flex flex-col text-center">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  محلل ذكياً
-                </span>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">تم تحليله (AI)</span>
                 <span className="text-sm font-black text-emerald-600">
-                  8,102
+                  {isLoading ? "..." : projects.filter((p) => p.aiStatus === "completed" || p.aiStatus === "approved").length}
                 </span>
               </div>
             </div>
 
             <button
-              className="p-2.5 bg-white border border-slate-300 text-slate-600 rounded-xl hover:bg-slate-50 hover:text-slate-900 transition-colors"
+              onClick={fetchProjects}
+              className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm"
               title="تحديث السجلات"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-indigo-600" : ""}`} />
             </button>
-            <button
-              className="p-2.5 bg-white border border-slate-300 text-slate-600 rounded-xl hover:bg-slate-50 hover:text-slate-900 transition-colors"
-              title="التحكم بالجدول والأعمدة"
-            >
-              <TableProperties className="w-4 h-4" />
-            </button>
-            <button className="px-4 py-2.5 bg-white border border-slate-300 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 flex items-center gap-2 transition-colors">
-              <ArrowDownToLine className="w-4 h-4" /> تصدير (Excel)
-            </button>
-            <button className="px-4 py-2.5 bg-indigo-50 border border-indigo-200 text-indigo-700 font-black text-xs rounded-xl hover:bg-indigo-100 flex items-center gap-2 transition-colors">
-              <FolderArchive className="w-4 h-4" /> مستعرض الملفات
+            <button className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 flex items-center gap-2 transition-all shadow-sm">
+              <ArrowDownToLine className="w-4 h-4 text-slate-400" /> تصدير (Excel)
             </button>
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="px-4 py-2.5 bg-indigo-600 text-white font-black text-xs rounded-xl hover:bg-indigo-700 flex items-center gap-2 transition-colors shadow-[0_0_15px_rgba(79,70,229,0.3)]"
+              className="px-5 py-2.5 bg-indigo-600 text-white font-black text-xs rounded-xl hover:bg-indigo-700 flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(79,70,229,0.25)] hover:shadow-[0_0_20px_rgba(79,70,229,0.4)] active:scale-95"
             >
-              <Plus className="w-4 h-4" /> مشروع جديد
+              <Plus className="w-4 h-4" /> إضافة للأرشيف
             </button>
           </div>
         </div>
 
         {/* ======================= Toolbar & Filters ======================= */}
-        <div className="bg-white border-b border-slate-200 px-4 py-2 shrink-0 flex flex-col gap-3 relative z-10">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-3 bg-slate-100 p-1 rounded-xl">
-              <button className="px-4 py-1.5 rounded-lg text-xs font-black transition-all bg-white shadow-sm text-slate-800">
-                بحث عادي
-              </button>
-              <button className="px-4 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 text-slate-500 hover:text-indigo-600">
-                <Brain className="w-4 h-4" /> بحث ذكي سردي
-              </button>
-            </div>
-            <label className="flex items-center gap-2 cursor-pointer text-[10px] font-bold text-slate-500 bg-slate-50 py-1 px-2 rounded-lg border border-slate-200">
-              <input
-                className="rounded text-rose-500 focus:ring-rose-500"
-                type="checkbox"
-              />
-              محاكاة صلاحية (مشاهدة المشاريع السرية)
-            </label>
-          </div>
-
+        <div className="bg-white border-b border-slate-200 px-4 py-2.5 shrink-0 flex flex-col gap-3 relative z-10">
           <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-sm">
+            <div className="relative flex-1 max-w-md">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
-                placeholder="بحث بالكود، الاسم، الرخصة، العميل..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pr-9 pl-4 py-1.5 text-xs font-bold outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+                placeholder="بحث بالكود، الاسم، الرخصة، أو اسم المالك..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg pr-9 pl-4 py-1.5 text-xs font-bold outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <div className="w-px h-5 bg-slate-200 mx-1"></div>
-
             <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-[11px] font-bold hover:bg-slate-100 transition-colors">
-              <Filter className="w-3.5 h-3.5" /> فلاتر إضافية
+              <Filter className="w-3.5 h-3.5 text-slate-400" /> فلاتر متقدمة
             </button>
             <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-[11px] font-bold hover:bg-slate-100 transition-colors">
-              المكتب المصمم{" "}
-              <span className="text-[9px] bg-slate-200 px-1.5 rounded text-slate-500">
-                الكل
-              </span>
+              <Building2 className="w-3.5 h-3.5 text-slate-400" /> نوع المشروع
             </button>
-            <button className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-[11px] font-bold hover:bg-slate-100 transition-colors">
-              الحي{" "}
-              <span className="text-[9px] bg-slate-200 px-1.5 rounded text-slate-500">
-                الكل
-              </span>
-            </button>
-            <button className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-[11px] font-bold hover:bg-slate-100 transition-colors">
-              الاستعمال{" "}
-              <span className="text-[9px] bg-slate-200 px-1.5 rounded text-slate-500">
-                الكل
-              </span>
-            </button>
-            <button className="hidden xl:flex items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg text-[11px] font-bold hover:bg-indigo-100 transition-colors">
-              التصنيفات (Tags){" "}
-              <span className="text-[9px] bg-white text-indigo-500 border border-indigo-200 px-1.5 rounded">
-                الكل
-              </span>
-            </button>
-
-            <div className="flex-1"></div>
-            <span className="text-[10px] font-bold text-slate-400">
-              إظهار 1 إلى 50 من أصل 14,204
-            </span>
           </div>
         </div>
 
-        {/* ======================= Table Data ======================= */}
-        <div className="flex-1 overflow-auto bg-white relative">
-          <table className="w-full text-right text-[11px] font-bold border-collapse whitespace-nowrap">
-            <thead className="bg-slate-50 text-slate-600 sticky top-0 z-20 shadow-[0_1px_0_rgba(203,213,225,1)]">
-              <tr className="divide-x divide-x-reverse divide-slate-200">
-                <th className="px-3 py-2.5 font-black text-center w-10 sticky right-0 bg-slate-50 z-30 shadow-[1px_0_0_rgba(203,213,225,1)]">
-                  <input
-                    className="rounded border border-slate-300 accent-indigo-600 cursor-pointer"
-                    type="checkbox"
-                  />
-                </th>
-                <th className="px-3 py-2.5 font-black sticky right-10 bg-slate-50 z-30 shadow-[1px_0_0_rgba(203,213,225,1)] w-28 hover:bg-slate-100 cursor-pointer">
-                  كود المشروع
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer w-64">
-                  اسم المشروع
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400">
-                  تصنيفات (Tags)
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-center w-24">
-                  الحالة
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-center w-24">
-                  السرية
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400">
-                  اسم المالك
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400">
-                  المكتب المصمم
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400">
-                  المكتب المشرف
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-indigo-600/70">
-                  ت. المعاملة
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-emerald-600/70">
-                  رقم الرخصة / السنة
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400">
-                  الحي
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400">
-                  القطاع
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400">
-                  اسم الشارع
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400">
-                  العرض
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400">
-                  م. الأرض
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400">
-                  عدد القطع
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400">
-                  فوق الأرض
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400">
-                  تحت الأرض
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400">
-                  استعمال رئيسي
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400">
-                  فرعي
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400">
-                  رقم الخدمة
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400 text-center">
-                  الملفات
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-amber-600/70">
-                  تاريخ الإضافة / الوقت
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400">
-                  الرافع
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-400 text-center">
-                  عمر (أيام)
-                </th>
-                <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-center text-blue-600/70 w-24">
-                  حالة AI
-                </th>
-                <th className="px-3 py-2.5 font-black text-center text-slate-400 w-28">
-                  إجراءات
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {/* Data Rows */}
-              {mockProjects.map((project) => (
-                <tr
-                  key={project.id}
-                  className="cursor-pointer transition-colors divide-x divide-x-reverse divide-slate-100 group hover:bg-indigo-50/50"
-                >
-                  <td className="px-3 py-2 text-center sticky right-0 bg-white group-hover:bg-indigo-50 shadow-[1px_0_0_rgba(241,245,249,1)] z-10">
-                    <input
-                      className="rounded border border-slate-300 accent-indigo-600 cursor-pointer"
-                      type="checkbox"
-                    />
-                  </td>
-                  <td className="px-3 py-2 sticky right-10 bg-white group-hover:bg-indigo-50 shadow-[1px_0_0_rgba(241,245,249,1)] z-10">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-indigo-700 font-black">
-                        {project.code}
-                      </span>
-                      <button
-                        className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-indigo-600 tooltip-trigger"
-                        title="فتح نافذة التفاصيل"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                  <td
-                    className="px-3 py-2 text-slate-800 break-words max-w-[250px] truncate"
-                    title={project.name}
-                  >
-                    {project.name}
-                  </td>
-                  <td
-                    className="px-3 py-2 max-w-[150px] truncate"
-                    title={project.tags.join(", ")}
-                  >
-                    <div className="flex bg-slate-50 gap-1 flex-wrap overflow-hidden h-4">
-                      {project.tags.map((tag, idx) => (
-                        <span
-                          key={idx}
-                          className="text-[8px] whitespace-nowrap bg-indigo-50 text-indigo-700 px-1 py-0.5 rounded border border-indigo-100"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    <span
-                      className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-${project.statusColor}-50 text-${project.statusColor}-600 border border-${project.statusColor}-100`}
-                    >
-                      {project.status}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    <span
-                      className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold gap-1 border bg-${project.privacyColor}-50 text-${project.privacyColor}-${project.privacyColor === "slate" ? "500" : "600"} border-${project.privacyColor}-100`}
-                    >
-                      {project.privacy}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="flex flex-col">
-                      <span className="text-slate-600 truncate max-w-[120px]">
-                        {project.ownerName}
-                      </span>
-                      <span className="text-slate-400 text-[9px]">
-                        {project.ownerType}
-                      </span>
-                    </div>
-                  </td>
-                  <td
-                    className="px-3 py-2 text-purple-700 truncate max-w-[120px]"
-                    title={project.designerOffice}
-                  >
-                    {project.designerOffice}
-                  </td>
-                  <td
-                    className="px-3 py-2 text-slate-500 text-[10px] truncate max-w-[120px]"
-                    title={project.supervisorOffice}
-                  >
-                    {project.supervisorOffice}
-                  </td>
-                  <td className="px-3 py-2 text-slate-600">
-                    {project.transactionType}
-                  </td>
-                  <td className="px-3 py-2 font-mono text-emerald-700">
-                    {project.licenseNo}{" "}
-                    <span className="text-slate-300">/</span>{" "}
-                    {project.licenseYear}
-                  </td>
-                  <td className="px-3 py-2 text-slate-600">
-                    {project.district}
-                  </td>
-                  <td className="px-3 py-2 text-slate-500">{project.sector}</td>
-                  <td
-                    className="px-3 py-2 text-slate-600 truncate max-w-[120px]"
-                    title={project.street}
-                  >
-                    {project.street}
-                  </td>
-                  <td className="px-3 py-2 text-slate-500">{project.width}</td>
-                  <td className="px-3 py-2 text-slate-600">
-                    {project.landArea}
-                  </td>
-                  <td className="px-3 py-2 text-slate-500 text-center">
-                    {project.plotsCount}
-                  </td>
-                  <td className="px-3 py-2 text-slate-500 text-center">
-                    {project.aboveGnd}
-                  </td>
-                  <td className="px-3 py-2 text-slate-500 text-center">
-                    {project.belowGnd}
-                  </td>
-                  <td className="px-3 py-2 text-slate-600">
-                    {project.mainUse}
-                  </td>
-                  <td className="px-3 py-2 text-slate-500">{project.subUse}</td>
-                  <td className="px-3 py-2 font-mono text-slate-500">
-                    {project.serviceNo}{" "}
-                    <span className="text-slate-300">/</span>{" "}
-                    {project.serviceYear}
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    <span className="inline-flex items-center justify-center bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] border border-slate-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors cursor-pointer">
-                      <Layers className="w-3 h-3 mr-1" /> {project.filesCount}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-amber-700 font-mono text-[10px]">
-                    {project.date} <span className="text-slate-400">|</span>{" "}
-                    {project.time}
-                  </td>
-                  <td className="px-3 py-2 text-slate-500">
-                    {project.uploader}
-                  </td>
-                  <td className="px-3 py-2 text-center font-mono text-slate-400">
-                    {project.age}
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    <span className="inline-flex items-center justify-center bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded text-[9px] border border-emerald-100 w-16 font-bold cursor-pointer hover:bg-emerald-100">
-                      {project.aiStatus}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    <button className="bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-600 hover:text-white px-2 py-1.5 rounded text-[9px] font-black tracking-wide transition-all disabled:opacity-50 flex items-center gap-1 mx-auto">
-                      <Brain className="w-3 h-3" /> تحليل الملفات
-                    </button>
-                  </td>
-                </tr>
-              ))}
+        {/* ======================= Data Table (Excel-like) ======================= */}
+        <div className="flex-1 overflow-auto bg-white relative custom-scrollbar">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center h-full text-indigo-600 bg-slate-50/50">
+              <Loader2 className="w-10 h-10 animate-spin mb-3" />
+              <span className="text-sm font-black text-slate-700">جاري جلب بيانات الأرشيف...</span>
+            </div>
+          ) : projects.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 bg-slate-50/50">
+              <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                <FolderArchive className="w-10 h-10 text-slate-300" />
+              </div>
+              <span className="text-lg font-black text-slate-600">الأرشيف فارغ</span>
+              <p className="text-xs font-bold mt-2">لم يتم إضافة أي مشاريع حتى الآن.</p>
+            </div>
+          ) : (
+            <table className="w-full text-right text-[11px] font-bold border-collapse whitespace-nowrap">
+              <thead className="bg-slate-50/80 text-slate-600 sticky top-0 z-20 backdrop-blur-md shadow-[0_1px_0_rgba(203,213,225,1)]">
+                <tr className="divide-x divide-x-reverse divide-slate-200">
+                  {/* Sticky Columns (Right) */}
+                  <th className="px-3 py-2.5 font-black text-center w-10 sticky right-0 bg-slate-50/90 z-30 shadow-[1px_0_0_rgba(203,213,225,1)]">
+                    <input className="rounded border border-slate-300 accent-indigo-600 cursor-pointer" type="checkbox" />
+                  </th>
+                  <th className="px-3 py-2.5 font-black sticky right-[40px] bg-slate-50/90 z-30 shadow-[1px_0_0_rgba(203,213,225,1)] w-28 hover:bg-slate-100 cursor-pointer">
+                    كود الأرشيف
+                  </th>
+                  <th className="px-3 py-2.5 font-black sticky right-[152px] bg-slate-50/90 z-30 shadow-[1px_0_0_rgba(203,213,225,1)] w-64 hover:bg-slate-100 cursor-pointer">
+                    اسم المشروع
+                  </th>
 
-              {/* Empty Space filler rows */}
-              {[...Array(15)].map((_, idx) => (
-                <tr
-                  key={`empty-${idx}`}
-                  className="divide-x divide-x-reverse divide-slate-100"
-                >
-                  <td className="px-3 py-4 text-center sticky right-0 bg-white z-10 shadow-[1px_0_0_rgba(241,245,249,1)]"></td>
-                  <td className="px-3 py-4 sticky right-10 bg-white z-10 shadow-[1px_0_0_rgba(241,245,249,1)]"></td>
-                  {[...Array(26)].map((__, colIdx) => (
-                    <td key={`col-${colIdx}`} className="px-3 py-4"></td>
-                  ))}
+                  {/* Scrollable Columns */}
+                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">المالك / نوعه</th>
+                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">نوع المشروع</th>
+                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">نوع المعاملة</th>
+                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">الرخصة وتاريخها</th>
+                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">الصك وتاريخه</th>
+                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">الحي والمدينة</th>
+                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">الشارع الرئيسي</th>
+                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">القطع / المخطط</th>
+                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-indigo-600/80">المساحة (م2)</th>
+                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-indigo-600/80">الأدوار (فوق/تحت)</th>
+                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500 text-center">الملفات</th>
+                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">بواسطة</th>
+                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">تاريخ الأرشفة</th>
+                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-center text-blue-600/80 w-24">حالة AI</th>
+                  <th className="px-3 py-2.5 font-black text-center text-slate-500 w-24">إجراءات</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              
+              <tbody className="divide-y divide-slate-100">
+                {filteredProjects.map((project) => (
+                  <tr
+                    key={project.id}
+                    onClick={() => openProjectDetails(project.id)}
+                    className="cursor-pointer transition-colors divide-x divide-x-reverse divide-slate-100 group hover:bg-indigo-50/60"
+                  >
+                    {/* Sticky Columns (Right) */}
+                    <td className="px-3 py-2.5 text-center sticky right-0 bg-white group-hover:bg-indigo-50 shadow-[1px_0_0_rgba(241,245,249,1)] z-10 border-l border-slate-100">
+                      <input className="rounded border border-slate-300 accent-indigo-600 cursor-pointer" type="checkbox" onClick={(e) => e.stopPropagation()} />
+                    </td>
+                    <td className="px-3 py-2.5 sticky right-[40px] bg-white group-hover:bg-indigo-50 shadow-[1px_0_0_rgba(241,245,249,1)] z-10 border-l border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-indigo-700 font-black text-[10px] bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">
+                          {project.archiveCode}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5 sticky right-[152px] bg-white group-hover:bg-indigo-50 shadow-[1px_0_0_rgba(241,245,249,1)] z-10 border-l border-slate-100">
+                      <div className="flex items-center gap-2 max-w-[240px]">
+                        <span className="text-slate-800 font-black truncate" title={project.title}>
+                          {project.title}
+                        </span>
+                        <Eye className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-indigo-600 shrink-0 transition-opacity" />
+                      </div>
+                    </td>
+
+                    {/* Scrollable Columns */}
+                    <td className="px-3 py-2.5">
+                      <div className="flex flex-col">
+                        <span className="text-slate-700 truncate max-w-[140px]">{project.client?.name || project.ownerType || "-"}</span>
+                        <span className="text-slate-400 text-[9px]">{project.ownerType || "غير محدد"}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5 text-slate-600">{project.projectType || "-"}</td>
+                    <td className="px-3 py-2.5 text-slate-600">{project.transactionType || "-"}</td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex flex-col font-mono text-[10px]">
+                        <span className="text-emerald-700 font-black">{project.licenseNumber || "بدون رخصة"}</span>
+                        <span className="text-slate-400">{project.licenseIssueDate ? new Date(project.licenseIssueDate).toLocaleDateString('en-GB') : "-"}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex flex-col font-mono text-[10px]">
+                        <span className="text-amber-700 font-black">{project.deedNumber || "بدون صك"}</span>
+                        <span className="text-slate-400">{project.deedDate ? new Date(project.deedDate).toLocaleDateString('en-GB') : "-"}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex flex-col">
+                        <span className="text-slate-700 flex items-center gap-1"><MapPin className="w-3 h-3 text-slate-400"/> {project.district?.name || "-"}</span>
+                        <span className="text-slate-400 text-[9px]">{project.city || "الرياض"}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5 text-slate-600 truncate max-w-[120px]" title={project.mainStreet}>
+                      {project.mainStreet || "-"}
+                    </td>
+                    <td className="px-3 py-2.5 font-mono text-slate-600">
+                      {project.plots?.length > 0 ? project.plots.join(', ') : "-"} 
+                      <span className="text-slate-300 mx-1">|</span> 
+                      <span className="text-slate-400 text-[9px]">م: {project.planNumber || "-"}</span>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span className="bg-indigo-50 text-indigo-700 font-black font-mono px-2 py-0.5 rounded border border-indigo-100">
+                        {project.totalArea ? project.totalArea.toLocaleString() : "-"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 font-mono text-slate-600 text-center">
+                      <span className="text-emerald-600">{project.floorsAbove || 0}</span>
+                      <span className="text-slate-300 mx-1">/</span>
+                      <span className="text-rose-600">{project.floorsBelow || 0}</span>
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <span className="inline-flex items-center justify-center bg-white text-slate-600 px-2 py-1 rounded-lg text-[10px] border border-slate-200 shadow-sm hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors">
+                        <Layers className="w-3.5 h-3.5 mr-1.5 text-slate-400" /> {project._count?.files || 0}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-slate-600 flex items-center gap-1.5">
+                      <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[8px] text-slate-600 font-black">
+                        {project.archivedBy?.name?.charAt(0) || "س"}
+                      </div>
+                      <span className="truncate max-w-[80px]">{project.archivedBy?.name || "النظام"}</span>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex flex-col font-mono text-[10px]">
+                        <span className="text-slate-700 flex items-center gap-1"><CalendarDays className="w-3 h-3 text-slate-400"/> {new Date(project.createdAt).toLocaleDateString('en-GB')}</span>
+                        <span className="text-slate-400 flex items-center gap-1 mt-0.5"><Clock className="w-3 h-3"/> منذ {getDaysAgo(project.createdAt)}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <span className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-[9px] border font-black w-16 shadow-sm ${
+                        project.aiStatus === 'completed' || project.aiStatus === 'approved' 
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                          : project.aiStatus === 'failed'
+                          ? 'bg-rose-50 text-rose-700 border-rose-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse'
+                      }`}>
+                        {project.aiStatus === 'completed' ? "تم التحليل" 
+                          : project.aiStatus === 'approved' ? "معتمد" 
+                          : project.aiStatus === 'failed' ? "فشل" : "قيد المعالجة"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); openProjectDetails(project.id); }}
+                          className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors tooltip-trigger" title="تعديل"
+                        >
+                          <PenLine className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={(e) => handleDelete(project.id, e)}
+                          disabled={isDeleting}
+                          className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-colors tooltip-trigger disabled:opacity-50" title="حذف"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
+
+      {/* المودال الخاص بإضافة مشروع جديد (بما في ذلك التحليل) */}
       <AddReferenceProjectModal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          fetchProjects(); // تحديث الجدول بعد الإضافة
+        }}
+      />
+
+      {/* المودال الخاص بعرض وتعديل تفاصيل المشروع */}
+      <ReferenceDetailsModal
+        projectId={selectedProjectId}
+        isOpen={!!selectedProjectId}
+        onClose={() => {
+          setSelectedProjectId(null);
+          fetchProjects(); // تحديث في حال قام المستخدم بتعديل البيانات داخل التفاصيل
+        }}
       />
     </div>
   );
