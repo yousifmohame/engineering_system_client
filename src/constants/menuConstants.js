@@ -46,7 +46,7 @@ export const DEFAULT_MENU_CATEGORIES = [
       },
       {
         id: "11",
-        label: "ويزرد إنشاء معاملة",
+        label: "أرشيف المشاريع",
         code: "SCR_11_VIEW",
         isFavorite: true,
       },

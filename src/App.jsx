@@ -45,6 +45,7 @@ import DetailsOfficeDashboard from "./pages/DetailsOffice/DetailsOfficeDashboard
 import MeetingsMain from "./pages/MeetingMinute/MeetingsMain";
 import MinuteVerificationPage from "./pages/verify/MinuteVerificationPage";
 import ElectronicDocumentation from "./pages/ElectronicDocumentation/index";
+import ProjectsArchiveScreen from "./pages/ProjectsArchive/ProjectsArchiveScreen";
 
 // --- Icons & Context ---
 import { Wrench } from "lucide-react"; // 👈 استيراد أيقونة شاشة الصيانة
@@ -144,7 +145,8 @@ const AppContent = () => {
     "030",
     "58",
     "91",
-    "20"
+    "20",
+    "11",
   ];
   // فحص هل الشاشة المطلوبة مبرمجة أم لا
   const isImplemented = implementedScreens.includes(activeScreenId);
@@ -323,6 +325,11 @@ const AppContent = () => {
               className={activeScreenId === "20" ? "block h-full" : "hidden"}
             >
               <ElectronicDocumentation />
+            </div>
+            <div
+              className={activeScreenId === "11" ? "block h-full" : "hidden"}
+            >
+              <ProjectsArchiveScreen />
             </div>
 
             {/* --- 👈 السحر هنا: شاشة Fallback لأي كود غير مبرمج --- */}
