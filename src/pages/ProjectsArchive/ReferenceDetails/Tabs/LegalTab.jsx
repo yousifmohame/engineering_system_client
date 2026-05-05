@@ -14,9 +14,6 @@ export default function LegalTab({
   inputClass,
   labelClass,
 }) {
-  // ========================================================
-  // 1. حالات (States) قائمة البحث الخاصة بالأحياء
-  // ========================================================
   const [isDistrictDropdownOpen, setIsDistrictDropdownOpen] = useState(false);
   const [districtSearchTerm, setDistrictSearchTerm] = useState("");
   const dropdownRef = useRef(null);
@@ -38,39 +35,48 @@ export default function LegalTab({
     .filter((dist) => dist.name.includes(districtSearchTerm));
 
   // ========================================================
-  // 2. دالة استخراج السنة (تدعم تحويل الميلادي إلى هجري)
+  // 1. مراقب ذكي للتاريخ (يعمل مع الإدخال اليدوي والذكاء الاصطناعي)
   // ========================================================
-  const handleIssueDateChange = (e) => {
-    handleChange(e); // حفظ التاريخ المدخل أولاً
-    const dateValue = e.target.value;
+  useEffect(() => {
+    // نتحقق إذا كان هناك تاريخ إصدار مسجل
+    if (data.licenseIssueDate) {
+      const dateValue = data.licenseIssueDate.split("T")[0]; // أخذ التاريخ بدون الوقت
+      
+      if (dateValue && dateValue.length >= 4) {
+        const year = dateValue.substring(0, 4);
+        let calculatedHijriYear = "";
 
-    if (dateValue && dateValue.length >= 4) {
-      const year = dateValue.substring(0, 4);
+        // إذا كان هجرياً بطبيعته
+        if (year.startsWith("14")) {
+          calculatedHijriYear = year;
+        } 
+        // إذا كان ميلادياً نقوم بتحويله
+        else if (year.startsWith("19") || year.startsWith("20")) {
+          const parsedDate = new Date(dateValue);
+          if (!isNaN(parsedDate.getTime())) {
+            const hijriFormatter = new Intl.DateTimeFormat('en-u-ca-islamic', { year: 'numeric' });
+            calculatedHijriYear = hijriFormatter.format(parsedDate).replace(/\D/g, '');
+          }
+        }
 
-      if (year.startsWith("14")) {
-        // إذا كان الإدخال هجرياً، نأخذ السنة مباشرة
-        handleChange({ target: { name: "licenseHijriYear", value: year } });
-      } else if (year.startsWith("19") || year.startsWith("20")) {
-        // إذا كان الإدخال ميلادياً (يبدأ بـ 19 أو 20)، نحوله إلى هجري
-        const parsedDate = new Date(dateValue);
-        
-        // التحقق من أن التاريخ الذي أدخله المستخدم صالح ومكتمل
-        if (!isNaN(parsedDate.getTime())) {
-          // استخدام أداة الجافاسكربت المدمجة للتقويم الإسلامي
-          const hijriFormatter = new Intl.DateTimeFormat('en-u-ca-islamic', { year: 'numeric' });
-          // استخراج الأرقام فقط (لأن الناتج قد يحتوي على حروف مثل "AH")
-          const hijriYear = hijriFormatter.format(parsedDate).replace(/\D/g, ''); 
-          
-          handleChange({ target: { name: "licenseHijriYear", value: hijriYear } });
+        // نقوم بتحديث حقل السنة الهجرية فقط إذا كانت مختلفة لمنع التكرار (Infinite Loop)
+        if (calculatedHijriYear && data.licenseHijriYear !== calculatedHijriYear) {
+          handleChange({ target: { name: "licenseHijriYear", value: calculatedHijriYear } });
         }
       }
-    } else if (!dateValue) {
+    }
+  }, [data.licenseIssueDate, data.licenseHijriYear, handleChange]);
+
+  // دالة الإدخال اليدوي للتاريخ (تحفظ التاريخ فقط والمراقب أعلاه سيتكفل بالباقي)
+  const handleIssueDateChange = (e) => {
+    handleChange(e);
+    if (!e.target.value) {
       handleChange({ target: { name: "licenseHijriYear", value: "" } });
     }
   };
 
   // ========================================================
-  // 3. المطابقة الذكية لمنع التكرار (محدثة لاصطياد كلمة "حي")
+  // 2. المطابقة الذكية المرنة جداً لمنع التكرار (3 حروف فأكثر)
   // ========================================================
   const normalizeArabicText = (text) => {
     if (!text) return "";
@@ -79,7 +85,7 @@ export default function LegalTab({
       .replace(/ة/g, "ه")
       .replace(/ال/g, "");
     
-    // إزالة كلمة "حي" أو "مخطط" لمنع تعارض الأسماء (مثل: حي الملقا = الملقا)
+    // إزالة الكلمات الزائدة
     normalized = normalized.replace(/حي /g, "").replace(/مخطط /g, "");
     
     return normalized.replace(/\s+/g, "").trim();
@@ -91,15 +97,25 @@ export default function LegalTab({
 
     const normalizedExtracted = normalizeArabicText(extractedName);
 
-    // البحث عن حي مطابق في القائمة الحالية
-    const existingDistrict = districts.find(
-      (d) => normalizeArabicText(d.name) === normalizedExtracted
-    );
+    // البحث عن حي يطابق 3 حروف على الأقل
+    const existingDistrict = districts.find((d) => {
+      const normalizedExisting = normalizeArabicText(d.name);
+      
+      // أ. تطابق تام
+      if (normalizedExisting === normalizedExtracted) return true;
+      
+      // ب. تطابق مرن (يحتوي على 3 حروف متتالية من الاسم الآخر)
+      if (normalizedExtracted.length >= 3 && normalizedExisting.includes(normalizedExtracted)) return true;
+      if (normalizedExisting.length >= 3 && normalizedExtracted.includes(normalizedExisting)) return true;
+
+      return false;
+    });
 
     if (existingDistrict) {
       alert(`تم العثور على حي مشابه "${existingDistrict.name}" وتم اختياره تلقائياً لمنع التكرار.`);
       handleChange({ target: { name: "districtId", value: existingDistrict.id } });
     } else {
+      // إنشاء جديد إذا لم يتطابق أبداً
       handleAutoLink("district", extractedName);
     }
   };
@@ -139,7 +155,7 @@ export default function LegalTab({
             <label className={labelClass}>تاريخ الإصدار</label>
             <input
               name="licenseIssueDate"
-              type="text" // يمكن للمستخدم إدخال ميلادي أو هجري هنا
+              type="text" 
               value={data.licenseIssueDate?.split("T")[0] || ""}
               onChange={handleIssueDateChange}
               className={`${inputClass} mt-1.5 w-full font-mono`}
