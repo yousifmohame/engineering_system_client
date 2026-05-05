@@ -1,8 +1,47 @@
-import React from "react";
-import { Building2 } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { Building2, Search, ChevronDown } from "lucide-react";
 import LinkStatusBadge from "../LinkStatusBadge"; // تأكد من المسار
 
 export default function BasicInfoTab({ data, handleChange, clients, linkingStates, handleAutoLink, inputClass, labelClass }) {
+  // ========================================================
+  // 1. حالات (States) قائمة البحث الخاصة بالمالك (العميل)
+  // ========================================================
+  const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
+  const [clientSearchTerm, setClientSearchTerm] = useState("");
+  const dropdownRef = useRef(null);
+
+  // إغلاق القائمة المنسدلة عند الضغط في أي مكان خارجها
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsClientDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // تصفية العملاء بناءً على نص البحث (يبحث في الاسم ورقم الهوية)
+  const filteredClients = clients.filter((client) => {
+    const clientName = typeof client.name === "object" ? client.name?.ar : client.name;
+    const searchTerm = clientSearchTerm.toLowerCase();
+    
+    const matchesName = clientName?.toLowerCase().includes(searchTerm);
+    const matchesId = client.idNumber?.includes(searchTerm);
+    
+    return matchesName || matchesId;
+  });
+
+  // دالة مساعدة للحصول على اسم العميل المختار لعرضه في الحقل الرئيسي
+  const getSelectedClientName = () => {
+    if (!data.clientId) return "-- اختر أو ابحث عن مالك --";
+    const selectedClient = clients.find((c) => c.id === data.clientId);
+    if (!selectedClient) return "عميل غير معروف";
+    
+    const clientName = typeof selectedClient.name === "object" ? selectedClient.name?.ar : selectedClient.name;
+    return `${clientName} ${selectedClient.idNumber ? `(${selectedClient.idNumber})` : ""}`;
+  };
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
       <h4 className="text-sm font-black text-indigo-800 border-b border-indigo-100 pb-3 mb-5 flex items-center gap-2">
@@ -15,7 +54,7 @@ export default function BasicInfoTab({ data, handleChange, clients, linkingState
         </div>
         <div>
           <label className={labelClass}>الرقم الموحد</label>
-          <input readOnly value={data.archiveCode || ""} className={`${inputClass} bg-slate-100 text-slate-500 mt-1.5`} type="text" />
+          <input readOnly value={data.archiveCode || ""} className={`${inputClass} bg-slate-100 text-slate-500 mt-1.5 cursor-not-allowed`} type="text" />
         </div>
         <div>
           <label className={labelClass}>نوع المشروع</label>
@@ -26,21 +65,78 @@ export default function BasicInfoTab({ data, handleChange, clients, linkingState
           <input name="transactionType" value={data.transactionType || ""} onChange={handleChange} className={`${inputClass} mt-1.5`} type="text" />
         </div>
         
-        {/* Owner Data */}
+        {/* ======================================================== */}
+        {/* Owner Data (حقل اختيار المالك مع ميزة البحث) */}
+        {/* ======================================================== */}
         <div className="md:col-span-2 mt-4 border-t border-slate-100 pt-5">
           <div className="flex justify-between items-center mb-1.5">
             <label className={labelClass}>اسم المالك (ربط بسجل العملاء)</label>
             <LinkStatusBadge isLinked={!!data.clientId} extractedText={data.ownerName} isLinking={linkingStates.client} onLinkClick={() => handleAutoLink("client", data.ownerName)} />
           </div>
-          <select name="clientId" value={data.clientId || ""} onChange={handleChange} className={inputClass}>
-            <option value="">-- اختر المالك --</option>
-            {clients.map((client, idx) => (
-              <option key={`${client.id}-${idx}`} value={client.id}>
-                {typeof client.name === "object" ? client.name?.ar : client.name} {client.idNumber ? `(${client.idNumber})` : ""}
-              </option>
-            ))}
-          </select>
+          
+          {/* الحقل المخصص القابل للبحث */}
+          <div className="w-full relative" ref={dropdownRef}>
+            {/* الزر الرئيسي الذي يفتح القائمة المنسدلة */}
+            <div
+              onClick={() => setIsClientDropdownOpen(!isClientDropdownOpen)}
+              className={`${inputClass} mt-1.5 flex items-center justify-between cursor-pointer w-full select-none`}
+            >
+              <span className={data.clientId ? "text-slate-700" : "text-slate-400"}>
+                {getSelectedClientName()}
+              </span>
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isClientDropdownOpen ? "rotate-180" : ""}`} />
+            </div>
+
+            {/* القائمة المنسدلة (تظهر فقط عند الضغط) */}
+            {isClientDropdownOpen && (
+              <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                {/* حقل البحث داخل القائمة */}
+                <div className="p-2 border-b border-slate-100 flex items-center gap-2 bg-slate-50">
+                  <Search className="w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={clientSearchTerm}
+                    onChange={(e) => setClientSearchTerm(e.target.value)}
+                    className="w-full bg-transparent text-xs font-bold outline-none text-slate-700"
+                    placeholder="ابحث عن اسم المالك أو رقم الهوية..."
+                    autoFocus
+                  />
+                </div>
+                
+                {/* خيارات العملاء المتاحة */}
+                <ul className="max-h-48 overflow-y-auto custom-scrollbar">
+                  {filteredClients.length > 0 ? (
+                    filteredClients.map((client) => {
+                      const clientName = typeof client.name === "object" ? client.name?.ar : client.name;
+                      return (
+                        <li
+                          key={client.id}
+                          onClick={() => {
+                            handleChange({ target: { name: "clientId", value: client.id } });
+                            setIsClientDropdownOpen(false);
+                            setClientSearchTerm(""); // تفريغ حقل البحث بعد الاختيار
+                          }}
+                          className={`px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors ${
+                            data.clientId === client.id
+                              ? "bg-indigo-50 text-indigo-700"
+                              : "text-slate-600 hover:bg-slate-50"
+                          }`}
+                        >
+                          {clientName} {client.idNumber && <span className="text-slate-400 mx-1">({client.idNumber})</span>}
+                        </li>
+                      );
+                    })
+                  ) : (
+                    <li className="px-4 py-4 text-xs text-slate-400 text-center font-bold">
+                      لا يوجد عميل يطابق بحثك
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
+
         <div>
           <label className={labelClass}>نوع المالك</label>
           <select name="ownerType" value={data.ownerType || ""} onChange={handleChange} className={`${inputClass} mt-1.5`}>
