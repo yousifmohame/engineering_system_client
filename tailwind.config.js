@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Tajawal', 'sans-serif'], // الخط العربي المعتمد في نظامك
+        sans: ['Arial', 'Tahoma', 'sans-serif'],
       },
     },
   },

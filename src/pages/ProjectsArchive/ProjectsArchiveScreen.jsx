@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import axios from "../../api/axios"; // تأكد من مسار axios لديك
 import AddReferenceProjectModal from "./models/AddReferenceProjectModal";
-import ReferenceDetailsModal from "./models/ReferenceDetailsModal";
+import ReferenceDetailsModal from "./ReferenceDetails/ReferenceDetailsModal";
 
 export default function ProjectsArchiveScreen() {
   const [projects, setProjects] = useState([]);
@@ -481,23 +481,28 @@ export default function ProjectsArchiveScreen() {
       </div>
 
       {/* المودال الخاص بإضافة مشروع جديد (بما في ذلك التحليل) */}
-      <AddReferenceProjectModal
-        isOpen={isAddModalOpen}
-        onClose={() => {
-          setIsAddModalOpen(false);
-          fetchProjects(); // تحديث الجدول بعد الإضافة
-        }}
-      />
+      {isAddModalOpen && (
+        <AddReferenceProjectModal
+          isOpen={isAddModalOpen}
+          onClose={() => {
+            setIsAddModalOpen(false);
+            fetchProjects(); // تحديث الجدول بعد الإضافة
+          }}
+        />
+      )}
 
       {/* المودال الخاص بعرض وتعديل تفاصيل المشروع */}
-      <ReferenceDetailsModal
-        projectId={selectedProjectId}
-        isOpen={!!selectedProjectId}
-        onClose={() => {
-          setSelectedProjectId(null);
-          fetchProjects(); // تحديث في حال قام المستخدم بتعديل البيانات داخل التفاصيل
-        }}
-      />
+      {/* استخدمنا العرض الشرطي هنا (!!selectedProjectId &&) لتدمير النافذة عند الإغلاق وبنائها من الصفر عند الفتح */}
+      {!!selectedProjectId && (
+        <ReferenceDetailsModal
+          projectId={selectedProjectId}
+          isOpen={!!selectedProjectId}
+          onClose={() => {
+            setSelectedProjectId(null);
+            fetchProjects(); // تحديث في حال قام المستخدم بتعديل البيانات داخل التفاصيل
+          }}
+        />
+      )}
     </div>
   );
 }
