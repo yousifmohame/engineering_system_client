@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { FileBadge2, Search, ChevronDown } from "lucide-react";
+import { FileBadge2, Search, ChevronDown, FileDigit } from "lucide-react";
 import LinkStatusBadge from "../LinkStatusBadge";
 
 export default function LegalTab({
@@ -18,7 +18,6 @@ export default function LegalTab({
   const [districtSearchTerm, setDistrictSearchTerm] = useState("");
   const dropdownRef = useRef(null);
 
-  // إغلاق القائمة المنسدلة عند الضغط في أي مكان خارجها
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -29,105 +28,160 @@ export default function LegalTab({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // تصفية الأحياء بناءً على القطاع المحدد ونص البحث
   const filteredDistricts = districts
     .filter((dist) => !selectedSectorId || dist.sectorId === selectedSectorId)
     .filter((dist) => dist.name.includes(districtSearchTerm));
 
-  // ========================================================
-  // 1. مراقب ذكي للتاريخ (يعمل مع الإدخال اليدوي والذكاء الاصطناعي)
-  // ========================================================
-  useEffect(() => {
-    // نتحقق إذا كان هناك تاريخ إصدار مسجل
-    if (data.licenseIssueDate) {
-      const dateValue = data.licenseIssueDate.split("T")[0]; // أخذ التاريخ بدون الوقت
-      
-      if (dateValue && dateValue.length >= 4) {
-        const year = dateValue.substring(0, 4);
-        let calculatedHijriYear = "";
-
-        // إذا كان هجرياً بطبيعته
-        if (year.startsWith("14")) {
-          calculatedHijriYear = year;
-        } 
-        // إذا كان ميلادياً نقوم بتحويله
-        else if (year.startsWith("19") || year.startsWith("20")) {
-          const parsedDate = new Date(dateValue);
-          if (!isNaN(parsedDate.getTime())) {
-            const hijriFormatter = new Intl.DateTimeFormat('en-u-ca-islamic', { year: 'numeric' });
-            calculatedHijriYear = hijriFormatter.format(parsedDate).replace(/\D/g, '');
-          }
-        }
-
-        // نقوم بتحديث حقل السنة الهجرية فقط إذا كانت مختلفة لمنع التكرار (Infinite Loop)
-        if (calculatedHijriYear && data.licenseHijriYear !== calculatedHijriYear) {
-          handleChange({ target: { name: "licenseHijriYear", value: calculatedHijriYear } });
-        }
-      }
-    }
-  }, [data.licenseIssueDate, data.licenseHijriYear, handleChange]);
-
-  // دالة الإدخال اليدوي للتاريخ (تحفظ التاريخ فقط والمراقب أعلاه سيتكفل بالباقي)
-  const handleIssueDateChange = (e) => {
-    handleChange(e);
-    if (!e.target.value) {
-      handleChange({ target: { name: "licenseHijriYear", value: "" } });
-    }
-  };
-
-  // ========================================================
-  // 2. المطابقة الذكية المرنة جداً لمنع التكرار (3 حروف فأكثر)
-  // ========================================================
   const normalizeArabicText = (text) => {
     if (!text) return "";
     let normalized = text
       .replace(/أ|إ|آ/g, "ا")
       .replace(/ة/g, "ه")
       .replace(/ال/g, "");
-    
-    // إزالة الكلمات الزائدة
     normalized = normalized.replace(/حي /g, "").replace(/مخطط /g, "");
-    
     return normalized.replace(/\s+/g, "").trim();
   };
 
-  const handleSmartDistrictLink = () => {
-    const extractedName = data.districtName;
-    if (!extractedName) return;
+  // ========================================================
+  // 💡 1. الأتمتة السحرية: ربط الحي وتحديد القطاع تلقائياً فور التحميل
+  // ========================================================
+  useEffect(() => {
+    // إذا كان هناك اسم حي مستخرج من AI ولكن لم يتم ربطه بـ ID بعد
+    if (data.districtName && !data.districtId && districts.length > 0) {
+      const normalizedExtracted = normalizeArabicText(data.districtName);
 
-    const normalizedExtracted = normalizeArabicText(extractedName);
+      const existingDistrict = districts.find((d) => {
+        const normalizedExisting = normalizeArabicText(d.name);
+        if (normalizedExisting === normalizedExtracted) return true;
+        if (
+          normalizedExtracted.length >= 3 &&
+          normalizedExisting.includes(normalizedExtracted)
+        )
+          return true;
+        if (
+          normalizedExisting.length >= 3 &&
+          normalizedExtracted.includes(normalizedExisting)
+        )
+          return true;
+        return false;
+      });
 
-    // البحث عن حي يطابق 3 حروف على الأقل
-    const existingDistrict = districts.find((d) => {
-      const normalizedExisting = normalizeArabicText(d.name);
-      
-      // أ. تطابق تام
-      if (normalizedExisting === normalizedExtracted) return true;
-      
-      // ب. تطابق مرن (يحتوي على 3 حروف متتالية من الاسم الآخر)
-      if (normalizedExtracted.length >= 3 && normalizedExisting.includes(normalizedExtracted)) return true;
-      if (normalizedExisting.length >= 3 && normalizedExtracted.includes(normalizedExisting)) return true;
-
-      return false;
-    });
-
-    if (existingDistrict) {
-      alert(`تم العثور على حي مشابه "${existingDistrict.name}" وتم اختياره تلقائياً لمنع التكرار.`);
-      handleChange({ target: { name: "districtId", value: existingDistrict.id } });
-    } else {
-      // إنشاء جديد إذا لم يتطابق أبداً
-      handleAutoLink("district", extractedName);
+      if (existingDistrict) {
+        // نربط الحي فوراً
+        handleChange({
+          target: { name: "districtId", value: existingDistrict.id },
+        });
+        // 👈 السحر هنا: نحدد القطاع تلقائياً بناءً على الحي
+        if (existingDistrict.sectorId) {
+          setSelectedSectorId(existingDistrict.sectorId);
+        }
+      }
     }
+  }, [
+    data.districtName,
+    data.districtId,
+    districts,
+    handleChange,
+    setSelectedSectorId,
+  ]);
+
+  // مراقب ذكي للتاريخ الهجري للرخصة
+  useEffect(() => {
+    if (data.licenseIssueDate) {
+      const dateValue = data.licenseIssueDate.split("T")[0];
+      if (dateValue && dateValue.length >= 4) {
+        const year = dateValue.substring(0, 4);
+        let calculatedHijriYear = "";
+
+        if (year.startsWith("14")) calculatedHijriYear = year;
+        else if (year.startsWith("19") || year.startsWith("20")) {
+          const parsedDate = new Date(dateValue);
+          if (!isNaN(parsedDate.getTime())) {
+            const hijriFormatter = new Intl.DateTimeFormat("en-u-ca-islamic", {
+              year: "numeric",
+            });
+            calculatedHijriYear = hijriFormatter
+              .format(parsedDate)
+              .replace(/\D/g, "");
+          }
+        }
+
+        if (
+          calculatedHijriYear &&
+          data.licenseHijriYear !== calculatedHijriYear
+        ) {
+          handleChange({
+            target: { name: "licenseHijriYear", value: calculatedHijriYear },
+          });
+        }
+      }
+    }
+  }, [data.licenseIssueDate, data.licenseHijriYear, handleChange]);
+
+  const handleIssueDateChange = (e) => {
+    handleChange(e);
+    if (!e.target.value)
+      handleChange({ target: { name: "licenseHijriYear", value: "" } });
+  };
+
+  const handleSmartDistrictLink = () => {
+    if (!data.districtName) return;
+    handleAutoLink("district", data.districtName);
   };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+      {/* القسم الأول: أرقام الطلبات والخدمات (الجديد) */}
+      <h4 className="text-sm font-black text-amber-600 border-b border-amber-100 pb-3 mb-5 flex items-center gap-2">
+        <FileDigit className="w-4 h-4" /> أرقام الطلبات والخدمات
+      </h4>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="w-full">
+          <label className={labelClass}>رقم الطلب</label>
+          <input
+            name="requestNumber"
+            value={data.requestNumber || ""}
+            onChange={handleChange}
+            className={`${inputClass} mt-1.5 font-mono`}
+            placeholder="مثال: 450..."
+          />
+        </div>
+        <div className="w-full">
+          <label className={labelClass}>سنة الطلب</label>
+          <input
+            name="requestYear"
+            value={data.requestYear || ""}
+            onChange={handleChange}
+            className={`${inputClass} mt-1.5 font-mono`}
+            placeholder="مثال: 1445"
+          />
+        </div>
+        <div className="w-full">
+          <label className={labelClass}>رقم الخدمة</label>
+          <input
+            name="serviceNumber"
+            value={data.serviceNumber || ""}
+            onChange={handleChange}
+            className={`${inputClass} mt-1.5 font-mono`}
+            placeholder="مثال: 710..."
+          />
+        </div>
+        <div className="w-full">
+          <label className={labelClass}>سنة الخدمة</label>
+          <input
+            name="serviceYear"
+            value={data.serviceYear || ""}
+            onChange={handleChange}
+            className={`${inputClass} mt-1.5 font-mono`}
+            placeholder="مثال: 1445"
+          />
+        </div>
+      </div>
+
       <h4 className="text-sm font-black text-emerald-800 border-b border-emerald-100 pb-3 mb-5 flex items-center gap-2">
         <FileBadge2 className="w-4 h-4" /> الرخص والموقع الجغرافي
       </h4>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* حقل مدمج: رقم الرخصة + السنة المستخرجة تلقائياً */}
         <div className="w-full">
           <label className={labelClass}>رقم رخصة البناء والسنة الهجرية</label>
           <div className="flex items-stretch mt-1.5 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all shadow-sm">
@@ -135,16 +189,19 @@ export default function LegalTab({
               name="licenseNumber"
               value={data.licenseNumber || ""}
               onChange={handleChange}
-              className="flex-[3] px-4 py-2.5 text-xs font-bold text-slate-700 bg-transparent outline-none font-mono min-w-0 placeholder-slate-400"
-              placeholder="رقم الرخصة (مثال: 45000123)"
+              className="flex-[3] px-4 py-2.5 text-xs font-bold text-slate-700 bg-transparent outline-none font-mono min-w-0"
+              placeholder="رقم الرخصة"
             />
             <div className="w-px bg-slate-200"></div>
             <div className="flex-[1] min-w-[110px] relative bg-slate-100 transition-colors">
               <input
                 readOnly
-                value={data.licenseHijriYear ? `${data.licenseHijriYear} هـ` : "السنة (تلقائي)"}
+                value={
+                  data.licenseHijriYear
+                    ? `${data.licenseHijriYear} هـ`
+                    : "تلقائي"
+                }
                 className="w-full h-full px-3 py-2.5 text-xs font-bold text-emerald-700 bg-transparent outline-none font-mono text-center cursor-not-allowed"
-                title="يتم استخراج السنة تلقائياً من تاريخ الإصدار"
               />
             </div>
           </div>
@@ -155,11 +212,11 @@ export default function LegalTab({
             <label className={labelClass}>تاريخ الإصدار</label>
             <input
               name="licenseIssueDate"
-              type="text" 
+              type="text"
               value={data.licenseIssueDate?.split("T")[0] || ""}
               onChange={handleIssueDateChange}
               className={`${inputClass} mt-1.5 w-full font-mono`}
-              placeholder="مثال: 2024-05-15 أو 1445-10-06"
+              placeholder="YYYY-MM-DD"
               dir="ltr"
             />
           </div>
@@ -182,7 +239,6 @@ export default function LegalTab({
             value={data.deedNumber || ""}
             onChange={handleChange}
             className={`${inputClass} mt-1.5 font-mono w-full`}
-            placeholder="مثال: 71000..."
           />
         </div>
 
@@ -210,7 +266,6 @@ export default function LegalTab({
         </div>
 
         <div className="md:col-span-2 mt-4 border-t border-slate-100 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-          
           <div className="w-full">
             <label className={labelClass}>القطاع</label>
             <select
@@ -229,25 +284,35 @@ export default function LegalTab({
 
           <div className="w-full relative" ref={dropdownRef}>
             <div className="flex justify-between items-center mb-1.5">
-              <label className={labelClass}>الحي (مزوّد بخاصية البحث)</label>
-              <LinkStatusBadge
-                isLinked={!!data.districtId}
-                extractedText={data.districtName}
-                isLinking={linkingStates.district}
-                onLinkClick={handleSmartDistrictLink}
-              />
+              <label className={labelClass}>الحي</label>
+              {/* لم نعد بحاجة لكلمة "ربط" إذا كان مربوطاً، بل إنشاء إذا لم يكن موجوداً */}
+              {!data.districtId && (
+                <LinkStatusBadge
+                  isLinked={!!data.districtId}
+                  extractedText={data.districtName}
+                  isLinking={linkingStates.district}
+                  onLinkClick={handleSmartDistrictLink}
+                />
+              )}
             </div>
-            
+
             <div
               onClick={() => setIsDistrictDropdownOpen(!isDistrictDropdownOpen)}
               className={`${inputClass} mt-1.5 flex items-center justify-between cursor-pointer w-full select-none`}
             >
-              <span className={data.districtId ? "text-slate-700" : "text-slate-400"}>
+              <span
+                className={
+                  data.districtId ? "text-slate-700" : "text-slate-400"
+                }
+              >
                 {data.districtId
-                  ? districts.find((d) => d.id === data.districtId)?.name || "حي غير معروف"
+                  ? districts.find((d) => d.id === data.districtId)?.name ||
+                    "حي غير معروف"
                   : "-- اختر أو ابحث عن حي --"}
               </span>
-              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isDistrictDropdownOpen ? "rotate-180" : ""}`} />
+              <ChevronDown
+                className={`w-4 h-4 text-slate-400 transition-transform ${isDistrictDropdownOpen ? "rotate-180" : ""}`}
+              />
             </div>
 
             {isDistrictDropdownOpen && (
@@ -263,22 +328,20 @@ export default function LegalTab({
                     autoFocus
                   />
                 </div>
-                
                 <ul className="max-h-48 overflow-y-auto custom-scrollbar">
                   {filteredDistricts.length > 0 ? (
                     filteredDistricts.map((dist) => (
                       <li
                         key={dist.id}
                         onClick={() => {
-                          handleChange({ target: { name: "districtId", value: dist.id } });
+                          handleChange({
+                            target: { name: "districtId", value: dist.id },
+                          });
+                          setSelectedSectorId(dist.sectorId);
                           setIsDistrictDropdownOpen(false);
                           setDistrictSearchTerm("");
                         }}
-                        className={`px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors ${
-                          data.districtId === dist.id
-                            ? "bg-indigo-50 text-indigo-700"
-                            : "text-slate-600 hover:bg-slate-50"
-                        }`}
+                        className={`px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors ${data.districtId === dist.id ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50"}`}
                       >
                         {dist.name}
                       </li>

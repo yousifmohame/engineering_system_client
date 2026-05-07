@@ -18,8 +18,9 @@ import {
   Clock,
   MapPin,
   Scale,
+  AlertTriangle, // 👈 استيراد أيقونة التحذير
 } from "lucide-react";
-import axios from "../../api/axios"; // تأكد من مسار axios لديك
+import axios from "../../api/axios";
 import AddReferenceProjectModal from "./models/AddReferenceProjectModal";
 import ReferenceDetailsModal from "./ReferenceDetails/ReferenceDetailsModal";
 
@@ -29,11 +30,9 @@ export default function ProjectsArchiveScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // حالات النوافذ المنبثقة
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
 
-  // 1. جلب البيانات من الباك إند
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
@@ -52,14 +51,12 @@ export default function ProjectsArchiveScreen() {
     fetchProjects();
   }, []);
 
-  // 2. دالة فتح تفاصيل المشروع (للتعديل أو العرض)
   const openProjectDetails = (id) => {
     setSelectedProjectId(id);
   };
 
-  // 3. دالة الحذف
   const handleDelete = async (id, e) => {
-    e.stopPropagation(); // لمنع فتح تفاصيل المشروع عند الضغط على زر الحذف
+    e.stopPropagation();
 
     if (
       !window.confirm(
@@ -72,7 +69,6 @@ export default function ProjectsArchiveScreen() {
     setIsDeleting(true);
     try {
       await axios.delete(`/archived-projects/${id}`);
-      // تحديث القائمة بعد الحذف
       setProjects((prev) => prev.filter((p) => p.id !== id));
     } catch (error) {
       console.error("Error deleting project:", error);
@@ -82,7 +78,6 @@ export default function ProjectsArchiveScreen() {
     }
   };
 
-  // 4. دالة مساعدة لحساب عمر المشروع بالأيام
   const getDaysAgo = (dateString) => {
     const createdDate = new Date(dateString);
     const today = new Date();
@@ -91,14 +86,25 @@ export default function ProjectsArchiveScreen() {
     return diffDays === 0 ? "اليوم" : `${diffDays} يوم`;
   };
 
-  // تصفية المشاريع بناءً على البحث
-  const filteredProjects = projects.filter(
-    (p) =>
+  const filteredProjects = projects.filter((p) => {
+    const clientName =
+      typeof p.client?.name === "object"
+        ? p.client?.name?.ar || ""
+        : p.client?.name || "";
+
+    return (
       (p.title && p.title.includes(searchTerm)) ||
       (p.archiveCode && p.archiveCode.includes(searchTerm)) ||
-      (p.client?.name && p.client.name.includes(searchTerm)) ||
-      (p.licenseNumber && p.licenseNumber.includes(searchTerm)),
-  );
+      clientName.includes(searchTerm) ||
+      (p.licenseNumber && p.licenseNumber.includes(searchTerm))
+    );
+  });
+
+  // دالة مساعدة لاستخراج نص التحذير إن وجد
+  const getDuplicateWarning = (notes) => {
+    if (!notes || !notes.includes("⚠️")) return null;
+    return "هذا المشروع يشتبه بأنه مكرر (اضغط للتفاصيل)";
+  };
 
   return (
     <div className="flex-1 block h-full">
@@ -119,7 +125,6 @@ export default function ProjectsArchiveScreen() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* الإحصائيات السريعة */}
             <div className="bg-slate-50 flex items-center gap-4 px-4 py-2 rounded-xl border border-slate-200 ml-2 shadow-sm">
               <div className="flex flex-col text-center">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
@@ -216,7 +221,6 @@ export default function ProjectsArchiveScreen() {
             <table className="w-full text-right text-[11px] font-bold border-collapse whitespace-nowrap">
               <thead className="bg-slate-50/80 text-slate-600 sticky top-0 z-20 backdrop-blur-md shadow-[0_1px_0_rgba(203,213,225,1)]">
                 <tr className="divide-x divide-x-reverse divide-slate-200">
-                  {/* Sticky Columns (Right) */}
                   <th className="px-3 py-2.5 font-black text-center w-10 sticky right-0 bg-slate-50/90 z-30 shadow-[1px_0_0_rgba(203,213,225,1)]">
                     <input
                       className="rounded border border-slate-300 accent-indigo-600 cursor-pointer"
@@ -229,8 +233,6 @@ export default function ProjectsArchiveScreen() {
                   <th className="px-3 py-2.5 font-black sticky right-[152px] bg-slate-50/90 z-30 shadow-[1px_0_0_rgba(203,213,225,1)] w-64 hover:bg-slate-100 cursor-pointer">
                     اسم المشروع
                   </th>
-
-                  {/* Scrollable Columns */}
                   <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">
                     المالك / نوعه
                   </th>
@@ -280,226 +282,276 @@ export default function ProjectsArchiveScreen() {
               </thead>
 
               <tbody className="divide-y divide-slate-100">
-                {filteredProjects.map((project) => (
-                  <tr
-                    key={project.id}
-                    onClick={() => openProjectDetails(project.id)}
-                    className="cursor-pointer transition-colors divide-x divide-x-reverse divide-slate-100 group hover:bg-indigo-50/60"
-                  >
-                    {/* Sticky Columns (Right) */}
-                    <td className="px-3 py-2.5 text-center sticky right-0 bg-white group-hover:bg-indigo-50 shadow-[1px_0_0_rgba(241,245,249,1)] z-10 border-l border-slate-100">
-                      <input
-                        className="rounded border border-slate-300 accent-indigo-600 cursor-pointer"
-                        type="checkbox"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </td>
-                    <td className="px-3 py-2.5 sticky right-[40px] bg-white group-hover:bg-indigo-50 shadow-[1px_0_0_rgba(241,245,249,1)] z-10 border-l border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-indigo-700 font-black text-[10px] bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">
-                          {project.archiveCode}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5 sticky right-[152px] bg-white group-hover:bg-indigo-50 shadow-[1px_0_0_rgba(241,245,249,1)] z-10 border-l border-slate-100">
-                      <div className="flex items-center gap-2 max-w-[240px]">
-                        <span
-                          className="text-slate-800 font-black truncate"
-                          title={project.title}
-                        >
-                          {project.title}
-                        </span>
-                        <Eye className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-indigo-600 shrink-0 transition-opacity" />
-                      </div>
-                    </td>
+                {filteredProjects.map((project) => {
+                  // 1. فحص التكرار لتغيير لون السطر
+                  const warningMessage = getDuplicateWarning(
+                    project.archiveNotes,
+                  );
+                  const isDuplicate = !!warningMessage;
 
-                    {/* Scrollable Columns */}
-                    <td className="px-3 py-2.5">
-                      <div className="flex flex-col">
-                        <span>
-                          {typeof project.client?.name === "object"
-                            ? project.client?.name?.ar
-                            : project.client?.name || "بدون عميل"}
-                        </span>{" "}
-                        <span className="text-slate-400 text-[9px]">
-                          {project.ownerType || "غير محدد"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5 text-slate-600">
-                      {project.projectType || "-"}
-                    </td>
-                    <td className="px-3 py-2.5 text-slate-600">
-                      {project.transactionType || "-"}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <div className="flex flex-col font-mono text-[10px]">
-                        <span className="text-emerald-700 font-black">
-                          {project.licenseNumber || "بدون رخصة"}
-                        </span>
-                        <span className="text-slate-400">
-                          {project.licenseIssueDate
-                            ? new Date(
-                                project.licenseIssueDate,
-                              ).toLocaleDateString("en-GB")
-                            : "-"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <div className="flex flex-col font-mono text-[10px]">
-                        <span className="text-amber-700 font-black">
-                          {project.deedNumber || "بدون صك"}
-                        </span>
-                        <span className="text-slate-400">
-                          {project.deedDate
-                            ? new Date(project.deedDate).toLocaleDateString(
-                                "en-GB",
-                              )
-                            : "-"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <div className="flex flex-col">
-                        <span className="text-slate-700 flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-slate-400" />{" "}
-                          {project.district?.name || "-"}
-                        </span>
-                        <span className="text-slate-400 text-[9px]">
-                          {project.city || "الرياض"}
-                        </span>
-                      </div>
-                    </td>
-                    <td
-                      className="px-3 py-2.5 text-slate-600 truncate max-w-[120px]"
-                      title={project.mainStreet}
+                  return (
+                    <tr
+                      key={project.id}
+                      onClick={() => openProjectDetails(project.id)}
+                      className={`cursor-pointer transition-colors divide-x divide-x-reverse divide-slate-100 group ${
+                        isDuplicate
+                          ? "bg-rose-50/40 hover:bg-rose-100/50"
+                          : "hover:bg-indigo-50/60"
+                      }`}
                     >
-                      {project.mainStreet || "-"}
-                    </td>
-                    <td className="px-3 py-2.5 font-mono text-slate-600">
-                      {project.plots?.length > 0
-                        ? project.plots.join(", ")
-                        : "-"}
-                      <span className="text-slate-300 mx-1">|</span>
-                      <span className="text-slate-400 text-[9px]">
-                        م: {project.planNumber || "-"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <span className="bg-indigo-50 text-indigo-700 font-black font-mono px-2 py-0.5 rounded border border-indigo-100">
-                        {project.totalArea
-                          ? project.totalArea.toLocaleString()
-                          : "-"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 font-mono text-slate-600 text-center">
-                      <span className="text-emerald-600">
-                        {project.floorsAbove || 0}
-                      </span>
-                      <span className="text-slate-300 mx-1">/</span>
-                      <span className="text-rose-600">
-                        {project.floorsBelow || 0}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 text-center">
-                      <span className="inline-flex items-center justify-center bg-white text-slate-600 px-2 py-1 rounded-lg text-[10px] border border-slate-200 shadow-sm hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors">
-                        <Layers className="w-3.5 h-3.5 mr-1.5 text-slate-400" />{" "}
-                        {project._count?.files || 0}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 text-slate-600 flex items-center gap-1.5">
-                      <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[8px] text-slate-600 font-black">
-                        {project.archivedBy?.name?.charAt(0) || "س"}
-                      </div>
-                      <span className="truncate max-w-[80px]">
-                        {project.archivedBy?.name || "النظام"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <div className="flex flex-col font-mono text-[10px]">
-                        <span className="text-slate-700 flex items-center gap-1">
-                          <CalendarDays className="w-3 h-3 text-slate-400" />{" "}
-                          {new Date(project.createdAt).toLocaleDateString(
-                            "en-GB",
-                          )}
-                        </span>
-                        <span className="text-slate-400 flex items-center gap-1 mt-0.5">
-                          <Clock className="w-3 h-3" /> منذ{" "}
-                          {getDaysAgo(project.createdAt)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5 text-center">
-                      <span
-                        className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-[9px] border font-black w-16 shadow-sm ${
-                          project.aiStatus === "completed" ||
-                          project.aiStatus === "approved"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : project.aiStatus === "failed"
-                              ? "bg-rose-50 text-rose-700 border-rose-200"
-                              : "bg-amber-50 text-amber-700 border-amber-200 animate-pulse"
-                        }`}
+                      <td
+                        className={`px-3 py-2.5 text-center sticky right-0 z-10 border-l border-slate-100 ${
+                          isDuplicate
+                            ? "bg-rose-50/40 group-hover:bg-rose-100/50"
+                            : "bg-white group-hover:bg-indigo-50"
+                        } shadow-[1px_0_0_rgba(241,245,249,1)]`}
                       >
-                        {project.aiStatus === "completed"
-                          ? "تم التحليل"
-                          : project.aiStatus === "approved"
-                            ? "معتمد"
-                            : project.aiStatus === "failed"
-                              ? "فشل"
-                              : "قيد المعالجة"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openProjectDetails(project.id);
-                          }}
-                          className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors tooltip-trigger"
-                          title="تعديل"
+                        <input
+                          className="rounded border border-slate-300 accent-indigo-600 cursor-pointer"
+                          type="checkbox"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </td>
+
+                      <td
+                        className={`px-3 py-2.5 sticky right-[40px] z-10 border-l border-slate-100 ${
+                          isDuplicate
+                            ? "bg-rose-50/40 group-hover:bg-rose-100/50"
+                            : "bg-white group-hover:bg-indigo-50"
+                        } shadow-[1px_0_0_rgba(241,245,249,1)]`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`font-mono font-black text-[10px] px-1.5 py-0.5 rounded border ${
+                              isDuplicate
+                                ? "bg-rose-100 text-rose-700 border-rose-200"
+                                : "bg-indigo-50 text-indigo-700 border-indigo-100"
+                            }`}
+                          >
+                            {project.archiveCode}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td
+                        className={`px-3 py-2.5 sticky right-[152px] z-10 border-l border-slate-100 ${
+                          isDuplicate
+                            ? "bg-rose-50/40 group-hover:bg-rose-100/50"
+                            : "bg-white group-hover:bg-indigo-50"
+                        } shadow-[1px_0_0_rgba(241,245,249,1)]`}
+                      >
+                        <div className="flex items-center gap-2 max-w-[240px]">
+                          {/* عرض أيقونة التحذير بجانب اسم المشروع إذا كان مكرراً */}
+                          {isDuplicate && (
+                            <AlertTriangle
+                              className="w-4 h-4 text-rose-500 animate-pulse shrink-0"
+                              title={warningMessage}
+                            />
+                          )}
+                          <span
+                            className={`${isDuplicate ? "text-rose-900" : "text-slate-800"} font-black truncate`}
+                            title={project.title}
+                          >
+                            {project.title}
+                          </span>
+                          <Eye className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-indigo-600 shrink-0 transition-opacity" />
+                        </div>
+                      </td>
+
+                      <td className="px-3 py-2.5">
+                        <div className="flex flex-col">
+                          <span>
+                            {typeof project.client?.name === "object"
+                              ? project.client?.name?.ar
+                              : project.client?.name || "بدون عميل"}
+                          </span>
+                          <span className="text-slate-400 text-[9px]">
+                            {project.ownerType || "غير محدد"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-600">
+                        {project.projectType || "-"}
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-600">
+                        {project.transactionType || "-"}
+                      </td>
+
+                      <td className="px-3 py-2.5">
+                        <div className="flex flex-col font-mono text-[10px]">
+                          <span className="text-emerald-700 font-black">
+                            {project.licenseNumber || "بدون رخصة"}
+                          </span>
+                          <span className="text-slate-400">
+                            {project.licenseIssueDate
+                              ? new Date(
+                                  project.licenseIssueDate,
+                                ).toLocaleDateString("en-GB")
+                              : "-"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex flex-col font-mono text-[10px]">
+                          <span className="text-amber-700 font-black">
+                            {project.deedNumber || "بدون صك"}
+                          </span>
+                          <span className="text-slate-400">
+                            {project.deedDate
+                              ? new Date(project.deedDate).toLocaleDateString(
+                                  "en-GB",
+                                )
+                              : "-"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex flex-col">
+                          <span className="text-slate-700 flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-slate-400" />{" "}
+                            {project.district?.name || "-"}
+                          </span>
+                          <span className="text-slate-400 text-[9px]">
+                            {project.city || "الرياض"}
+                          </span>
+                        </div>
+                      </td>
+                      <td
+                        className="px-3 py-2.5 text-slate-600 truncate max-w-[120px]"
+                        title={project.mainStreet}
+                      >
+                        {project.mainStreet || "-"}
+                      </td>
+
+                      {/* ========================================================= */}
+                      {/* 💡 التعديل هنا: عرض عدد القطع فقط بدلاً من الأرقام كاملة */}
+                      {/* ========================================================= */}
+                      <td className="px-3 py-2.5 font-mono text-slate-600">
+                        {project.plots?.length > 0 ? (
+                          <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[10px]">
+                            ({project.plots.length} قطع)
+                          </span>
+                        ) : (
+                          "-"
+                        )}
+                        <span className="text-slate-300 mx-1">|</span>
+                        <span className="text-slate-400 text-[9px]">
+                          م: {project.planNumber || "-"}
+                        </span>
+                      </td>
+
+                      <td className="px-3 py-2.5">
+                        <span className="bg-indigo-50 text-indigo-700 font-black font-mono px-2 py-0.5 rounded border border-indigo-100">
+                          {project.totalArea
+                            ? project.totalArea.toLocaleString()
+                            : "-"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-slate-600 text-center">
+                        <span className="text-emerald-600">
+                          {project.floorsAbove || 0}
+                        </span>
+                        <span className="text-slate-300 mx-1">/</span>
+                        <span className="text-rose-600">
+                          {project.floorsBelow || 0}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        <span className="inline-flex items-center justify-center bg-white text-slate-600 px-2 py-1 rounded-lg text-[10px] border border-slate-200 shadow-sm hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors">
+                          <Layers className="w-3.5 h-3.5 mr-1.5 text-slate-400" />{" "}
+                          {project._count?.files || 0}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-600 flex items-center gap-1.5">
+                        <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[8px] text-slate-600 font-black">
+                          {project.archivedBy?.name?.charAt(0) || "س"}
+                        </div>
+                        <span className="truncate max-w-[80px]">
+                          {project.archivedBy?.name || "النظام"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex flex-col font-mono text-[10px]">
+                          <span className="text-slate-700 flex items-center gap-1">
+                            <CalendarDays className="w-3 h-3 text-slate-400" />{" "}
+                            {new Date(project.createdAt).toLocaleDateString(
+                              "en-GB",
+                            )}
+                          </span>
+                          <span className="text-slate-400 flex items-center gap-1 mt-0.5">
+                            <Clock className="w-3 h-3" /> منذ{" "}
+                            {getDaysAgo(project.createdAt)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        <span
+                          className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-[9px] border font-black w-16 shadow-sm ${
+                            project.aiStatus === "completed" ||
+                            project.aiStatus === "approved"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : project.aiStatus === "failed"
+                                ? "bg-rose-50 text-rose-700 border-rose-200"
+                                : "bg-amber-50 text-amber-700 border-amber-200 animate-pulse"
+                          }`}
                         >
-                          <PenLine className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => handleDelete(project.id, e)}
-                          disabled={isDeleting}
-                          className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-colors tooltip-trigger disabled:opacity-50"
-                          title="حذف"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {project.aiStatus === "completed"
+                            ? "تم التحليل"
+                            : project.aiStatus === "approved"
+                              ? "معتمد"
+                              : project.aiStatus === "failed"
+                                ? "فشل"
+                                : "قيد المعالجة"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openProjectDetails(project.id);
+                            }}
+                            className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors tooltip-trigger"
+                            title="تعديل"
+                          >
+                            <PenLine className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => handleDelete(project.id, e)}
+                            disabled={isDeleting}
+                            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-colors tooltip-trigger disabled:opacity-50"
+                            title="حذف"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
         </div>
       </div>
 
-      {/* المودال الخاص بإضافة مشروع جديد (بما في ذلك التحليل) */}
       {isAddModalOpen && (
         <AddReferenceProjectModal
           isOpen={isAddModalOpen}
           onClose={() => {
             setIsAddModalOpen(false);
-            fetchProjects(); // تحديث الجدول بعد الإضافة
+            fetchProjects();
           }}
         />
       )}
 
-      {/* المودال الخاص بعرض وتعديل تفاصيل المشروع */}
-      {/* استخدمنا العرض الشرطي هنا (!!selectedProjectId &&) لتدمير النافذة عند الإغلاق وبنائها من الصفر عند الفتح */}
       {!!selectedProjectId && (
         <ReferenceDetailsModal
           projectId={selectedProjectId}
           isOpen={!!selectedProjectId}
           onClose={() => {
             setSelectedProjectId(null);
-            fetchProjects(); // تحديث في حال قام المستخدم بتعديل البيانات داخل التفاصيل
+            fetchProjects();
           }}
         />
       )}

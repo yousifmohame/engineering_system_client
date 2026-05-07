@@ -9,6 +9,7 @@ import {
   X,
   Scale,
   Ruler,
+  Minimize2
 } from "lucide-react";
 import api from "../../../api/axios";
 import { useAuth } from "../../../context/AuthContext";
@@ -34,6 +35,7 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
   const [clients, setClients] = useState([]);
   const [offices, setOffices] = useState([]);
   const [selectedSectorId, setSelectedSectorId] = useState("");
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
 
   const [linkingStates, setLinkingStates] = useState({
     client: false,
@@ -142,19 +144,23 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
       formData.append("file", selectedFile);
 
       // إرسال الطلب للخادم (تأكد من مطابقة المسار للباك إند الخاص بك)
-      const response = await api.post(`/archived-projects/${projectId}/files`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const response = await api.post(
+        `/archived-projects/${projectId}/files`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
 
       if (response.data.success) {
         const newFile = response.data.data;
-        
+
         // تحديث الواجهة فوراً وعرض الملف الجديد
         setData((prevData) => ({
           ...prevData,
-          files: [...(prevData.files || []), newFile]
+          files: [...(prevData.files || []), newFile],
         }));
-        
+
         alert("تم رفع الملف بنجاح!");
       }
     } catch (error) {
@@ -188,7 +194,9 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
     try {
       // الاتصال بالخادم لتحديث اسم الملف
       // ملاحظة: قد يحتاج الخادم إلى تشفير الاسم مرة أخرى أو إرساله كما هو حسب إعداداتك
-      await api.put(`/archived-projects/files/${file.id}`, { originalName: newName });
+      await api.put(`/archived-projects/files/${file.id}`, {
+        originalName: newName,
+      });
 
       // تحديث الواجهة فوراً بالاسم الجديد
       setData((prevData) => ({
@@ -258,22 +266,90 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
     }
   };
 
+  // ========================================================
+  // دالة إعادة التحليل (تعمل في الخلفية وتغلق النافذة)
+  // ========================================================
+  const handleReanalyze = async () => {
+    if (!window.confirm("هل أنت متأكد من إعادة تحليل المشروع؟ سيتم قراءة جميع المرفقات الحالية وإغلاق هذه النافذة للعمل في الخلفية.")) return;
+    
+    setIsReanalyzing(true);
+    try {
+      // الاتصال بالباك إند لطلب إعادة التحليل
+      const response = await api.post(`/archived-projects/${projectId}/reanalyze`);
+      
+      if (response.data.success) {
+        alert("تم إرسال طلب إعادة التحليل. سيقوم النظام بمعالجة الملفات في الخلفية وإشعارك عند الانتهاء.");
+        
+        // 👈 السر هنا: استدعاء دالة إغلاق النافذة مباشرة بعد نجاح الطلب
+        onClose(); 
+      }
+    } catch (error) {
+      console.error("Error reanalyzing project:", error);
+      alert(error.response?.data?.message || "حدث خطأ أثناء محاولة إعادة التحليل.");
+      
+      // نوقف حالة التحميل فقط في حال حدوث خطأ (لأن النافذة لن تغلق)
+      setIsReanalyzing(false);
+    }
+  };
+
+  const handleMergeProjects = async (targetArchiveCode) => {
+    if (!window.confirm(`سيتم نقل جميع الملفات إلى المشروع ${targetArchiveCode} وحذف السجل الحالي. هل أنت متأكد؟`)) return;
+    
+    try {
+      // نفترض أنك أضفت المسار في ملف api/axios.js
+      const response = await api.post(`/archived-projects/${projectId}/merge`, { targetArchiveCode });
+      if (response.data.success) {
+        alert("تمت عملية الدمج بنجاح! سيتم إغلاق هذه النافذة.");
+        onClose(); // إغلاق النافذة الحالية وتحديث الجدول في الشاشة الرئيسية
+      }
+    } catch (error) {
+      alert("حدث خطأ أثناء الدمج.");
+    }
+  };
+
   if (!isOpen) return null;
 
   if (isAiProcessing) {
     return (
       <div
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm"
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4"
         dir="rtl"
       >
-        <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-sm w-full mx-4">
+        {/* 💡 أضفنا relative للحاوية لتتمكن من احتواء زر الـ X */}
+        <div className="relative bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-sm w-full mx-4 animate-in zoom-in-95 duration-300">
+          
+          {/* ========================================== */}
+          {/* 👈 زر الإغلاق (X) في الزاوية العلوية */}
+          {/* ========================================== */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 left-4 p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors"
+            title="إغلاق والمتابعة في الخلفية"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
           <Loader2 className="w-14 h-14 text-indigo-600 animate-spin mb-4" />
+          
           <h2 className="text-xl font-black text-slate-800 text-center">
             جاري تحليل المستندات...
           </h2>
-          <p className="text-sm text-slate-500 mt-2 text-center font-medium">
+          
+          <p className="text-sm text-slate-500 mt-2 mb-6 text-center font-medium">
             يقوم الذكاء الاصطناعي الآن بقراءة الملفات لاستخراج البيانات وربطها.
           </p>
+
+          {/* ========================================== */}
+          {/* 👈 زر الإغلاق الواضح (إخفاء ومتابعة) */}
+          {/* ========================================== */}
+          <button 
+            onClick={onClose} 
+            className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-black transition-colors flex items-center justify-center gap-2"
+          >
+            <Minimize2 className="w-4 h-4" />
+            إخفاء ومتابعة في الخلفية
+          </button>
+
         </div>
       </div>
     );
@@ -400,6 +476,8 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
                   handleAutoLink={handleAutoLink}
                   inputClass={inputClass}
                   labelClass={labelClass}
+                  onReanalyze={handleReanalyze} // 👈 تمرير دالة التشغيل
+                  isReanalyzing={isReanalyzing} // 👈 تمرير حالة التحميل
                 />
               )}
               {activeTab === "legal" && (
@@ -442,6 +520,7 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
                   offices={offices}
                   linkingStates={linkingStates}
                   handleAutoLink={handleAutoLink}
+                  onMergeProjects={handleMergeProjects}
                   inputClass={inputClass}
                   labelClass={labelClass}
                 />
