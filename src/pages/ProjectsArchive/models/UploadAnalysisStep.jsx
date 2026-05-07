@@ -13,6 +13,7 @@ import {
   PenTool,
   ClipboardPaste,
   Settings2,
+  X,
 } from "lucide-react";
 import api from "../../../api/axios";
 import { useAuth } from "../../../context/AuthContext";
