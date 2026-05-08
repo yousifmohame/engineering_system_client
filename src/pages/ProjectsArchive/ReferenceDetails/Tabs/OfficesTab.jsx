@@ -130,7 +130,6 @@ export default function OfficesTab({
 
         {/* حقل المكتب المشرف */}
         <div className="w-full relative" ref={supervisorRef}>
-          {/* ... نفس الكود المعتاد للمكتب المشرف ... */}
           <div className="flex justify-between items-center mb-1.5">
             <label className={labelClass}>المكتب الهندسي المشرف</label>
             <LinkStatusBadge isLinked={!!data.supervisorOfficeId} extractedText={data.supervisorOfficeName} isLinking={linkingStates.supervisor} onLinkClick={() => handleSmartOfficeLink("supervisor", data.supervisorOfficeName)} />

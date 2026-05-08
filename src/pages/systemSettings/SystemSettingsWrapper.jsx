@@ -9,6 +9,8 @@ import SystemBackupTab from "./Screens/SystemBackupTab";
 import HardwareMonitorTab from "./Screens/HardwareMonitorTab";
 import TailscaleIntegrationScreen from "./Screens/tailscale/tailscalePage";
 import DeviceManagementTab from "./Screens/DeviceManagementTab";
+import AiSettings from "./Screens/AiSettings";
+
 export default function SystemSettingsWrapper() {
   const screenId = "71"; // 💡 كود شاشة الإعدادات في useAppStore
   const { activeTabPerScreen, setActiveTab, addTab } = useAppStore();
@@ -40,6 +42,8 @@ export default function SystemSettingsWrapper() {
         return <TailscaleIntegrationScreen />;
       case "SET_DEVICES":
         return <DeviceManagementTab />;
+      case "SET_AI":
+        return <AiSettings />;
       // case "SET_HEADER": return <HeaderSettingsTab />;
       // case "SET_FOOTER": return <FooterSettingsTab />;
       default:

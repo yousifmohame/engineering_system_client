@@ -1,5 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
-import { FileBadge2, Search, ChevronDown, FileDigit } from "lucide-react";
+import { 
+  FileBadge2, 
+  Search, 
+  ChevronDown, 
+  FileDigit, 
+  MapPin, 
+  ExternalLink,
+  Check
+} from "lucide-react";
 import LinkStatusBadge from "../LinkStatusBadge";
 
 export default function LegalTab({
@@ -42,11 +50,8 @@ export default function LegalTab({
     return normalized.replace(/\s+/g, "").trim();
   };
 
-  // ========================================================
-  // 💡 1. الأتمتة السحرية: ربط الحي وتحديد القطاع تلقائياً فور التحميل
-  // ========================================================
+  // الأتمتة السحرية: ربط الحي وتحديد القطاع تلقائياً
   useEffect(() => {
-    // إذا كان هناك اسم حي مستخرج من AI ولكن لم يتم ربطه بـ ID بعد
     if (data.districtName && !data.districtId && districts.length > 0) {
       const normalizedExtracted = normalizeArabicText(data.districtName);
 
@@ -67,11 +72,9 @@ export default function LegalTab({
       });
 
       if (existingDistrict) {
-        // نربط الحي فوراً
         handleChange({
           target: { name: "districtId", value: existingDistrict.id },
         });
-        // 👈 السحر هنا: نحدد القطاع تلقائياً بناءً على الحي
         if (existingDistrict.sectorId) {
           setSelectedSectorId(existingDistrict.sectorId);
         }
@@ -129,9 +132,18 @@ export default function LegalTab({
     handleAutoLink("district", data.districtName);
   };
 
+  const handleSmartPlanLink = () => {
+    if (!data.planNumber) return;
+    // 💡 نستدعي نفس دالة الأتمتة في المكون الأب ولكن بنوع "plan"
+    handleAutoLink("plan", data.planNumber); 
+  };
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-      {/* القسم الأول: أرقام الطلبات والخدمات (الجديد) */}
+      
+      {/* ======================================================= */}
+      {/* القسم الأول: أرقام الطلبات والخدمات */}
+      {/* ======================================================= */}
       <h4 className="text-sm font-black text-amber-600 border-b border-amber-100 pb-3 mb-5 flex items-center gap-2">
         <FileDigit className="w-4 h-4" /> أرقام الطلبات والخدمات
       </h4>
@@ -178,10 +190,15 @@ export default function LegalTab({
         </div>
       </div>
 
+      {/* ======================================================= */}
+      {/* القسم الثاني: الرخص والموقع الجغرافي */}
+      {/* ======================================================= */}
       <h4 className="text-sm font-black text-emerald-800 border-b border-emerald-100 pb-3 mb-5 flex items-center gap-2">
         <FileBadge2 className="w-4 h-4" /> الرخص والموقع الجغرافي
       </h4>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* بيانات الرخصة والصك */}
         <div className="w-full">
           <label className={labelClass}>رقم رخصة البناء والسنة الهجرية</label>
           <div className="flex items-stretch mt-1.5 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all shadow-sm">
@@ -196,11 +213,7 @@ export default function LegalTab({
             <div className="flex-[1] min-w-[110px] relative bg-slate-100 transition-colors">
               <input
                 readOnly
-                value={
-                  data.licenseHijriYear
-                    ? `${data.licenseHijriYear} هـ`
-                    : "تلقائي"
-                }
+                value={data.licenseHijriYear ? `${data.licenseHijriYear} هـ` : "تلقائي"}
                 className="w-full h-full px-3 py-2.5 text-xs font-bold text-emerald-700 bg-transparent outline-none font-mono text-center cursor-not-allowed"
               />
             </div>
@@ -265,7 +278,11 @@ export default function LegalTab({
           </div>
         </div>
 
+        {/* ======================================================= */}
+        {/* قسم الموقع والخرائط */}
+        {/* ======================================================= */}
         <div className="md:col-span-2 mt-4 border-t border-slate-100 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+          
           <div className="w-full">
             <label className={labelClass}>القطاع</label>
             <select
@@ -275,9 +292,7 @@ export default function LegalTab({
             >
               <option value="">-- حدد القطاع --</option>
               {sectors.map((sec) => (
-                <option key={sec.id} value={sec.id}>
-                  {sec.name}
-                </option>
+                <option key={sec.id} value={sec.id}>{sec.name}</option>
               ))}
             </select>
           </div>
@@ -285,7 +300,6 @@ export default function LegalTab({
           <div className="w-full relative" ref={dropdownRef}>
             <div className="flex justify-between items-center mb-1.5">
               <label className={labelClass}>الحي</label>
-              {/* لم نعد بحاجة لكلمة "ربط" إذا كان مربوطاً، بل إنشاء إذا لم يكن موجوداً */}
               {!data.districtId && (
                 <LinkStatusBadge
                   isLinked={!!data.districtId}
@@ -298,21 +312,14 @@ export default function LegalTab({
 
             <div
               onClick={() => setIsDistrictDropdownOpen(!isDistrictDropdownOpen)}
-              className={`${inputClass} mt-1.5 flex items-center justify-between cursor-pointer w-full select-none`}
+              className={`${inputClass} mt-0 flex items-center justify-between cursor-pointer w-full select-none`}
             >
-              <span
-                className={
-                  data.districtId ? "text-slate-700" : "text-slate-400"
-                }
-              >
+              <span className={data.districtId ? "text-slate-700" : "text-slate-400"}>
                 {data.districtId
-                  ? districts.find((d) => d.id === data.districtId)?.name ||
-                    "حي غير معروف"
+                  ? districts.find((d) => d.id === data.districtId)?.name || "حي غير معروف"
                   : "-- اختر أو ابحث عن حي --"}
               </span>
-              <ChevronDown
-                className={`w-4 h-4 text-slate-400 transition-transform ${isDistrictDropdownOpen ? "rotate-180" : ""}`}
-              />
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isDistrictDropdownOpen ? "rotate-180" : ""}`} />
             </div>
 
             {isDistrictDropdownOpen && (
@@ -334,9 +341,7 @@ export default function LegalTab({
                       <li
                         key={dist.id}
                         onClick={() => {
-                          handleChange({
-                            target: { name: "districtId", value: dist.id },
-                          });
+                          handleChange({ target: { name: "districtId", value: dist.id } });
                           setSelectedSectorId(dist.sectorId);
                           setIsDistrictDropdownOpen(false);
                           setDistrictSearchTerm("");
@@ -347,25 +352,43 @@ export default function LegalTab({
                       </li>
                     ))
                   ) : (
-                    <li className="px-4 py-4 text-xs text-slate-400 text-center font-bold">
-                      لا يوجد حي يطابق بحثك
-                    </li>
+                    <li className="px-4 py-4 text-xs text-slate-400 text-center font-bold">لا يوجد حي يطابق بحثك</li>
                   )}
                 </ul>
               </div>
             )}
           </div>
 
+          {/* 💡 التحديث هنا: رادار المخطط */}
           <div className="w-full">
-            <label className={labelClass}>رقم المخطط التنظيمي</label>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className={labelClass}>رقم المخطط التنظيمي</label>
+              
+              {/* شارة الربط للمخطط */}
+              {!data.planId && data.planNumber && (
+                <LinkStatusBadge
+                  isLinked={!!data.planId}
+                  extractedText={data.planNumber}
+                  isLinking={linkingStates.plan}
+                  onLinkClick={handleSmartPlanLink}
+                />
+              )}
+              {data.planId && (
+                 <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-md flex items-center gap-1">
+                   <Check className="w-3 h-3" /> مخطط معتمد
+                 </span>
+              )}
+            </div>
+            
             <input
               name="planNumber"
               value={data.planNumber || ""}
               onChange={handleChange}
-              className={`${inputClass} mt-1.5 font-mono w-full`}
-              placeholder="أدخل رقم المخطط"
+              className={`${inputClass} !mt-0 font-mono w-full`}
+              placeholder="أدخل رقم المخطط (مثال: 3020/أ)"
             />
           </div>
+
           <div className="w-full">
             <label className={labelClass}>أرقام القطع</label>
             <input
@@ -379,7 +402,8 @@ export default function LegalTab({
               placeholder="مثال: 10, 11"
             />
           </div>
-          <div className="md:col-span-2 w-full">
+
+          <div className="w-full">
             <label className={labelClass}>الشارع الرئيسي وعرضه</label>
             <input
               name="mainStreet"
@@ -389,6 +413,36 @@ export default function LegalTab({
               placeholder="مثال: شارع العليا، عرض 30م"
             />
           </div>
+
+          {/* 💡 التحديث هنا: رابط الموقع التفاعلي */}
+          <div className="w-full">
+            <label className={labelClass}>رابط الموقع (خرائط جوجل / بلدي)</label>
+            <div className="flex items-center gap-2 mt-1.5">
+              <div className="relative flex-1">
+                <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  name="mapUrl" // تأكد من إضافة mapUrl لنموذج قاعدة البيانات لديك
+                  value={data.mapUrl || ""}
+                  onChange={handleChange}
+                  className={`${inputClass} !mt-0 w-full pr-9`}
+                  placeholder="https://maps.google.com/..."
+                  dir="ltr"
+                />
+              </div>
+              {data.mapUrl && (
+                <a
+                  href={data.mapUrl.startsWith('http') ? data.mapUrl : `https://${data.mapUrl}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2.5 bg-sky-50 text-sky-600 hover:bg-sky-600 hover:text-white rounded-xl transition-all border border-sky-100 shadow-sm shrink-0"
+                  title="فتح الموقع في الخريطة"
+                >
+                  <ExternalLink className="w-5 h-5" />
+                </a>
+              )}
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

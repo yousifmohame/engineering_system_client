@@ -9,8 +9,9 @@ import {
   X,
   Scale,
   Ruler,
-  Minimize2
+  Minimize2,
 } from "lucide-react";
+import { toast } from "sonner";
 import api from "../../../api/axios";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -43,6 +44,38 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
     designer: false,
     supervisor: false,
   });
+
+  const fetchProjectDetails = async () => {
+    if (!projectId) return;
+    try {
+      const res = await api.get(`/archived-projects/${projectId}`);
+      const project = res.data.data;
+
+      setData({
+        ...project,
+        boundaries: project.boundaries || [],
+        floorAreas: project.floorAreas || [],
+        setbacks: project.setbacks || [],
+        plots: project.plots || [],
+        clientId: project.clientId || project.client?.id || "",
+        districtId: project.districtId || project.district?.id || "",
+        designerOfficeId: project.designerOfficeId || "",
+        supervisorOfficeId: project.supervisorOfficeId || "",
+      });
+
+      if (project.district && project.district.sectorId)
+        setSelectedSectorId(project.district.sectorId);
+
+      // إذا اكتمل التحليل، نوقف حالة التحميل
+      if (["completed", "failed", "approved"].includes(project.aiStatus)) {
+        setIsAiProcessing(false);
+      }
+
+      return project;
+    } catch (error) {
+      console.error("Error fetching project data", error);
+    }
+  };
 
   const inputClass =
     "w-full px-3 py-2.5 text-xs font-bold text-slate-700 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all";
@@ -137,35 +170,33 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
       setIsSaving(false);
     }
   };
-  const handleUploadFile = async (selectedFile) => {
-    try {
-      // تجهيز الملف للإرسال بصيغة FormData
-      const formData = new FormData();
-      formData.append("file", selectedFile);
 
-      // إرسال الطلب للخادم (تأكد من مطابقة المسار للباك إند الخاص بك)
-      const response = await api.post(
-        `/archived-projects/${projectId}/files`,
+  const handleUploadFile = async (uploadedFiles) => {
+    try {
+      const formData = new FormData();
+      uploadedFiles.forEach((file) => formData.append("files", file));
+      formData.append("compressionLevel", "medium");
+      formData.append("reanalyze", "false");
+
+      const res = await api.post(
+        `/archived-projects/${data.id}/files`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
         },
       );
 
-      if (response.data.success) {
-        const newFile = response.data.data;
+      if (res.data.success) {
+        toast.success("تم رفع الملفات بنجاح");
 
-        // تحديث الواجهة فوراً وعرض الملف الجديد
-        setData((prevData) => ({
-          ...prevData,
-          files: [...(prevData.files || []), newFile],
-        }));
-
-        alert("تم رفع الملف بنجاح!");
+        // 💡 الآن الدالة ستعمل ولن تعطي ReferenceError
+        await fetchProjectDetails();
       }
+      return res;
     } catch (error) {
-      console.error("خطأ في رفع الملف:", error);
-      alert("حدث خطأ أثناء محاولة رفع الملف.");
+      console.error("خطأ في الرفع:", error);
+      toast.error(error.response?.data?.message || "فشل رفع الملفات");
+      throw error;
     }
   };
 
@@ -180,8 +211,7 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
           ...prevData,
           files: prevData.files.filter((f) => f.id !== file.id),
         }));
-
-        alert("تم حذف الملف بنجاح.");
+        toast.success("تم حذف الملف بنجاح.");
       } catch (error) {
         console.error("خطأ في حذف الملف:", error);
         alert("حدث خطأ أثناء محاولة حذف الملف.");
@@ -256,6 +286,17 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
         if (type === "designer")
           setData((prev) => ({ ...prev, designerOfficeId: newItem.id }));
         else setData((prev) => ({ ...prev, supervisorOfficeId: newItem.id }));
+      } else if (type === "plan") {
+        // نفترض أن لديك مسار API لإنشاء أو جلب المخططات
+        res = await api.post("/riyadh-streets/plans", {
+          name: extractedName,
+          city: data.city || "الرياض",
+        });
+        newItem = res.data?.data || res.data;
+
+        // تحديث حالة المشروع بالمعرف الجديد للمخطط
+        setData((prev) => ({ ...prev, planId: newItem.id }));
+        toast.success(`تم حفظ وربط المخطط (${extractedName}) بنجاح.`);
       }
     } catch (error) {
       alert(
@@ -270,34 +311,52 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
   // دالة إعادة التحليل (تعمل في الخلفية وتغلق النافذة)
   // ========================================================
   const handleReanalyze = async () => {
-    if (!window.confirm("هل أنت متأكد من إعادة تحليل المشروع؟ سيتم قراءة جميع المرفقات الحالية وإغلاق هذه النافذة للعمل في الخلفية.")) return;
-    
+    if (
+      !window.confirm(
+        "هل أنت متأكد من إعادة تحليل المشروع؟ سيتم قراءة جميع المرفقات الحالية وإغلاق هذه النافذة للعمل في الخلفية.",
+      )
+    )
+      return;
+
     setIsReanalyzing(true);
     try {
       // الاتصال بالباك إند لطلب إعادة التحليل
-      const response = await api.post(`/archived-projects/${projectId}/reanalyze`);
-      
+      const response = await api.post(
+        `/archived-projects/${projectId}/reanalyze`,
+      );
+
       if (response.data.success) {
-        alert("تم إرسال طلب إعادة التحليل. سيقوم النظام بمعالجة الملفات في الخلفية وإشعارك عند الانتهاء.");
-        
+        alert(
+          "تم إرسال طلب إعادة التحليل. سيقوم النظام بمعالجة الملفات في الخلفية وإشعارك عند الانتهاء.",
+        );
+
         // 👈 السر هنا: استدعاء دالة إغلاق النافذة مباشرة بعد نجاح الطلب
-        onClose(); 
+        onClose();
       }
     } catch (error) {
       console.error("Error reanalyzing project:", error);
-      alert(error.response?.data?.message || "حدث خطأ أثناء محاولة إعادة التحليل.");
-      
+      alert(
+        error.response?.data?.message || "حدث خطأ أثناء محاولة إعادة التحليل.",
+      );
+
       // نوقف حالة التحميل فقط في حال حدوث خطأ (لأن النافذة لن تغلق)
       setIsReanalyzing(false);
     }
   };
 
   const handleMergeProjects = async (targetArchiveCode) => {
-    if (!window.confirm(`سيتم نقل جميع الملفات إلى المشروع ${targetArchiveCode} وحذف السجل الحالي. هل أنت متأكد؟`)) return;
-    
+    if (
+      !window.confirm(
+        `سيتم نقل جميع الملفات إلى المشروع ${targetArchiveCode} وحذف السجل الحالي. هل أنت متأكد؟`,
+      )
+    )
+      return;
+
     try {
       // نفترض أنك أضفت المسار في ملف api/axios.js
-      const response = await api.post(`/archived-projects/${projectId}/merge`, { targetArchiveCode });
+      const response = await api.post(`/archived-projects/${projectId}/merge`, {
+        targetArchiveCode,
+      });
       if (response.data.success) {
         alert("تمت عملية الدمج بنجاح! سيتم إغلاق هذه النافذة.");
         onClose(); // إغلاق النافذة الحالية وتحديث الجدول في الشاشة الرئيسية
@@ -317,7 +376,6 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
       >
         {/* 💡 أضفنا relative للحاوية لتتمكن من احتواء زر الـ X */}
         <div className="relative bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-sm w-full mx-4 animate-in zoom-in-95 duration-300">
-          
           {/* ========================================== */}
           {/* 👈 زر الإغلاق (X) في الزاوية العلوية */}
           {/* ========================================== */}
@@ -330,11 +388,11 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
           </button>
 
           <Loader2 className="w-14 h-14 text-indigo-600 animate-spin mb-4" />
-          
+
           <h2 className="text-xl font-black text-slate-800 text-center">
             جاري تحليل المستندات...
           </h2>
-          
+
           <p className="text-sm text-slate-500 mt-2 mb-6 text-center font-medium">
             يقوم الذكاء الاصطناعي الآن بقراءة الملفات لاستخراج البيانات وربطها.
           </p>
@@ -342,14 +400,13 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
           {/* ========================================== */}
           {/* 👈 زر الإغلاق الواضح (إخفاء ومتابعة) */}
           {/* ========================================== */}
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-black transition-colors flex items-center justify-center gap-2"
           >
             <Minimize2 className="w-4 h-4" />
             إخفاء ومتابعة في الخلفية
           </button>
-
         </div>
       </div>
     );

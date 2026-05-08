@@ -3,12 +3,13 @@ import {
   Settings,
   LayoutTemplate,
   MonitorPlay,
-  PanelBottom,
+  BrainCircuit,
   Server,
   DatabaseBackup,
   Cpu,
   ShieldCheck,
-  Smartphone
+  Smartphone,
+  Sparkles
 } from "lucide-react";
 
 export default function SystemSettingsDashboard({ onNavigate }) {
@@ -75,7 +76,16 @@ export default function SystemSettingsDashboard({ onNavigate }) {
         desc: "تتبع الأجهزة، طباعة الـ QR Code والعهد",
         stat: "الأصول",
         gradient: "from-cyan-500 to-blue-600",
-        icon: Smartphone, 
+        icon: Smartphone,
+      },
+      {
+        id: 8,
+        targetId: "SET_AI",
+        title: "الذكاء الاصطناعي",
+        desc: "إدارة مفاتيح Gemini، الطوابير، والأرشفة الذكية",
+        stat: "مركز المعالجة",
+        gradient: "from-purple-600 to-indigo-700",
+        icon: BrainCircuit,
       },
     ],
     [],
