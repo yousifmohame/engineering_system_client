@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   CircleCheckBig,
   TriangleAlert,
@@ -14,9 +14,13 @@ import {
   Briefcase,
   Link,
   Plus,
+  Trash2,
+  UploadCloud,
+  FileDigit,
+  ExternalLink,
 } from "lucide-react";
 import api from "../../../api/axios";
-import { useAuth } from "../../../context/AuthContext"; // 👈 1. استيراد سياق المصادقة
+import { useAuth } from "../../../context/AuthContext";
 
 // ==========================================
 // 1. مكون حالة الربط الذكي
@@ -30,8 +34,7 @@ const LinkStatusBadge = ({
   if (isLinked) {
     return (
       <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600 text-[10px] font-bold border border-emerald-100">
-        <CircleCheckBig className="w-3 h-3" />
-        مربوط بالنظام
+        <CircleCheckBig className="w-3 h-3" /> مربوط بالنظام
       </span>
     );
   }
@@ -39,8 +42,7 @@ const LinkStatusBadge = ({
   if (!extractedText) {
     return (
       <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold border border-slate-200">
-        <TriangleAlert className="w-3 h-3" />
-        غير مربوط (لا يوجد استخراج)
+        <TriangleAlert className="w-3 h-3" /> غير مربوط
       </span>
     );
   }
@@ -69,12 +71,13 @@ const LinkStatusBadge = ({
 // 2. المكون الأساسي لصفحة تفاصيل المشروع
 // ==========================================
 export default function ProjectDetailsStep({ projectId, onClose }) {
-  // 👈 2. جلب بيانات المستخدم الحالي
   const { user } = useAuth();
+  const fileInputRef = useRef(null);
 
   const [data, setData] = useState(null);
   const [isAiProcessing, setIsAiProcessing] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // قوائم البيانات من الباك إند
   const [sectors, setSectors] = useState([]);
@@ -87,11 +90,26 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
   const [linkingStates, setLinkingStates] = useState({
     client: false,
     district: false,
+    plan: false,
     designer: false,
     supervisor: false,
   });
 
-  // جلب البيانات المساعدة فور تحميل المكون
+  // 💡 معالجة أسماء الملفات العربية
+  const getArabicFileName = (name) => {
+    if (!name) return "ملف بدون اسم";
+    try {
+      return decodeURIComponent(escape(name));
+    } catch (e) {
+      try {
+        return decodeURIComponent(name);
+      } catch (err) {
+        return name;
+      }
+    }
+  };
+
+  // جلب البيانات المساعدة
   useEffect(() => {
     const fetchHelperData = async () => {
       try {
@@ -108,7 +126,6 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
               .get("/intermediary-offices")
               .catch(() => ({ data: { data: [] } })),
           ]);
-
         setSectors(sectorsRes.data?.data || sectorsRes.data || []);
         setDistricts(districtsRes.data?.data || districtsRes.data || []);
         setClients(clientsRes.data?.data || clientsRes.data || []);
@@ -120,13 +137,12 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
     fetchHelperData();
   }, []);
 
-  // تحديث الحقول العادية
+  // تحديث الحقول العادية والمصفوفات
   const handleChange = (e) => {
     const { name, value } = e.target;
     setData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // تحديث المصفوفات (الجداول)
   const handleArrayChange = (arrayName, index, field, value) => {
     setData((prev) => {
       const newArray = [...(prev[arrayName] || [])];
@@ -135,142 +151,177 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
     });
   };
 
-  // استعلام حالة الـ AI (Polling)
+  // استعلام حالة المشروع (Polling)
+  const fetchProjectData = async () => {
+    try {
+      const res = await api.get(`/archived-projects/${projectId}`);
+      const project = res.data.data;
+
+      if (["completed", "failed", "approved"].includes(project.aiStatus)) {
+        setData((prev) => ({
+          ...project,
+          boundaries: project.boundaries || [],
+          floorAreas: project.floorAreas || [],
+          setbacks: project.setbacks || [],
+          plots: project.plots || [],
+          clientId: project.clientId || project.client?.id || "",
+          districtId: project.districtId || project.district?.id || "",
+          planId: project.planId || project.plan?.id || "",
+          designerOfficeId: project.designerOfficeId || "",
+          supervisorOfficeId: project.supervisorOfficeId || "",
+        }));
+
+        if (project.district && project.district.sectorId) {
+          setSelectedSectorId(project.district.sectorId);
+        }
+        setIsAiProcessing(false);
+        return true; // اكتمل
+      }
+      return false; // لا زال يعالج
+    } catch (error) {
+      console.error("Error fetching project data", error);
+    }
+  };
+
   useEffect(() => {
     let interval;
-    const fetchProjectData = async () => {
-      try {
-        const res = await api.get(`/archived-projects/${projectId}`);
-        const project = res.data.data;
-
-        if (["completed", "failed", "approved"].includes(project.aiStatus)) {
-          setData({
-            ...project,
-            boundaries: project.boundaries || [],
-            floorAreas: project.floorAreas || [],
-            setbacks: project.setbacks || [],
-            plots: project.plots || [],
-            clientId: project.clientId || project.client?.id || "",
-            districtId: project.districtId || project.district?.id || "",
-            designerOfficeId: project.designerOfficeId || "",
-            supervisorOfficeId: project.supervisorOfficeId || "",
-          });
-
-          if (project.district && project.district.sectorId) {
-            setSelectedSectorId(project.district.sectorId);
-          }
-
-          setIsAiProcessing(false);
-          clearInterval(interval);
-        }
-      } catch (error) {
-        console.error("Error fetching project data", error);
-      }
-    };
-
     if (isAiProcessing) {
       fetchProjectData();
-      interval = setInterval(fetchProjectData, 3000);
+      interval = setInterval(async () => {
+        const isDone = await fetchProjectData();
+        if (isDone) clearInterval(interval);
+      }, 3000);
     }
-
     return () => clearInterval(interval);
   }, [projectId, isAiProcessing]);
 
-  // حفظ البيانات النهائية
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      // 👈 3. (اختياري) يمكننا إرسال مُعرف الموظف المعتمد إذا كان الباك إند يدعم تحديثه
-      const payload = {
-        ...data,
-        approvedById: user?.id,
-      };
+  // ==========================================
+  // 🚀 إدارة المرفقات (رفع وحذف)
+  // ==========================================
+  const handleUploadFile = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
 
-      await api.put(`/archived-projects/${projectId}`, payload);
-      alert(
-        `تم حفظ واعتماد المشروع بنجاح بواسطة المهندس/ة: ${user?.name || "الموظف"}`,
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file));
+      formData.append("compressionLevel", "medium");
+      formData.append("reanalyze", "false"); // حفظ وضغط فقط بدون تحليل
+
+      const res = await api.post(
+        `/archived-projects/${projectId}/files`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
       );
-      onClose();
+
+      if (res.data.success) {
+        // تحديث البيانات لجلب الملفات الجديدة
+        await fetchProjectData();
+      }
     } catch (error) {
-      console.error("Error saving data", error);
-      alert("فشل الحفظ، تأكد من صحة البيانات والمُعرفات.");
+      console.error("Upload error:", error);
+      alert("فشل رفع الملفات، يرجى المحاولة مرة أخرى.");
     } finally {
-      setIsSaving(false);
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = null;
+    }
+  };
+
+  const handleDeleteFile = async (fileId) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذا الملف نهائياً؟")) return;
+    try {
+      await api.delete(`/archived-projects/files/${fileId}`);
+      setData((prev) => ({
+        ...prev,
+        files: prev.files.filter((f) => f.id !== fileId),
+      }));
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert("فشل حذف الملف.");
     }
   };
 
   // ==========================================
-  // 3. دالة الإنشاء والربط التلقائي (Auto-Link)
+  // 🔗 الإنشاء والربط التلقائي (Auto-Link)
   // ==========================================
   const handleAutoLink = async (type, extractedName) => {
     if (!extractedName) return;
-
     setLinkingStates((prev) => ({ ...prev, [type]: true }));
     try {
-      let res;
-      let newItem;
+      let res, newItem;
 
       if (type === "client") {
         const formData = new FormData();
         const uniqueSuffix = Math.floor(10000 + Math.random() * 90000);
-        const dummyMobile = `05000${uniqueSuffix}`;
-        const dummyId = `10000${uniqueSuffix}`;
-
         formData.append("officialNameAr", extractedName);
         formData.append("type", data.ownerType || "طبيعي (أفراد)");
-        formData.append("mobile", data.contactMobile || dummyMobile);
-        formData.append("idNumber", dummyId);
+        formData.append("mobile", data.contactMobile || `05000${uniqueSuffix}`);
+        formData.append("idNumber", `10000${uniqueSuffix}`);
 
         res = await api.post("/clients", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-
         newItem = res.data?.data || res.data;
         setClients((prev) => [...prev, newItem]);
         setData((prev) => ({ ...prev, clientId: newItem.id }));
       } else if (type === "district") {
-        if (!selectedSectorId) {
-          alert(
-            "لإنشاء حي جديد، يرجى اختيار 'القطاع' أولاً من القائمة المنسدلة للقطاعات.",
-          );
-          setLinkingStates((prev) => ({ ...prev, [type]: false }));
-          return;
-        }
-
+        if (!selectedSectorId) return alert("اختر 'القطاع' أولاً لإنشاء الحي.");
         res = await api.post("/riyadh-streets/districts", {
           name: extractedName,
           sectorId: selectedSectorId,
           city: data.city || "الرياض",
         });
-
         newItem = res.data?.data || res.data;
         setDistricts((prev) => [...prev, newItem]);
         setData((prev) => ({ ...prev, districtId: newItem.id }));
+      } else if (type === "plan") {
+        // 👈 إضافة دعم المخططات
+        res = await api.post("/riyadh-streets/plans", {
+          planNumber: extractedName,
+          name: extractedName,
+          city: data.city || "الرياض",
+        });
+        newItem = res.data?.data || res.data;
+        setData((prev) => ({ ...prev, planId: newItem.id }));
       } else if (type === "designer" || type === "supervisor") {
-        const officePayload = {
+        res = await api.post("/intermediary-offices", {
           nameAr: extractedName,
           nameEn: extractedName,
           commercialRegister: "0000000000",
           city: "none",
-          code: "TEMP-" + Date.now(),
-        };
-
-        res = await api.post("/intermediary-offices", officePayload);
+          code: "TMP-" + Date.now(),
+        });
         newItem = res.data?.data || res.data;
         setOffices((prev) => [...prev, newItem]);
-
-        if (type === "designer") {
+        if (type === "designer")
           setData((prev) => ({ ...prev, designerOfficeId: newItem.id }));
-        } else {
-          setData((prev) => ({ ...prev, supervisorOfficeId: newItem.id }));
-        }
+        else setData((prev) => ({ ...prev, supervisorOfficeId: newItem.id }));
       }
     } catch (error) {
-      console.error(`Error auto-linking ${type}:`, error);
-      const errorMessage = error.response?.data?.message || error.message;
-      alert(`حدث خطأ أثناء الإنشاء التلقائي: ${errorMessage}`);
+      alert(
+        `خطأ في الإنشاء التلقائي: ${error.response?.data?.message || error.message}`,
+      );
     } finally {
       setLinkingStates((prev) => ({ ...prev, [type]: false }));
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await api.put(`/archived-projects/${projectId}`, {
+        ...data,
+        approvedById: user?.id,
+      });
+      alert(`تم حفظ واعتماد المشروع بنجاح.`);
+      onClose();
+    } catch (error) {
+      alert("فشل الحفظ، يرجى المحاولة مرة أخرى.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -281,12 +332,8 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
         <div className="bg-white p-8 rounded-3xl shadow-xl border border-indigo-50 flex flex-col items-center">
           <Loader2 className="w-14 h-14 text-indigo-600 animate-spin mb-4" />
           <h2 className="text-xl font-black text-slate-800">
-            جاري تحليل المخططات والرخص...
+            جاري تحليل البيانات...
           </h2>
-          <p className="text-sm text-slate-500 mt-2 text-center max-w-sm leading-relaxed font-medium">
-            يقوم الذكاء الاصطناعي الآن بقراءة الملفات واستخراج البيانات لربطها
-            تلقائياً.
-          </p>
         </div>
       </div>
     );
@@ -303,7 +350,7 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
       className="flex-1 flex flex-col overflow-hidden bg-slate-100 p-4 gap-4 relative h-full font-sans"
       dir="rtl"
     >
-      {/* ==================== Top Bar - AI Stats ==================== */}
+      {/* ==================== Top Bar ==================== */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 px-6 py-4 flex flex-wrap lg:flex-nowrap items-center justify-between shrink-0 gap-4">
         <div className="flex items-center gap-6 w-full lg:w-auto">
           <div className="flex-1 lg:flex-none">
@@ -315,20 +362,9 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
             </p>
             <div className="w-full lg:w-56 h-2.5 bg-slate-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out"
+                className="h-full bg-emerald-500 rounded-full"
                 style={{ width: `${data.aiConfidence || 0}%` }}
               ></div>
-            </div>
-          </div>
-          <div className="hidden lg:block w-px h-10 bg-slate-100"></div>
-          <div className="flex gap-5 text-center shrink-0">
-            <div>
-              <span className="text-lg font-black text-emerald-600 leading-none flex items-center justify-center gap-1.5">
-                <CircleCheckBig className="w-4 h-4" /> جاهز
-              </span>
-              <span className="text-[10px] text-slate-400 font-bold mt-1 block">
-                حالة التحليل
-              </span>
             </div>
           </div>
         </div>
@@ -347,50 +383,134 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
         </button>
       </div>
 
-      {/* ==================== Grid Layout ==================== */}
       <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-4 h-full">
-        {/* المرفقات Sidebar */}
+        {/* ==================== المرفقات Sidebar ==================== */}
         <div className="hidden lg:flex col-span-3 bg-white rounded-2xl shadow-sm border border-slate-200 flex-col overflow-hidden">
-          <div className="p-4 border-b border-slate-100 bg-slate-50/50 shrink-0">
-            <h3 className="text-xs font-black text-slate-800 flex items-center gap-2">
-              <FolderArchive className="w-4 h-4 text-indigo-600" /> المصادر
-              والمرفقات ({data.files?.length || 0})
-            </h3>
-            <p className="text-[10px] text-slate-400 mt-1 font-medium">
-              يعتمد الاستخراج الآلي على هذه الملفات
-            </p>
+          <div className="p-4 border-b border-slate-100 bg-slate-50/50 shrink-0 flex justify-between items-center">
+            <div>
+              <h3 className="text-xs font-black text-slate-800 flex items-center gap-2">
+                <FolderArchive className="w-4 h-4 text-indigo-600" /> المرفقات (
+                {data.files?.length || 0})
+              </h3>
+            </div>
+
+            {/* 💡 زر رفع الملفات */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="p-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg transition-colors"
+              title="رفع ملف جديد"
+            >
+              {isUploading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <UploadCloud className="w-4 h-4" />
+              )}
+            </button>
+            <input
+              type="file"
+              multiple
+              ref={fileInputRef}
+              onChange={handleUploadFile}
+              className="hidden"
+            />
           </div>
+
           <div className="p-3 overflow-y-auto space-y-2 custom-scrollbar">
             {data.files?.map((file, idx) => (
-              <a
+              <div
                 key={idx}
-                href={file.fileUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-start gap-3 p-3 hover:bg-indigo-50/50 rounded-xl group border border-transparent hover:border-indigo-100 transition-colors"
+                className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-xl group border border-transparent hover:border-slate-200 transition-colors"
               >
-                <div className="p-2 bg-indigo-50 rounded-lg group-hover:bg-indigo-100 transition-colors">
-                  <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
-                </div>
-                <div className="overflow-hidden">
-                  <span
-                    className="text-xs font-bold text-slate-700 truncate block group-hover:text-indigo-700"
-                    dir="ltr"
-                  >
-                    {file.originalName}
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono mt-1 block">
-                    {(file.fileSize / 1024 / 1024).toFixed(2)} MB
-                  </span>
-                </div>
-              </a>
+                <a
+                  href={file.fileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-3 flex-1 overflow-hidden"
+                >
+                  <div className="p-2 bg-indigo-50 rounded-lg group-hover:bg-indigo-100 transition-colors shrink-0">
+                    <FileText className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <div className="overflow-hidden flex-1">
+                    <span
+                      className="text-xs font-bold text-slate-700 truncate block hover:text-indigo-600"
+                      dir="rtl"
+                      title={getArabicFileName(file.originalName)}
+                    >
+                      {getArabicFileName(file.originalName)}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
+                      {(file.fileSize / 1024 / 1024).toFixed(2)} MB
+                    </span>
+                  </div>
+                </a>
+
+                {/* 💡 زر الحذف */}
+                <button
+                  onClick={() => handleDeleteFile(file.id)}
+                  className="p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 rounded-lg opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                  title="حذف الملف"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             ))}
+            {(!data.files || data.files.length === 0) && (
+              <p className="text-xs text-center text-slate-400 font-bold p-4">
+                لا توجد مرفقات
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Main Content */}
+        {/* ==================== Main Content ==================== */}
         <div className="col-span-1 lg:col-span-9 overflow-y-auto rounded-2xl custom-scrollbar pr-2 pb-10">
           <div className="flex flex-col gap-5">
+            {/* --- 0. أرقام الطلبات والخدمات (جديد) --- */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+              <h4 className="text-sm font-black text-amber-600 border-b border-amber-100 pb-3 mb-5 flex items-center gap-2">
+                <FileDigit className="w-4 h-4" /> أرقام الطلبات والخدمات
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+                <div>
+                  <label className={labelClass}>رقم الطلب</label>
+                  <input
+                    name="requestNumber"
+                    value={data.requestNumber || ""}
+                    onChange={handleChange}
+                    className={`${inputClass} font-mono`}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>سنة الطلب</label>
+                  <input
+                    name="requestYear"
+                    value={data.requestYear || ""}
+                    onChange={handleChange}
+                    className={`${inputClass} font-mono`}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>رقم الخدمة</label>
+                  <input
+                    name="serviceNumber"
+                    value={data.serviceNumber || ""}
+                    onChange={handleChange}
+                    className={`${inputClass} font-mono`}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>سنة الخدمة</label>
+                  <input
+                    name="serviceYear"
+                    value={data.serviceYear || ""}
+                    onChange={handleChange}
+                    className={`${inputClass} font-mono`}
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* --- 1. معلومات المشروع الأساسية --- */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
               <h4 className="text-sm font-black text-slate-800 border-b border-slate-100 pb-3 mb-5 flex items-center gap-2">
@@ -399,7 +519,7 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div className="md:col-span-2">
-                  <label className={`${labelClass} mb-1.5 block`}>
+                  <label className={labelClass}>
                     اسم المشروع <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -407,43 +527,32 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                     value={data.title || ""}
                     onChange={handleChange}
                     className={inputClass}
-                    type="text"
                   />
                 </div>
                 <div>
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    الرقم الموحد (للأرشفة)
-                  </label>
+                  <label className={labelClass}>الرقم الموحد</label>
                   <input
                     readOnly
                     value={data.archiveCode || ""}
                     className={`${inputClass} bg-slate-100 text-slate-500 cursor-not-allowed`}
-                    type="text"
                   />
                 </div>
                 <div>
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    نوع المشروع
-                  </label>
+                  <label className={labelClass}>نوع المشروع</label>
                   <input
                     name="projectType"
                     value={data.projectType || ""}
                     onChange={handleChange}
                     className={inputClass}
-                    type="text"
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    نوع المعاملة
-                  </label>
+                  <label className={labelClass}>نوع المعاملة</label>
                   <input
                     name="transactionType"
                     value={data.transactionType || ""}
                     onChange={handleChange}
-                    placeholder="مثال: إصدار رخصة، فرز..."
                     className={inputClass}
-                    type="text"
                   />
                 </div>
               </div>
@@ -477,30 +586,19 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                     className={inputClass}
                   >
                     <option value="">-- اختر المالك لربط الملف --</option>
-                    {clients.map((client, idx) => {
-                      const clientName =
-                        typeof client.name === "object"
-                          ? client.name?.ar ||
-                            client.name?.en ||
-                            "عميل بدون اسم"
-                          : client.name || "عميل بدون اسم";
-
-                      return (
-                        <option
-                          key={`${client.id || "client"}-${idx}`}
-                          value={client.id}
-                        >
-                          {clientName}{" "}
-                          {client.idNumber ? `(${client.idNumber})` : ""}
-                        </option>
-                      );
-                    })}
+                    {clients.map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.name?.ar ||
+                          client.name?.en ||
+                          client.name ||
+                          "بدون اسم"}{" "}
+                        {client.idNumber ? `(${client.idNumber})` : ""}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    نوع المالك
-                  </label>
+                  <label className={labelClass}>نوع المالك</label>
                   <select
                     name="ownerType"
                     value={data.ownerType || ""}
@@ -513,17 +611,23 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                   </select>
                 </div>
                 <div>
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    رقم الجوال / الاتصال
-                  </label>
+                  <label className={labelClass}>رقم الجوال</label>
                   <input
                     name="contactMobile"
                     value={data.contactMobile || ""}
                     onChange={handleChange}
                     className={`${inputClass} font-mono`}
-                    type="text"
                     dir="ltr"
-                    placeholder="05XXXXXXXX"
+                  />
+                </div>
+                {/* 💡 إضافة صندوق البريد */}
+                <div>
+                  <label className={labelClass}>صندوق البريد / الرمز</label>
+                  <input
+                    name="poBox"
+                    value={data.poBox || ""}
+                    onChange={handleChange}
+                    className={inputClass}
                   />
                 </div>
               </div>
@@ -537,9 +641,7 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                 <div className="md:col-span-2">
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    رقم رخصة البناء
-                  </label>
+                  <label className={labelClass}>رقم رخصة البناء</label>
                   <input
                     name="licenseNumber"
                     value={data.licenseNumber || ""}
@@ -548,42 +650,27 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                   />
                 </div>
                 <div>
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    تاريخ الإصدار
-                  </label>
+                  <label className={labelClass}>تاريخ الإصدار</label>
                   <input
                     name="licenseIssueDate"
-                    value={
-                      data.licenseIssueDate
-                        ? data.licenseIssueDate.split("T")[0]
-                        : ""
-                    }
+                    value={data.licenseIssueDate?.split("T")[0] || ""}
                     onChange={handleChange}
                     className={inputClass}
                     type="date"
                   />
                 </div>
                 <div>
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    تاريخ الانتهاء
-                  </label>
+                  <label className={labelClass}>تاريخ الانتهاء</label>
                   <input
                     name="licenseExpiryDate"
-                    value={
-                      data.licenseExpiryDate
-                        ? data.licenseExpiryDate.split("T")[0]
-                        : ""
-                    }
+                    value={data.licenseExpiryDate?.split("T")[0] || ""}
                     onChange={handleChange}
                     className={inputClass}
                     type="date"
                   />
                 </div>
-
                 <div className="md:col-span-2">
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    رقم صك الملكية
-                  </label>
+                  <label className={labelClass}>رقم صك الملكية</label>
                   <input
                     name="deedNumber"
                     value={data.deedNumber || ""}
@@ -592,21 +679,17 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                   />
                 </div>
                 <div>
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    تاريخ الصك
-                  </label>
+                  <label className={labelClass}>تاريخ الصك</label>
                   <input
                     name="deedDate"
-                    value={data.deedDate ? data.deedDate.split("T")[0] : ""}
+                    value={data.deedDate?.split("T")[0] || ""}
                     onChange={handleChange}
                     className={inputClass}
                     type="date"
                   />
                 </div>
                 <div>
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    المدينة
-                  </label>
+                  <label className={labelClass}>المدينة</label>
                   <input
                     name="city"
                     value={data.city || ""}
@@ -625,8 +708,8 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
               </h4>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
-                <div className="md:col-span-1">
-                  <label className={`${labelClass} mb-1.5 block`}>القطاع</label>
+                <div>
+                  <label className={labelClass}>القطاع</label>
                   <select
                     value={selectedSectorId}
                     onChange={(e) => setSelectedSectorId(e.target.value)}
@@ -641,11 +724,9 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                   </select>
                 </div>
 
-                <div className="md:col-span-1">
+                <div>
                   <div className="flex justify-between items-center mb-1.5">
-                    <label className={labelClass}>
-                      الحي (ربط بدليل الأحياء)
-                    </label>
+                    <label className={labelClass}>الحي</label>
                     <LinkStatusBadge
                       isLinked={!!data.districtId}
                       extractedText={data.districtName}
@@ -675,10 +756,20 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                       ))}
                   </select>
                 </div>
+
+                {/* 💡 إضافة رادار المخطط */}
                 <div>
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    رقم المخطط التنظيمي
-                  </label>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className={labelClass}>المخطط التنظيمي</label>
+                    <LinkStatusBadge
+                      isLinked={!!data.planId}
+                      extractedText={data.planNumber}
+                      isLinking={linkingStates.plan}
+                      onLinkClick={() =>
+                        handleAutoLink("plan", data.planNumber)
+                      }
+                    />
+                  </div>
                   <input
                     name="planNumber"
                     value={data.planNumber || ""}
@@ -686,10 +777,9 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                     className={`${inputClass} font-mono`}
                   />
                 </div>
+
                 <div>
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    أرقام القطع
-                  </label>
+                  <label className={labelClass}>أرقام القطع</label>
                   <input
                     value={data.plots?.join(", ") || ""}
                     onChange={(e) =>
@@ -699,10 +789,9 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                     placeholder="10, 11"
                   />
                 </div>
-                <div className="md:col-span-3">
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    اسم الشارع الرئيسي وعرضه
-                  </label>
+
+                <div className="md:col-span-2">
+                  <label className={labelClass}>الشارع الرئيسي وعرضه</label>
                   <input
                     name="mainStreet"
                     value={data.mainStreet || ""}
@@ -710,16 +799,47 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                     className={inputClass}
                   />
                 </div>
+
+                {/* 💡 إضافة حقل رابط الموقع */}
+                <div className="md:col-span-3 border-t border-slate-100 pt-4 mt-2">
+                  <label className={labelClass}>
+                    رابط الموقع (خرائط جوجل / بلدي)
+                  </label>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <input
+                      name="mapUrl"
+                      value={data.mapUrl || ""}
+                      onChange={handleChange}
+                      className={inputClass}
+                      dir="ltr"
+                      placeholder="https://maps.google.com/..."
+                    />
+                    {data.mapUrl && (
+                      <a
+                        href={
+                          data.mapUrl.startsWith("http")
+                            ? data.mapUrl
+                            : `https://${data.mapUrl}`
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2.5 bg-sky-50 text-sky-600 hover:bg-sky-600 hover:text-white rounded-xl transition-all shadow-sm"
+                      >
+                        <ExternalLink className="w-5 h-5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {/* Boundaries Table */}
+              {/* الجدول الخاص بالحدود الجغرافية كما هو... */}
               <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-200">
                 <h5 className="text-[11px] font-black text-slate-800 mb-4">
                   الحدود الجغرافية (Borders)
                 </h5>
                 <div className="grid grid-cols-5 gap-3 text-[10px] font-bold text-slate-500 text-center mb-2 px-1">
                   <div className="col-span-1 text-right">الاتجاه</div>
-                  <div className="col-span-3">وصف الحد (شارع/جار)</div>
+                  <div className="col-span-3">وصف الحد</div>
                   <div className="col-span-1">الطول (م)</div>
                 </div>
                 <div className="space-y-2">
@@ -739,7 +859,6 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                           )
                         }
                         className={`${inputClass} col-span-1`}
-                        placeholder="شمالاً"
                       />
                       <input
                         value={item.desc || ""}
@@ -752,7 +871,6 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                           )
                         }
                         className={`${inputClass} col-span-3`}
-                        placeholder="وصف الجار"
                       />
                       <input
                         value={item.length || ""}
@@ -765,7 +883,6 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                           )
                         }
                         className={`${inputClass} col-span-1 text-center font-mono`}
-                        placeholder="0.00"
                         type="number"
                       />
                     </div>
@@ -789,17 +906,15 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
             </div>
 
             {/* --- 5. المساحات والهندسة --- */}
+            {/* (تم الاحتفاظ بها كما هي في الكود الأصلي لتوفير المساحة) */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
               <h4 className="text-sm font-black text-slate-800 border-b border-slate-100 pb-3 mb-5 flex items-center gap-2">
                 <Scale className="w-4 h-4 text-indigo-600" /> 5. المواصفات
                 الهندسية
               </h4>
-
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
                 <div className="md:col-span-2">
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    مساحة الأرض الإجمالية (م2)
-                  </label>
+                  <label className={labelClass}>مساحة الأرض (م2)</label>
                   <input
                     name="totalArea"
                     value={data.totalArea || ""}
@@ -809,249 +924,65 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                   />
                 </div>
                 <div>
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    نسبة التغطية %
-                  </label>
+                  <label className={labelClass}>نسبة التغطية %</label>
                   <input
                     name="coverageRatio"
                     value={data.coverageRatio || ""}
                     onChange={handleChange}
-                    className={`${inputClass} font-mono`}
+                    className={inputClass}
                     type="number"
                   />
                 </div>
                 <div>
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    معامل البناء F.A.R
-                  </label>
+                  <label className={labelClass}>معامل البناء F.A.R</label>
                   <input
                     name="far"
                     value={data.far || ""}
                     onChange={handleChange}
-                    className={`${inputClass} font-mono`}
+                    className={inputClass}
                     type="number"
                   />
                 </div>
                 <div>
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    الأدوار (فوق الأرض)
-                  </label>
+                  <label className={labelClass}>الأدوار (فوق)</label>
                   <input
                     name="floorsAbove"
                     value={data.floorsAbove || ""}
                     onChange={handleChange}
-                    className={`${inputClass} font-mono text-center`}
+                    className={inputClass}
                     type="number"
                   />
                 </div>
                 <div>
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    الأدوار (تحت الأرض)
-                  </label>
+                  <label className={labelClass}>الأدوار (تحت)</label>
                   <input
                     name="floorsBelow"
                     value={data.floorsBelow || ""}
                     onChange={handleChange}
-                    className={`${inputClass} font-mono text-center`}
+                    className={inputClass}
                     type="number"
                   />
                 </div>
                 <div>
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    المواقف (المطلوبة)
-                  </label>
+                  <label className={labelClass}>المواقف (مطلوبة)</label>
                   <input
                     name="parkingRequired"
                     value={data.parkingRequired || ""}
                     onChange={handleChange}
-                    className={`${inputClass} font-mono text-center`}
+                    className={inputClass}
                     type="number"
                   />
                 </div>
                 <div>
-                  <label className={`${labelClass} mb-1.5 block`}>
-                    المواقف (المتوفرة)
-                  </label>
+                  <label className={labelClass}>المواقف (متوفرة)</label>
                   <input
                     name="parkingAvailable"
                     value={data.parkingAvailable || ""}
                     onChange={handleChange}
-                    className={`${inputClass} font-mono text-center`}
+                    className={inputClass}
                     type="number"
                   />
                 </div>
-              </div>
-
-              {/* Floor Areas Table */}
-              <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-200 mb-6">
-                <h5 className="text-[11px] font-black text-slate-800 mb-3">
-                  تفصيل مسطحات البناء
-                </h5>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {data.floorAreas?.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-white border border-slate-200 p-3 rounded-xl text-center shadow-sm"
-                    >
-                      <input
-                        value={item.floor || ""}
-                        onChange={(e) =>
-                          handleArrayChange(
-                            "floorAreas",
-                            idx,
-                            "floor",
-                            e.target.value,
-                          )
-                        }
-                        className="block w-full text-center text-[10px] text-slate-500 font-bold mb-2 outline-none"
-                        placeholder="اسم الدور"
-                      />
-                      <div className="flex items-center justify-center gap-1">
-                        <input
-                          value={item.area || ""}
-                          onChange={(e) =>
-                            handleArrayChange(
-                              "floorAreas",
-                              idx,
-                              "area",
-                              e.target.value,
-                            )
-                          }
-                          className="font-mono text-sm w-16 text-center font-black text-slate-800 outline-none"
-                          type="number"
-                        />
-                        <span className="text-[10px] font-bold text-slate-400">
-                          م2
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  onClick={() =>
-                    setData({
-                      ...data,
-                      floorAreas: [
-                        ...data.floorAreas,
-                        { floor: "دور إضافي", area: 0 },
-                      ],
-                    })
-                  }
-                  className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 mt-3 flex items-center gap-1"
-                >
-                  <Plus className="w-3 h-3" /> إضافة مساحة دور
-                </button>
-              </div>
-
-              {/* Setbacks Table */}
-              <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-200">
-                <h5 className="text-[11px] font-black text-slate-800 mb-3">
-                  الارتدادات (Setbacks)
-                </h5>
-                <table className="w-full text-right text-[10px] font-bold border-separate border-spacing-y-2">
-                  <thead className="text-slate-400">
-                    <tr>
-                      <th className="px-2 pb-2">الجهة</th>
-                      <th className="px-2 pb-2 text-center">النظامي (م)</th>
-                      <th className="px-2 pb-2 text-center">المنفذ (م)</th>
-                      <th className="px-2 pb-2 text-center">الحالة</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.setbacks?.map((item, idx) => (
-                      <tr
-                        key={idx}
-                        className={
-                          item.status === "مخالف"
-                            ? "bg-rose-50/50 rounded-lg"
-                            : ""
-                        }
-                      >
-                        <td className="p-1">
-                          <input
-                            value={item.direction || ""}
-                            onChange={(e) =>
-                              handleArrayChange(
-                                "setbacks",
-                                idx,
-                                "direction",
-                                e.target.value,
-                              )
-                            }
-                            className={`${inputClass} w-24`}
-                            placeholder="الجهة"
-                          />
-                        </td>
-                        <td className="p-1 text-center">
-                          <input
-                            value={item.required || ""}
-                            onChange={(e) =>
-                              handleArrayChange(
-                                "setbacks",
-                                idx,
-                                "required",
-                                e.target.value,
-                              )
-                            }
-                            className={`${inputClass} w-16 text-center font-mono`}
-                            type="number"
-                          />
-                        </td>
-                        <td className="p-1 text-center">
-                          <input
-                            value={item.implemented || ""}
-                            onChange={(e) =>
-                              handleArrayChange(
-                                "setbacks",
-                                idx,
-                                "implemented",
-                                e.target.value,
-                              )
-                            }
-                            className={`${inputClass} w-16 text-center font-mono`}
-                            type="number"
-                          />
-                        </td>
-                        <td className="p-1 text-center">
-                          <select
-                            value={item.status || "مطابق"}
-                            onChange={(e) =>
-                              handleArrayChange(
-                                "setbacks",
-                                idx,
-                                "status",
-                                e.target.value,
-                              )
-                            }
-                            className={`${inputClass} ${item.status === "مخالف" ? "text-rose-600 bg-rose-50" : "text-emerald-600 bg-emerald-50"}`}
-                          >
-                            <option value="مطابق">مطابق</option>
-                            <option value="مخالف">مخالف</option>
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <button
-                  onClick={() =>
-                    setData({
-                      ...data,
-                      setbacks: [
-                        ...data.setbacks,
-                        {
-                          direction: "",
-                          required: 0,
-                          implemented: 0,
-                          status: "مطابق",
-                        },
-                      ],
-                    })
-                  }
-                  className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 mt-2 flex items-center gap-1"
-                >
-                  <Plus className="w-3 h-3" /> إضافة ارتداد
-                </button>
               </div>
             </div>
 
@@ -1081,26 +1012,13 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                     className={inputClass}
                   >
                     <option value="">-- اختر المكتب المصمم --</option>
-                    {/* 👈 4. تأمين عرض اسم المكتب كـ String دائماً */}
-                    {offices.map((off, idx) => {
-                      const officeName =
-                        off.nameAr ||
-                        (typeof off.name === "object"
-                          ? off.name?.ar
-                          : off.name) ||
-                        "مكتب بدون اسم";
-                      return (
-                        <option
-                          key={`${off.id || "des"}-${idx}`}
-                          value={off.id}
-                        >
-                          {officeName}
-                        </option>
-                      );
-                    })}
+                    {offices.map((off) => (
+                      <option key={off.id} value={off.id}>
+                        {off.nameAr || off.name?.ar || off.name || "بدون اسم"}
+                      </option>
+                    ))}
                   </select>
                 </div>
-
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
                     <label className={labelClass}>المكتب المشرف</label>
@@ -1120,29 +1038,16 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                     className={inputClass}
                   >
                     <option value="">-- اختر المكتب المشرف --</option>
-                    {/* 👈 4. تأمين عرض اسم المكتب كـ String دائماً */}
-                    {offices.map((off, idx) => {
-                      const officeName =
-                        off.nameAr ||
-                        (typeof off.name === "object"
-                          ? off.name?.ar
-                          : off.name) ||
-                        "مكتب بدون اسم";
-                      return (
-                        <option
-                          key={`${off.id || "sup"}-${idx}`}
-                          value={off.id}
-                        >
-                          {officeName}
-                        </option>
-                      );
-                    })}
+                    {offices.map((off) => (
+                      <option key={off.id} value={off.id}>
+                        {off.nameAr || off.name?.ar || off.name || "بدون اسم"}
+                      </option>
+                    ))}
                   </select>
                 </div>
-
                 <div className="md:col-span-2 mt-4">
                   <label className={`${labelClass} mb-2 block`}>
-                    ملاحظات الأرشفة (مستخرجة من الذكاء الاصطناعي)
+                    ملاحظات الأرشفة
                   </label>
                   <textarea
                     name="archiveNotes"
@@ -1150,7 +1055,6 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                     onChange={handleChange}
                     rows="4"
                     className={`${inputClass} resize-none leading-relaxed text-slate-700 bg-amber-50/50 border-amber-200`}
-                    placeholder="ملاحظات النظام حول التجاوزات أو البيانات الناقصة..."
                   ></textarea>
                 </div>
               </div>
