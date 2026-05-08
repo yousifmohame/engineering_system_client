@@ -15,6 +15,7 @@ import {
   Settings2,
   X,
 } from "lucide-react";
+import { toast } from "sonner"; // 👈 أضفنا الـ toast للإشعارات
 import api from "../../../api/axios";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -23,11 +24,9 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
 
   const [files, setFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [inputKey, setInputKey] = useState(Date.now()); // 👈 مفتاح التخلص من تجميد الذاكرة
 
-  // خيارات مستوى الضغط
-  // none | low | medium | high
   const [compressionLevel, setCompressionLevel] = useState("medium");
-
   const [uploadStatus, setUploadStatus] = useState("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -36,7 +35,6 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
     e.preventDefault();
     setIsDragging(true);
   }, []);
-
   const onDragLeave = useCallback((e) => {
     e.preventDefault();
     setIsDragging(false);
@@ -52,13 +50,13 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     setFiles((prev) => [...prev, ...selectedFiles]);
+    setInputKey(Date.now()); // 👈 مسح الـ Input فوراً لمنع تعليق المتصفح
   };
 
   const removeFile = (index) => {
     setFiles(files.filter((_, i) => i !== index));
   };
 
-  // 💡 دعم اللصق من الـ Clipboard
   useEffect(() => {
     const handlePaste = (e) => {
       if (e.clipboardData && e.clipboardData.files.length > 0) {
@@ -79,53 +77,73 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
     return <FileCheck className="w-5 h-5 text-indigo-500" />;
   };
 
-  const formatSize = (bytes) => {
-    return (bytes / (1024 * 1024)).toFixed(2) + " MB";
-  };
+  const formatSize = (bytes) => (bytes / (1024 * 1024)).toFixed(2) + " MB";
 
-  // ===================== 3. دالة الإرسال للسيرفر =====================
+  // ===================== 3. دالة الإرسال الذكية (رفع مجزأ) =====================
   const startAnalysis = async (runInBackground = false) => {
     if (files.length === 0) return;
     setUploadStatus("uploading");
     setUploadProgress(0);
 
     try {
-      const formData = new FormData();
-      files.forEach((file) => {
-        formData.append("files", file);
-      });
+      const CHUNK_SIZE = 5; // 👈 رفع 5 ملفات فقط في كل طلب لعدم خنق السيرفر
+      const chunks = [];
+      for (let i = 0; i < files.length; i += CHUNK_SIZE) {
+        chunks.push(files.slice(i, i + CHUNK_SIZE));
+      }
 
-      if (user?.id) formData.append("archivedById", user.id);
+      let createdProjectId = null;
 
-      // 💡 إرسال مستوى الضغط الذي اختاره المستخدم للخادم
-      formData.append("compressionLevel", compressionLevel);
+      for (let i = 0; i < chunks.length; i++) {
+        const currentChunk = chunks[i];
+        const formData = new FormData();
 
-      const response = await api.post("/archived-projects", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total,
-          );
-          setUploadProgress(percentCompleted);
-        },
-      });
+        currentChunk.forEach((file) => formData.append("files", file));
+        formData.append("compressionLevel", compressionLevel);
 
-      if (response.data.success) {
-        setUploadStatus("success");
+        if (i === 0) {
+          // 💡 الدفعة الأولى: تنشئ المشروع الأساسي
+          if (user?.id) formData.append("archivedById", user.id);
+          const response = await api.post("/archived-projects", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          createdProjectId = response.data.data.projectId;
 
-        setTimeout(() => {
+          // 🚀 السحر هنا: إذا طلب المستخدم إخفاء النافذة، نغلقها فوراً بعد إنشاء المشروع!
           if (runInBackground && onClose) {
-            // إغلاق النافذة للمتابعة في الخلفية
-            onClose();
-          } else {
-            // الانتقال لشاشة التفاصيل للمتابعة الحية
-            onAnalysisStarted(response.data.data.projectId);
+            toast.success("تم بدء المشروع في الخلفية. جاري رفع المرفقات...");
+            onClose(); // إغلاق النافذة الفوري
           }
-        }, 1200);
+        } else {
+          // 💡 الدفعات التالية: تضاف كمرفقات إضافية للمشروع المنشأ
+          const isLastChunk = i === chunks.length - 1;
+          formData.append("reanalyze", isLastChunk ? "true" : "false"); // نشغل الذكاء الاصطناعي مع آخر دفعة فقط
+
+          await api.post(
+            `/archived-projects/${createdProjectId}/files`,
+            formData,
+            {
+              headers: { "Content-Type": "multipart/form-data" },
+            },
+          );
+        }
+
+        // تحديث شريط التقدم للواجهة
+        const percentCompleted = Math.round(((i + 1) / chunks.length) * 100);
+        setUploadProgress(percentCompleted);
+      }
+
+      // إذا لم يكن مخفياً في الخلفية، ننتقل لشاشة التفاصيل
+      if (!runInBackground) {
+        setUploadStatus("success");
+        setTimeout(() => {
+          onAnalysisStarted(createdProjectId);
+        }, 1000);
       }
     } catch (error) {
       console.error("Error uploading files:", error);
-      setUploadStatus("error");
+      if (!runInBackground) setUploadStatus("error");
+      else toast.error("حدث خطأ أثناء رفع بعض الدفعات في الخلفية.");
     }
   };
 
@@ -155,14 +173,12 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
   ) {
     return (
       <div className="w-full flex items-center justify-center p-4">
-        {/* 💡 أضفنا relative للحاوية لنتمكن من وضع زر الإغلاق في الزاوية */}
         <div className="relative max-w-md w-full bg-white p-8 rounded-3xl border border-slate-100 shadow-2xl text-center animate-in fade-in zoom-in-95 duration-300">
-          
-          {/* ========================================== */}
-          {/* 👈 زر الإغلاق (X) في الزاوية */}
-          {/* ========================================== */}
           <button
-            onClick={onClose}
+            onClick={(e) => {
+              e.preventDefault();
+              if (onClose) onClose();
+            }}
             className="absolute top-4 left-4 p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors z-10"
             title="إغلاق والمتابعة في الخلفية"
           >
@@ -209,18 +225,18 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
                 جاري رفع الملفات للسيرفر...
               </h3>
               <p className="text-sm font-bold text-slate-500 mb-6">
-                يتم الآن معالجة البيانات وفقاً لإعدادات الضغط.
+                الرفع يتم على دفعات لضمان عدم الضغط على السيرفر.
               </p>
-              
-              {/* ========================================== */}
-              {/* 👈 زر الإغلاق الواضح للمتابعة في الخلفية */}
-              {/* ========================================== */}
-              <button 
-                onClick={onClose} 
+
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (onClose) onClose();
+                  toast.success("جاري المتابعة في الخلفية...");
+                }}
                 className="w-full py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-black transition-colors flex items-center justify-center gap-2"
               >
-                <Minimize2 className="w-4 h-4" />
-                إخفاء ومتابعة في الخلفية
+                <Minimize2 className="w-4 h-4" /> إخفاء ومتابعة في الخلفية
               </button>
             </>
           ) : (
@@ -242,6 +258,7 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
   }
 
   if (uploadStatus === "error") {
+    // ... كود الخطأ كما هو ...
     return (
       <div className="w-full flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white p-8 rounded-3xl border border-rose-100 shadow-2xl text-center animate-in fade-in zoom-in-95 duration-300">
@@ -263,12 +280,8 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
     );
   }
 
-  // ===================== الشاشة الرئيسية (أنيقة ومركزية) =====================
   return (
-    // 💡 التعديل هنا: h-full overflow-y-auto flex-col
     <div className="w-full h-full overflow-y-auto flex flex-col p-4 custom-scrollbar">
-      {/* Container (Card Style) */}
-      {/* 💡 التعديل هنا: أضفنا my-auto ليتوسط الشاشة بدون أن يخفي السكرول */}
       <div className="max-w-2xl w-full my-auto mx-auto bg-white rounded-3xl shadow-2xl border border-slate-100 p-6 md:p-8 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* العناوين */}
         <div className="text-center mb-8">
@@ -279,8 +292,7 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
             المستندات الهندسية والقانونية
           </h2>
           <p className="text-xs font-bold text-slate-500 max-w-sm mx-auto leading-relaxed">
-            ارفع رخص البناء، الصكوك، والكروكيات. سيقوم الذكاء الاصطناعي بتفريغ
-            البيانات تلقائياً.
+            ارفع رخص البناء، الصكوك، والمخططات. سيقوم الذكاء الاصطناعي بتفريغها.
           </p>
         </div>
 
@@ -290,30 +302,25 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
           onDragLeave={onDragLeave}
           onDrop={onDrop}
           className={`relative w-full overflow-hidden transition-all duration-300 ease-out border-2 border-dashed rounded-3xl p-8 flex flex-col items-center justify-center text-center mb-6
-            ${
-              isDragging
-                ? "border-indigo-500 bg-indigo-50 scale-[1.02] shadow-xl shadow-indigo-100"
-                : "border-slate-300 bg-slate-50 hover:border-indigo-400 hover:bg-slate-50/80"
-            }`}
+            ${isDragging ? "border-indigo-500 bg-indigo-50 scale-[1.02] shadow-xl shadow-indigo-100" : "border-slate-300 bg-slate-50 hover:border-indigo-400 hover:bg-slate-50/80"}`}
         >
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
-
           <div className="relative z-10 flex flex-col items-center">
             <ClipboardPaste className="w-8 h-8 text-slate-300 mb-3" />
             <h3
-              className={`text-sm font-black mb-1.5 transition-colors ${isDragging ? "text-indigo-700" : "text-slate-700"}`}
+              className={`text-sm font-black mb-1.5 ${isDragging ? "text-indigo-700" : "text-slate-700"}`}
             >
               {isDragging
                 ? "أفلت الملفات هنا الآن..."
                 : "اسحب وأفلت أو الصق (Ctrl+V) الملفات هنا"}
             </h3>
             <p className="text-[11px] font-bold text-slate-400 mb-5">
-              يدعم الصيغ: PDF, PNG, JPG (الحد الأقصى 300MB)
+              مسموح برفع أعداد كبيرة (الرفع يتم على دفعات مجزأة)
             </p>
             <label className="px-6 py-2.5 bg-white text-indigo-600 rounded-xl text-xs font-black hover:bg-indigo-50 transition-all border border-indigo-200 cursor-pointer shadow-sm hover:shadow active:scale-95 inline-flex items-center gap-2">
               <CloudUpload className="w-4 h-4" />
               تصفح الملفات
               <input
+                key={inputKey} // 👈 هذا المفتاح السحري هو ما يحمي زر التصفح من التجميد!
                 multiple
                 className="hidden"
                 type="file"
@@ -323,7 +330,7 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
           </div>
         </div>
 
-        {/* قائمة الملفات وإعدادات الضغط */}
+        {/* قائمة الملفات وإعدادات الضغط (بقية الكود كما هو تماماً) */}
         {files.length > 0 && (
           <div className="w-full mb-6 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-bottom-2">
             {/* إعدادات الضغط */}
@@ -342,11 +349,7 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
                   <button
                     key={level.id}
                     onClick={() => setCompressionLevel(level.id)}
-                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border ${
-                      compressionLevel === level.id
-                        ? `bg-${level.color}-50 border-${level.color}-200 text-${level.color}-700 ring-2 ring-${level.color}-500/20`
-                        : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border ${compressionLevel === level.id ? `bg-${level.color}-50 border-${level.color}-200 text-${level.color}-700 ring-2 ring-${level.color}-500/20` : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}
                   >
                     {level.label}
                   </button>
@@ -401,28 +404,25 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
             <button
               onClick={() => startAnalysis(false)}
               disabled={files.length === 0}
-              className="flex-1 py-3 bg-indigo-600 text-white rounded-xl text-xs font-black shadow-[0_0_15px_rgba(79,70,229,0.25)] hover:bg-indigo-700 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)] disabled:opacity-50 disabled:shadow-none transition-all flex items-center justify-center gap-2 active:scale-95"
+              className="flex-1 py-3 bg-indigo-600 text-white rounded-xl text-xs font-black shadow-[0_0_15px_rgba(79,70,229,0.25)] hover:bg-indigo-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 active:scale-95"
             >
-              <Brain className="w-4 h-4" />
-              تحليل فوري ومراجعة
+              <Brain className="w-4 h-4" /> تحليل فوري ومراجعة
             </button>
-
             <button
               onClick={() => startAnalysis(true)}
               disabled={files.length === 0}
               className="flex-1 py-3 bg-white text-slate-700 border border-slate-200 rounded-xl text-xs font-black shadow-sm hover:bg-slate-50 disabled:opacity-50 transition-all flex items-center justify-center gap-2 active:scale-95"
             >
-              <Minimize2 className="w-4 h-4 text-slate-400" />
-              تحليل في الخلفية وإغلاق
+              <Minimize2 className="w-4 h-4 text-slate-400" /> تحليل في الخلفية
+              وإغلاق
             </button>
           </div>
-
           <button
             onClick={handleManualEntry}
             className="w-full py-2 text-slate-400 hover:text-indigo-600 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1.5"
           >
-            <PenTool className="w-3.5 h-3.5" />
-            إدخال البيانات يدوياً بدون مستندات
+            <PenTool className="w-3.5 h-3.5" /> إدخال البيانات يدوياً بدون
+            مستندات
           </button>
         </div>
       </div>

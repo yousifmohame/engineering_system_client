@@ -196,37 +196,71 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
   }, [projectId, isAiProcessing]);
 
   // ==========================================
-  // 🚀 إدارة المرفقات (رفع وحذف)
+  // 🚀 إدارة المرفقات (رفع مجزأ ذكي وحماية من التجميد)
   // ==========================================
   const handleUploadFile = async (e) => {
+    // 1. أخذ نسخة من الملفات في الذاكرة فوراً
     const files = Array.from(e.target.files);
+    
+    // 2. 🛡️ تفريغ الحقل فوراً وإجبار المتصفح على التخلي عن الملفات لمنع التجميد!
+    if (fileInputRef.current) fileInputRef.current.value = null;
+    
     if (!files.length) return;
 
     setIsUploading(true);
+    let successCount = 0;
+    let failCount = 0;
+
     try {
-      const formData = new FormData();
-      files.forEach((file) => formData.append("files", file));
-      formData.append("compressionLevel", "medium");
-      formData.append("reanalyze", "false"); // حفظ وضغط فقط بدون تحليل
-
-      const res = await api.post(
-        `/archived-projects/${projectId}/files`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        },
-      );
-
-      if (res.data.success) {
-        // تحديث البيانات لجلب الملفات الجديدة
-        await fetchProjectData();
+      // 3. تقسيم الملفات إلى دفعات (5 ملفات كحد أقصى لكل دفعة)
+      const CHUNK_SIZE = 5;
+      const chunks = [];
+      for (let i = 0; i < files.length; i += CHUNK_SIZE) {
+        chunks.push(files.slice(i, i + CHUNK_SIZE));
       }
+
+      // 4. رفع الدفعات بالتسلسل (واحدة تلو الأخرى لحماية السيرفر)
+      for (let i = 0; i < chunks.length; i++) {
+        const currentChunk = chunks[i];
+        const formData = new FormData();
+        
+        currentChunk.forEach(file => formData.append("files", file));
+        formData.append("compressionLevel", "medium");
+        formData.append("reanalyze", "false"); // رفع وضغط فقط
+
+        try {
+          const res = await api.post(`/archived-projects/${projectId}/files`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+
+          if (res.data.success) {
+            successCount += currentChunk.length;
+            // 💡 تحديث الواجهة فوراً بعد كل دفعة ليرى المستخدم الملفات وهي تظهر تباعاً
+            await fetchProjectData(); 
+          }
+        } catch (chunkError) {
+          console.error(`خطأ في رفع الدفعة ${i + 1}:`, chunkError);
+          failCount += currentChunk.length;
+          // 💡 السحر هنا: نحن لا نوقف الـ Loop! إذا فشلت دفعة، سيكمل المحاولة مع الدفعة التي تليها!
+        }
+      }
+
+      // 5. إظهار النتيجة النهائية للمستخدم
+      if (failCount === 0) {
+        alert(`تم رفع جميع الملفات (${successCount} ملف) بنجاح.`);
+      } else if (successCount > 0 && failCount > 0) {
+        alert(`تم رفع ${successCount} ملف بنجاح، ولكن فشل رفع ${failCount} ملف. يرجى المحاولة للملفات المتبقية.`);
+      } else {
+        alert("فشل رفع الملفات. يرجى التحقق من اتصال الإنترنت.");
+      }
+
     } catch (error) {
-      console.error("Upload error:", error);
-      alert("فشل رفع الملفات، يرجى المحاولة مرة أخرى.");
+      console.error("Upload process error:", error);
+      alert("حدث خطأ غير متوقع أثناء عملية الرفع.");
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = null;
+      // 🛡️ طبقة حماية ثانية: تغيير الـ Key لتدمير مكون الرفع القديم وبناء واحد جديد تماماً (يمنع التجميد بنسبة 100%)
+      setInputKey(Date.now());
     }
   };
 
