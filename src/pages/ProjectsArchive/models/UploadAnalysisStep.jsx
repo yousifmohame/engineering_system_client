@@ -79,14 +79,16 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
 
   const formatSize = (bytes) => (bytes / (1024 * 1024)).toFixed(2) + " MB";
 
-  // ===================== 3. دالة الإرسال الذكية (رفع مجزأ) =====================
+  // ===================== 3. دالة الإرسال الذكية (رفع وتحليل حقيقي في الخلفية) =====================
   const startAnalysis = async (runInBackground = false) => {
     if (files.length === 0) return;
+
+    // تغيير الشاشة فوراً لحالة التحميل لمنع المستخدم من الضغط مرتين
     setUploadStatus("uploading");
     setUploadProgress(0);
 
     try {
-      const CHUNK_SIZE = 5; // 👈 رفع 5 ملفات فقط في كل طلب لعدم خنق السيرفر
+      const CHUNK_SIZE = 5;
       const chunks = [];
       for (let i = 0; i < files.length; i += CHUNK_SIZE) {
         chunks.push(files.slice(i, i + CHUNK_SIZE));
@@ -101,40 +103,57 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
         currentChunk.forEach((file) => formData.append("files", file));
         formData.append("compressionLevel", compressionLevel);
 
+        const handleProgress = (progressEvent) => {
+          if (!runInBackground) {
+            const currentChunkProgress =
+              progressEvent.loaded / progressEvent.total;
+            const overallPercent = Math.round(
+              ((i + currentChunkProgress) / chunks.length) * 100,
+            );
+            setUploadProgress(Math.min(overallPercent, 100));
+          }
+        };
+
         if (i === 0) {
-          // 💡 الدفعة الأولى: تنشئ المشروع الأساسي
+          // 💡 الدفعة الأولى: تنشئ المشروع الأساسي في قاعدة البيانات
           if (user?.id) formData.append("archivedById", user.id);
           const response = await api.post("/archived-projects", formData, {
             headers: { "Content-Type": "multipart/form-data" },
+            onUploadProgress: handleProgress,
           });
           createdProjectId = response.data.data.projectId;
 
-          // 🚀 السحر هنا: إذا طلب المستخدم إخفاء النافذة، نغلقها فوراً بعد إنشاء المشروع!
-          if (runInBackground && onClose) {
-            toast.success("تم بدء المشروع في الخلفية. جاري رفع المرفقات...");
-            onClose(); // إغلاق النافذة الفوري
+          // 🚀 السحر هنا: نغلق النافذة "بعد" إنشاء المشروع في الداتابيز مباشرة!
+          // لكي تقوم الشاشة الرئيسية بتحديث الجدول وتجد المشروع الجديد بانتظارها.
+          if (runInBackground) {
+            toast.success(
+              "✅ تم تسجيل المشروع بالجدول! جاري رفع المرفقات بصمت في الخلفية...",
+            );
+            if (onClose) onClose();
           }
         } else {
-          // 💡 الدفعات التالية: تضاف كمرفقات إضافية للمشروع المنشأ
+          // 💡 الدفعات التالية (تعمل بصمت في الذاكرة حتى لو أُغلقت النافذة)
           const isLastChunk = i === chunks.length - 1;
-          formData.append("reanalyze", isLastChunk ? "true" : "false"); // نشغل الذكاء الاصطناعي مع آخر دفعة فقط
+          formData.append("reanalyze", isLastChunk ? "true" : "false");
 
           await api.post(
             `/archived-projects/${createdProjectId}/files`,
             formData,
             {
               headers: { "Content-Type": "multipart/form-data" },
+              onUploadProgress: handleProgress,
             },
           );
         }
-
-        // تحديث شريط التقدم للواجهة
-        const percentCompleted = Math.round(((i + 1) / chunks.length) * 100);
-        setUploadProgress(percentCompleted);
       }
 
-      // إذا لم يكن مخفياً في الخلفية، ننتقل لشاشة التفاصيل
-      if (!runInBackground) {
+      // 🎉 النهاية
+      if (runInBackground) {
+        toast.info(
+          "تم الانتهاء من رفع كافة الملفات للمشروع بالخلفية وبدء التحليل!",
+        );
+      } else {
+        setUploadProgress(100);
         setUploadStatus("success");
         setTimeout(() => {
           onAnalysisStarted(createdProjectId);
@@ -142,8 +161,11 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
       }
     } catch (error) {
       console.error("Error uploading files:", error);
-      if (!runInBackground) setUploadStatus("error");
-      else toast.error("حدث خطأ أثناء رفع بعض الدفعات في الخلفية.");
+      if (runInBackground) {
+        toast.error("❌ حدث خطأ أثناء رفع بعض الدفعات في الخلفية.");
+      } else {
+        setUploadStatus("error");
+      }
     }
   };
 
@@ -258,7 +280,6 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
   }
 
   if (uploadStatus === "error") {
-    // ... كود الخطأ كما هو ...
     return (
       <div className="w-full flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white p-8 rounded-3xl border border-rose-100 shadow-2xl text-center animate-in fade-in zoom-in-95 duration-300">
@@ -413,8 +434,8 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
               disabled={files.length === 0}
               className="flex-1 py-3 bg-white text-slate-700 border border-slate-200 rounded-xl text-xs font-black shadow-sm hover:bg-slate-50 disabled:opacity-50 transition-all flex items-center justify-center gap-2 active:scale-95"
             >
-              <Minimize2 className="w-4 h-4 text-slate-400" /> تحليل في الخلفية
-              وإغلاق
+              <Minimize2 className="w-4 h-4 text-slate-400" /> رفع وتحليل في
+              الخلفية (إغلاق فوري)
             </button>
           </div>
           <button

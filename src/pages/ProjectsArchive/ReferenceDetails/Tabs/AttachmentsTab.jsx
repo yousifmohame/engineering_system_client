@@ -16,6 +16,10 @@ import {
   PenTool,
   FileArchive,
   FileQuestion,
+  ChevronRight,
+  ChevronLeft,
+  RotateCw,
+  RotateCcw,
 } from "lucide-react";
 
 export const getFullUrl = (url) => {
@@ -93,8 +97,11 @@ export default function AttachmentsTab({
 }) {
   const [editingFileId, setEditingFileId] = useState(null);
   const [newName, setNewName] = useState("");
-  // 💡 قمنا بتغيير حالة المعاينة لتحمل معلومات الملف كاملة
-  const [previewFile, setPreviewFile] = useState(null);
+  const [editingExtension, setEditingExtension] = useState("");
+
+  // 💡 تغيير حالة المعاينة لتحفظ "رقم" الملف بدلاً من كائنه لسهولة التنقل
+  const [previewIndex, setPreviewIndex] = useState(null);
+  const [rotation, setRotation] = useState(0); // 💡 حالة التدوير
 
   const [inputKey, setInputKey] = useState(Date.now());
   const [isDragging, setIsDragging] = useState(false);
@@ -156,20 +163,78 @@ export default function AttachmentsTab({
     return () => document.removeEventListener("paste", handlePaste);
   }, [onUploadFile]);
 
+  // 1. عند بدء التعديل: نفصل الاسم عن الامتداد
   const handleEditStart = (file, currentName) => {
     setEditingFileId(file.id || file.fileUrl);
-    setNewName(getArabicFileName(currentName));
+
+    const decodedName = getArabicFileName(currentName);
+    const lastDotIndex = decodedName.lastIndexOf("."); // نبحث عن آخر نقطة في الاسم
+
+    if (lastDotIndex !== -1) {
+      // إذا وجدنا امتداد، نفصله
+      setNewName(decodedName.substring(0, lastDotIndex));
+      setEditingExtension(decodedName.substring(lastDotIndex)); // مثال: ".pdf"
+    } else {
+      // إذا كان الملف بدون امتداد (نادر جداً)
+      setNewName(decodedName);
+      setEditingExtension("");
+    }
   };
 
+  // 2. عند الحفظ: ندمج الاسم الجديد مع الامتداد المحفوظ
   const handleRenameSubmit = (file) => {
-    if (onRenameFile && newName.trim() !== "") onRenameFile(file, newName);
+    if (onRenameFile && newName.trim() !== "") {
+      const finalName = newName.trim() + editingExtension; // 👈 الدمج هنا
+      onRenameFile(file, finalName);
+    }
     setEditingFileId(null);
+    setEditingExtension(""); // تفريغ
   };
 
+  // 3. عند الإلغاء
   const handleCancelEdit = () => {
     setEditingFileId(null);
     setNewName("");
+    setEditingExtension(""); // تفريغ
   };
+
+  // ==========================================
+  // 💡 دوال التنقل في المعاينة (التالي / السابق / تدوير)
+  // ==========================================
+  const handleNextPreview = () => {
+    if (!data?.files?.length) return;
+    setPreviewIndex((prev) => (prev + 1) % data.files.length);
+    setRotation(0); // إعادة التدوير للصفر عند فتح ملف جديد
+  };
+
+  const handlePrevPreview = () => {
+    if (!data?.files?.length) return;
+    setPreviewIndex((prev) => (prev === 0 ? data.files.length - 1 : prev - 1));
+    setRotation(0);
+  };
+
+  const openPreview = (index) => {
+    setPreviewIndex(index);
+    setRotation(0);
+  };
+
+  const closePreview = () => {
+    setPreviewIndex(null);
+    setRotation(0);
+  };
+
+  // تجهيز بيانات الملف المفتوح حالياً في المعاينة
+  const currentPreviewFile =
+    previewIndex !== null ? data?.files?.[previewIndex] : null;
+  const currentPreviewMeta = currentPreviewFile
+    ? getFileMeta(currentPreviewFile.originalName)
+    : null;
+  const currentPreviewUrl = currentPreviewFile
+    ? getFullUrl(currentPreviewFile.fileUrl)
+    : null;
+  const currentPreviewName = currentPreviewFile
+    ? getArabicFileName(currentPreviewFile.originalName)
+    : null;
 
   return (
     <>
@@ -230,21 +295,21 @@ export default function AttachmentsTab({
           <input
             key={inputKey}
             type="file"
-            multiple // 💡 تم إزالة القيود، يقبل كل شيء
+            multiple
             ref={fileInputRef}
             onChange={handleFileChange}
             className="hidden"
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* 💡 التعديل هنا: استخدام flex-col لكي تظهر الملفات كقائمة عمودية تحت بعضها */}
+        <div className="flex flex-col gap-3">
           {data.files?.map((file, idx) => {
             const fileIdentifier = file.id || file.fileUrl;
             const isEditing = editingFileId === fileIdentifier;
             const fullFileUrl = getFullUrl(file.fileUrl);
             const originalName = getArabicFileName(file.originalName);
 
-            // 💡 استخراج بيانات الملف (الأيقونة واللون)
             const meta = getFileMeta(originalName);
             const Icon = meta.icon;
 
@@ -253,7 +318,7 @@ export default function AttachmentsTab({
                 key={idx}
                 className="flex items-start justify-between gap-4 p-4 bg-slate-50 hover:bg-white rounded-xl border border-slate-200 hover:border-indigo-200 hover:shadow-sm transition-all group"
               >
-                <div className="flex items-start gap-3 flex-1 overflow-hidden">
+                <div className="flex items-start gap-4 flex-1 overflow-hidden">
                   <div
                     className={`p-3 ${meta.bg} border border-slate-100 rounded-xl shrink-0 shadow-sm transition-colors`}
                   >
@@ -262,32 +327,43 @@ export default function AttachmentsTab({
 
                   <div className="overflow-hidden flex-1 pt-1">
                     {isEditing ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={newName}
-                          onChange={(e) => setNewName(e.target.value)}
-                          className="w-full text-xs font-black text-slate-800 border-b-2 border-indigo-500 bg-transparent px-1 py-1 outline-none"
-                          dir="rtl"
-                          autoFocus
-                          onKeyDown={(e) =>
-                            e.key === "Enter" && handleRenameSubmit(file)
-                          }
-                        />
+                      <div className="flex items-center gap-2 w-full">
+                        <div className="flex items-center flex-1 border-b-2 border-indigo-500 bg-transparent">
+                          <input
+                            type="text"
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            className="w-full text-xs font-black text-slate-800 px-1 py-1 outline-none min-w-0"
+                            dir="rtl"
+                            autoFocus
+                            onKeyDown={(e) =>
+                              e.key === "Enter" && handleRenameSubmit(file)
+                            }
+                          />
+                          {/* 👈 عرض الامتداد كنص ثابت للمستخدم */}
+                          <span
+                            className="text-xs font-bold text-slate-400 font-mono px-1 shrink-0"
+                            dir="ltr"
+                          >
+                            {editingExtension}
+                          </span>
+                        </div>
+
                         <button
                           onClick={() => handleRenameSubmit(file)}
-                          className="text-emerald-600 hover:bg-emerald-100 p-1.5 rounded-lg"
+                          className="text-emerald-600 hover:bg-emerald-100 p-1.5 rounded-lg shrink-0"
                         >
                           <Check className="w-4 h-4" />
                         </button>
                         <button
                           onClick={handleCancelEdit}
-                          className="text-rose-600 hover:bg-rose-100 p-1.5 rounded-lg"
+                          className="text-rose-600 hover:bg-rose-100 p-1.5 rounded-lg shrink-0"
                         >
                           <X className="w-4 h-4" />
                         </button>
                       </div>
                     ) : (
+                      // 💡 الآن الاسم سيأخذ مساحته بالكامل ولن يختنق
                       <span
                         className="text-sm font-black text-slate-700 truncate block cursor-default"
                         dir="rtl"
@@ -310,16 +386,9 @@ export default function AttachmentsTab({
 
                 {!isEditing && (
                   <div className="flex items-center gap-1.5 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
-                    {/* 💡 إظهار زر المعاينة للصور والـ PDF فقط، وإظهار زر تحميل سريع لباقي الملفات */}
                     {meta.preview ? (
                       <button
-                        onClick={() =>
-                          setPreviewFile({
-                            url: fullFileUrl,
-                            name: originalName,
-                            previewable: true,
-                          })
-                        }
+                        onClick={() => openPreview(idx)}
                         className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg transition-all"
                         title="معاينة"
                       >
@@ -359,7 +428,7 @@ export default function AttachmentsTab({
           })}
 
           {(!data.files || data.files.length === 0) && (
-            <div className="col-span-1 md:col-span-2 p-10 flex flex-col items-center justify-center text-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200">
+            <div className="p-10 flex flex-col items-center justify-center text-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200">
               <div className="w-16 h-16 bg-white border border-slate-100 rounded-full flex items-center justify-center mb-3 shadow-sm">
                 <UploadCloud className="w-8 h-8 text-slate-400" />
               </div>
@@ -374,49 +443,107 @@ export default function AttachmentsTab({
         </div>
       </div>
 
-      {/* --- نافذة المعاينة الآمنة (Safe Preview Modal) --- */}
-      {previewFile && (
-        <div className="fixed !m-0 inset-0 z-[200] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 md:p-8 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl w-full max-w-5xl h-full flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+      {/* --- نافذة المعاينة الآمنة مع أزرار التدوير والتنقل --- */}
+      {previewIndex !== null && currentPreviewFile && (
+        <div className="fixed !m-0 inset-0 z-[200] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          {/* 💡 أزرار التنقل (Next / Prev) */}
+          {data.files.length > 1 && (
+            <>
+              {/* زر السابق (يمين الشاشة لأننا في بيئة عربية RTL) */}
+              <button
+                onClick={handlePrevPreview}
+                className="absolute right-4 md:right-8 z-[210] p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all border border-white/20"
+                title="الملف السابق"
+              >
+                <ChevronRight className="w-8 h-8" />
+              </button>
+
+              {/* زر التالي (يسار الشاشة) */}
+              <button
+                onClick={handleNextPreview}
+                className="absolute left-4 md:left-8 z-[210] p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all border border-white/20"
+                title="الملف التالي"
+              >
+                <ChevronLeft className="w-8 h-8" />
+              </button>
+            </>
+          )}
+
+          <div className="bg-white rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 relative z-[205]">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50 shrink-0">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 overflow-hidden">
                 <button
-                  onClick={() => setPreviewFile(null)}
-                  className="p-2 bg-white text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 rounded-full transition-colors"
+                  onClick={closePreview}
+                  className="p-2 bg-white text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 rounded-full transition-colors shrink-0"
                 >
                   <X className="w-5 h-5" />
                 </button>
-                <h3 className="font-black text-slate-800 text-lg truncate max-w-md">
-                  {previewFile.name}
+                <h3 className="font-black text-slate-800 text-base md:text-lg truncate">
+                  {currentPreviewName}
                 </h3>
+                <span className="text-xs font-bold text-slate-400 shrink-0 hidden md:block">
+                  ({previewIndex + 1} من {data.files.length})
+                </span>
               </div>
-              <a
-                href={previewFile.url}
-                download
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black hover:bg-indigo-700 transition-colors shadow-sm"
-              >
-                <Download className="w-4 h-4" /> تحميل الملف
-              </a>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {/* 💡 أزرار التدوير */}
+                {currentPreviewMeta?.preview && (
+                  <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm mr-2">
+                    <button
+                      onClick={() => setRotation((r) => r - 90)}
+                      className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                      title="تدوير عكس عقارب الساعة"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </button>
+                    <div className="w-px h-4 bg-slate-200"></div>
+                    <button
+                      onClick={() => setRotation((r) => r + 90)}
+                      className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                      title="تدوير مع عقارب الساعة"
+                    >
+                      <RotateCw className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                <a
+                  href={currentPreviewUrl}
+                  download
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black hover:bg-indigo-700 transition-colors shadow-sm"
+                >
+                  <Download className="w-4 h-4" />{" "}
+                  <span className="hidden md:inline">تحميل الملف</span>
+                </a>
+              </div>
             </div>
 
-            <div className="flex-1 bg-slate-200 relative w-full h-full p-2 md:p-4 flex items-center justify-center">
-              {previewFile.previewable ? (
-                <iframe
-                  src={previewFile.url}
-                  title="File Preview"
-                  className="w-full h-full bg-white rounded-xl border border-slate-300 shadow-inner"
-                />
+            <div className="flex-1 bg-slate-200 relative w-full h-full p-2 md:p-6 flex items-center justify-center overflow-hidden">
+              {currentPreviewMeta?.preview ? (
+                // 💡 الحاوية المسؤولة عن التدوير
+                <div
+                  style={{ transform: `rotate(${rotation}deg)` }}
+                  className="w-full h-full transition-transform duration-300 flex items-center justify-center"
+                >
+                  <iframe
+                    src={currentPreviewUrl}
+                    title="File Preview"
+                    className="w-full h-full bg-white rounded-xl border border-slate-300 shadow-inner"
+                  />
+                </div>
               ) : (
-                <div className="text-center p-10">
+                <div className="text-center p-10 bg-white rounded-2xl shadow-sm border border-slate-300 max-w-sm">
                   <Box className="w-20 h-20 text-slate-400 mx-auto mb-4" />
                   <h3 className="text-xl font-black text-slate-700 mb-2">
                     لا يمكن معاينة هذا الملف
                   </h3>
-                  <p className="text-slate-500">
-                    الملفات الهندسية (مثل AutoCAD و Revit) لا تدعم المعاينة
-                    المباشرة في المتصفح. يرجى تحميل الملف لفتحه على جهازك.
+                  <p className="text-slate-500 text-sm font-bold leading-relaxed">
+                    هذا الملف ({currentPreviewMeta.label}) لا يدعم المعاينة
+                    المباشرة داخل المتصفح. يمكنك تخطيه للملف التالي أو تحميله
+                    مباشرة.
                   </p>
                 </div>
               )}

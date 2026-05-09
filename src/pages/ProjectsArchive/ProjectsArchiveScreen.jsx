@@ -2,33 +2,35 @@ import React, { useState, useEffect } from "react";
 import {
   FolderArchive,
   RefreshCw,
-  TableProperties,
   ArrowDownToLine,
   Plus,
-  Brain,
   Search,
-  Filter,
   Eye,
   Layers,
   Loader2,
   Trash2,
   PenLine,
-  Building2,
-  CalendarDays,
-  Clock,
   MapPin,
-  Scale,
-  AlertTriangle, // 👈 استيراد أيقونة التحذير
+  AlertTriangle,
+  FileWarning,
+  ListChecks,
+  XCircle,
+  Clock,
+  ShieldCheck,
 } from "lucide-react";
 import axios from "../../api/axios";
 import AddReferenceProjectModal from "./models/AddReferenceProjectModal";
 import ReferenceDetailsModal from "./ReferenceDetails/ReferenceDetailsModal";
+import * as XLSX from "xlsx";
 
 export default function ProjectsArchiveScreen() {
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // 💡 فلتر جديد للأزرار العلوية التفاعلية
+  const [activeFilter, setActiveFilter] = useState("all"); // all, failed, duplicates, review, processing
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
@@ -51,231 +53,323 @@ export default function ProjectsArchiveScreen() {
     fetchProjects();
   }, []);
 
-  const openProjectDetails = (id) => {
-    setSelectedProjectId(id);
-  };
+  const openProjectDetails = (id) => setSelectedProjectId(id);
 
   const handleDelete = async (id, e) => {
     e.stopPropagation();
-
     if (
       !window.confirm(
-        "هل أنت متأكد من حذف هذا المشروع نهائياً من الأرشيف؟ سيتم حذف كافة الملفات المرتبطة به.",
+        "هل أنت متأكد من حذف هذا الملف نهائياً؟ سيتم مسح كافة الأوراق الخاصة به.",
       )
-    ) {
+    )
       return;
-    }
 
     setIsDeleting(true);
     try {
       await axios.delete(`/archived-projects/${id}`);
       setProjects((prev) => prev.filter((p) => p.id !== id));
     } catch (error) {
-      console.error("Error deleting project:", error);
-      alert("حدث خطأ أثناء محاولة الحذف.");
+      alert("حدث خطأ أثناء محاولة الحذف. تأكد من اتصالك بالإنترنت.");
     } finally {
       setIsDeleting(false);
     }
   };
 
-  const getDaysAgo = (dateString) => {
-    const createdDate = new Date(dateString);
-    const today = new Date();
-    const diffTime = Math.abs(today - createdDate);
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays === 0 ? "اليوم" : `${diffDays} يوم`;
+  // دالة لاكتشاف التكرار بسهولة
+  const isProjectDuplicate = (notes) => {
+    return notes && notes.includes("⚠️");
   };
 
+  const getDuplicateWarning = (notes) => {
+    if (!isProjectDuplicate(notes)) return null;
+    return "تنبيه: هذا المشروع قد يكون مكرراً وموجوداً في النظام مسبقاً!";
+  };
+
+  // ==========================================
+  // 🚀 حساب الإحصائيات للشريط التفاعلي العلوي
+  // ==========================================
+  const stats = {
+    total: projects.length,
+    needsReview: projects.filter((p) => p.aiStatus === "completed").length,
+    failed: projects.filter((p) => p.aiStatus === "failed").length,
+    duplicates: projects.filter((p) => isProjectDuplicate(p.archiveNotes))
+      .length,
+    processing: projects.filter(
+      (p) => p.aiStatus === "pending" || p.aiStatus === "processing",
+    ).length,
+  };
+
+  // ==========================================
+  // 🔍 فلترة البيانات المعروضة في الجدول
+  // ==========================================
   const filteredProjects = projects.filter((p) => {
+    // 1. فلتر البحث النصي
     const clientName =
       typeof p.client?.name === "object"
         ? p.client?.name?.ar || ""
         : p.client?.name || "";
-
-    return (
+    const matchesSearch =
       (p.title && p.title.includes(searchTerm)) ||
       (p.archiveCode && p.archiveCode.includes(searchTerm)) ||
       clientName.includes(searchTerm) ||
-      (p.licenseNumber && p.licenseNumber.includes(searchTerm))
-    );
+      (p.licenseNumber && p.licenseNumber.includes(searchTerm));
+
+    if (!matchesSearch) return false;
+
+    // 2. فلتر الأزرار العلوية
+    if (activeFilter === "all") return true;
+    if (activeFilter === "failed") return p.aiStatus === "failed";
+    if (activeFilter === "duplicates")
+      return isProjectDuplicate(p.archiveNotes);
+    if (activeFilter === "review") return p.aiStatus === "completed";
+    if (activeFilter === "processing")
+      return p.aiStatus === "pending" || p.aiStatus === "processing";
+
+    return true;
   });
 
-  // دالة مساعدة لاستخراج نص التحذير إن وجد
-  const getDuplicateWarning = (notes) => {
-    if (!notes || !notes.includes("⚠️")) return null;
-    return "هذا المشروع يشتبه بأنه مكرر (اضغط للتفاصيل)";
+  // ==========================================
+  // 📊 دالة تصدير البيانات إلى Excel باحترافية
+  // ==========================================
+  const handleExportExcel = () => {
+    // 1. تجهيز البيانات بأعمدة عربية واضحة
+    const exportData = filteredProjects.map((p) => ({
+      "الرقم الموحد": p.archiveCode || "-",
+      "اسم المشروع": p.title || "-",
+      "اسم المالك": typeof p.client?.name === "object" ? p.client?.name?.ar : p.client?.name || "غير محدد",
+      "نوع المشروع": p.projectType || "-",
+      "رقم الرخصة": p.licenseNumber || "-",
+      "تاريخ الرخصة": p.licenseIssueDate ? new Date(p.licenseIssueDate).toLocaleDateString("en-GB") : "-",
+      "رقم الصك": p.deedNumber || "-",
+      "الحي": p.district?.name || "-",
+      "المدينة": p.city || "-",
+      "الشارع الرئيسي": p.mainStreet || "-",
+      "رقم المخطط": p.planNumber || "-",
+      "المساحة (م2)": p.totalArea || 0,
+      "عدد المرفقات": p._count?.files || 0,
+      "حالة الملف": p.aiStatus === "completed" ? "يحتاج مراجعة" : p.aiStatus === "approved" ? "معتمد" : p.aiStatus === "failed" ? "فشل" : "جاري المعالجة",
+      "تاريخ الأرشفة": new Date(p.createdAt).toLocaleDateString("en-GB"),
+    }));
+
+    if (exportData.length === 0) {
+      return alert("لا توجد بيانات لتصديرها!");
+    }
+
+    // 2. إنشاء ورقة العمل (Worksheet)
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+    // 3. ضبط اتجاه الشيت ليكون من اليمين لليسار (RTL) لدعم العربية
+    if (!worksheet['!views']) worksheet['!views'] = [];
+    worksheet['!views'].push({ rightToLeft: true });
+
+    // 4. ضبط عرض الأعمدة التقريبي لتكون مقروءة فور فتح الملف
+    worksheet['!cols'] = [
+      { wch: 15 }, // الرقم الموحد
+      { wch: 35 }, // اسم المشروع
+      { wch: 25 }, // المالك
+      { wch: 15 }, // نوع المشروع
+      { wch: 15 }, // رقم الرخصة
+      { wch: 15 }, // تاريخ الرخصة
+      { wch: 20 }, // رقم الصك
+      { wch: 15 }, // الحي
+      { wch: 12 }, // المدينة
+      { wch: 25 }, // الشارع الرئيسي
+      { wch: 15 }, // المخطط
+      { wch: 12 }, // المساحة
+      { wch: 12 }, // المرفقات
+      { wch: 15 }, // الحالة
+      { wch: 15 }, // تاريخ الأرشفة
+    ];
+
+    // 5. إنشاء ملف الإكسيل (Workbook) وحفظه
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "أرشيف المشاريع");
+    
+    // توليد اسم ديناميكي للملف بناءً على تاريخ اليوم
+    const fileName = `Archive_Export_${new Date().toISOString().split("T")[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
   };
 
   return (
     <div className="flex-1 block h-full">
       <div className="h-full flex flex-col bg-[#f8fafc] font-sans" dir="rtl">
-        {/* ======================= Header ======================= */}
+        {/* ======================= Header (مبسط جداً) ======================= */}
         <div className="bg-white border-b border-slate-200 px-6 py-4 shrink-0 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
             <h1 className="text-xl font-black text-slate-800 flex items-center gap-3 tracking-tight">
-              <div className="p-2.5 bg-gradient-to-br from-indigo-50 to-blue-50 text-indigo-600 rounded-xl border border-indigo-100/50 shadow-sm">
+              <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 shadow-sm">
                 <FolderArchive className="w-5 h-5" />
               </div>
-              أرشيف المشاريع المركزي
+              مكتبة المشاريع والأرشيف
             </h1>
-            <p className="text-[11px] font-bold text-slate-500 mt-1.5 max-w-xl leading-relaxed">
-              شاشة البيانات الكثيفة (Excel-View) المخصصة لاستعراض وإدارة
-              المشاريع الهندسية المنتهية والمرجعية، مدعومة بالذكاء الاصطناعي.
+            <p className="text-xs font-bold text-slate-500 mt-1.5 max-w-xl leading-relaxed">
+              هنا تجد كافة ملفات ومخططات المشاريع. يقوم النظام بقراءتها
+              تلقائياً، وكل ما عليك هو مراجعتها واعتمادها.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="bg-slate-50 flex items-center gap-4 px-4 py-2 rounded-xl border border-slate-200 ml-2 shadow-sm">
-              <div className="flex flex-col text-center">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
-                  إجمالي الأرشيف
-                </span>
-                <span className="text-sm font-black text-slate-800">
-                  {isLoading ? "..." : projects.length}
-                </span>
-              </div>
-              <div className="w-px h-6 bg-slate-200"></div>
-              <div className="flex flex-col text-center">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
-                  تم تحليله (AI)
-                </span>
-                <span className="text-sm font-black text-emerald-600">
-                  {isLoading
-                    ? "..."
-                    : projects.filter(
-                        (p) =>
-                          p.aiStatus === "completed" ||
-                          p.aiStatus === "approved",
-                      ).length}
-                </span>
-              </div>
-            </div>
-
             <button
               onClick={fetchProjects}
-              className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm"
-              title="تحديث السجلات"
+              className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:text-indigo-600 transition-all shadow-sm flex items-center gap-2 font-bold text-xs"
+              title="تحديث البيانات"
             >
               <RefreshCw
                 className={`w-4 h-4 ${isLoading ? "animate-spin text-indigo-600" : ""}`}
-              />
+              />{" "}
+              تحديث
             </button>
-            <button className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 flex items-center gap-2 transition-all shadow-sm">
-              <ArrowDownToLine className="w-4 h-4 text-slate-400" /> تصدير
-              (Excel)
+            <button 
+              onClick={handleExportExcel} // 👈 ربط الدالة هنا
+              className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 flex items-center gap-2 transition-all shadow-sm"
+            >
+              <ArrowDownToLine className="w-4 h-4 text-slate-400" /> تحميل كـ إكسيل (Excel)
             </button>
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="px-5 py-2.5 bg-indigo-600 text-white font-black text-xs rounded-xl hover:bg-indigo-700 flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(79,70,229,0.25)] hover:shadow-[0_0_20px_rgba(79,70,229,0.4)] active:scale-95"
+              className="px-5 py-2.5 bg-indigo-600 text-white font-black text-xs rounded-xl hover:bg-indigo-700 flex items-center gap-2 transition-all shadow-md shadow-indigo-600/20 active:scale-95"
             >
-              <Plus className="w-4 h-4" /> إضافة للأرشيف
+              <Plus className="w-4 h-4" /> إضافة ملفات مشروع جديد
             </button>
           </div>
         </div>
 
-        {/* ======================= Toolbar & Filters ======================= */}
-        <div className="bg-white border-b border-slate-200 px-4 py-2.5 shrink-0 flex flex-col gap-3 relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                placeholder="بحث بالكود، الاسم، الرخصة، أو اسم المالك..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pr-9 pl-4 py-1.5 text-xs font-bold outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="w-px h-5 bg-slate-200 mx-1"></div>
-            <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-[11px] font-bold hover:bg-slate-100 transition-colors">
-              <Filter className="w-3.5 h-3.5 text-slate-400" /> فلاتر متقدمة
-            </button>
-            <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-[11px] font-bold hover:bg-slate-100 transition-colors">
-              <Building2 className="w-3.5 h-3.5 text-slate-400" /> نوع المشروع
-            </button>
-          </div>
+        {/* ======================= 🚀 شريط التنبيهات الذكي والمباشر ======================= */}
+        <div className="bg-slate-50 border-b border-slate-200 p-4 shrink-0 grid grid-cols-2 md:grid-cols-5 gap-3 relative z-10">
+          <button
+            onClick={() => setActiveFilter("all")}
+            className={`flex flex-col p-3 rounded-xl border transition-all text-right ${activeFilter === "all" ? "bg-white border-indigo-300 ring-2 ring-indigo-100 shadow-sm" : "bg-white border-slate-200 hover:border-indigo-200"}`}
+          >
+            <span className="text-slate-400 font-bold text-[10px] mb-1 flex items-center justify-between">
+              إجمالي الملفات <FolderArchive className="w-3.5 h-3.5" />
+            </span>
+            <span className="text-lg font-black text-slate-700">
+              {stats.total}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveFilter("review")}
+            className={`flex flex-col p-3 rounded-xl border transition-all text-right ${activeFilter === "review" ? "bg-amber-50 border-amber-300 ring-2 ring-amber-100 shadow-sm" : "bg-white border-slate-200 hover:border-amber-200"}`}
+          >
+            <span className="text-amber-600 font-bold text-[10px] mb-1 flex items-center justify-between">
+              بانتظار مراجعتك <ListChecks className="w-3.5 h-3.5" />
+            </span>
+            <span className="text-lg font-black text-amber-700">
+              {stats.needsReview}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveFilter("processing")}
+            className={`flex flex-col p-3 rounded-xl border transition-all text-right ${activeFilter === "processing" ? "bg-sky-50 border-sky-300 ring-2 ring-sky-100 shadow-sm" : "bg-white border-slate-200 hover:border-sky-200"}`}
+          >
+            <span className="text-sky-600 font-bold text-[10px] mb-1 flex items-center justify-between">
+              جاري قراءتها آلياً <Clock className="w-3.5 h-3.5" />
+            </span>
+            <span className="text-lg font-black text-sky-700">
+              {stats.processing}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveFilter("duplicates")}
+            className={`flex flex-col p-3 rounded-xl border transition-all text-right ${activeFilter === "duplicates" ? "bg-orange-50 border-orange-300 ring-2 ring-orange-100 shadow-sm" : "bg-white border-slate-200 hover:border-orange-200"}`}
+          >
+            <span className="text-orange-600 font-bold text-[10px] mb-1 flex items-center justify-between">
+              مشاريع مكررة <FileWarning className="w-3.5 h-3.5" />
+            </span>
+            <span className="text-lg font-black text-orange-700">
+              {stats.duplicates}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveFilter("failed")}
+            className={`flex flex-col p-3 rounded-xl border transition-all text-right ${activeFilter === "failed" ? "bg-rose-50 border-rose-300 ring-2 ring-rose-100 shadow-sm" : "bg-white border-slate-200 hover:border-rose-200"}`}
+          >
+            <span className="text-rose-600 font-bold text-[10px] mb-1 flex items-center justify-between">
+              فشل في القراءة <XCircle className="w-3.5 h-3.5" />
+            </span>
+            <span className="text-lg font-black text-rose-700">
+              {stats.failed}
+            </span>
+          </button>
         </div>
 
-        {/* ======================= Data Table (Excel-like) ======================= */}
+        {/* ======================= شريط البحث السريع ======================= */}
+        <div className="bg-white border-b border-slate-200 px-4 py-3 shrink-0 flex items-center justify-between relative z-10">
+          <div className="relative flex-1 max-w-lg">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              placeholder="ابحث هنا عن (رقم الرخصة، اسم المالك، اسم المشروع...)"
+              className="w-full bg-slate-100 border border-transparent rounded-lg pr-9 pl-4 py-2 text-xs font-bold outline-none focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all"
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* زر إلغاء الفلاتر يظهر فقط إذا كان هناك فلتر مفعل */}
+          {activeFilter !== "all" && (
+            <button
+              onClick={() => setActiveFilter("all")}
+              className="text-[11px] font-bold text-rose-500 hover:text-rose-700 bg-rose-50 px-3 py-1.5 rounded-lg ml-4"
+            >
+              إلغاء التصفية ✖
+            </button>
+          )}
+        </div>
+
+        {/* ======================= Data Table ======================= */}
         <div className="flex-1 overflow-auto bg-white relative custom-scrollbar">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-full text-indigo-600 bg-slate-50/50">
               <Loader2 className="w-10 h-10 animate-spin mb-3" />
               <span className="text-sm font-black text-slate-700">
-                جاري جلب بيانات الأرشيف...
+                جاري إحضار الملفات... يرجى الانتظار
               </span>
             </div>
-          ) : projects.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400 bg-slate-50/50">
-              <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+          ) : filteredProjects.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-slate-500 bg-slate-50/50 p-6 text-center">
+              <div className="w-24 h-24 bg-white rounded-full border border-slate-200 flex items-center justify-center mb-4 shadow-sm">
                 <FolderArchive className="w-10 h-10 text-slate-300" />
               </div>
-              <span className="text-lg font-black text-slate-600">
-                الأرشيف فارغ
+              <span className="text-lg font-black text-slate-700">
+                لا توجد ملفات لعرضها هنا!
               </span>
-              <p className="text-xs font-bold mt-2">
-                لم يتم إضافة أي مشاريع حتى الآن.
+              <p className="text-xs font-bold mt-2 max-w-sm leading-relaxed">
+                {activeFilter !== "all" || searchTerm !== ""
+                  ? "لا يوجد أي ملف يطابق بحثك أو الفلتر الذي اخترته من الأعلى. جرب إلغاء البحث."
+                  : "مكتبة المشاريع فارغة تماماً. يمكنك البدء بإضافة مشاريع جديدة عبر الزر الأزرق بالأعلى."}
               </p>
             </div>
           ) : (
             <table className="w-full text-right text-[11px] font-bold border-collapse whitespace-nowrap">
-              <thead className="bg-slate-50/80 text-slate-600 sticky top-0 z-20 backdrop-blur-md shadow-[0_1px_0_rgba(203,213,225,1)]">
+              <thead className="bg-slate-50 text-slate-600 sticky top-0 z-20 shadow-sm border-b border-slate-200">
                 <tr className="divide-x divide-x-reverse divide-slate-200">
-                  <th className="px-3 py-2.5 font-black text-center w-10 sticky right-0 bg-slate-50/90 z-30 shadow-[1px_0_0_rgba(203,213,225,1)]">
-                    <input
-                      className="rounded border border-slate-300 accent-indigo-600 cursor-pointer"
-                      type="checkbox"
-                    />
+                  <th className="px-4 py-3 font-black sticky right-0 bg-slate-50 z-30 w-32 border-l border-slate-200 text-indigo-900">
+                    رقم الملف (المرجع)
                   </th>
-                  <th className="px-3 py-2.5 font-black sticky right-[40px] bg-slate-50/90 z-30 shadow-[1px_0_0_rgba(203,213,225,1)] w-28 hover:bg-slate-100 cursor-pointer">
-                    كود الأرشيف
-                  </th>
-                  <th className="px-3 py-2.5 font-black sticky right-[152px] bg-slate-50/90 z-30 shadow-[1px_0_0_rgba(203,213,225,1)] w-64 hover:bg-slate-100 cursor-pointer">
+                  <th className="px-4 py-3 font-black sticky right-[128px] bg-slate-50 z-30 w-64 border-l border-slate-200">
                     اسم المشروع
                   </th>
-                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">
-                    المالك / نوعه
+                  <th className="px-4 py-3 font-black text-slate-500">
+                    اسم المالك
                   </th>
-                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">
-                    نوع المشروع
-                  </th>
-                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">
-                    نوع المعاملة
-                  </th>
-                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">
+                  <th className="px-4 py-3 font-black text-slate-500">
                     الرخصة وتاريخها
                   </th>
-                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">
-                    الصك وتاريخه
-                  </th>
-                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">
+                  <th className="px-4 py-3 font-black text-slate-500">
                     الحي والمدينة
                   </th>
-                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">
-                    الشارع الرئيسي
+                  <th className="px-4 py-3 font-black text-slate-500 text-center">
+                    عدد المرفقات
                   </th>
-                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">
-                    القطع / المخطط
+                  <th className="px-4 py-3 font-black text-center w-40 text-slate-800">
+                    حالة الملف
                   </th>
-                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-indigo-600/80">
-                    المساحة (م2)
-                  </th>
-                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-indigo-600/80">
-                    الأدوار (فوق/تحت)
-                  </th>
-                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500 text-center">
-                    الملفات
-                  </th>
-                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">
-                    بواسطة
-                  </th>
-                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-slate-500">
-                    تاريخ الأرشفة
-                  </th>
-                  <th className="px-3 py-2.5 font-black hover:bg-slate-100 cursor-pointer text-center text-blue-600/80 w-24">
-                    حالة AI
-                  </th>
-                  <th className="px-3 py-2.5 font-black text-center text-slate-500 w-24">
+                  <th className="px-4 py-3 font-black text-center text-slate-500 w-24">
                     إجراءات
                   </th>
                 </tr>
@@ -283,246 +377,128 @@ export default function ProjectsArchiveScreen() {
 
               <tbody className="divide-y divide-slate-100">
                 {filteredProjects.map((project) => {
-                  // 1. فحص التكرار لتغيير لون السطر
-                  const warningMessage = getDuplicateWarning(
-                    project.archiveNotes,
-                  );
-                  const isDuplicate = !!warningMessage;
+                  const isDuplicate = isProjectDuplicate(project.archiveNotes);
+                  const warningMsg = getDuplicateWarning(project.archiveNotes);
 
                   return (
                     <tr
                       key={project.id}
                       onClick={() => openProjectDetails(project.id)}
-                      className={`cursor-pointer transition-colors divide-x divide-x-reverse divide-slate-100 group ${
-                        isDuplicate
-                          ? "bg-rose-50/40 hover:bg-rose-100/50"
-                          : "hover:bg-indigo-50/60"
-                      }`}
+                      className={`cursor-pointer transition-all hover:shadow-md ${isDuplicate ? "bg-orange-50/30 hover:bg-orange-50" : "hover:bg-indigo-50/50"}`}
                     >
                       <td
-                        className={`px-3 py-2.5 text-center sticky right-0 z-10 border-l border-slate-100 ${
-                          isDuplicate
-                            ? "bg-rose-50/40 group-hover:bg-rose-100/50"
-                            : "bg-white group-hover:bg-indigo-50"
-                        } shadow-[1px_0_0_rgba(241,245,249,1)]`}
+                        className={`px-4 py-3 sticky right-0 z-10 border-l border-slate-100 ${isDuplicate ? "bg-orange-50/90" : "bg-white"}`}
                       >
-                        <input
-                          className="rounded border border-slate-300 accent-indigo-600 cursor-pointer"
-                          type="checkbox"
-                          onClick={(e) => e.stopPropagation()}
-                        />
+                        <span className="font-mono font-black text-xs text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md border border-indigo-100">
+                          {project.archiveCode}
+                        </span>
                       </td>
 
                       <td
-                        className={`px-3 py-2.5 sticky right-[40px] z-10 border-l border-slate-100 ${
-                          isDuplicate
-                            ? "bg-rose-50/40 group-hover:bg-rose-100/50"
-                            : "bg-white group-hover:bg-indigo-50"
-                        } shadow-[1px_0_0_rgba(241,245,249,1)]`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`font-mono font-black text-[10px] px-1.5 py-0.5 rounded border ${
-                              isDuplicate
-                                ? "bg-rose-100 text-rose-700 border-rose-200"
-                                : "bg-indigo-50 text-indigo-700 border-indigo-100"
-                            }`}
-                          >
-                            {project.archiveCode}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td
-                        className={`px-3 py-2.5 sticky right-[152px] z-10 border-l border-slate-100 ${
-                          isDuplicate
-                            ? "bg-rose-50/40 group-hover:bg-rose-100/50"
-                            : "bg-white group-hover:bg-indigo-50"
-                        } shadow-[1px_0_0_rgba(241,245,249,1)]`}
+                        className={`px-4 py-3 sticky right-[128px] z-10 border-l border-slate-100 ${isDuplicate ? "bg-orange-50/90" : "bg-white"}`}
                       >
                         <div className="flex items-center gap-2 max-w-[240px]">
-                          {/* عرض أيقونة التحذير بجانب اسم المشروع إذا كان مكرراً */}
                           {isDuplicate && (
                             <AlertTriangle
-                              className="w-4 h-4 text-rose-500 animate-pulse shrink-0"
-                              title={warningMessage}
+                              className="w-4 h-4 text-orange-500 shrink-0"
+                              title={warningMsg}
                             />
                           )}
                           <span
-                            className={`${isDuplicate ? "text-rose-900" : "text-slate-800"} font-black truncate`}
+                            className={`font-black truncate text-sm ${isDuplicate ? "text-orange-900" : "text-slate-800"}`}
                             title={project.title}
                           >
-                            {project.title}
+                            {project.title || "بدون اسم"}
                           </span>
-                          <Eye className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-indigo-600 shrink-0 transition-opacity" />
+                          <Eye className="w-4 h-4 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-indigo-600 shrink-0 transition-opacity" />
                         </div>
                       </td>
 
-                      <td className="px-3 py-2.5">
-                        <div className="flex flex-col">
-                          <span>
-                            {typeof project.client?.name === "object"
-                              ? project.client?.name?.ar
-                              : project.client?.name || "بدون عميل"}
-                          </span>
-                          <span className="text-slate-400 text-[9px]">
-                            {project.ownerType || "غير محدد"}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5 text-slate-600">
-                        {project.projectType || "-"}
-                      </td>
-                      <td className="px-3 py-2.5 text-slate-600">
-                        {project.transactionType || "-"}
+                      <td className="px-4 py-3 text-slate-700 text-xs">
+                        {typeof project.client?.name === "object"
+                          ? project.client?.name?.ar
+                          : project.client?.name || "غير محدد"}
                       </td>
 
-                      <td className="px-3 py-2.5">
-                        <div className="flex flex-col font-mono text-[10px]">
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col font-mono text-[11px]">
                           <span className="text-emerald-700 font-black">
-                            {project.licenseNumber || "بدون رخصة"}
+                            {project.licenseNumber || "لم يتم تسجيل رخصة"}
                           </span>
                           <span className="text-slate-400">
                             {project.licenseIssueDate
                               ? new Date(
                                   project.licenseIssueDate,
                                 ).toLocaleDateString("en-GB")
-                              : "-"}
+                              : ""}
                           </span>
                         </div>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex flex-col font-mono text-[10px]">
-                          <span className="text-amber-700 font-black">
-                            {project.deedNumber || "بدون صك"}
-                          </span>
-                          <span className="text-slate-400">
-                            {project.deedDate
-                              ? new Date(project.deedDate).toLocaleDateString(
-                                  "en-GB",
-                                )
-                              : "-"}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex flex-col">
-                          <span className="text-slate-700 flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-slate-400" />{" "}
-                            {project.district?.name || "-"}
-                          </span>
-                          <span className="text-slate-400 text-[9px]">
-                            {project.city || "الرياض"}
-                          </span>
-                        </div>
-                      </td>
-                      <td
-                        className="px-3 py-2.5 text-slate-600 truncate max-w-[120px]"
-                        title={project.mainStreet}
-                      >
-                        {project.mainStreet || "-"}
                       </td>
 
-                      {/* ========================================================= */}
-                      {/* 💡 التعديل هنا: عرض عدد القطع فقط بدلاً من الأرقام كاملة */}
-                      {/* ========================================================= */}
-                      <td className="px-3 py-2.5 font-mono text-slate-600">
-                        {project.plots?.length > 0 ? (
-                          <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[10px]">
-                            ({project.plots.length} قطع)
-                          </span>
-                        ) : (
-                          "-"
-                        )}
-                        <span className="text-slate-300 mx-1">|</span>
-                        <span className="text-slate-400 text-[9px]">
-                          م: {project.planNumber || "-"}
+                      <td className="px-4 py-3">
+                        <span className="text-slate-700 flex items-center gap-1.5 text-xs">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400" />{" "}
+                          {project.district?.name || "غير محدد"}
                         </span>
                       </td>
 
-                      <td className="px-3 py-2.5">
-                        <span className="bg-indigo-50 text-indigo-700 font-black font-mono px-2 py-0.5 rounded border border-indigo-100">
-                          {project.totalArea
-                            ? project.totalArea.toLocaleString()
-                            : "-"}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5 font-mono text-slate-600 text-center">
-                        <span className="text-emerald-600">
-                          {project.floorsAbove || 0}
-                        </span>
-                        <span className="text-slate-300 mx-1">/</span>
-                        <span className="text-rose-600">
-                          {project.floorsBelow || 0}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-center">
-                        <span className="inline-flex items-center justify-center bg-white text-slate-600 px-2 py-1 rounded-lg text-[10px] border border-slate-200 shadow-sm hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors">
-                          <Layers className="w-3.5 h-3.5 mr-1.5 text-slate-400" />{" "}
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center justify-center bg-slate-100 text-slate-700 px-3 py-1 rounded-lg text-xs font-black shadow-sm">
+                          <Layers className="w-4 h-4 mr-1.5 text-slate-400" />{" "}
                           {project._count?.files || 0}
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-slate-600 flex items-center gap-1.5">
-                        <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[8px] text-slate-600 font-black">
-                          {project.archivedBy?.name?.charAt(0) || "س"}
-                        </div>
-                        <span className="truncate max-w-[80px]">
-                          {project.archivedBy?.name || "النظام"}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex flex-col font-mono text-[10px]">
-                          <span className="text-slate-700 flex items-center gap-1">
-                            <CalendarDays className="w-3 h-3 text-slate-400" />{" "}
-                            {new Date(project.createdAt).toLocaleDateString(
-                              "en-GB",
-                            )}
+
+                      {/* ========================================================= */}
+                      {/* 💡 التعديل هنا: لغة تواصل بشرية ومباشرة לחالة الملف */}
+                      {/* ========================================================= */}
+                      <td className="px-4 py-3 text-center">
+                        {project.aiStatus === "completed" ? (
+                          <span className="inline-flex items-center justify-center w-full px-2 py-1.5 bg-amber-100 text-amber-800 rounded-lg text-[10px] font-black border border-amber-200 gap-1 shadow-sm">
+                            <ListChecks className="w-3.5 h-3.5" /> يحتاج مراجعتك
+                            واعتمادك ✍️
                           </span>
-                          <span className="text-slate-400 flex items-center gap-1 mt-0.5">
-                            <Clock className="w-3 h-3" /> منذ{" "}
-                            {getDaysAgo(project.createdAt)}
+                        ) : project.aiStatus === "approved" ? (
+                          <span className="inline-flex items-center justify-center w-full px-2 py-1.5 bg-emerald-100 text-emerald-800 rounded-lg text-[10px] font-black border border-emerald-200 gap-1 shadow-sm">
+                            <ShieldCheck className="w-3.5 h-3.5" /> مكتمل ومعتمد
+                            ✅
                           </span>
-                        </div>
+                        ) : project.aiStatus === "failed" ? (
+                          <span className="inline-flex items-center justify-center w-full px-2 py-1.5 bg-rose-100 text-rose-800 rounded-lg text-[10px] font-black border border-rose-200 gap-1 shadow-sm">
+                            <XCircle className="w-3.5 h-3.5" /> فشل - أعد الرفع
+                            ❌
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center justify-center w-full px-2 py-1.5 bg-sky-100 text-sky-800 rounded-lg text-[10px] font-black border border-sky-200 gap-1 animate-pulse shadow-sm">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />{" "}
+                            جاري القراءة الآلية ⏳
+                          </span>
+                        )}
                       </td>
-                      <td className="px-3 py-2.5 text-center">
-                        <span
-                          className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-[9px] border font-black w-16 shadow-sm ${
-                            project.aiStatus === "completed" ||
-                            project.aiStatus === "approved"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : project.aiStatus === "failed"
-                                ? "bg-rose-50 text-rose-700 border-rose-200"
-                                : "bg-amber-50 text-amber-700 border-amber-200 animate-pulse"
-                          }`}
-                        >
-                          {project.aiStatus === "completed"
-                            ? "تم التحليل"
-                            : project.aiStatus === "approved"
-                              ? "معتمد"
-                              : project.aiStatus === "failed"
-                                ? "فشل"
-                                : "قيد المعالجة"}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-center">
-                        <div className="flex items-center justify-center gap-2">
+
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-3">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               openProjectDetails(project.id);
                             }}
-                            className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors tooltip-trigger"
-                            title="تعديل"
+                            className="text-indigo-600 hover:text-indigo-800 flex flex-col items-center gap-1 group"
+                            title="افتح للتعديل والمراجعة"
                           >
-                            <PenLine className="w-4 h-4" />
+                            <div className="p-1.5 rounded-lg group-hover:bg-indigo-50">
+                              <PenLine className="w-4 h-4" />
+                            </div>
                           </button>
                           <button
                             onClick={(e) => handleDelete(project.id, e)}
                             disabled={isDeleting}
-                            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-colors tooltip-trigger disabled:opacity-50"
-                            title="حذف"
+                            className="text-rose-500 hover:text-rose-700 flex flex-col items-center gap-1 group disabled:opacity-50"
+                            title="حذف الملف نهائياً"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <div className="p-1.5 rounded-lg group-hover:bg-rose-50">
+                              <Trash2 className="w-4 h-4" />
+                            </div>
                           </button>
                         </div>
                       </td>
@@ -544,7 +520,6 @@ export default function ProjectsArchiveScreen() {
           }}
         />
       )}
-
       {!!selectedProjectId && (
         <ReferenceDetailsModal
           projectId={selectedProjectId}
