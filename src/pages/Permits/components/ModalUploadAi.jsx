@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import api from "../../../api/axios";
 import { toast } from "sonner";
-import moment from "moment-hijri";
+// import moment from "moment-hijri";
 import {
   X,
   Brain,
@@ -24,6 +24,7 @@ import {
   AlertTriangle,
   Copy,
   Eye,
+  CheckCircle2,
 } from "lucide-react";
 import {
   SmartLinkedField,
@@ -41,25 +42,82 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
 
+  // ==========================================
+  // 💡 1. حالات جديدة لدعم الرفع في الخلفية واللصق
+  // ==========================================
   const [step, setStep] = useState(1);
   const [file, setFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null); // 👈 حالة لحفظ رابط معاينة الملف
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [isDragging, setIsDragging] = useState(false); // لحالة السحب والإفلات
+
+  // حالات الطابور (Background Queue)
+  const [jobId, setJobId] = useState(null);
+  const [progress, setProgress] = useState(0);
+  const [jobStatus, setJobStatus] = useState(""); // PENDING, PROCESSING, COMPLETED
+
   const [permits, setPermits] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const [linkingMode, setLinkingMode] = useState(null);
   const [selectedValue, setSelectedValue] = useState("");
 
-  // 💡 إنشاء رابط مؤقت لمعاينة الملف عند اختياره
+  // ==========================================
+  // 💡 2. دعم معاينة الملفات واللصق من الحافظة (Paste)
+  // ==========================================
   useEffect(() => {
     if (file) {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
-      // تنظيف الرابط من الذاكرة عند إغلاق المكون أو تغيير الملف
       return () => URL.revokeObjectURL(url);
+    } else {
+      setPreviewUrl(null);
     }
   }, [file]);
 
+  // الاستماع لحدث اللصق (Ctrl+V)
+  useEffect(() => {
+    const handlePaste = (e) => {
+      if (step !== 1 || jobId) return; // لا تقبل اللصق إذا كنا في خطوة أخرى أو جاري التحليل
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (
+          items[i].type.indexOf("image") !== -1 ||
+          items[i].type.indexOf("pdf") !== -1
+        ) {
+          const blob = items[i].getAsFile();
+          setFile(blob);
+          toast.success("تم التقاط الملف من الحافظة بنجاح!");
+          break;
+        }
+      }
+    };
+
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [step, jobId]);
+
+  // ==========================================
+  // 💡 3. دوال السحب والإفلات (Drag & Drop)
+  // ==========================================
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  // استدعاءات البيانات (كما هي بدون تغيير)
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-simple"],
     queryFn: async () => (await api.get("/clients/simple")).data || [],
@@ -98,20 +156,20 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
   const flatDistricts = useMemo(() => {
     let all = [];
     districtsTree.forEach((s) => {
-      if (s.neighborhoods) {
+      if (s.neighborhoods)
         all = [
           ...all,
           ...s.neighborhoods.map((n) => ({ ...n, sectorName: s.name })),
         ];
-      }
     });
     return all;
   }, [districtsTree]);
 
+  // طفرات الإضافة السريعة (كما هي)
   const quickAddClient = useMutation({
     mutationFn: async (data) => await api.post("/clients", data),
     onSuccess: () => {
-      toast.success("تمت إضافة العميل بنجاح!");
+      toast.success("تمت الإضافة بنجاح!");
       queryClient.invalidateQueries(["clients-simple"]);
     },
   });
@@ -119,83 +177,145 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
     mutationFn: async (data) =>
       await api.post("/riyadh-streets/districts", data),
     onSuccess: () => {
-      toast.success("تمت إضافة الحي بنجاح!");
+      toast.success("تمت الإضافة بنجاح!");
       queryClient.invalidateQueries(["districts-tree-list"]);
     },
   });
   const quickAddOffice = useMutation({
     mutationFn: async (data) => await api.post("/intermediary-offices", data),
     onSuccess: () => {
-      toast.success("تمت إضافة المكتب بنجاح!");
+      toast.success("تمت الإضافة بنجاح!");
       queryClient.invalidateQueries(["offices-list"]);
     },
   });
   const quickAddPlan = useMutation({
     mutationFn: async (data) => await api.post("/riyadh-streets/plans", data),
     onSuccess: () => {
-      toast.success("تمت إضافة المخطط بنجاح!");
+      toast.success("تمت الإضافة بنجاح!");
       queryClient.invalidateQueries(["plans-list"]);
     },
   });
 
-  const analyzeMutation = useMutation({
-    mutationFn: async (selectedFile) => {
+  // ==========================================
+  // 💡 4. إرسال المهمة للطابور والمتابعة (Polling)
+  // ==========================================
+  const startBackgroundAnalysis = async () => {
+    if (!file) return;
+    try {
       const fd = new FormData();
-      fd.append("file", selectedFile);
-      return await api.post("/permits/analyze", fd, {
+      fd.append("file", file);
+
+      if (fixedOffice) {
+        fd.append("fixedOffice", fixedOffice);
+      }
+
+      // نرسل الطلب، والباك إند سيرد بـ jobId للعملية في الخلفية
+      const res = await api.post("/permits/analyze", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-    },
-    onSuccess: (res) => {
-      const aiPermits = res.data.data || [];
-      if (aiPermits.length === 0)
-        return toast.error("لم يتم العثور على أي رخص صالحة في الملف.");
-      toast.success(
-        `تم استخراج ومطابقة بيانات ${aiPermits.length} رخصة بنجاح!`,
-      );
 
-      const mappedPermits = aiPermits.map((p) => ({
-        ...p,
-        permitNumber: toEnglishNumbers(p.permitNumber || ""),
-        issueDate: toEnglishNumbers(p.issueDate || ""),
-        expiryDate: toEnglishNumbers(p.expiryDate || ""),
-        year: toEnglishNumbers(p.year || new Date().getFullYear()),
-        type: p.type || "غير محدد",
-        form: p.form || "أخضر",
-        ownerName: p.ownerName || "",
-        idNumber: toEnglishNumbers(p.idNumber || ""),
-        district: p.district || "",
-        sector: p.sector || "",
-        plotNumber: toEnglishNumbers(p.plotNumber || ""),
-        planNumber: toEnglishNumbers(p.planNumber || ""),
-        landArea: toEnglishNumbers(p.landArea || ""),
-        mainUsage: p.mainUsage || p.usage || "سكني",
-        subUsage: p.subUsage || "",
-        engineeringOffice: fixedOffice || p.engineeringOffice || "",
-        notes: p.notes || "",
-        detailedReport: p.detailedReport || "",
-        componentsData: p.componentsData || [],
-        boundariesData: p.boundariesData || [],
-        source: "رفع يدوي (AI)",
-        linkedClientId: p.linkedClientId || "",
-        linkedOfficeId: p.linkedOfficeId || "",
-        linkedDistrictId: p.linkedDistrictId || "",
-        linkedPlanId: p.linkedPlanId || "",
-        linkedOwnershipId: "",
-        linkedTransactionId: "",
-      }));
+      // إذا رد الباك إند بالبيانات فوراً (Sync Fallback)
+      if (res.data.data && Array.isArray(res.data.data)) {
+        processAiResults(res.data.data);
+      }
+      // إذا رد بـ jobId (Async Background processing)
+      else if (res.data.jobId) {
+        setJobId(res.data.jobId);
+        setJobStatus("PENDING");
+        setProgress(5);
+        toast.info("تم استلام الملف، جاري التحليل في الخلفية...");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "فشل بدء التحليل.");
+      setJobId(null);
+    }
+  };
 
-      setPermits(mappedPermits);
-      setStep(2);
-    },
-    onError: (err) => {
-      toast.error(
-        err.response?.data?.message || "فشل التحليل، تأكد من وضوح الملف.",
-      );
-      setFile(null);
-    },
-  });
+  // داخل ModalUploadAi.jsx
 
+  useEffect(() => {
+    let interval;
+    if (jobId) {
+      interval = setInterval(async () => {
+        try {
+          const res = await api.get(`/ai-dashboard/ai-jobs/${jobId}`);
+          const job = res.data.data;
+
+          setProgress(job.progress || 0);
+          setJobStatus(job.status);
+
+          if (job.status === "COMPLETED") {
+            clearInterval(interval);
+            setJobId(null);
+            setProgress(100);
+
+            // 👈 إظهار إشعار ذكي
+            toast.success(
+              "تم الحفظ بنجاح! 🚀 (الرخص المكررة تحمل حالة 'بانتظار الدمج')",
+            );
+
+            // تحديث الجدول لظهور الرخص الجديدة فوراً
+            queryClient.invalidateQueries(["building-permits"]);
+
+            // إغلاق النافذة بصمت بعد ثانية
+            setTimeout(() => {
+              onClose();
+            }, 1000);
+          } else if (job.status === "FAILED") {
+            clearInterval(interval);
+            setJobId(null);
+            toast.error(job.errorMessage || "فشل التحليل الذكي.");
+          }
+        } catch (error) {
+          console.error("خطأ في متابعة المهمة:", error);
+        }
+      }, 2000);
+    }
+    return () => clearInterval(interval);
+  }, [jobId]);
+
+  // دالة تنسيق النتائج القادمة من الذكاء الاصطناعي والانتقال للخطوة 2
+  const processAiResults = (aiPermits) => {
+    if (!aiPermits || aiPermits.length === 0)
+      return toast.error("لم يتم العثور على أي رخص صالحة في الملف.");
+    toast.success(`تم استخراج ومطابقة ${aiPermits.length} رخصة بنجاح!`);
+
+    const mappedPermits = aiPermits.map((p) => ({
+      ...p,
+      permitNumber: toEnglishNumbers(p.permitNumber || ""),
+      issueDate: toEnglishNumbers(p.issueDate || ""),
+      expiryDate: toEnglishNumbers(p.expiryDate || ""),
+      year: toEnglishNumbers(p.year || new Date().getFullYear()),
+      type: p.type || "غير محدد",
+      form: p.form || "أخضر",
+      ownerName: p.ownerName || "",
+      idNumber: toEnglishNumbers(p.idNumber || ""),
+      district: p.district || "",
+      sector: p.sector || "",
+      plotNumber: toEnglishNumbers(p.plotNumber || ""),
+      planNumber: toEnglishNumbers(p.planNumber || ""),
+      landArea: toEnglishNumbers(p.landArea || ""),
+      mainUsage: p.mainUsage || p.usage || "سكني",
+      subUsage: p.subUsage || "",
+      engineeringOffice: fixedOffice || p.engineeringOffice || "",
+      notes: p.notes || "",
+      detailedReport: p.detailedReport || "",
+      componentsData: p.componentsData || [],
+      boundariesData: p.boundariesData || [],
+      source: "رفع يدوي (AI)",
+      linkedClientId: p.linkedClientId || "",
+      linkedOfficeId: p.linkedOfficeId || "",
+      linkedDistrictId: p.linkedDistrictId || "",
+      linkedPlanId: p.linkedPlanId || "",
+      linkedOwnershipId: "",
+      linkedTransactionId: "",
+    }));
+
+    setPermits(mappedPermits);
+    setStep(2);
+  };
+
+  // حفظ السجلات النهائية (كما هي)
   const saveMutation = useMutation({
     mutationFn: async () => {
       const promises = permits.map((permit) => {
@@ -258,6 +378,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
   };
 
   const handleApplyLink = () => {
+    /* ... (كما هي بدون تغيير) ... */
     if (!selectedValue) return toast.error("يرجى اختيار السجل من القائمة");
     const updated = [...permits];
     if (linkingMode === "client")
@@ -271,10 +392,11 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
     setPermits(updated);
     setLinkingMode(null);
     setSelectedValue("");
-    toast.success("تم تحديد السجل للربط، سيتم حفظه مع الرخصة.");
+    toast.success("تم تحديد السجل للربط.");
   };
 
   const getOptions = (mode) => {
+    /* ... (كما هي) ... */
     if (mode === "client")
       return clients.map((c) => ({ label: c.name, value: c.id }));
     if (mode === "office")
@@ -292,84 +414,163 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
     return [];
   };
 
+  // ==========================================
+  // 💡 الخطوة 1: واجهة الرفع مع السحب، الإفلات، اللصق، والـ Progress
+  // ==========================================
   if (step === 1) {
     return (
       <div
         className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 animate-in fade-in"
         dir="rtl"
       >
-        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center flex flex-col items-center border border-purple-100 relative">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center flex flex-col items-center border border-purple-100 relative overflow-hidden">
           <button
             onClick={onClose}
-            className="absolute top-4 left-4 p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg"
+            className="absolute top-4 left-4 p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg z-10"
           >
             <X className="w-5 h-5" />
           </button>
-          <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-5">
+
+          <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-5 relative z-10">
             <Brain className="w-8 h-8 text-purple-600" />
           </div>
-          <h3 className="text-xl font-black text-slate-800 mb-2">
+
+          <h3 className="text-xl font-black text-slate-800 mb-2 relative z-10">
             استخراج البيانات بذكاء
           </h3>
-          <p className="text-sm text-slate-500 font-semibold mb-6 px-4">
-            ارفع ملف الرخصة وسنقوم بتفريغ كل الحقول والجداول بدقة متناهية
-            ومطابقتها مع النظام.
+          <p className="text-sm text-slate-500 font-semibold mb-6 px-4 relative z-10">
+            ارفع ملف الرخصة، اسحبه هنا، أو الصقه (Ctrl+V) وسنقوم بتفريغه.
           </p>
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className={`w-full border-2 border-dashed rounded-xl p-8 mb-6 cursor-pointer transition-colors ${file ? "border-emerald-300 bg-emerald-50" : "border-purple-200 bg-slate-50 hover:bg-purple-50"}`}
-          >
-            {file ? (
-              <>
-                <FileText className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
-                <div className="text-sm font-bold text-emerald-700 truncate px-2">
-                  {file.name}
+
+          {/* حالة قيد التحليل (عرض شريط التحميل) */}
+          {/* حالة قيد التحليل (عرض شريط التحميل) */}
+          {jobId ? (
+            <div className="w-full flex flex-col items-center py-6">
+              <div className="w-full bg-slate-100 rounded-full h-4 mb-4 overflow-hidden border border-slate-200">
+                <div
+                  className="bg-purple-600 h-full rounded-full transition-all duration-500 ease-out flex items-center justify-end pr-2"
+                  style={{ width: `${progress}%` }}
+                >
+                  <span className="text-[9px] text-white font-bold">
+                    {progress}%
+                  </span>
                 </div>
-              </>
-            ) : (
-              <>
-                <CloudUpload className="w-10 h-10 text-purple-400 mx-auto mb-2" />
-                <div className="text-sm font-bold text-slate-700">
-                  اختر ملف الرخصة
-                </div>
-                <div className="text-[10px] font-bold text-slate-400 mt-1">
-                  يدعم PDF, JPG, PNG
-                </div>
-              </>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,image/*"
-              className="hidden"
-              onChange={(e) => setFile(e.target.files[0])}
-            />
-          </div>
-          <div className="flex gap-3 w-full">
-            <button
-              onClick={onClose}
-              className="flex-[0.4] py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 text-sm"
-            >
-              إلغاء
-            </button>
-            <button
-              onClick={() => analyzeMutation.mutate(file)}
-              disabled={!file || analyzeMutation.isPending}
-              className="flex-1 py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 flex items-center justify-center gap-2"
-            >
-              {analyzeMutation.isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Sparkles className="w-5 h-5" />
-              )}{" "}
-              بدء التحليل والمطابقة
-            </button>
-          </div>
+              </div>
+              <div className="flex items-center gap-2 text-purple-700 font-bold text-sm animate-pulse">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {jobStatus === "PROCESSING"
+                  ? "جاري قراءة وتحليل المستند بذكاء..."
+                  : "جاري التحضير للتحليل..."}
+              </div>
+              <p className="text-[10px] text-slate-400 mt-2">
+                يعمل في الخلفية، يمكنك الانتظار بضع ثوانٍ.
+              </p>
+
+              {/* 💡 2. الزر الجديد: إخفاء ومتابعة في الخلفية */}
+              <button
+                onClick={() => {
+                  toast.info(
+                    "جاري استكمال التحليل في الخلفية. ستظهر الرخصة في الجدول فور انتهائها.",
+                  );
+                  onClose(); // يغلق النافذة فقط، والسيرفر يكمل عمله!
+                }}
+                className="mt-6 px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-[11px] rounded-xl transition-colors border border-slate-200 flex items-center gap-2"
+              >
+                إخفاء ومتابعة في الخلفية ⏱️
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* واجهة السحب والإفلات */}
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={`w-full border-2 border-dashed rounded-xl p-8 mb-6 cursor-pointer transition-all duration-300 relative z-10 group
+                  ${
+                    isDragging
+                      ? "border-purple-500 bg-purple-50 scale-105 shadow-lg"
+                      : file
+                        ? "border-emerald-300 bg-emerald-50"
+                        : "border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-purple-300"
+                  }`}
+              >
+                {file ? (
+                  <div className="flex flex-col items-center">
+                    {previewUrl && !file.type.includes("pdf") ? (
+                      <img
+                        src={previewUrl}
+                        alt="Preview"
+                        className="h-20 w-auto object-contain rounded mb-3 shadow-sm"
+                      />
+                    ) : (
+                      <FileText className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
+                    )}
+                    <div className="text-sm font-bold text-emerald-700 truncate px-2 w-full max-w-[250px]">
+                      {file.name}
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFile(null);
+                        setPreviewUrl(null);
+                      }}
+                      className="mt-2 text-[10px] bg-red-100 text-red-600 px-2 py-1 rounded font-bold hover:bg-red-200"
+                    >
+                      إزالة وتغيير
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <CloudUpload
+                      className={`w-12 h-12 mx-auto mb-3 transition-colors ${isDragging ? "text-purple-600" : "text-slate-400 group-hover:text-purple-500"}`}
+                    />
+                    <div className="text-sm font-bold text-slate-700">
+                      اسحب وافلت الملف هنا
+                    </div>
+                    <div className="text-xs font-bold text-slate-500 mt-1">
+                      أو اضغط للاختيار، أو الصق (Ctrl+V)
+                    </div>
+                    <div className="text-[10px] font-bold text-slate-400 mt-2 bg-slate-200 inline-block px-2 py-1 rounded">
+                      يدعم PDF, JPG, PNG
+                    </div>
+                  </>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,image/*"
+                  className="hidden"
+                  onChange={(e) => setFile(e.target.files[0])}
+                />
+              </div>
+
+              <div className="flex gap-3 w-full relative z-10">
+                <button
+                  onClick={onClose}
+                  className="flex-[0.4] py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 text-sm"
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={startBackgroundAnalysis}
+                  disabled={!file}
+                  className="flex-1 py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                >
+                  <Sparkles className="w-5 h-5" /> بدء التحليل والمطابقة
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
   }
 
+  // ==========================================
+  // 💡 الخطوة 2: الشاشة المقسمة (نفس الكود الأصلي الذي تفضله)
+  // ==========================================
   const current = permits[currentIndex];
   const isDuplicatePermit = existingPermits.some(
     (p) =>
@@ -382,7 +583,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-2 animate-in fade-in"
       dir="rtl"
     >
-      {/* Container widened to w-[98vw] to fit split screen nicely */}
+      {/* ... بقية الكود للـ JSX الخاص بالخطوة 2 يبقى تماماً كما هو في الكود الذي أرسلته بدون أي حذف ... */}
       <div className="bg-white rounded-2xl shadow-2xl w-[98vw] max-w-[1600px] flex flex-col border border-purple-200 max-h-[96vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-3 border-b border-purple-100 bg-purple-50 rounded-t-2xl shrink-0">
@@ -524,6 +725,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
                 </button>
               </span>
             )}
+            {/* بقية مساحات الربط */}
             {current.linkedOfficeId && (
               <span className="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 px-3 py-1 rounded-lg text-[10px] font-bold border border-emerald-200">
                 <Briefcase size={12} /> مكتب:{" "}
@@ -627,9 +829,9 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
                       رقم الرخصة *{" "}
                       {isDuplicatePermit && (
                         <span className="flex items-center gap-1 bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded text-[9px] border border-amber-300 shadow-sm animate-pulse">
-                          <AlertTriangle size={10} /> مكرر
+                          <AlertTriangle size={10} /> مكرر (سيتم دمج البيانات)
                         </span>
-                      )}{" "}
+                      )}
                       <button
                         onClick={() => copyToClipboard(current.permitNumber)}
                         className="text-slate-400 hover:text-blue-600 transition-colors"
@@ -653,7 +855,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
                     <div className="absolute top-[100%] left-0 right-0 mt-1 z-10 bg-amber-50 border border-amber-200 rounded-lg p-2.5 shadow-lg text-[10px] leading-relaxed animate-in fade-in zoom-in-95">
                       <div className="font-bold text-amber-800 mb-1 flex items-center gap-1">
                         <AlertTriangle size={12} className="text-amber-600" />{" "}
-                        هذا الرقم مسجل في النظام مسبقاً!
+                        الرخصة موجودة. سيتم تحديث وتعبئة النواقص فقط.
                       </div>
                     </div>
                   )}
@@ -824,7 +1026,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
               </div>
             </div>
 
-            {/* الجداول (المكونات والحدود) تُعرض عمودياً لتناسب عرض 60% */}
+            {/* الجداول */}
             <div className="space-y-5 mb-5">
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <h4 className="text-xs font-black text-slate-800 mb-3 flex items-center gap-2">

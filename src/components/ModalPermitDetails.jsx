@@ -2292,6 +2292,27 @@ export function ModalPermitDetails({ permit, onClose }) {
     },
     onError: () => toast.error("حدث خطأ أثناء الربط"),
   });
+  // 💡 ================== وظيفة الدمج الجديدة ==================
+  const mergeMutation = useMutation({
+    mutationFn: async () => await api.post(`/permits/${permit.id}/auto-merge`),
+    onSuccess: (res) => {
+      toast.success(res.data?.message || "تم دمج الرخصة بنجاح! 🚀");
+      queryClient.invalidateQueries(["building-permits"]);
+      onClose(); // إغلاق النافذة بعد الدمج ليعود للجدول
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message || "حدث خطأ أثناء الدمج"),
+  });
+
+  const handleMergePermit = () => {
+    if (
+      window.confirm(
+        "هل أنت متأكد من دمج هذه الرخصة مع السجل الأساسي المماثل لها؟ سيتم نقل البيانات والمرفقات وحذف هذا السجل المكرر.",
+      )
+    ) {
+      mergeMutation.mutate();
+    }
+  };
 
   const handleSaveLink = () => {
     if (!selectedValue) return toast.error("يرجى اختيار السجل من القائمة");
@@ -2359,12 +2380,31 @@ export function ModalPermitDetails({ permit, onClose }) {
                 </p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 bg-white hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors border border-slate-200 text-slate-400 shadow-sm"
-            >
-              <X size={18} />
-            </button>
+
+            <div className="flex items-center gap-2">
+              {/* زر الدمج يظهر فقط للرخص المعلقة */}
+              {permit.aiStatus === "مكرر - بانتظار الدمج" && (
+                <button
+                  onClick={handleMergePermit}
+                  disabled={mergeMutation.isPending}
+                  className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white text-[11px] font-bold rounded-xl hover:bg-orange-600 shadow-md animate-pulse disabled:opacity-50 transition-all"
+                >
+                  {mergeMutation.isPending ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Layers size={14} />
+                  )}
+                  دمج مع السجل الأساسي
+                </button>
+              )}
+
+              <button
+                onClick={onClose}
+                className="p-2 bg-white hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors border border-slate-200 text-slate-400 shadow-sm"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
           {/* 💡 أزرار الربط في الهيدر */}
