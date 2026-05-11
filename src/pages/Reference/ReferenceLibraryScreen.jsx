@@ -4,13 +4,11 @@ import { toast } from "sonner";
 import {
   Brain,
   Plus,
-  List,
   FileSearch,
   Zap,
   Share2,
   Settings,
   Search,
-  Filter,
   FileText,
   Globe,
   Download,
@@ -21,11 +19,14 @@ import {
   Snowflake,
   Play,
   X,
+  AlertTriangle,
+  BellRing,
 } from "lucide-react";
 
 import api from "../../api/axios";
 import AddReferenceModal from "./Models/AddReferenceModal";
 import ReferenceDetailsModal from "./Models/ReferenceDetailsModal";
+import ModalUploadReferenceAi from "./Models/ModalUploadReferenceAi"; // 👈 استيراد نافذة الرفع الذكي
 
 // 💡 دالة تحويل الرابط
 const getFullUrl = (url) => {
@@ -39,15 +40,6 @@ const getFullUrl = (url) => {
   return `${baseUrl}${fixedUrl}`;
 };
 
-const TABS = [
-  { id: "library", label: "المكتبة", icon: List },
-  { id: "analysis", label: "التحليل الذكي", icon: Brain },
-  { id: "extracted", label: "النص المستخرج", icon: FileSearch },
-  { id: "summary", label: "التلخيص", icon: Zap },
-  { id: "relations", label: "الربط والعلاقات", icon: Share2 },
-  { id: "settings", label: "الإعدادات", icon: Settings },
-];
-
 const getDocumentStyling = (category, analysisStatus) => {
   let icon = FileText;
   let iconStyle = "bg-slate-50 text-slate-600";
@@ -55,16 +47,16 @@ const getDocumentStyling = (category, analysisStatus) => {
 
   if (category === "اشتراطات") {
     icon = FileText;
-    iconStyle = "bg-rose-50 text-rose-600";
+    iconStyle = "bg-purple-50 text-purple-600";
   } else if (category === "أدلة") {
     icon = Globe;
     iconStyle = "bg-blue-50 text-blue-600";
   } else if (category === "تعاميم") {
-    icon = FileText;
+    icon = BellRing;
     iconStyle = "bg-amber-50 text-amber-600";
-  } else if (category === "عروض") {
-    icon = Zap;
-    iconStyle = "bg-purple-50 text-purple-600";
+  } else if (category === "حالات خاصة واستثناءات") {
+    icon = AlertTriangle;
+    iconStyle = "bg-emerald-50 text-emerald-600";
   }
 
   if (
@@ -85,32 +77,32 @@ const getDocumentStyling = (category, analysisStatus) => {
 export default function ReferenceLibraryScreen() {
   const queryClient = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState("library");
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("الكل");
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("الكل"); // 👈 فلتر البطاقات النشط
 
-  // حالات جديدة لإدارة الإجراءات
-  const [activeMenuId, setActiveMenuId] = useState(null); // التحكم في القائمة المنسدلة
-  const [documentToEdit, setDocumentToEdit] = useState(null); // تمرير المستند للتعديل
+  // التحكم في النوافذ (Modals)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAiUploadModalOpen, setIsAiUploadModalOpen] = useState(false); // 👈 حالة نافذة الذكاء الاصطناعي
+
+  const [activeMenuId, setActiveMenuId] = useState(null);
+  const [documentToEdit, setDocumentToEdit] = useState(null);
   const [freezeModal, setFreezeModal] = useState({
     isOpen: false,
     doc: null,
     reason: "",
   });
-
   const [selectedDocumentId, setSelectedDocumentId] = useState(null);
 
-  // جلب البيانات
+  // جلب البيانات (مع التحديث التلقائي الصامت كل 5 ثواني لمتابعة مهام الخلفية)
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ["reference-documents"],
     queryFn: async () => {
       const res = await api.get("/references");
       return res.data?.data || [];
     },
+    refetchInterval: 5000,
   });
 
-  // حذف المرجع
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/references/${id}`),
     onSuccess: () => {
@@ -120,7 +112,6 @@ export default function ReferenceLibraryScreen() {
     onError: () => toast.error("فشل حذف المرجع"),
   });
 
-  // تحديث حالة المرجع (تجميد / تنشيط)
   const statusMutation = useMutation({
     mutationFn: ({ id, status, reason }) =>
       api.put(`/references/${id}/status`, { status, freezeReason: reason }),
@@ -132,56 +123,21 @@ export default function ReferenceLibraryScreen() {
     onError: () => toast.error("حدث خطأ أثناء تحديث الحالة"),
   });
 
-  // استخراج المستند الحي (Live Document)
   const selectedDocument = useMemo(() => {
     if (!selectedDocumentId) return null;
     return documents.find((doc) => doc.id === selectedDocumentId) || null;
   }, [documents, selectedDocumentId]);
 
-  // حساب إحصائيات شريط تقدم التحليل
-  const analysisProgress = useMemo(() => {
-    if (documents.length === 0)
-      return { total: 0, analyzed: 0, pending: 0, percent: 0 };
-    const total = documents.length;
-    const analyzed = documents.filter((d) =>
-      ["تم اعتماد الشرح", "مكتمل", "محلل"].includes(d.analysisStatus),
-    ).length;
-    const pending = documents.filter(
-      (d) => d.analysisStatus === "قيد التحليل",
-    ).length;
-    const percent = Math.round((analyzed / total) * 100);
-    return { total, analyzed, pending, percent };
-  }, [documents]);
-
-  const filters = useMemo(() => {
-    return [
-      { id: "الكل", label: "الكل", count: documents.length },
-      {
-        id: "اشتراطات",
-        label: "اشتراطات",
-        count: documents.filter((d) => d.category === "اشتراطات").length,
-      },
-      {
-        id: "أدلة",
-        label: "أدلة",
-        count: documents.filter((d) => d.category === "أدلة").length,
-      },
-      {
-        id: "تعاميم",
-        label: "تعاميم",
-        count: documents.filter((d) => d.category === "تعاميم").length,
-      },
-      {
-        id: "عروض",
-        label: "عروض",
-        count: documents.filter((d) => d.category === "عروض").length,
-      },
-      {
-        id: "أخرى",
-        label: "أخرى",
-        count: documents.filter((d) => d.category === "أخرى").length,
-      },
-    ];
+  // إحصائيات البطاقات الأربع
+  const stats = useMemo(() => {
+    return {
+      اشتراطات: documents.filter((d) => d.category === "اشتراطات").length,
+      أدلة: documents.filter((d) => d.category === "أدلة").length,
+      تعاميم: documents.filter((d) => d.category === "تعاميم").length,
+      "حالات خاصة واستثناءات": documents.filter(
+        (d) => d.category === "حالات خاصة واستثناءات",
+      ).length,
+    };
   }, [documents]);
 
   const filteredDocuments = useMemo(() => {
@@ -191,367 +147,390 @@ export default function ReferenceLibraryScreen() {
       const matchesSearch =
         title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         source.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFilter =
-        activeFilter === "الكل" || doc.category === activeFilter;
-      return matchesSearch && matchesFilter;
+      const matchesCategory =
+        activeCategory === "الكل" || doc.category === activeCategory;
+      return matchesSearch && matchesCategory;
     });
-  }, [searchQuery, activeFilter, documents]);
+  }, [searchQuery, activeCategory, documents]);
 
   return (
     <div className="h-full block font-sans relative" dir="rtl">
-      <div className="p-2 bg-slate-50 min-h-full">
-        <div className="max-w-7xl mx-auto space-y-4">
-          {/* الهيدر والأزرار */}
-          <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-1">
-            <div>
-              <p className="text-slate-500 font-bold">
-                المكتبة المرجعية الذكية والتحليل الفني للاشتراطات
-              </p>
+      <div className="p-4 bg-[#fafbfc] min-h-full">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* العنوان الرئيسي */}
+          <div>
+            <h1 className="text-xl font-black text-slate-800">
+              المكتبة المرجعية الذكية
+            </h1>
+            <p className="text-xs font-bold text-slate-500 mt-1">
+              تصفح الأدلة، الاشتراطات، التعاميم واستثناءات البناء
+            </p>
+          </div>
+
+          {/* 🚀 البطاقات الأربع (الفلاتر الرئيسية) */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
+            {/* بطاقة 1: اشتراطات */}
+            <div
+              onClick={() =>
+                setActiveCategory(
+                  activeCategory === "اشتراطات" ? "الكل" : "اشتراطات",
+                )
+              }
+              className={`p-4 rounded-2xl cursor-pointer transition-all border-2 ${activeCategory === "اشتراطات" ? "bg-purple-50 border-purple-400 shadow-md" : "bg-white border-transparent hover:border-purple-200 shadow-sm"}`}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div
+                  className={`p-2.5 rounded-xl ${activeCategory === "اشتراطات" ? "bg-purple-500 text-white" : "bg-purple-100 text-purple-600"}`}
+                >
+                  <FileText size={20} />
+                </div>
+                <span
+                  className={`text-sm font-black ${activeCategory === "اشتراطات" ? "text-purple-900" : "text-slate-700"}`}
+                >
+                  اشتراطات
+                </span>
+              </div>
+              <div className="text-2xl font-black text-slate-800">
+                {stats["اشتراطات"]}
+              </div>
+              <div className="text-[10px] font-bold text-slate-400 mt-1">
+                مرجع مسجل
+              </div>
             </div>
-            <div className="flex gap-1">
-              <button className="flex items-center gap-1 px-3 py-2 bg-white text-slate-900 border border-slate-200 rounded-2xl text-sm font-black shadow-sm hover:bg-slate-50 transition-all">
-                <Brain className="w-3 h-3 text-purple-600" />
-                تحليل ذكي شامل
+
+            {/* بطاقة 2: أدلة */}
+            <div
+              onClick={() =>
+                setActiveCategory(activeCategory === "أدلة" ? "الكل" : "أدلة")
+              }
+              className={`p-4 rounded-2xl cursor-pointer transition-all border-2 ${activeCategory === "أدلة" ? "bg-blue-50 border-blue-400 shadow-md" : "bg-white border-transparent hover:border-blue-200 shadow-sm"}`}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div
+                  className={`p-2.5 rounded-xl ${activeCategory === "أدلة" ? "bg-blue-500 text-white" : "bg-blue-100 text-blue-600"}`}
+                >
+                  <Globe size={20} />
+                </div>
+                <span
+                  className={`text-sm font-black ${activeCategory === "أدلة" ? "text-blue-900" : "text-slate-700"}`}
+                >
+                  أدلة
+                </span>
+              </div>
+              <div className="text-2xl font-black text-slate-800">
+                {stats["أدلة"]}
+              </div>
+              <div className="text-[10px] font-bold text-slate-400 mt-1">
+                دليل مسجل
+              </div>
+            </div>
+
+            {/* بطاقة 3: تعاميم */}
+            <div
+              onClick={() =>
+                setActiveCategory(
+                  activeCategory === "تعاميم" ? "الكل" : "تعاميم",
+                )
+              }
+              className={`p-4 rounded-2xl cursor-pointer transition-all border-2 ${activeCategory === "تعاميم" ? "bg-amber-50 border-amber-400 shadow-md" : "bg-white border-transparent hover:border-amber-200 shadow-sm"}`}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div
+                  className={`p-2.5 rounded-xl ${activeCategory === "تعاميم" ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-600"}`}
+                >
+                  <BellRing size={20} />
+                </div>
+                <span
+                  className={`text-sm font-black ${activeCategory === "تعاميم" ? "text-amber-900" : "text-slate-700"}`}
+                >
+                  تعاميم
+                </span>
+              </div>
+              <div className="text-2xl font-black text-slate-800">
+                {stats["تعاميم"]}
+              </div>
+              <div className="text-[10px] font-bold text-slate-400 mt-1">
+                تعميم صادر
+              </div>
+            </div>
+
+            {/* بطاقة 4: حالات خاصة واستثناءات */}
+            <div
+              onClick={() =>
+                setActiveCategory(
+                  activeCategory === "حالات خاصة واستثناءات"
+                    ? "الكل"
+                    : "حالات خاصة واستثناءات",
+                )
+              }
+              className={`p-4 rounded-2xl cursor-pointer transition-all border-2 ${activeCategory === "حالات خاصة واستثناءات" ? "bg-emerald-50 border-emerald-400 shadow-md" : "bg-white border-transparent hover:border-emerald-200 shadow-sm"}`}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div
+                  className={`p-2.5 rounded-xl ${activeCategory === "حالات خاصة واستثناءات" ? "bg-emerald-500 text-white" : "bg-emerald-100 text-emerald-600"}`}
+                >
+                  <AlertTriangle size={20} />
+                </div>
+                <span
+                  className={`text-sm font-black ${activeCategory === "حالات خاصة واستثناءات" ? "text-emerald-900" : "text-slate-700"}`}
+                >
+                  حالات خاصة واستثناءات
+                </span>
+              </div>
+              <div className="text-2xl font-black text-slate-800">
+                {stats["حالات خاصة واستثناءات"]}
+              </div>
+              <div className="text-[10px] font-bold text-slate-400 mt-1">
+                حالة مسجلة
+              </div>
+            </div>
+          </div>
+
+          {/* شريط الإجراءات والبحث */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="relative flex-1 max-w-lg">
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                placeholder="ابحث في العناوين والجهات المصدرة..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pr-10 pl-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:border-blue-400 focus:bg-white outline-none transition-all"
+                type="text"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsAiUploadModalOpen(true)} // 👈 فتح نافذة الذكاء الاصطناعي
+                className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-xl text-xs font-black shadow-md shadow-purple-200 hover:bg-purple-700 transition-all"
+              >
+                <Brain className="w-4 h-4" /> تحليل وإضافة (AI)
               </button>
               <button
                 onClick={() => {
-                  setDocumentToEdit(null); // تصفير بيانات التعديل عند إضافة جديد
+                  setDocumentToEdit(null);
                   setIsAddModalOpen(true);
                 }}
-                className="flex items-center gap-1 px-3 py-2 bg-emerald-600 text-white rounded-2xl text-sm font-black shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-white rounded-xl text-xs font-black shadow-md hover:bg-slate-900 transition-all"
               >
-                <Plus className="w-3 h-3" /> إضافة مرجع جديد
+                <Plus className="w-4 h-4" /> إضافة يدوية
               </button>
             </div>
           </div>
 
-          {/* التابات وشريط التقدم */}
-          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            {/* التابات */}
-            <div className="flex gap-1 bg-white p-1 rounded-2xl border border-slate-200 shadow-sm w-full lg:w-fit overflow-x-auto">
-              {TABS.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all ${isActive ? "bg-slate-900 text-white shadow-md" : "text-slate-500 hover:bg-slate-50"}`}
-                  >
-                    <Icon
-                      className={`w-4 h-4 ${isActive ? "text-emerald-400" : "text-slate-400"}`}
-                    />
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* 🚀 شريط تقدم التحليل (Progress Bar) */}
-            <div className="flex items-center bg-white p-2.5 rounded-2xl border border-slate-200 shadow-sm gap-3 w-full lg:w-96 shrink-0">
-              <div className="text-[10px] font-bold text-slate-500 shrink-0">
-                معدل الذكاء:
-              </div>
-              <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden flex">
-                <div
-                  style={{ width: `${analysisProgress.percent}%` }}
-                  className="bg-emerald-500 h-full transition-all duration-500"
-                  title="محلل وجاهز"
-                ></div>
-                {analysisProgress.pending > 0 && (
-                  <div
-                    style={{
-                      width: `${(analysisProgress.pending / analysisProgress.total) * 100}%`,
-                    }}
-                    className="bg-purple-500 h-full animate-pulse"
-                    title="قيد التحليل"
-                  ></div>
-                )}
-              </div>
-              <div className="text-[10px] font-black text-emerald-600 shrink-0">
-                {analysisProgress.percent}% محلل
-              </div>
-            </div>
-          </div>
-
-          {/* أدوات البحث والفلترة */}
-          <div className="col-span-12 space-y-2 transition-all duration-300">
-            <div className="bg-white p-2 rounded-3xl border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
-              <div className="relative flex-1 w-full">
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
-                <input
-                  placeholder="بحث في المراجع، العناوين، الجهات المصدرة..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pr-12 pl-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
-                  type="text"
-                />
-              </div>
-              <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0">
-                <Filter className="w-5 h-5 text-slate-400 shrink-0" />
-                <div className="flex gap-2 shrink-0">
-                  {filters.map((filter) => {
-                    const isActive = activeFilter === filter.id;
-                    return (
-                      <button
-                        key={filter.id}
-                        onClick={() => setActiveFilter(filter.id)}
-                        className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${isActive ? "bg-slate-900 text-white" : "bg-slate-50 text-slate-600 hover:bg-slate-100"}`}
-                      >
-                        {filter.label}
-                        <span
-                          className={`px-1.5 py-0.5 rounded-md text-[9px] ${isActive ? "bg-white/20 text-white" : "bg-slate-200 text-slate-500"}`}
-                        >
-                          {filter.count}
+          {/* الجدول */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto custom-scrollbar-slim pb-24 min-h-[400px]">
+              <table className="w-full text-right border-collapse min-w-[900px]">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="p-4 text-xs font-black text-slate-500">
+                      عنوان المرجع
+                    </th>
+                    <th className="p-4 text-xs font-black text-slate-500">
+                      التصنيف
+                    </th>
+                    <th className="p-4 text-xs font-black text-slate-500">
+                      الجهة المصدرة
+                    </th>
+                    <th className="p-4 text-xs font-black text-slate-500">
+                      تاريخ الإصدار
+                    </th>
+                    <th className="p-4 text-xs font-black text-slate-500">
+                      التحليل الفني
+                    </th>
+                    <th className="p-4 text-xs font-black text-slate-500 text-center">
+                      إجراءات
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan="6" className="p-16 text-center">
+                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500 mb-4" />
+                        <span className="text-sm font-bold text-slate-500">
+                          جاري تحميل المراجع...
                         </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* الجدول */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="overflow-x-auto custom-scrollbar-slim pb-24">
-                {" "}
-                {/* إضافة pb-24 لضمان عدم قطع القوائم المنسدلة السفلية */}
-                <table className="w-full text-right border-collapse min-w-[900px]">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="p-4 text-xs font-black text-slate-500">
-                        العنوان
-                      </th>
-                      <th className="p-4 text-xs font-black text-slate-500">
-                        النوع
-                      </th>
-                      <th className="p-4 text-xs font-black text-slate-500">
-                        الجهة المصدرة
-                      </th>
-                      <th className="p-4 text-xs font-black text-slate-500">
-                        تاريخ الإصدار
-                      </th>
-                      <th className="p-4 text-xs font-black text-slate-500">
-                        الحالة
-                      </th>
-                      <th className="p-4 text-xs font-black text-slate-500">
-                        التحليل
-                      </th>
-                      <th className="p-4 text-xs font-black text-slate-500 text-center">
-                        إجراءات
-                      </th>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {isLoading ? (
-                      <tr>
-                        <td colSpan="7" className="p-16 text-center">
-                          <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500 mb-4" />
-                          <span className="text-sm font-bold text-slate-500">
-                            جاري تحميل المراجع...
-                          </span>
-                        </td>
-                      </tr>
-                    ) : filteredDocuments.length > 0 ? (
-                      filteredDocuments.map((doc) => {
-                        const {
-                          icon: IconComponent,
-                          iconStyle,
-                          analysisStyle,
-                        } = getDocumentStyling(
-                          doc.category,
-                          doc.analysisStatus,
-                        );
-                        const formattedDate = doc.issueDate
-                          ? new Date(doc.issueDate).toLocaleDateString("en-GB")
-                          : "غير محدد";
-                        const isFrozen = doc.status === "مجمد";
+                  ) : filteredDocuments.length > 0 ? (
+                    filteredDocuments.map((doc) => {
+                      const {
+                        icon: IconComponent,
+                        iconStyle,
+                        analysisStyle,
+                      } = getDocumentStyling(doc.category, doc.analysisStatus);
+                      const isFrozen = doc.status === "مجمد";
 
-                        return (
-                          <tr
-                            key={doc.id}
-                            onClick={() => setSelectedDocumentId(doc.id)}
-                            className={`hover:bg-slate-50 transition-colors cursor-pointer ${isFrozen ? "opacity-60 grayscale-[0.3]" : ""}`}
-                          >
-                            <td className="p-4">
-                              <div className="flex items-center gap-3">
+                      return (
+                        <tr
+                          key={doc.id}
+                          onClick={() => setSelectedDocumentId(doc.id)}
+                          className={`hover:bg-slate-50 transition-colors cursor-pointer ${isFrozen ? "opacity-60 grayscale-[0.3]" : ""}`}
+                        >
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`p-2.5 rounded-xl ${iconStyle}`}>
+                                <IconComponent className="w-5 h-5" />
+                              </div>
+                              <div>
                                 <div
-                                  className={`p-2.5 rounded-xl ${iconStyle}`}
+                                  className={`text-sm font-black max-w-xs truncate ${isFrozen ? "line-through text-slate-400" : "text-slate-900"}`}
+                                  title={doc.title}
                                 >
-                                  <IconComponent className="w-5 h-5" />
+                                  {doc.title}
                                 </div>
-                                <div>
-                                  <div
-                                    className={`text-sm font-black max-w-xs truncate ${isFrozen ? "line-through text-slate-400" : "text-slate-900"}`}
-                                    title={doc.title}
-                                  >
-                                    {doc.title}
-                                  </div>
-                                  <div className="text-[10px] font-bold text-slate-400 mt-0.5">
-                                    {doc.category || "غير مصنف"}
-                                  </div>
+                                <div className="text-[10px] font-bold text-slate-400 mt-0.5">
+                                  {doc.type || "عام"}
                                 </div>
                               </div>
-                            </td>
-                            <td className="p-4">
-                              <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black whitespace-nowrap">
-                                {doc.type || "عام"}
-                              </span>
-                            </td>
-                            <td
-                              className="p-4 text-xs font-bold text-slate-600 max-w-[150px] truncate"
-                              title={doc.source}
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black">
+                              {doc.category || "غير مصنف"}
+                            </span>
+                          </td>
+                          <td
+                            className="p-4 text-xs font-bold text-slate-600 max-w-[150px] truncate"
+                            title={doc.source}
+                          >
+                            {doc.source || "—"}
+                          </td>
+                          <td className="p-4 text-xs font-bold text-slate-500 font-mono">
+                            {doc.issueDate
+                              ? new Date(doc.issueDate).toLocaleDateString(
+                                  "en-GB",
+                                )
+                              : "—"}
+                          </td>
+                          <td className="p-4">
+                            <span
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-black whitespace-nowrap ${analysisStyle}`}
                             >
-                              {doc.source || "غير محدد"}
-                            </td>
-                            <td className="p-4 text-xs font-bold text-slate-500 font-mono">
-                              {formattedDate}
-                            </td>
-                            <td className="p-4">
-                              <span
-                                className={`px-2.5 py-1 rounded-lg text-[10px] font-black ${doc.status === "نشط" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}
-                              >
-                                {doc.status || "نشط"}
-                              </span>
-                            </td>
-                            <td className="p-4">
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black whitespace-nowrap ${analysisStyle}`}
-                                >
-                                  {doc.analysisStatus || "غير محلل"}
-                                </span>
-                              </div>
-                            </td>
-
-                            {/* 🚀 قسم الإجراءات الجديد مع القائمة المنسدلة */}
-                            <td
-                              className="p-4"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="flex justify-center gap-2 relative">
-                                {doc.fileUrl && (
-                                  <button
-                                    onClick={() =>
-                                      window.open(
-                                        getFullUrl(doc.fileUrl.split(",")[0]),
-                                        "_blank",
-                                      )
-                                    }
-                                    className="p-2 hover:bg-slate-200 rounded-xl text-slate-400 hover:text-blue-600 shadow-sm border border-transparent transition-all"
-                                    title="تحميل الملف"
-                                  >
-                                    <Download className="w-4 h-4" />
-                                  </button>
-                                )}
-
+                              {doc.analysisStatus || "غير محلل"}
+                            </span>
+                          </td>
+                          <td
+                            className="p-4"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="flex justify-center gap-2 relative">
+                              {doc.fileUrl && (
                                 <button
                                   onClick={() =>
-                                    setActiveMenuId(
-                                      activeMenuId === doc.id ? null : doc.id,
+                                    window.open(
+                                      getFullUrl(doc.fileUrl.split(",")[0]),
+                                      "_blank",
                                     )
                                   }
-                                  className="p-2 hover:bg-slate-200 rounded-xl text-slate-400 hover:text-slate-800 shadow-sm border border-transparent transition-all"
+                                  className="p-2 hover:bg-slate-200 rounded-xl text-slate-400 hover:text-blue-600 transition-all"
+                                  title="تحميل الملف"
                                 >
-                                  <MoreVertical className="w-4 h-4" />
+                                  <Download className="w-4 h-4" />
                                 </button>
+                              )}
+                              <button
+                                onClick={() =>
+                                  setActiveMenuId(
+                                    activeMenuId === doc.id ? null : doc.id,
+                                  )
+                                }
+                                className="p-2 hover:bg-slate-200 rounded-xl text-slate-400 hover:text-slate-800 transition-all"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
 
-                                {/* القائمة المنسدلة للإجراءات */}
-                                {activeMenuId === doc.id && (
-                                  <>
-                                    <div
-                                      className="fixed inset-0 z-10"
-                                      onClick={() => setActiveMenuId(null)}
-                                    ></div>
-                                    <div className="absolute left-10 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 w-40 py-1 font-bold text-xs animate-in zoom-in-95">
+                              {/* القائمة المنسدلة */}
+                              {activeMenuId === doc.id && (
+                                <>
+                                  <div
+                                    className="fixed inset-0 z-10"
+                                    onClick={() => setActiveMenuId(null)}
+                                  ></div>
+                                  <div className="absolute left-10 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 w-40 py-1 font-bold text-xs animate-in zoom-in-95">
+                                    <button
+                                      onClick={() => {
+                                        setDocumentToEdit(doc);
+                                        setIsAddModalOpen(true);
+                                        setActiveMenuId(null);
+                                      }}
+                                      className="flex items-center gap-2 w-full text-right px-4 py-2 hover:bg-slate-50 text-slate-700"
+                                    >
+                                      <Edit2
+                                        size={14}
+                                        className="text-blue-500"
+                                      />{" "}
+                                      تعديل المرجع
+                                    </button>
+                                    {doc.status === "نشط" ? (
                                       <button
                                         onClick={() => {
-                                          setDocumentToEdit(doc);
-                                          setIsAddModalOpen(true);
+                                          setFreezeModal({
+                                            isOpen: true,
+                                            doc,
+                                            reason: "",
+                                          });
                                           setActiveMenuId(null);
                                         }}
-                                        className="flex items-center gap-2 w-full text-right px-4 py-2 hover:bg-slate-50 text-slate-700"
+                                        className="flex items-center gap-2 w-full text-right px-4 py-2 hover:bg-cyan-50 text-cyan-700"
                                       >
-                                        <Edit2
-                                          size={14}
-                                          className="text-blue-500"
-                                        />{" "}
-                                        تعديل المرجع
+                                        <Snowflake size={14} /> تجميد وإيقاف
                                       </button>
-
-                                      {doc.status === "نشط" ? (
-                                        <button
-                                          onClick={() => {
-                                            setFreezeModal({
-                                              isOpen: true,
-                                              doc,
-                                              reason: "",
-                                            });
-                                            setActiveMenuId(null);
-                                          }}
-                                          className="flex items-center gap-2 w-full text-right px-4 py-2 hover:bg-cyan-50 text-cyan-700"
-                                        >
-                                          <Snowflake size={14} /> تجميد وإيقاف
-                                        </button>
-                                      ) : (
-                                        <button
-                                          onClick={() => {
-                                            statusMutation.mutate({
-                                              id: doc.id,
-                                              status: "نشط",
-                                              reason: "إعادة تنشيط المرجع",
-                                            });
-                                            setActiveMenuId(null);
-                                          }}
-                                          className="flex items-center gap-2 w-full text-right px-4 py-2 hover:bg-emerald-50 text-emerald-700"
-                                        >
-                                          <Play size={14} /> إعادة تنشيط
-                                        </button>
-                                      )}
-
-                                      <div className="border-t border-slate-100 my-1"></div>
-
+                                    ) : (
                                       <button
                                         onClick={() => {
-                                          if (
-                                            window.confirm(
-                                              "حذف المرجع نهائياً من المكتبة؟",
-                                            )
-                                          )
-                                            deleteMutation.mutate(doc.id);
+                                          statusMutation.mutate({
+                                            id: doc.id,
+                                            status: "نشط",
+                                            reason: "إعادة تنشيط",
+                                          });
                                           setActiveMenuId(null);
                                         }}
-                                        className="flex items-center gap-2 w-full text-right px-4 py-2 hover:bg-rose-50 text-rose-600"
+                                        className="flex items-center gap-2 w-full text-right px-4 py-2 hover:bg-emerald-50 text-emerald-700"
                                       >
-                                        <Trash2 size={14} /> حذف نهائي
+                                        <Play size={14} /> إعادة تنشيط
                                       </button>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan="7" className="p-16 text-center">
-                          <FileText className="w-12 h-12 mx-auto text-slate-300 mb-4" />
-                          <div className="text-slate-500 font-bold text-sm">
-                            لا توجد مستندات مطابقة للبحث.
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                                    )}
+                                    <div className="border-t border-slate-100 my-1"></div>
+                                    <button
+                                      onClick={() => {
+                                        if (
+                                          window.confirm("حذف المرجع نهائياً؟")
+                                        )
+                                          deleteMutation.mutate(doc.id);
+                                        setActiveMenuId(null);
+                                      }}
+                                      className="flex items-center gap-2 w-full text-right px-4 py-2 hover:bg-rose-50 text-rose-600"
+                                    >
+                                      <Trash2 size={14} /> حذف نهائي
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="p-16 text-center">
+                        <FileText className="w-12 h-12 mx-auto text-slate-300 mb-4" />
+                        <div className="text-slate-500 font-bold text-sm">
+                          لا توجد مستندات مطابقة للبحث أو الفلتر.
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 🚀 مودال الإضافة والتعديل */}
       {isAddModalOpen && (
         <AddReferenceModal
           isOpen={true}
@@ -559,18 +538,20 @@ export default function ReferenceLibraryScreen() {
             setIsAddModalOpen(false);
             setDocumentToEdit(null);
           }}
-          documentToEdit={documentToEdit} // تمرير المستند في حالة التعديل
+          documentToEdit={documentToEdit}
         />
       )}
-
-      {/* مودال التفاصيل الحية */}
       <ReferenceDetailsModal
         isOpen={!!selectedDocument}
         document={selectedDocument}
         onClose={() => setSelectedDocumentId(null)}
       />
 
-      {/* 🚀 مودال تأكيد التجميد (Freeze Modal) */}
+      {/* 🚀 نافذة الرفع والتحليل بالذكاء الاصطناعي (تعمل في الخلفية) */}
+      {isAiUploadModalOpen && (
+        <ModalUploadReferenceAi onClose={() => setIsAiUploadModalOpen(false)} />
+      )}
+
       {freezeModal.isOpen && (
         <div className="fixed inset-0 bg-slate-900/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6 relative animate-in zoom-in-95">
@@ -578,7 +559,7 @@ export default function ReferenceLibraryScreen() {
               onClick={() =>
                 setFreezeModal({ isOpen: false, doc: null, reason: "" })
               }
-              className="absolute top-4 left-4 text-slate-400 hover:text-slate-600"
+              className="absolute top-4 left-4 text-slate-400"
             >
               <X size={20} />
             </button>
@@ -588,17 +569,13 @@ export default function ReferenceLibraryScreen() {
             <h3 className="text-lg font-black text-center text-slate-800 mb-2">
               تأكيد تجميد المرجع
             </h3>
-            <p className="text-xs font-bold text-center text-slate-500 mb-4 leading-relaxed">
-              سيتم إيقاف العمل بهذا المرجع ولن يتم تضمينه في التحليلات
-              المستقبلية حتى تعيد تنشيطه. يرجى ذكر السبب:
-            </p>
             <textarea
-              placeholder="مثال: تم صدور تعميم جديد يلغي هذا النظام..."
+              placeholder="سبب التجميد..."
               value={freezeModal.reason}
               onChange={(e) =>
                 setFreezeModal({ ...freezeModal, reason: e.target.value })
               }
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 outline-none resize-none min-h-[100px] mb-4"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold outline-none min-h-[100px] mb-4"
             />
             <button
               onClick={() =>
@@ -609,13 +586,9 @@ export default function ReferenceLibraryScreen() {
                 })
               }
               disabled={!freezeModal.reason.trim() || statusMutation.isPending}
-              className="w-full py-3 bg-cyan-600 text-white rounded-xl font-black hover:bg-cyan-700 transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
+              className="w-full py-3 bg-cyan-600 text-white rounded-xl font-black hover:bg-cyan-700 flex justify-center items-center gap-2"
             >
-              {statusMutation.isPending ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                "تأكيد التجميد وحفظ السجل"
-              )}
+              تأكيد التجميد
             </button>
           </div>
         </div>
