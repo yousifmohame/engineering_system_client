@@ -28,9 +28,7 @@ export default function ProjectsArchiveScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-
-  // 💡 فلتر جديد للأزرار العلوية التفاعلية
-  const [activeFilter, setActiveFilter] = useState("all"); // all, failed, duplicates, review, processing
+  const [activeFilter, setActiveFilter] = useState("all");
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
@@ -75,19 +73,14 @@ export default function ProjectsArchiveScreen() {
     }
   };
 
-  // دالة لاكتشاف التكرار بسهولة
-  const isProjectDuplicate = (notes) => {
-    return notes && notes.includes("⚠️");
-  };
+  const isProjectDuplicate = (notes) => notes && notes.includes("⚠️");
 
   const getDuplicateWarning = (notes) => {
     if (!isProjectDuplicate(notes)) return null;
     return "تنبيه: هذا المشروع قد يكون مكرراً وموجوداً في النظام مسبقاً!";
   };
 
-  // ==========================================
-  // 🚀 حساب الإحصائيات للشريط التفاعلي العلوي
-  // ==========================================
+  // الإحصائيات
   const stats = {
     total: projects.length,
     needsReview: projects.filter((p) => p.aiStatus === "completed").length,
@@ -99,11 +92,8 @@ export default function ProjectsArchiveScreen() {
     ).length,
   };
 
-  // ==========================================
-  // 🔍 فلترة البيانات المعروضة في الجدول
-  // ==========================================
+  // الفلترة
   const filteredProjects = projects.filter((p) => {
-    // 1. فلتر البحث النصي
     const clientName =
       typeof p.client?.name === "object"
         ? p.client?.name?.ar || ""
@@ -116,7 +106,6 @@ export default function ProjectsArchiveScreen() {
 
     if (!matchesSearch) return false;
 
-    // 2. فلتر الأزرار العلوية
     if (activeFilter === "all") return true;
     if (activeFilter === "failed") return p.aiStatus === "failed";
     if (activeFilter === "duplicates")
@@ -128,197 +117,192 @@ export default function ProjectsArchiveScreen() {
     return true;
   });
 
-  // ==========================================
-  // 📊 دالة تصدير البيانات إلى Excel باحترافية
-  // ==========================================
+  // التصدير إلى إكسيل
   const handleExportExcel = () => {
-    // 1. تجهيز البيانات بأعمدة عربية واضحة
     const exportData = filteredProjects.map((p) => ({
       "الرقم الموحد": p.archiveCode || "-",
       "اسم المشروع": p.title || "-",
-      "اسم المالك": typeof p.client?.name === "object" ? p.client?.name?.ar : p.client?.name || "غير محدد",
+      "اسم المالك":
+        typeof p.client?.name === "object"
+          ? p.client?.name?.ar
+          : p.client?.name || "غير محدد",
       "نوع المشروع": p.projectType || "-",
       "رقم الرخصة": p.licenseNumber || "-",
-      "تاريخ الرخصة": p.licenseIssueDate ? new Date(p.licenseIssueDate).toLocaleDateString("en-GB") : "-",
+      "تاريخ الرخصة": p.licenseIssueDate
+        ? new Date(p.licenseIssueDate).toLocaleDateString("en-GB")
+        : "-",
       "رقم الصك": p.deedNumber || "-",
-      "الحي": p.district?.name || "-",
-      "المدينة": p.city || "-",
+      الحي: p.district?.name || "-",
+      المدينة: p.city || "-",
       "الشارع الرئيسي": p.mainStreet || "-",
       "رقم المخطط": p.planNumber || "-",
       "المساحة (م2)": p.totalArea || 0,
       "عدد المرفقات": p._count?.files || 0,
-      "حالة الملف": p.aiStatus === "completed" ? "يحتاج مراجعة" : p.aiStatus === "approved" ? "معتمد" : p.aiStatus === "failed" ? "فشل" : "جاري المعالجة",
+      "حالة الملف":
+        p.aiStatus === "completed"
+          ? "يحتاج مراجعة"
+          : p.aiStatus === "approved"
+            ? "معتمد"
+            : p.aiStatus === "failed"
+              ? "فشل"
+              : "جاري المعالجة",
       "تاريخ الأرشفة": new Date(p.createdAt).toLocaleDateString("en-GB"),
     }));
 
-    if (exportData.length === 0) {
-      return alert("لا توجد بيانات لتصديرها!");
-    }
+    if (exportData.length === 0) return alert("لا توجد بيانات لتصديرها!");
 
-    // 2. إنشاء ورقة العمل (Worksheet)
     const worksheet = XLSX.utils.json_to_sheet(exportData);
+    if (!worksheet["!views"]) worksheet["!views"] = [];
+    worksheet["!views"].push({ rightToLeft: true });
 
-    // 3. ضبط اتجاه الشيت ليكون من اليمين لليسار (RTL) لدعم العربية
-    if (!worksheet['!views']) worksheet['!views'] = [];
-    worksheet['!views'].push({ rightToLeft: true });
-
-    // 4. ضبط عرض الأعمدة التقريبي لتكون مقروءة فور فتح الملف
-    worksheet['!cols'] = [
-      { wch: 15 }, // الرقم الموحد
-      { wch: 35 }, // اسم المشروع
-      { wch: 25 }, // المالك
-      { wch: 15 }, // نوع المشروع
-      { wch: 15 }, // رقم الرخصة
-      { wch: 15 }, // تاريخ الرخصة
-      { wch: 20 }, // رقم الصك
-      { wch: 15 }, // الحي
-      { wch: 12 }, // المدينة
-      { wch: 25 }, // الشارع الرئيسي
-      { wch: 15 }, // المخطط
-      { wch: 12 }, // المساحة
-      { wch: 12 }, // المرفقات
-      { wch: 15 }, // الحالة
-      { wch: 15 }, // تاريخ الأرشفة
+    worksheet["!cols"] = [
+      { wch: 15 },
+      { wch: 35 },
+      { wch: 25 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 25 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 15 },
+      { wch: 15 },
     ];
 
-    // 5. إنشاء ملف الإكسيل (Workbook) وحفظه
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "أرشيف المشاريع");
-    
-    // توليد اسم ديناميكي للملف بناءً على تاريخ اليوم
-    const fileName = `Archive_Export_${new Date().toISOString().split("T")[0]}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
+    XLSX.writeFile(
+      workbook,
+      `Archive_Export_${new Date().toISOString().split("T")[0]}.xlsx`,
+    );
   };
 
   return (
     <div className="flex-1 block h-full">
       <div className="h-full flex flex-col bg-[#f8fafc] font-sans" dir="rtl">
-        {/* ======================= Header (مبسط جداً) ======================= */}
-        <div className="bg-white border-b border-slate-200 px-6 py-4 shrink-0 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-          <div>
-            <h1 className="text-xl font-black text-slate-800 flex items-center gap-3 tracking-tight">
-              <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 shadow-sm">
-                <FolderArchive className="w-5 h-5" />
-              </div>
-              مكتبة المشاريع والأرشيف
-            </h1>
-            <p className="text-xs font-bold text-slate-500 mt-1.5 max-w-xl leading-relaxed">
-              هنا تجد كافة ملفات ومخططات المشاريع. يقوم النظام بقراءتها
-              تلقائياً، وكل ما عليك هو مراجعتها واعتمادها.
-            </p>
+        {/* ======================= 🚀 الهيدر الاحترافي المضغوط (Toolbar) ======================= */}
+        <div className="bg-white border-b border-slate-200 px-5 py-3 shrink-0 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-4 relative z-10">
+          {/* 1. العنوان المبسط */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100 shadow-sm">
+              <FolderArchive className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-base font-black text-slate-800 tracking-tight">
+                أرشيف المشاريع
+              </h1>
+              <p className="text-[10px] font-bold text-slate-500 mt-0.5">
+                إدارة ومراجعة المعاملات المقروءة آلياً
+              </p>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          {/* 2. أدوات البحث والفلاتر (في المنتصف) */}
+          <div className="flex-1 flex flex-wrap md:flex-nowrap items-center justify-start xl:justify-center gap-3 overflow-hidden">
+            {/* مربع البحث */}
+            <div className="relative w-full md:w-64 shrink-0 group">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+              <input
+                placeholder="ابحث بالاسم، الرخصة، المالك..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pr-9 pl-3 py-2 text-xs font-bold outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
+              />
+            </div>
+
+            {/* الفلاتر (Capsules) قابلة للتمرير على الشاشات الصغيرة */}
+            <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1 md:pb-0">
+              <button
+                onClick={() => setActiveFilter("all")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all whitespace-nowrap ${activeFilter === "all" ? "bg-indigo-50 border-indigo-200 text-indigo-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+              >
+                الكل{" "}
+                <span
+                  className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === "all" ? "bg-indigo-200/50" : "bg-slate-100"}`}
+                >
+                  {stats.total}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setActiveFilter("review")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all whitespace-nowrap ${activeFilter === "review" ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+              >
+                <ListChecks className="w-3.5 h-3.5" /> مراجعة{" "}
+                <span
+                  className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === "review" ? "bg-amber-200/50" : "bg-slate-100"}`}
+                >
+                  {stats.needsReview}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setActiveFilter("processing")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all whitespace-nowrap ${activeFilter === "processing" ? "bg-sky-50 border-sky-200 text-sky-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+              >
+                <Clock className="w-3.5 h-3.5" /> قراءة{" "}
+                <span
+                  className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === "processing" ? "bg-sky-200/50" : "bg-slate-100"}`}
+                >
+                  {stats.processing}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setActiveFilter("duplicates")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all whitespace-nowrap ${activeFilter === "duplicates" ? "bg-orange-50 border-orange-200 text-orange-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+              >
+                <FileWarning className="w-3.5 h-3.5" /> مكرر{" "}
+                <span
+                  className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === "duplicates" ? "bg-orange-200/50" : "bg-slate-100"}`}
+                >
+                  {stats.duplicates}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setActiveFilter("failed")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all whitespace-nowrap ${activeFilter === "failed" ? "bg-rose-50 border-rose-200 text-rose-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+              >
+                <XCircle className="w-3.5 h-3.5" /> فشل{" "}
+                <span
+                  className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === "failed" ? "bg-rose-200/50" : "bg-slate-100"}`}
+                >
+                  {stats.failed}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* 3. أزرار الإجراءات (تحديث، تصدير، إضافة) */}
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={fetchProjects}
-              className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:text-indigo-600 transition-all shadow-sm flex items-center gap-2 font-bold text-xs"
+              className="p-2.5 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-slate-50 hover:text-indigo-600 transition-all shadow-sm"
               title="تحديث البيانات"
             >
               <RefreshCw
                 className={`w-4 h-4 ${isLoading ? "animate-spin text-indigo-600" : ""}`}
-              />{" "}
-              تحديث
+              />
             </button>
-            <button 
-              onClick={handleExportExcel} // 👈 ربط الدالة هنا
-              className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 flex items-center gap-2 transition-all shadow-sm"
+            <button
+              onClick={handleExportExcel}
+              className="p-2.5 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-slate-50 hover:text-emerald-600 transition-all shadow-sm"
+              title="تصدير إلى Excel"
             >
-              <ArrowDownToLine className="w-4 h-4 text-slate-400" /> تحميل كـ إكسيل (Excel)
+              <ArrowDownToLine className="w-4 h-4" />
             </button>
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="px-5 py-2.5 bg-indigo-600 text-white font-black text-xs rounded-xl hover:bg-indigo-700 flex items-center gap-2 transition-all shadow-md shadow-indigo-600/20 active:scale-95"
+              className="px-4 py-2.5 bg-indigo-600 text-white font-black text-xs rounded-xl hover:bg-indigo-700 flex items-center gap-2 transition-all shadow-sm active:scale-95"
             >
-              <Plus className="w-4 h-4" /> إضافة ملفات مشروع جديد
+              <Plus className="w-4 h-4" /> إضافة ملفات
             </button>
           </div>
-        </div>
-
-        {/* ======================= 🚀 شريط التنبيهات الذكي والمباشر ======================= */}
-        <div className="bg-slate-50 border-b border-slate-200 p-4 shrink-0 grid grid-cols-2 md:grid-cols-5 gap-3 relative z-10">
-          <button
-            onClick={() => setActiveFilter("all")}
-            className={`flex flex-col p-3 rounded-xl border transition-all text-right ${activeFilter === "all" ? "bg-white border-indigo-300 ring-2 ring-indigo-100 shadow-sm" : "bg-white border-slate-200 hover:border-indigo-200"}`}
-          >
-            <span className="text-slate-400 font-bold text-[10px] mb-1 flex items-center justify-between">
-              إجمالي الملفات <FolderArchive className="w-3.5 h-3.5" />
-            </span>
-            <span className="text-lg font-black text-slate-700">
-              {stats.total}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveFilter("review")}
-            className={`flex flex-col p-3 rounded-xl border transition-all text-right ${activeFilter === "review" ? "bg-amber-50 border-amber-300 ring-2 ring-amber-100 shadow-sm" : "bg-white border-slate-200 hover:border-amber-200"}`}
-          >
-            <span className="text-amber-600 font-bold text-[10px] mb-1 flex items-center justify-between">
-              بانتظار مراجعتك <ListChecks className="w-3.5 h-3.5" />
-            </span>
-            <span className="text-lg font-black text-amber-700">
-              {stats.needsReview}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveFilter("processing")}
-            className={`flex flex-col p-3 rounded-xl border transition-all text-right ${activeFilter === "processing" ? "bg-sky-50 border-sky-300 ring-2 ring-sky-100 shadow-sm" : "bg-white border-slate-200 hover:border-sky-200"}`}
-          >
-            <span className="text-sky-600 font-bold text-[10px] mb-1 flex items-center justify-between">
-              جاري قراءتها آلياً <Clock className="w-3.5 h-3.5" />
-            </span>
-            <span className="text-lg font-black text-sky-700">
-              {stats.processing}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveFilter("duplicates")}
-            className={`flex flex-col p-3 rounded-xl border transition-all text-right ${activeFilter === "duplicates" ? "bg-orange-50 border-orange-300 ring-2 ring-orange-100 shadow-sm" : "bg-white border-slate-200 hover:border-orange-200"}`}
-          >
-            <span className="text-orange-600 font-bold text-[10px] mb-1 flex items-center justify-between">
-              مشاريع مكررة <FileWarning className="w-3.5 h-3.5" />
-            </span>
-            <span className="text-lg font-black text-orange-700">
-              {stats.duplicates}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveFilter("failed")}
-            className={`flex flex-col p-3 rounded-xl border transition-all text-right ${activeFilter === "failed" ? "bg-rose-50 border-rose-300 ring-2 ring-rose-100 shadow-sm" : "bg-white border-slate-200 hover:border-rose-200"}`}
-          >
-            <span className="text-rose-600 font-bold text-[10px] mb-1 flex items-center justify-between">
-              فشل في القراءة <XCircle className="w-3.5 h-3.5" />
-            </span>
-            <span className="text-lg font-black text-rose-700">
-              {stats.failed}
-            </span>
-          </button>
-        </div>
-
-        {/* ======================= شريط البحث السريع ======================= */}
-        <div className="bg-white border-b border-slate-200 px-4 py-3 shrink-0 flex items-center justify-between relative z-10">
-          <div className="relative flex-1 max-w-lg">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              placeholder="ابحث هنا عن (رقم الرخصة، اسم المالك، اسم المشروع...)"
-              className="w-full bg-slate-100 border border-transparent rounded-lg pr-9 pl-4 py-2 text-xs font-bold outline-none focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all"
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          {/* زر إلغاء الفلاتر يظهر فقط إذا كان هناك فلتر مفعل */}
-          {activeFilter !== "all" && (
-            <button
-              onClick={() => setActiveFilter("all")}
-              className="text-[11px] font-bold text-rose-500 hover:text-rose-700 bg-rose-50 px-3 py-1.5 rounded-lg ml-4"
-            >
-              إلغاء التصفية ✖
-            </button>
-          )}
         </div>
 
         {/* ======================= Data Table ======================= */}
@@ -340,8 +324,8 @@ export default function ProjectsArchiveScreen() {
               </span>
               <p className="text-xs font-bold mt-2 max-w-sm leading-relaxed">
                 {activeFilter !== "all" || searchTerm !== ""
-                  ? "لا يوجد أي ملف يطابق بحثك أو الفلتر الذي اخترته من الأعلى. جرب إلغاء البحث."
-                  : "مكتبة المشاريع فارغة تماماً. يمكنك البدء بإضافة مشاريع جديدة عبر الزر الأزرق بالأعلى."}
+                  ? "لا يوجد أي ملف يطابق بحثك أو الفلتر الذي اخترته. جرب مسح البحث."
+                  : "مكتبة المشاريع فارغة. يمكنك البدء بإضافة مشاريع جديدة."}
               </p>
             </div>
           ) : (
@@ -364,7 +348,7 @@ export default function ProjectsArchiveScreen() {
                     الحي والمدينة
                   </th>
                   <th className="px-4 py-3 font-black text-slate-500 text-center">
-                    عدد المرفقات
+                    المرفقات
                   </th>
                   <th className="px-4 py-3 font-black text-center w-40 text-slate-800">
                     حالة الملف
@@ -397,7 +381,7 @@ export default function ProjectsArchiveScreen() {
                       <td
                         className={`px-4 py-3 sticky right-[128px] z-10 border-l border-slate-100 ${isDuplicate ? "bg-orange-50/90" : "bg-white"}`}
                       >
-                        <div className="flex items-center gap-2 max-w-[240px]">
+                        <div className="flex items-center gap-2 max-w-[500px]">
                           {isDuplicate && (
                             <AlertTriangle
                               className="w-4 h-4 text-orange-500 shrink-0"
@@ -449,9 +433,6 @@ export default function ProjectsArchiveScreen() {
                         </span>
                       </td>
 
-                      {/* ========================================================= */}
-                      {/* 💡 التعديل هنا: لغة تواصل بشرية ومباشرة לחالة الملف */}
-                      {/* ========================================================= */}
                       <td className="px-4 py-3 text-center">
                         {project.aiStatus === "completed" ? (
                           <span className="inline-flex items-center justify-center w-full px-2 py-1.5 bg-amber-100 text-amber-800 rounded-lg text-[10px] font-black border border-amber-200 gap-1 shadow-sm">
