@@ -10,8 +10,8 @@ import {
   Scale,
   Ruler,
   Minimize2,
-  AlertTriangle, // 👈 استيراد أيقونة التحذير
-  GitMerge, // 👈 استيراد أيقونة الدمج
+  AlertTriangle,
+  GitMerge,
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../../api/axios";
@@ -40,9 +40,12 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
   const [selectedSectorId, setSelectedSectorId] = useState("");
   const [isReanalyzing, setIsReanalyzing] = useState(false);
 
+  // 🚀 إضافة plan و plot إلى حالات الربط
   const [linkingStates, setLinkingStates] = useState({
     client: false,
     district: false,
+    plan: false,
+    plot: false,
     designer: false,
     supervisor: false,
   });
@@ -61,6 +64,7 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
         plots: project.plots || [],
         clientId: project.clientId || project.client?.id || "",
         districtId: project.districtId || project.district?.id || "",
+        planId: project.planId || project.plan?.id || "", // 👈 جلب حالة المخطط
         designerOfficeId: project.designerOfficeId || "",
         supervisorOfficeId: project.supervisorOfficeId || "",
       });
@@ -126,6 +130,7 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
             plots: project.plots || [],
             clientId: project.clientId || project.client?.id || "",
             districtId: project.districtId || project.district?.id || "",
+            planId: project.planId || project.plan?.id || "",
             designerOfficeId: project.designerOfficeId || "",
             supervisorOfficeId: project.supervisorOfficeId || "",
           });
@@ -163,12 +168,105 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
     try {
       const payload = { ...data, approvedById: user?.id };
       await api.put(`/archived-projects/${projectId}`, payload);
-      alert(`تم حفظ واعتماد المشروع بنجاح بواسطة: ${user?.name || "الموظف"}`);
+      toast.success(
+        `تم حفظ واعتماد المشروع بنجاح بواسطة: ${user?.name || "الموظف"}`,
+      );
       onClose();
     } catch (error) {
-      alert("فشل الحفظ، تأكد من صحة البيانات والمُعرفات.");
+      toast.error("فشل الحفظ، تأكد من صحة البيانات والمُعرفات.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // ==========================================
+  // 🚀 دالة الربط الذكي الاحترافية (Auto Linker)
+  // ==========================================
+  const handleAutoLink = async (type, extractedName) => {
+    if (!extractedName) return;
+
+    setLinkingStates((prev) => ({ ...prev, [type]: true }));
+
+    try {
+      // 💡 معالجة استثنائية لـ "القطع" (Plots) للتحقق فقط
+      if (type === "plot") {
+        await new Promise((resolve) => setTimeout(resolve, 800)); // محاكاة فحص لإعطاء شعور بالاستجابة
+
+        const plotsArray = Array.isArray(extractedName)
+          ? extractedName
+          : String(extractedName)
+              .split(",")
+              .map((p) => p.trim());
+
+        // التحقق من الكلمات الوهمية
+        const hasInvalid = plotsArray.some(
+          (p) =>
+            p.includes("بدون") ||
+            p.includes("غير محدد") ||
+            p.includes("لا يوجد"),
+        );
+
+        if (hasInvalid) {
+          toast.error(
+            "❌ لا يمكن ربط القطع. يرجى إدخال أرقام صحيحة بدلاً من 'بدون'.",
+          );
+        } else if (!data.planId) {
+          toast.warning(
+            "⚠️ يرجى ربط (المخطط التنظيمي) أولاً لضمان حفظ القطع بداخله عند الاعتماد.",
+          );
+        } else {
+          toast.success(
+            "✅ تم التحقق من صحة القطع. سيتم ربطها آلياً بالمخطط عند الضغط على حفظ واعتماد.",
+          );
+        }
+
+        setLinkingStates((prev) => ({ ...prev, [type]: false }));
+        return;
+      }
+
+      // 💡 معالجة باقي الأنواع (بحث في الداتابيز)
+      const response = await api.post(
+        `/archived-projects/${projectId}/auto-link`,
+        {
+          type,
+          name: String(extractedName).trim(),
+        },
+      );
+
+      if (response.data.success && response.data.id) {
+        let idField = "";
+        switch (type) {
+          case "client":
+            idField = "clientId";
+            break;
+          case "district":
+            idField = "districtId";
+            break;
+          case "plan":
+            idField = "planId";
+            break;
+          case "designer":
+            idField = "designerOfficeId";
+            break;
+          case "supervisor":
+            idField = "supervisorOfficeId";
+            break;
+          default:
+            break;
+        }
+
+        if (idField) {
+          setData((prev) => ({ ...prev, [idField]: response.data.id }));
+          toast.success(`تم ربط ${extractedName} بنجاح!`);
+        }
+      } else {
+        toast.error(`لم يتم العثور على تطابق في النظام لـ: ${extractedName}`);
+      }
+    } catch (error) {
+      console.error("AutoLink Error:", error);
+      toast.error("حدث خطأ أثناء محاولة الربط الآلي.");
+    } finally {
+      setLinkingStates((prev) => ({ ...prev, [type]: false }));
     }
   };
 
@@ -182,9 +280,7 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
       const res = await api.post(
         `/archived-projects/${data.id}/files`,
         formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        },
+        { headers: { "Content-Type": "multipart/form-data" } },
       );
 
       if (res.data.success) {
@@ -210,7 +306,7 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
         toast.success("تم حذف الملف بنجاح.");
       } catch (error) {
         console.error("خطأ في حذف الملف:", error);
-        alert("حدث خطأ أثناء محاولة حذف الملف.");
+        toast.error("حدث خطأ أثناء محاولة حذف الملف.");
       }
     }
   };
@@ -228,18 +324,14 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
       }));
     } catch (error) {
       console.error("خطأ في تغيير اسم الملف:", error);
-      alert("حدث خطأ أثناء محاولة تغيير اسم الملف.");
+      toast.error("حدث خطأ أثناء محاولة تغيير اسم الملف.");
     }
-  };
-
-  const handleAutoLink = async (type, extractedName) => {
-    // ... دالة الربط السحري (موجودة لديك وممتازة)
   };
 
   const handleReanalyze = async () => {
     if (
       !window.confirm(
-        "هل أنت متأكد من إعادة تحليل المشروع؟ سيتم قراءة جميع المرفقات الحالية وإغلاق هذه النافذة للعمل في الخلفية.",
+        "هل أنت متأكد من إعادة تحليل المشروع؟ سيتم قراءة جميع المرفقات وإغلاق هذه النافذة للعمل في الخلفية.",
       )
     )
       return;
@@ -249,14 +341,14 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
         `/archived-projects/${projectId}/reanalyze`,
       );
       if (response.data.success) {
-        alert(
-          "تم إرسال طلب إعادة التحليل. سيقوم النظام بمعالجة الملفات في الخلفية وإشعارك عند الانتهاء.",
+        toast.success(
+          "تم إرسال طلب إعادة التحليل. سيقوم النظام بالمعالجة في الخلفية.",
         );
         onClose();
       }
     } catch (error) {
       console.error("Error reanalyzing project:", error);
-      alert(
+      toast.error(
         error.response?.data?.message || "حدث خطأ أثناء محاولة إعادة التحليل.",
       );
       setIsReanalyzing(false);
@@ -264,7 +356,6 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
   };
 
   const handleMergeProjects = async (targetArchiveCode) => {
-    // 💡 إذا لم يكن الكود متاحاً، نطلبه من المستخدم يدوياً
     let codeToMerge = targetArchiveCode;
     if (!codeToMerge) {
       codeToMerge = window.prompt(
@@ -285,17 +376,14 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
         targetArchiveCode: codeToMerge,
       });
       if (response.data.success) {
-        alert("تمت عملية الدمج بنجاح! سيتم إغلاق هذه النافذة.");
+        toast.success("تمت عملية الدمج بنجاح! سيتم إغلاق النافذة.");
         onClose();
       }
     } catch (error) {
-      alert("حدث خطأ أثناء الدمج. تأكد من صحة كود المشروع.");
+      toast.error("حدث خطأ أثناء الدمج. تأكد من صحة كود المشروع.");
     }
   };
 
-  // ==========================================
-  // 💡 استخراج بيانات التكرار الذكية للهيدر
-  // ==========================================
   const isDuplicate = data?.archiveNotes?.includes("⚠️");
   const duplicateMatch = data?.archiveNotes?.match(/\b(ARC-\d{4}-\d{3})\b/);
   const targetArchiveCode = duplicateMatch ? duplicateMatch[1] : null;
@@ -371,9 +459,7 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
       dir="rtl"
     >
       <div className="bg-slate-50 w-full max-w-[1200px] h-[95vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden ring-1 ring-white/20">
-        {/* ========================================== */}
-        {/* 🚀 الهيدر (تم إضافة التنبيه وزر الدمج) */}
-        {/* ========================================== */}
+        {/* الهيدر */}
         <div className="bg-white border-b border-slate-200 px-6 py-4 flex flex-wrap lg:flex-nowrap items-center justify-between shrink-0 gap-4">
           <div className="flex items-center gap-4">
             <button
@@ -392,59 +478,55 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
             </div>
           </div>
 
-          
-            {/* ⚠️ شريط التحذير وزر الدمج (يظهر فقط إذا كان المشروع مكرراً) */}
-            {isDuplicate && (
-              <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 p-1.5 pr-3 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-2">
-                <div className="flex items-center gap-2 text-orange-700">
-                  <AlertTriangle className="w-4 h-4 animate-pulse" />
-                  <span className="text-xs font-black">اكتشاف تكرار!</span>
-                </div>
-                <button
-                  onClick={() => handleMergeProjects(targetArchiveCode)}
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1.5 rounded-lg text-[11px] font-black flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
-                >
-                  <GitMerge className="w-3.5 h-3.5" />
-                  دمج الملفات{" "}
-                  {targetArchiveCode ? `(${targetArchiveCode})` : ""}
-                </button>
+          {/* شريط التحذير وزر الدمج */}
+          {isDuplicate && (
+            <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 p-1.5 pr-3 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center gap-2 text-orange-700">
+                <AlertTriangle className="w-4 h-4 animate-pulse" />
+                <span className="text-xs font-black">اكتشاف تكرار!</span>
               </div>
-            )}
-
-            {/* شريط الدقة */}
-            <div className="hidden sm:block text-left border-r border-slate-200 pr-4">
-              <p className="text-[10px] text-slate-500 font-bold uppercase mb-1 text-right">
-                دقة التحليل
-              </p>
-              <div className="flex items-center gap-2">
-                <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${data.aiConfidence > 80 ? "bg-emerald-500" : data.aiConfidence > 50 ? "bg-amber-500" : "bg-rose-500"}`}
-                    style={{ width: `${data.aiConfidence || 0}%` }}
-                  ></div>
-                </div>
-                <span className="text-xs font-black text-slate-700">
-                  {data.aiConfidence || 0}%
-                </span>
-              </div>
+              <button
+                onClick={() => handleMergeProjects(targetArchiveCode)}
+                className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1.5 rounded-lg text-[11px] font-black flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+              >
+                <GitMerge className="w-3.5 h-3.5" />
+                دمج الملفات {targetArchiveCode ? `(${targetArchiveCode})` : ""}
+              </button>
             </div>
+          )}
 
-            {/* زر الحفظ */}
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-black flex items-center gap-2 transition-all disabled:opacity-50 shadow-md shadow-indigo-600/20 active:scale-95"
-            >
-              {isSaving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              حفظ واعتماد
-            </button>
-         
+          <div className="hidden sm:block text-left border-r border-slate-200 pr-4">
+            <p className="text-[10px] text-slate-500 font-bold uppercase mb-1 text-right">
+              دقة التحليل
+            </p>
+            <div className="flex items-center gap-2">
+              <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full ${data.aiConfidence > 80 ? "bg-emerald-500" : data.aiConfidence > 50 ? "bg-amber-500" : "bg-rose-500"}`}
+                  style={{ width: `${data.aiConfidence || 0}%` }}
+                ></div>
+              </div>
+              <span className="text-xs font-black text-slate-700">
+                {data.aiConfidence || 0}%
+              </span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-black flex items-center gap-2 transition-all disabled:opacity-50 shadow-md shadow-indigo-600/20 active:scale-95"
+          >
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}{" "}
+            حفظ واعتماد
+          </button>
         </div>
 
+        {/* Body */}
         <div className="flex flex-1 overflow-hidden">
           <div className="w-64 bg-white border-l border-slate-200 flex flex-col overflow-y-auto shrink-0 p-3 gap-1 custom-scrollbar">
             {tabs.map((tab) => {

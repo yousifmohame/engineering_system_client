@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
-import { 
-  FileBadge2, 
-  Search, 
-  ChevronDown, 
-  FileDigit, 
-  MapPin, 
+import {
+  FileBadge2,
+  Search,
+  ChevronDown,
+  FileDigit,
+  MapPin,
   ExternalLink,
-  Check
+  Check,
+  AlertTriangle,
 } from "lucide-react";
 import LinkStatusBadge from "../LinkStatusBadge";
 
@@ -127,6 +128,7 @@ export default function LegalTab({
       handleChange({ target: { name: "licenseHijriYear", value: "" } });
   };
 
+  // دوال الربط الذكي
   const handleSmartDistrictLink = () => {
     if (!data.districtName) return;
     handleAutoLink("district", data.districtName);
@@ -134,13 +136,31 @@ export default function LegalTab({
 
   const handleSmartPlanLink = () => {
     if (!data.planNumber) return;
-    // 💡 نستدعي نفس دالة الأتمتة في المكون الأب ولكن بنوع "plan"
-    handleAutoLink("plan", data.planNumber); 
+    handleAutoLink("plan", data.planNumber);
   };
+
+  const handleSmartPlotLink = () => {
+    const plotsString = data.plots?.join(", ");
+    if (!plotsString) return;
+    handleAutoLink("plot", plotsString);
+  };
+
+  // 🚀 اكتشاف ما إذا كان المخطط أو القطعة "بدون"
+  const isWithoutPlan =
+    data.planNumber &&
+    (data.planNumber.trim() === "بدون" ||
+      data.planNumber.includes("بدون مخطط"));
+
+  // نفحص ما إذا كانت مصفوفة القطع تحتوي على كلمة (بدون، غير محدد، لا يوجد)
+  const isWithoutPlot =
+    data.plots &&
+    data.plots.some(
+      (p) =>
+        p.includes("بدون") || p.includes("غير محدد") || p.includes("لا يوجد"),
+    );
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-      
       {/* ======================================================= */}
       {/* القسم الأول: أرقام الطلبات والخدمات */}
       {/* ======================================================= */}
@@ -197,7 +217,6 @@ export default function LegalTab({
         <FileBadge2 className="w-4 h-4" /> الرخص والموقع الجغرافي
       </h4>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
         {/* بيانات الرخصة والصك */}
         <div className="w-full">
           <label className={labelClass}>رقم رخصة البناء والسنة الهجرية</label>
@@ -213,7 +232,11 @@ export default function LegalTab({
             <div className="flex-[1] min-w-[110px] relative bg-slate-100 transition-colors">
               <input
                 readOnly
-                value={data.licenseHijriYear ? `${data.licenseHijriYear} هـ` : "تلقائي"}
+                value={
+                  data.licenseHijriYear
+                    ? `${data.licenseHijriYear} هـ`
+                    : "تلقائي"
+                }
                 className="w-full h-full px-3 py-2.5 text-xs font-bold text-emerald-700 bg-transparent outline-none font-mono text-center cursor-not-allowed"
               />
             </div>
@@ -282,7 +305,6 @@ export default function LegalTab({
         {/* قسم الموقع والخرائط */}
         {/* ======================================================= */}
         <div className="md:col-span-2 mt-4 border-t border-slate-100 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-          
           <div className="w-full">
             <label className={labelClass}>القطاع</label>
             <select
@@ -292,7 +314,9 @@ export default function LegalTab({
             >
               <option value="">-- حدد القطاع --</option>
               {sectors.map((sec) => (
-                <option key={sec.id} value={sec.id}>{sec.name}</option>
+                <option key={sec.id} value={sec.id}>
+                  {sec.name}
+                </option>
               ))}
             </select>
           </div>
@@ -314,12 +338,19 @@ export default function LegalTab({
               onClick={() => setIsDistrictDropdownOpen(!isDistrictDropdownOpen)}
               className={`${inputClass} mt-0 flex items-center justify-between cursor-pointer w-full select-none`}
             >
-              <span className={data.districtId ? "text-slate-700" : "text-slate-400"}>
+              <span
+                className={
+                  data.districtId ? "text-slate-700" : "text-slate-400"
+                }
+              >
                 {data.districtId
-                  ? districts.find((d) => d.id === data.districtId)?.name || "حي غير معروف"
+                  ? districts.find((d) => d.id === data.districtId)?.name ||
+                    "حي غير معروف"
                   : "-- اختر أو ابحث عن حي --"}
               </span>
-              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isDistrictDropdownOpen ? "rotate-180" : ""}`} />
+              <ChevronDown
+                className={`w-4 h-4 text-slate-400 transition-transform ${isDistrictDropdownOpen ? "rotate-180" : ""}`}
+              />
             </div>
 
             {isDistrictDropdownOpen && (
@@ -341,7 +372,9 @@ export default function LegalTab({
                       <li
                         key={dist.id}
                         onClick={() => {
-                          handleChange({ target: { name: "districtId", value: dist.id } });
+                          handleChange({
+                            target: { name: "districtId", value: dist.id },
+                          });
                           setSelectedSectorId(dist.sectorId);
                           setIsDistrictDropdownOpen(false);
                           setDistrictSearchTerm("");
@@ -352,20 +385,20 @@ export default function LegalTab({
                       </li>
                     ))
                   ) : (
-                    <li className="px-4 py-4 text-xs text-slate-400 text-center font-bold">لا يوجد حي يطابق بحثك</li>
+                    <li className="px-4 py-4 text-xs text-slate-400 text-center font-bold">
+                      لا يوجد حي يطابق بحثك
+                    </li>
                   )}
                 </ul>
               </div>
             )}
           </div>
 
-          {/* 💡 التحديث هنا: رادار المخطط */}
+          {/* 💡 المخطط + إشعار */}
           <div className="w-full">
             <div className="flex justify-between items-center mb-1.5">
               <label className={labelClass}>رقم المخطط التنظيمي</label>
-              
-              {/* شارة الربط للمخطط */}
-              {!data.planId && data.planNumber && (
+              {!data.planId && data.planNumber && !isWithoutPlan && (
                 <LinkStatusBadge
                   isLinked={!!data.planId}
                   extractedText={data.planNumber}
@@ -374,33 +407,106 @@ export default function LegalTab({
                 />
               )}
               {data.planId && (
-                 <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-md flex items-center gap-1">
-                   <Check className="w-3 h-3" /> مخطط معتمد
-                 </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-md flex items-center gap-1">
+                  <Check className="w-3 h-3" /> مخطط معتمد
+                </span>
               )}
             </div>
-            
+
             <input
               name="planNumber"
               value={data.planNumber || ""}
               onChange={handleChange}
-              className={`${inputClass} !mt-0 font-mono w-full`}
+              className={`${inputClass} !mt-0 font-mono w-full ${isWithoutPlan ? "border-rose-500 focus:ring-rose-500 bg-rose-50/50 text-rose-700" : ""}`}
               placeholder="أدخل رقم المخطط (مثال: 3020/أ)"
             />
+
+            {/* إشعار المخطط */}
+            {isWithoutPlan && (
+              <div className="mt-3 p-3 bg-rose-50 border-2 border-rose-500 rounded-xl shadow-[0_0_15px_rgba(244,63,94,0.4)] animate-pulse flex items-start gap-2.5">
+                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <h5 className="text-[13px] font-black text-rose-800 mb-1">
+                    🛑 تنبيه المخطط!
+                  </h5>
+                  <p className="text-[11px] font-bold text-rose-600 leading-relaxed">
+                    هذا المشروع مصنف كـ "بدون مخطط".
+                    <span className="bg-rose-200 px-1 rounded mx-1 text-rose-900 inline-block mt-1">
+                      يرجى إدخال رمز المخطط من الخرائط الرسمية أو كود البلك
+                    </span>
+                    بدلاً من كلمة "بدون".
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
+          {/* 💡 أرقام القطع + زر الربط + إشعار */}
           <div className="w-full">
-            <label className={labelClass}>أرقام القطع</label>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className={labelClass}>أرقام القطع</label>
+
+              {/* 🚀 حساب حالة الربط ذكياً بناءً على الداتابيز أو زر التحقق */}
+              {(() => {
+                const isPlotsLinked = data.isPlotsVerified || (data.projectPlots && data.projectPlots.length > 0);
+
+                return (
+                  <>
+                    {!isPlotsLinked && data.plots && data.plots.length > 0 && !isWithoutPlot && (
+                      <LinkStatusBadge
+                        isLinked={false}
+                        extractedText={data.plots.join(", ")}
+                        isLinking={linkingStates.plot}
+                        onLinkClick={handleSmartPlotLink}
+                      />
+                    )}
+                    {isPlotsLinked && !isWithoutPlot && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-md flex items-center gap-1 animate-in zoom-in duration-200">
+                        <Check className="w-3 h-3" /> تم التحقق والربط
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
             <input
+              name="plots"
               value={data.plots?.join(", ") || ""}
-              onChange={(e) =>
+              onChange={(e) => {
                 handleChange({
                   target: { name: "plots", value: e.target.value.split(", ") },
-                })
-              }
-              className={`${inputClass} mt-1.5 font-mono w-full`}
+                });
+                // 🚀 تصفير حالة الربط إذا قام المهندس بتعديل أرقام القطع يدوياً
+                handleChange({
+                  target: { name: "isPlotsVerified", value: false },
+                });
+                handleChange({
+                  target: { name: "projectPlots", value: [] }, // إجبار فك الربط من الداتابيز لكي يعيد التحقق
+                });
+              }}
+              className={`${inputClass} !mt-0 font-mono w-full ${isWithoutPlot ? "border-rose-500 focus:ring-rose-500 bg-rose-50/50 text-rose-700" : ""}`}
               placeholder="مثال: 10, 11"
             />
+
+            {/* 🚀 إشعار "يخزق العين" الخاص بأرقام القطع */}
+            {isWithoutPlot && (
+              <div className="mt-3 p-3 bg-rose-50 border-2 border-rose-500 rounded-xl shadow-[0_0_15px_rgba(244,63,94,0.4)] animate-pulse flex items-start gap-2.5">
+                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <h5 className="text-[13px] font-black text-rose-800 mb-1">
+                    🛑 تنبيه القطع!
+                  </h5>
+                  <p className="text-[11px] font-bold text-rose-600 leading-relaxed">
+                    تم استخراج القطعة كـ "بدون" أو "غير محدد". يرجى
+                    <span className="bg-rose-200 px-1 rounded mx-1 text-rose-900 inline-block mt-1">
+                      تحديد رقم القطعة الصحيح أو استبدالها برقم البلك
+                    </span>
+                    لضمان الأرشفة السليمة.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="w-full">
@@ -414,14 +520,16 @@ export default function LegalTab({
             />
           </div>
 
-          {/* 💡 التحديث هنا: رابط الموقع التفاعلي */}
+          {/* رابط الموقع التفاعلي */}
           <div className="w-full">
-            <label className={labelClass}>رابط الموقع (خرائط جوجل / بلدي)</label>
+            <label className={labelClass}>
+              رابط الموقع (خرائط جوجل / بلدي)
+            </label>
             <div className="flex items-center gap-2 mt-1.5">
               <div className="relative flex-1">
                 <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
-                  name="mapUrl" // تأكد من إضافة mapUrl لنموذج قاعدة البيانات لديك
+                  name="mapUrl"
                   value={data.mapUrl || ""}
                   onChange={handleChange}
                   className={`${inputClass} !mt-0 w-full pr-9`}
@@ -431,7 +539,11 @@ export default function LegalTab({
               </div>
               {data.mapUrl && (
                 <a
-                  href={data.mapUrl.startsWith('http') ? data.mapUrl : `https://${data.mapUrl}`}
+                  href={
+                    data.mapUrl.startsWith("http")
+                      ? data.mapUrl
+                      : `https://${data.mapUrl}`
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2.5 bg-sky-50 text-sky-600 hover:bg-sky-600 hover:text-white rounded-xl transition-all border border-sky-100 shadow-sm shrink-0"
@@ -442,7 +554,6 @@ export default function LegalTab({
               )}
             </div>
           </div>
-
         </div>
       </div>
     </div>
