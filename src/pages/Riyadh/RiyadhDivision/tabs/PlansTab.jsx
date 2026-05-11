@@ -23,12 +23,12 @@ import {
 import { useAuth } from "../../../../context/AuthContext";
 
 // استيراد المكونات المنفصلة
-import PlotsDetailsTab from "./components/PlotsDetailsTab";
-import StatsTab from "./components/StatsTab";
-import GeneralInfoTab from "./components/GeneralInfoTab";
-import FilesTab from "./components/FilesTab";
-import SpecialRegTab from "./components/SpecialRegTab";
-import NotesTab from "./components/NotesTab";
+import PlotsDetailsTab from "./plan_components/PlotsDetailsTab";
+import StatsTab from "./plan_components/StatsTab";
+import GeneralInfoTab from "./plan_components/GeneralInfoTab";
+import FilesTab from "./plan_components/FilesTab";
+import SpecialRegTab from "./plan_components/SpecialRegTab";
+import NotesTab from "./plan_components/NotesTab";
 import ReferenceDetailsModal from "../../../ProjectsArchive/ReferenceDetails/ReferenceDetailsModal";
 import ClientFileDetails from "../../../Clients/ClientFileDetails";
 
