@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-
 const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const api = axios.create({
@@ -8,11 +7,9 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  // مهلة الانتظار (اختياري لكن مفيد للطلبات الطويلة مثل الذكاء الاصطناعي)
-  timeout: 600000, // 10 دقائق
+  timeout: 600000, 
 });
 
-// 2. إضافة التوكن تلقائياً لكل طلب (Request Interceptor)
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -21,23 +18,28 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// 3. (إضافة احترافية) معالجة انتهاء الجلسة (Response Interceptor)
-// إذا رد السيرفر بـ 401 (غير مصرح)، نقوم بتسجيل الخروج فوراً
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // التوكن انتهى أو غير صالح -> تنظيف وطرد المستخدم
+    // 1. تحديد ما إذا كان الطلب الحالي هو طلب تسجيل دخول
+    const isLoginRequest = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/login');
+
+    // 2. التحقق من الخطأ 401 مع استثناء صفحة تسجيل الدخول
+    if (error.response && error.response.status === 401 && !isLoginRequest) {
+      // لا ننفذ الطرد التلقائي إلا إذا كان المستخدم مسجلاً بالفعل وانتهت صلاحية التوكن الخاص به
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      // توجيه لصفحة الدخول (تغيير الرابط حسب الراوتر لديك)
-      window.location.href = '/login';
+      
+      // توجيه فقط إذا لم نكن في صفحة الدخول لمنع الـ Reload اللانهائي
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
+    
+    // ضروري جداً: نمرر الخطأ كما هو لكي يستطيع الـ Catch في مكون Login.jsx التقاطه وعرضه
     return Promise.reject(error);
   }
 );

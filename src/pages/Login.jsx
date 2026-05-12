@@ -7,6 +7,7 @@ import {
   Lock,
   CalendarDays,
   Clock3,
+  AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -224,6 +225,15 @@ const FloatingTriangles = () => {
           .triangle-five {
             animation: triangleMoveFive 10s ease-in-out infinite;
           }
+            /* 💡 حركة الاهتزاز عند ظهور خطأ */
+          @keyframes errorShake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+          }
+          .animate-error-shake {
+            animation: errorShake 0.4s ease-in-out forwards;
+          }
         `}
       </style>
 
@@ -253,6 +263,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errorKey, setErrorKey] = useState(0);
   const [now, setNow] = useState(new Date());
 
   const { login } = useAuth();
@@ -355,8 +366,18 @@ const Login = () => {
             className="mx-auto w-full max-w-[440px]"
           >
             {error && (
-              <div className="mb-2 rounded-lg border border-red-300 bg-red-50/90 px-4 py-1.5 text-center text-xs text-red-700">
-                {error}
+              <div 
+                key={errorKey} // Force re-render for animation
+                className="animate-error-shake mb-5 flex items-center gap-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 shadow-[0_4px_12px_rgba(225,29,72,0.1)] backdrop-blur-md"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-500/20 text-rose-600 shadow-inner">
+                  <AlertCircle size={18} strokeWidth={2.5} />
+                </div>
+                <div className="flex-1 text-right">
+                  <p className="text-[13px] font-bold leading-snug text-rose-700 drop-shadow-sm">
+                    {error}
+                  </p>
+                </div>
               </div>
             )}
 
