@@ -1,8 +1,6 @@
 import axios from 'axios';
 
-// 1. تحديد الرابط ديناميكياً
-// في السيرفر سيقرأ: http://95.216.73.243/api
-// في جهازك سيقرأ: http://localhost:5001/api
+
 const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const api = axios.create({
