@@ -166,14 +166,23 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const payload = { ...data, approvedById: user?.id };
+      // 💡 التعديل هنا: إضافة حقل aiStatus وتغيير قيمته إلى "approved" إجبارياً
+      const payload = { 
+        ...data, 
+        aiStatus: "approved", // 👈 هذا السطر الذي يغير الحالة
+        approvedById: user?.id 
+      };
+      
       await api.put(`/archived-projects/${projectId}`, payload);
+      
       toast.success(
         `تم حفظ واعتماد المشروع بنجاح بواسطة: ${user?.name || "الموظف"}`,
       );
-      onClose();
+      
+      onClose(); // إغلاق النافذة (وبالتالي سيتم تحديث الجدول في الشاشة الرئيسية)
     } catch (error) {
       toast.error("فشل الحفظ، تأكد من صحة البيانات والمُعرفات.");
+      console.error("Save Error:", error);
     } finally {
       setIsSaving(false);
     }

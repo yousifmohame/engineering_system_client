@@ -8,15 +8,12 @@ import {
   Trash2,
   BookOpen,
   Brain,
-  Zap,
   Sparkles,
   MessageSquare,
   Filter,
   History,
   Share2,
   Loader2,
-  Info,
-  Target,
   AlertTriangle,
   Wind,
   Activity,
@@ -62,7 +59,7 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
         userEmail: user?.email,
       }),
     onSuccess: () => {
-      toast.success("تم التحديث");
+      toast.success("تم التحديث بنجاح");
       queryClient.invalidateQueries(["reference-documents"]);
     },
   });
@@ -74,7 +71,7 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
         userName: user?.name,
         userEmail: user?.email,
       }),
-    onSuccess: () => toast.success("بدأ التحليل الذكي..."),
+    onSuccess: () => toast.success("بدأ التحليل الذكي في الخلفية..."),
   });
 
   const parsedAI = useMemo(() => {
@@ -116,96 +113,98 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
 
   return (
     <div
-      className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] p-2 md:p-4 animate-in fade-in"
+      className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 animate-in fade-in"
       dir="rtl"
     >
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col w-full max-w-6xl max-h-[95vh] animate-in zoom-in-95">
-        {/* ─── Header (Compact) ─── */}
-        <div className="bg-slate-900 px-4 py-3 text-white flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-500 rounded-lg shadow-lg">
-              <BookOpen className="w-4 h-4 text-white" />
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col w-full max-w-[1400px] h-[92vh] animate-in zoom-in-95">
+        {/* ─── Header ─── */}
+        <div className="bg-slate-900 px-6 py-5 text-white flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-emerald-500 rounded-xl shadow-lg">
+              <BookOpen className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="text-sm font-black truncate max-w-md">
+              <h3 className="text-lg md:text-xl font-black truncate max-w-2xl">
                 {document.title}
               </h3>
-              <div className="flex gap-3 mt-0.5 opacity-70">
-                <span className="text-[9px] font-bold">
-                  المصدر: {document.source}
+              <div className="flex gap-4 mt-1 opacity-80">
+                <span className="text-xs font-bold">
+                  الجهة المصدرة: {document.source}
                 </span>
-                <span className="text-[9px] font-bold">
-                  الإصدار:{" "}
+                <span className="text-xs font-bold">
+                  تاريخ الإصدار:{" "}
                   {document.issueDate
                     ? new Date(document.issueDate).toLocaleDateString("en-GB")
-                    : "---"}
+                    : "غير محدد"}
                 </span>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => reanalyzeMutation.mutate("full")}
-              className="flex items-center gap-1 px-2 py-1 bg-purple-600 hover:bg-purple-700 text-[9px] font-black rounded-lg transition-all ml-2"
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-xs font-black rounded-xl transition-all ml-2 shadow-md"
             >
-              <Brain size={12} /> إعادة التحليل
+              <Brain size={16} /> إعادة التحليل الذكي
             </button>
             <button
               onClick={() => {
-                if (window.confirm("حذف نهائي؟"))
+                if (window.confirm("هل أنت متأكد من الحذف النهائي؟"))
                   api
                     .delete(`/references/${document.id}`)
                     .then(() => onClose());
               }}
-              className="p-1.5 hover:bg-rose-500/20 rounded-lg text-slate-400 hover:text-rose-400 transition-colors"
+              className="p-2.5 hover:bg-rose-500/20 rounded-xl text-slate-400 hover:text-rose-400 transition-colors"
+              title="حذف المرجع"
             >
-              <Trash2 size={14} />
+              <Trash2 size={20} />
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 hover:bg-white/10 rounded-lg text-white transition-colors"
+              className="p-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-white transition-colors"
+              title="إغلاق النافذة"
             >
-              <X size={16} />
+              <X size={20} />
             </button>
           </div>
         </div>
 
         {/* ─── Main Body (Two Columns Layout) ─── */}
-        <div className="flex-1 overflow-hidden grid grid-cols-12 gap-0 bg-slate-50">
+        <div className="flex-1 overflow-hidden grid grid-cols-1 md:grid-cols-12 gap-0 bg-slate-50">
           {/* 👈 Left Column: Analysis & Summary (Scrollable) */}
-          <div className="col-span-12 lg:col-span-7 overflow-y-auto p-3 space-y-3 custom-scrollbar-slim border-l border-slate-200 bg-white">
+          <div className="col-span-12 md:col-span-7 lg:col-span-8 overflow-y-auto p-6 space-y-6 custom-scrollbar border-l border-slate-200 bg-white">
             {/* AI Summary Box */}
-            <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-3 relative group">
-              <div className="flex items-center justify-between mb-2">
-                <h5 className="text-[11px] font-black text-emerald-900 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> الملخص
-                  الذكي (AI)
+            <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-5 relative group shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h5 className="text-base font-black text-emerald-900 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-emerald-600" /> الملخص الذكي
+                  (AI)
                 </h5>
-                <span className="text-[8px] font-black bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded uppercase">
+                <span className="text-xs font-black bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg uppercase tracking-wider">
                   Verified Analysis
                 </span>
               </div>
-              <p className="text-[10.5px] font-bold text-emerald-800 leading-relaxed">
+              <p className="text-sm md:text-[15px] font-bold text-emerald-800 leading-loose whitespace-pre-wrap">
                 {parsedAI.summary || "جاري جلب الملخص..."}
               </p>
             </div>
 
             {/* Key Rules (Dense Grid) */}
-            <div className="bg-amber-50/30 border border-amber-100 rounded-xl p-3">
-              <h5 className="text-[11px] font-black text-amber-900 mb-3 flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> أهم
+            <div className="bg-amber-50/30 border border-amber-100 rounded-2xl p-5 shadow-sm">
+              <h5 className="text-base font-black text-amber-900 mb-4 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600" /> أهم
                 الاشتراطات والقواعد الإلزامية
               </h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {document.keyRules?.map((rule, idx) => (
                   <div
                     key={idx}
-                    className="flex items-start gap-2 bg-white/60 p-2 rounded-lg border border-amber-100/50"
+                    className="flex items-start gap-3 bg-white/80 p-3.5 rounded-xl border border-amber-100/50 hover:shadow-md transition-shadow"
                   >
-                    <span className="w-4 h-4 rounded bg-amber-200 text-amber-800 flex items-center justify-center text-[9px] font-black shrink-0">
+                    <span className="w-6 h-6 rounded-lg bg-amber-200 text-amber-800 flex items-center justify-center text-xs font-black shrink-0 shadow-sm">
                       {idx + 1}
                     </span>
-                    <p className="text-[9.5px] font-bold text-slate-700 leading-tight">
+                    <p className="text-xs md:text-sm font-bold text-slate-700 leading-relaxed">
                       {rule}
                     </p>
                   </div>
@@ -214,48 +213,56 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
             </div>
 
             {/* Protocols & Technical Details */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-cyan-50/50 border border-cyan-100 rounded-xl p-3">
-                <h5 className="text-[10px] font-black text-cyan-900 mb-1 flex items-center gap-1">
-                  <Wind size={12} /> الرياح والطقس
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-cyan-50/50 border border-cyan-100 rounded-2xl p-5 shadow-sm">
+                <h5 className="text-sm font-black text-cyan-900 mb-2 flex items-center gap-2">
+                  <Wind size={18} className="text-cyan-600" /> بروتوكول الرياح
+                  والطقس
                 </h5>
-                <p className="text-[9px] font-bold text-cyan-800">
-                  {document.windProtocol || "لا يوجد بروتوكول محدد"}
+                <p className="text-xs md:text-sm font-bold text-cyan-800 leading-relaxed">
+                  {document.windProtocol ||
+                    "لا يوجد بروتوكول محدد في هذا المرجع"}
                 </p>
               </div>
-              <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-3">
-                <h5 className="text-[10px] font-black text-blue-900 mb-1 flex items-center gap-1">
-                  <Activity size={12} /> الرصد والامتثال
+              <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-5 shadow-sm">
+                <h5 className="text-sm font-black text-blue-900 mb-2 flex items-center gap-2">
+                  <Activity size={18} className="text-blue-600" /> الرصد
+                  والامتثال البيئي
                 </h5>
-                <p className="text-[9px] font-bold text-blue-800">
-                  {document.monitoringProtocol || "لا يوجد بروتوكول محدد"}
+                <p className="text-xs md:text-sm font-bold text-blue-800 leading-relaxed">
+                  {document.monitoringProtocol ||
+                    "لا يوجد بروتوكول محدد في هذا المرجع"}
                 </p>
               </div>
             </div>
 
-            {/* Original Attachments (Horizontal Scroll/Grid) */}
-            <div className="pt-2 border-t border-slate-100">
-              <h5 className="text-[10px] font-black text-slate-500 mb-2 flex items-center gap-1.5">
-                <Paperclip size={12} /> المرفقات الأصلية ({fileUrls.length})
+            {/* Original Attachments */}
+            <div className="pt-4 border-t border-slate-100">
+              <h5 className="text-sm font-black text-slate-600 mb-4 flex items-center gap-2">
+                <Paperclip size={18} /> المرفقات الأصلية والملفات (
+                {fileUrls.length})
               </h5>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3">
                 {fileUrls.map((url, i) => (
                   <button
                     key={i}
                     onClick={() => window.open(getFullUrl(url), "_blank")}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-blue-50 border border-slate-200 rounded-lg transition-all group"
+                    className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-xl transition-all group shadow-sm"
                   >
                     <FileText
-                      size={12}
+                      size={18}
                       className="text-slate-400 group-hover:text-blue-500"
                     />
                     <span
-                      className="text-[9px] font-black text-slate-600 truncate max-w-[120px]"
+                      className="text-xs md:text-sm font-black text-slate-700 truncate max-w-[200px]"
                       dir="ltr"
                     >
                       {url.split("/").pop()}
                     </span>
-                    <Eye size={10} className="text-slate-300" />
+                    <Eye
+                      size={16}
+                      className="text-slate-300 group-hover:text-blue-500 ml-2"
+                    />
                   </button>
                 ))}
               </div>
@@ -263,65 +270,67 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
           </div>
 
           {/* 👉 Right Column: Metadata & Management (Scrollable) */}
-          <div className="col-span-12 lg:col-span-5 overflow-y-auto p-3 space-y-4 custom-scrollbar-slim bg-slate-50/50">
-            {/* Applicability Scope (Ultra Dense Grid) */}
-            <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
-              <h5 className="text-[11px] font-black text-slate-900 mb-3 flex items-center gap-1.5">
-                <Filter className="w-3.5 h-3.5 text-emerald-500" /> نطاق
-                الانطباق
+          <div className="col-span-12 md:col-span-5 lg:col-span-4 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-slate-50/50">
+            {/* Applicability Scope */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+              <h5 className="text-sm md:text-base font-black text-slate-900 mb-5 flex items-center gap-2">
+                <Filter className="w-5 h-5 text-emerald-500" /> نطاق الانطباق
               </h5>
-              <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+              <div className="grid grid-cols-2 gap-y-5 gap-x-4">
                 {[
-                  { label: "نوع المعاملة", val: document.txType },
+                  { label: "نوع المعاملة المستهدفة", val: document.txType },
                   {
-                    label: "المدينة/القطاع",
+                    label: "المدينة / القطاع",
                     val: `${document.city || "الكل"} / ${document.sector || "الكل"}`,
                   },
                   {
-                    label: "مساحة الأرض",
+                    label: "مساحة الأرض المشمولة",
                     val: document.landAreaFrom
-                      ? `${document.landAreaFrom}-${document.landAreaTo} م²`
+                      ? `${document.landAreaFrom} إلى ${document.landAreaTo} م²`
                       : "الكل",
                   },
                   {
                     label: "عدد الأدوار",
                     val: document.floorsFrom
-                      ? `${document.floorsFrom}-${document.floorsTo}`
+                      ? `${document.floorsFrom} إلى ${document.floorsTo}`
                       : "الكل",
                   },
                   {
                     label: "عرض الشارع",
                     val: document.streetWidthFrom
-                      ? `${document.streetWidthFrom}-${document.streetWidthTo} م`
+                      ? `${document.streetWidthFrom} إلى ${document.streetWidthTo} م`
                       : "الكل",
                   },
                 ].map((item, idx) => (
                   <div
                     key={idx}
-                    className="flex flex-col border-r-2 border-slate-100 pr-2"
+                    className="flex flex-col border-r-4 border-slate-100 pr-3"
                   >
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                       {item.label}
                     </span>
-                    <span className="text-[10px] font-black text-slate-700 truncate">
+                    <span
+                      className="text-sm font-black text-slate-700 truncate"
+                      title={item.val || "غير محدد"}
+                    >
                       {item.val || "غير محدد"}
                     </span>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-3 pt-3 border-t border-slate-50">
-                <span className="text-[8px] font-bold text-slate-400 block mb-1">
-                  الأحياء المستهدفة
+              <div className="mt-5 pt-5 border-t border-slate-100">
+                <span className="text-xs font-bold text-slate-500 block mb-2">
+                  الأحياء المشمولة بالنطاق:
                 </span>
-                <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto pr-1">
+                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-1 custom-scrollbar-slim">
                   {(document.districts?.length
                     ? document.districts
-                    : ["الكل"]
+                    : ["مطبق على جميع الأحياء"]
                   ).map((d) => (
                     <span
                       key={d}
-                      className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[8px] font-bold border border-slate-200"
+                      className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold border border-slate-200"
                     >
                       {d}
                     </span>
@@ -331,70 +340,76 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
             </div>
 
             {/* Management Notes (Manual) */}
-            <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
-              <h5 className="text-[11px] font-black text-slate-900 mb-2 flex items-center gap-1.5">
-                <MessageSquare className="w-3.5 h-3.5 text-blue-500" /> توجيهات
-                الإدارة
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+              <h5 className="text-sm md:text-base font-black text-slate-900 mb-3 flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-blue-500" /> توجيهات
+                وشروحات الإدارة
               </h5>
               <textarea
                 value={manualNotes}
                 onChange={(e) => setManualNotes(e.target.value)}
-                placeholder="أدخل توجيهات فنية للفريق..."
-                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold focus:ring-1 focus:ring-blue-500 outline-none min-h-[60px] resize-none"
+                placeholder="أدخل توجيهات فنية أو شروحات إضافية لفريق العمل..."
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none min-h-[120px] resize-none transition-all"
               />
-              <div className="flex justify-end mt-2">
+              <div className="flex justify-end mt-3">
                 <button
                   onClick={() => updateNotesMutation.mutate(manualNotes)}
                   disabled={updateNotesMutation.isPending}
-                  className="px-3 py-1 bg-slate-900 text-white rounded-lg text-[9px] font-black hover:bg-black transition-all flex items-center gap-1.5"
+                  className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-xs md:text-sm font-black hover:bg-black transition-all flex items-center gap-2 shadow-md"
                 >
                   {updateNotesMutation.isPending ? (
-                    <Loader2 size={10} className="animate-spin" />
+                    <Loader2 size={16} className="animate-spin" />
                   ) : (
-                    <CheckCircle2 size={10} />
+                    <CheckCircle2 size={16} />
                   )}
-                  حفظ الشرح
+                  حفظ الشروحات
                 </button>
               </div>
             </div>
 
-            {/* Audit Logs (Condensed) */}
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            {/* Audit Logs */}
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
               <button
                 onClick={() => setShowLogs(!showLogs)}
-                className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition-colors"
+                className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
               >
-                <div className="flex items-center gap-2">
-                  <History className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-[10px] font-black text-slate-700">
-                    سجل الأحداث
+                <div className="flex items-center gap-3">
+                  <History className="w-5 h-5 text-slate-400" />
+                  <span className="text-sm font-black text-slate-700">
+                    سجل أحداث المرجع
                   </span>
                 </div>
                 {showLogs ? (
-                  <ChevronUp size={14} className="text-slate-400" />
+                  <ChevronUp size={18} className="text-slate-400" />
                 ) : (
-                  <ChevronDown size={14} className="text-slate-400" />
+                  <ChevronDown size={18} className="text-slate-400" />
                 )}
               </button>
 
               {showLogs && (
-                <div className="p-2 bg-slate-50 space-y-1 max-h-32 overflow-y-auto custom-scrollbar-slim">
+                <div className="p-3 bg-slate-50 space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
                   {isLoadingLogs ? (
-                    <Loader2 size={12} className="animate-spin mx-auto my-2" />
+                    <Loader2
+                      size={20}
+                      className="animate-spin mx-auto my-4 text-slate-400"
+                    />
                   ) : logs.length === 0 ? (
-                    <p className="text-[9px] text-center text-slate-400 py-2">
-                      لا يوجد سجل
+                    <p className="text-xs text-center text-slate-500 py-4 font-bold">
+                      لا توجد أحداث مسجلة لهذا المرجع
                     </p>
                   ) : (
                     logs.map((log) => (
                       <div
                         key={log.id}
-                        className="text-[8.5px] font-bold bg-white p-1.5 rounded border border-slate-100 flex justify-between gap-2"
+                        className="text-xs font-bold bg-white p-2.5 rounded-xl border border-slate-200 flex justify-between items-center gap-3 shadow-sm"
                       >
-                        <span className="text-slate-800 truncate">
+                        <span
+                          className="text-slate-800 truncate"
+                          title={log.action}
+                        >
                           {log.action}
                         </span>
-                        <span className="text-slate-400 font-mono shrink-0">
+                        <span className="text-slate-400 font-mono shrink-0 text-[10px] bg-slate-50 px-2 py-1 rounded-md">
                           {new Date(log.createdAt).toLocaleDateString("en-GB")}
                         </span>
                       </div>
@@ -406,27 +421,31 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
           </div>
         </div>
 
-        {/* ─── Footer (Static) ─── */}
-        <div className="p-3 border-t border-slate-100 bg-white flex justify-between items-center shrink-0">
-          <div className="flex gap-2">
+        {/* ─── Footer ─── */}
+        <div className="p-4 px-6 border-t border-slate-200 bg-white flex justify-between items-center shrink-0">
+          <div className="flex items-center gap-3">
             <span
-              className={`px-2 py-0.5 rounded-full text-[8px] font-black border ${document.analysisStatus === "محلل" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-purple-50 text-purple-600 border-purple-100"}`}
+              className={`px-4 py-1.5 rounded-xl text-xs font-black border shadow-sm ${
+                document.analysisStatus === "محلل"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-purple-50 text-purple-700 border-purple-200"
+              }`}
             >
-              التحليل: {document.analysisStatus}
+              حالة التحليل: {document.analysisStatus}
             </span>
-            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full text-[8px] font-black border border-slate-200">
-              ID: {document.id.slice(-6)}
+            <span className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-black border border-slate-200 shadow-sm">
+              رقم السجل: {document.id.slice(-8).toUpperCase()}
             </span>
           </div>
-          <div className="flex gap-2">
-            <button className="p-1.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-all border border-slate-200">
-              <Share2 size={14} />
+          <div className="flex items-center gap-3">
+            <button className="p-2.5 bg-slate-50 text-slate-600 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all border border-slate-200 shadow-sm">
+              <Share2 size={18} />
             </button>
             <button
               onClick={onClose}
-              className="px-5 py-1.5 bg-slate-900 text-white rounded-lg text-[10px] font-black hover:bg-black transition-all"
+              className="px-8 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-black hover:bg-black transition-all shadow-md"
             >
-              إغلاق
+              إغلاق النافذة
             </button>
           </div>
         </div>
