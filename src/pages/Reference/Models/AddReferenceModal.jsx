@@ -123,14 +123,15 @@ const MultiSelectDropdown = ({
 };
 
 // 🚀 تم استقبال documentToEdit هنا
-export default function AddReferenceModal({ isOpen, onClose, documentToEdit }) {
+export default function AddReferenceModal({ isOpen, onClose, documentToEdit, fixedCategory }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
 
   // States - معلومات المرجع
   const [title, setTitle] = useState("");
   const [source, setSource] = useState("");
-  const [category, setCategory] = useState("اشتراطات");
+  // بدلاً من "اشتراطات" دائماً
+  const [category, setCategory] = useState(fixedCategory || "اشتراطات");
   const [type, setType] = useState("");
 
   const [files, setFiles] = useState([]);
@@ -163,7 +164,7 @@ export default function AddReferenceModal({ isOpen, onClose, documentToEdit }) {
     if (documentToEdit) {
       setTitle(documentToEdit.title || "");
       setSource(documentToEdit.source || "");
-      setCategory(documentToEdit.category || "اشتراطات");
+      setCategory(documentToEdit.category || fixedCategory || "اشتراطات");
       setType(documentToEdit.type || "");
 
       setTxType(documentToEdit.txType || "");
@@ -198,7 +199,7 @@ export default function AddReferenceModal({ isOpen, onClose, documentToEdit }) {
         setExistingFiles(urls.map((url) => url.split("/").pop()));
       }
     }
-  }, [documentToEdit]);
+  }, [documentToEdit, fixedCategory]);
 
   const { data: sectorMap = {}, isLoading: isLoadingDistricts } = useQuery({
     queryKey: ["sectors-grouped-map"],
@@ -387,12 +388,16 @@ export default function AddReferenceModal({ isOpen, onClose, documentToEdit }) {
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors cursor-pointer appearance-none"
+                disabled={!!fixedCategory} // 👈 تعطيل الحقل إذا كان التصنيف ثابتاً
+                className={`w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors appearance-none ${
+                  fixedCategory ? "opacity-70 cursor-not-allowed bg-slate-100" : "cursor-pointer"
+                }`}
               >
                 <option value="اشتراطات">اشتراطات</option>
                 <option value="أدلة">أدلة</option>
                 <option value="تعاميم">تعاميم</option>
                 <option value="عروض">عروض</option>
+                <option value="حالات خاصة واستثناءات">حالات خاصة واستثناءات</option> {/* تأكد من إضافة هذا الخيار */}
                 <option value="أخرى">أخرى</option>
               </select>
             </div>

@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { X, Brain, CloudUpload, FileText, Sparkles, Loader2 } from "lucide-react";
 import api from "../../../api/axios";
 
-export default function ModalUploadReferenceAi({ onClose }) {
+export default function ModalUploadReferenceAi({ onClose, fixedCategory }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
 
@@ -50,6 +50,10 @@ export default function ModalUploadReferenceAi({ onClose }) {
     try {
       const fd = new FormData();
       fd.append("file", file);
+
+      if (fixedCategory) {
+        fd.append("fixedCategory", fixedCategory); 
+      }
       
       // 💡 يتم إرسال الطلب لـ API المراجع ليقوم برميه في الطابور (Worker)
       const res = await api.post("/references/analyze-async", fd, {

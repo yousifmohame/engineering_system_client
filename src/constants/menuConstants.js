@@ -50,12 +50,12 @@ export const DEFAULT_MENU_CATEGORIES = [
         code: "SCR_11_VIEW",
         isFavorite: true,
       },
-      // {
-      //   id: "12",
-      //   label: "متابعة المعاملات",
-      //   code: "SCR_12_VIEW",
-      //   isFavorite: true,
-      // },
+      {
+        id: "12",
+        label: "مركز الأرشيف و السجلات",
+        code: "SCR_12_VIEW",
+        isFavorite: true,
+      },
       // {
       //   id: "13",
       //   label: "سجل حالات المعاملات",
