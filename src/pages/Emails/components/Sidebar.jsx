@@ -1,5 +1,14 @@
 import React from "react";
-import { MailPlus, Inbox, Star, Send, Archive, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  MailPlus,
+  Inbox,
+  Star,
+  Send,
+  Archive,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 export default function Sidebar({
   isSidebarCollapsed,
@@ -19,61 +28,140 @@ export default function Sidebar({
     { id: "trash", label: "المهملات", icon: Trash2 },
   ];
 
+  const isExpanded = !isSidebarCollapsed;
+
   return (
     <aside
-      className={`bg-white border-l border-gray-200 flex flex-col transition-all duration-300 ${
-        isSidebarCollapsed ? "w-20" : "w-64"
-      } shrink-0 z-10`}
+      className={`relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-l border-white/50 bg-white/55 shadow-[0_18px_45px_rgba(18,63,89,0.12)] backdrop-blur-xl transition-all duration-300
+        w-[76px] sm:w-[86px]
+        ${isSidebarCollapsed ? "lg:w-20" : "lg:w-72"}
+      `}
+      dir="rtl"
     >
-      <div className="p-4">
+      {/* Decorative soft background */}
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#f8efe0]/70 via-white/50 to-[#e8f0ef]/70" />
+        <div className="absolute right-[-45px] top-[-45px] h-32 w-32 rounded-full bg-[#123f59]/10 blur-2xl lg:h-36 lg:w-36" />
+        <div className="absolute left-[-45px] bottom-[-45px] h-32 w-32 rounded-full bg-[#c5983c]/16 blur-2xl lg:h-36 lg:w-36" />
+
+        <div className="hidden absolute right-6 top-24 h-0 w-0 border-b-[38px] border-l-[24px] border-r-[24px] border-b-[#123f59]/10 border-l-transparent border-r-transparent sm:block" />
+
+        <div className="hidden absolute left-8 bottom-28 h-0 w-0 rotate-12 border-b-[28px] border-l-[18px] border-r-[18px] border-b-[#c5983c]/12 border-l-transparent border-r-transparent sm:block" />
+      </div>
+
+      {/* Top compose button */}
+      <div className="relative z-10 shrink-0 p-2 sm:p-3 lg:p-4">
         <button
           onClick={() => handleCompose("new")}
-          className={`w-full bg-blue-600 text-white rounded-2xl font-bold transition-all shadow-md hover:shadow-lg hover:bg-blue-700 flex items-center justify-center gap-2 ${
-            isSidebarCollapsed ? "h-12" : "h-12 px-6"
-          }`}
+          className={`group flex w-full items-center justify-center gap-2 rounded-2xl border border-[#d8b46a]/45 bg-gradient-to-l from-[#123f59] to-[#1a5874] font-bold text-white shadow-[0_12px_28px_rgba(18,63,89,0.28)] transition-all duration-300 hover:from-[#10364c] hover:to-[#184d65] hover:shadow-[0_16px_34px_rgba(18,63,89,0.34)]
+            h-12 px-0
+            ${isExpanded ? "lg:h-[52px] lg:px-6 lg:py-3" : "lg:h-12 lg:px-0"}
+          `}
+          title="رسالة جديدة"
+          type="button"
         >
-          <MailPlus className="w-5 h-5" />
-          {!isSidebarCollapsed && <span>رسالة جديدة</span>}
+          <span className="grid h-8 w-8 place-items-center rounded-xl bg-white/12 text-[#e2bf74] transition group-hover:bg-white/18">
+            <MailPlus className="h-5 w-5" />
+          </span>
+
+          {isExpanded && (
+            <span className="hidden text-[15px] tracking-wide lg:inline">
+              رسالة جديدة
+            </span>
+          )}
         </button>
       </div>
 
-      <nav className="flex-1 px-3 space-y-1">
-        {menuItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => {
-              setCurrentView(item.id);
-              setSelectedMessage(null);
-            }}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${
-              currentView === item.id
-                ? "bg-blue-50 text-blue-700 font-bold"
-                : "text-gray-600 hover:bg-gray-100"
-            } ${isSidebarCollapsed ? "justify-center" : ""}`}
-          >
-            <item.icon
-              className={`w-5 h-5 ${currentView === item.id ? "text-blue-600" : ""}`}
-            />
-            {!isSidebarCollapsed && (
-              <>
-                <span className="flex-1 text-right text-sm">{item.label}</span>
+      {/* Navigation */}
+      <nav className="relative z-10 min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden px-2 pb-2 sm:px-3 custom-scrollbar-slim">
+        {menuItems.map((item) => {
+          const isActive = currentView === item.id;
+          const Icon = item.icon;
+          const showText = isExpanded;
+
+          return (
+            <button
+              key={item.id}
+              onClick={() => {
+                setCurrentView(item.id);
+                setSelectedMessage(null);
+              }}
+              title={item.label}
+              type="button"
+              className={`group relative flex w-full min-w-0 items-center gap-3 overflow-hidden rounded-2xl px-2 py-3 text-right transition-all duration-300 sm:px-3 ${
+                isActive
+                  ? "border border-[#d8b46a]/45 bg-gradient-to-l from-[#123f59]/95 to-[#1a5874]/95 text-white shadow-[0_10px_24px_rgba(18,63,89,0.22)]"
+                  : "border border-transparent text-[#354b55] hover:border-[#d8b46a]/25 hover:bg-white/55 hover:text-[#123f59] hover:shadow-[0_8px_20px_rgba(18,63,89,0.08)]"
+              } ${showText ? "justify-center lg:justify-start" : "justify-center"}`}
+            >
+              {isActive && (
+                <span className="absolute right-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-l-full bg-[#e2bf74]" />
+              )}
+
+              <span
+                className={`relative grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-all duration-300 ${
+                  isActive
+                    ? "bg-white/14 text-[#e2bf74]"
+                    : "bg-[#f8efe0]/60 text-[#123f59] group-hover:bg-[#f8efe0]"
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+
+                {/* Badge compact sur petit écran */}
                 {item.badge > 0 && (
-                  <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full">
+                  <span
+                    className={`absolute -left-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full px-1 text-[9px] font-extrabold lg:hidden ${
+                      isActive
+                        ? "bg-[#e2bf74] text-[#123f59]"
+                        : "bg-[#123f59] text-white"
+                    }`}
+                  >
                     {item.badge}
                   </span>
                 )}
-              </>
-            )}
-          </button>
-        ))}
+              </span>
+
+              {showText && (
+                <>
+                  <span
+                    className={`hidden min-w-0 flex-1 truncate text-sm lg:block ${
+                      isActive ? "font-extrabold" : "font-semibold"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+
+                  {item.badge > 0 && (
+                    <span
+                      className={`hidden min-w-[28px] rounded-full px-2 py-1 text-center text-[10px] font-extrabold lg:inline-block ${
+                        isActive
+                          ? "bg-[#e2bf74] text-[#123f59]"
+                          : "bg-[#123f59] text-white"
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </>
+              )}
+            </button>
+          );
+        })}
       </nav>
 
-      <div className="p-4 border-t border-gray-100">
+      {/* Collapse button: desktop only */}
+      <div className="relative z-10 hidden shrink-0 border-t border-white/50 p-4 lg:block">
         <button
           onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          className="w-full flex items-center justify-center p-2 text-gray-400 hover:bg-gray-100 rounded-xl transition-colors"
+          className="flex w-full items-center justify-center rounded-2xl border border-[#d8b46a]/25 bg-white/45 p-2.5 text-[#123f59] shadow-sm transition-all duration-300 hover:bg-[#f8efe0]/75 hover:text-[#c5983c] hover:shadow-md"
+          title={isSidebarCollapsed ? "توسيع القائمة" : "طي القائمة"}
+          type="button"
         >
-          {isSidebarCollapsed ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+          {isSidebarCollapsed ? (
+            <ChevronLeft className="h-5 w-5" />
+          ) : (
+            <ChevronRight className="h-5 w-5" />
+          )}
         </button>
       </div>
     </aside>

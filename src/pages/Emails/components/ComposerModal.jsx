@@ -15,16 +15,12 @@ import {
   Send,
   EyeOff,
   Users,
-  FileBox,
-  Building2,
   Save,
   Printer,
   UserCheck,
   AlignCenter,
   FileText,
-  Link2,
   UploadCloud,
-  User,
   Image as ImageIcon,
   Languages,
 } from "lucide-react";
@@ -53,7 +49,6 @@ export default function ComposerModal({
   const editorRef = useRef(null);
   const signatureRef = useRef(null);
 
-  // تعبئة المحتوى المبدئي لمربع النص والتوقيع
   useEffect(() => {
     if (
       editorRef.current &&
@@ -62,6 +57,7 @@ export default function ComposerModal({
     ) {
       editorRef.current.innerHTML = composeData.body;
     }
+
     if (
       signatureRef.current &&
       composeData.signature &&
@@ -74,37 +70,77 @@ export default function ComposerModal({
   const execFormat = (command, value = null) => {
     document.execCommand(command, false, value);
     editorRef.current?.focus();
-    setComposeData((prev) => ({ ...prev, body: editorRef.current.innerHTML }));
+    setComposeData((prev) => ({
+      ...prev,
+      body: editorRef.current?.innerHTML || "",
+    }));
   };
 
   const handlePrintDraft = () => {
     toast.info("جاري تجهيز المسودة للطباعة...");
+
     const printWindow = window.open("", "_blank");
+
+    if (!printWindow) {
+      toast.error("تعذر فتح نافذة الطباعة");
+      return;
+    }
+
     printWindow.document.write(`
       <html dir="rtl">
         <head>
-          <title>مسودة - ${composeData.subject}</title>
+          <title>مسودة - ${composeData.subject || "بدون موضوع"}</title>
           <style>
-            body { font-family: Arial; padding: 40px; line-height: 1.6; }
-            .header { border-bottom: 2px solid #ccc; padding-bottom: 20px; margin-bottom: 20px; }
-            .content { font-size: 16px; margin-bottom: 40px; }
-            .sig { padding-top: 10px; color: #555; }
+            body {
+              font-family: Arial, sans-serif;
+              padding: 40px;
+              line-height: 1.7;
+              color: #1f2937;
+            }
+
+            .header {
+              border-bottom: 2px solid #d8b46a;
+              padding-bottom: 20px;
+              margin-bottom: 25px;
+            }
+
+            .content {
+              font-size: 16px;
+              margin-bottom: 40px;
+            }
+
+            .sig {
+              padding-top: 10px;
+              color: #555;
+            }
           </style>
         </head>
+
         <body>
           <div class="header">
-            <div><strong>إلى:</strong> ${composeData.to}</div>
-            <div><strong>الموضوع:</strong> ${composeData.subject}</div>
+            <div><strong>إلى:</strong> ${composeData.to || ""}</div>
+            <div><strong>الموضوع:</strong> ${composeData.subject || ""}</div>
           </div>
-          <div class="content">${composeData.body}</div>
-          <div class="sig">${composeData.signature}</div>
-          <div style="margin-top:20px; color:${composeData.footerColor}; font-size:${composeData.footerSize}; text-align:center;">
-            ${composeData.footerText}
+
+          <div class="content">${composeData.body || ""}</div>
+          <div class="sig">${composeData.signature || ""}</div>
+
+          <div style="margin-top:20px; color:${
+            composeData.footerColor || "#64748b"
+          }; font-size:${composeData.footerSize || "11px"}; text-align:center;">
+            ${composeData.footerText || ""}
           </div>
-          <script>window.onload=()=>{window.print();window.close();}</script>
+
+          <script>
+            window.onload = () => {
+              window.print();
+              window.close();
+            };
+          </script>
         </body>
       </html>
     `);
+
     printWindow.document.close();
   };
 
@@ -112,6 +148,7 @@ export default function ComposerModal({
     const reviewer = prompt(
       "أدخل اسم الموظف أو البريد لإرسال الرسالة لمراجعتها:",
     );
+
     if (reviewer) {
       toast.success(`تم إرسال المسودة إلى ${reviewer} للمراجعة`);
       setIsComposerOpen(false);
@@ -120,23 +157,32 @@ export default function ComposerModal({
 
   const handleGenerateSubject = async () => {
     const textContent = editorRef.current?.innerText || composeData.body;
+
     if (!textContent || textContent.length < 10) {
       return toast.error(
         "الرجاء كتابة جزء من الرسالة أولاً ليتمكن الذكاء الاصطناعي من اقتراح موضوع.",
       );
     }
+
     setIsGeneratingSubject(true);
+
     try {
       const res = await api.post("/email/ai-compose", {
         text: `اقترح عنواناً قصيراً ورسمياً لهذا البريد:\n\n${textContent}`,
         action: "shorten",
       });
+
       if (res.data?.success) {
-        let generatedSubject = res.data.data
+        const generatedSubject = res.data.data
           .replace(/\[.*?\]/g, "")
           .replace(/عنوان:|Subject:/gi, "")
           .trim();
-        setComposeData({ ...composeData, subject: generatedSubject });
+
+        setComposeData((prev) => ({
+          ...prev,
+          subject: generatedSubject,
+        }));
+
         toast.success("تم صياغة العنوان بنجاح ✨");
       }
     } catch (error) {
@@ -146,24 +192,25 @@ export default function ComposerModal({
     }
   };
 
-  // 🚀 دالة ترجمة الفوتر (إخلاء المسؤولية)
-  // 🚀 دالة ترجمة الفوتر (إخلاء المسؤولية) باستخدام الدالة الجديدة
   const handleTranslateFooter = async () => {
-    if (!composeData.footerText) return toast.error("الرجاء كتابة نص الفوتر أولاً");
-    
+    if (!composeData.footerText) {
+      return toast.error("الرجاء كتابة نص الفوتر أولاً");
+    }
+
     setIsTranslatingFooter(true);
+
     try {
       const res = await api.post("/email/translate", {
         text: composeData.footerText,
-        targetLanguage: "English" // يمكنك تغييرها لأي لغة مستقبلاً
+        targetLanguage: "English",
       });
-      
+
       if (res.data?.success) {
-        // إضافة الترجمة الإنجليزية تحت النص العربي مع فاصل
-        setComposeData({ 
-          ...composeData, 
-          footerText: composeData.footerText + "\n\n" + res.data.data 
-        });
+        setComposeData((prev) => ({
+          ...prev,
+          footerText: `${prev.footerText}\n\n${res.data.data}`,
+        }));
+
         toast.success("تم إضافة الترجمة الإنجليزية بنجاح ✨");
       }
     } catch (error) {
@@ -173,109 +220,162 @@ export default function ComposerModal({
     }
   };
 
-  // 🚀 دالة تغيير لوجو الشركة في التوقيع
   const handleChangeLogo = () => {
     const newUrl = prompt("أدخل الرابط المباشر للشعار الجديد (URL):");
+
     if (newUrl) {
-      // استبدال الـ src الخاص بالصورة باستخدام Regex
-      const updatedSig = composeData.signature.replace(
-        /<img[^>]+src="([^">]+)"/i,
-        `<img src="${newUrl}"`,
-      );
-      setComposeData({ ...composeData, signature: updatedSig });
+      const updatedSig = composeData.signature?.match(/<img[^>]+src=/i)
+        ? composeData.signature.replace(
+            /<img[^>]+src="([^">]+)"/i,
+            `<img src="${newUrl}"`,
+          )
+        : `<img src="${newUrl}" style="max-width:160px; height:auto;" />${
+            composeData.signature || ""
+          }`;
+
+      setComposeData((prev) => ({
+        ...prev,
+        signature: updatedSig,
+      }));
+
       if (signatureRef.current) {
         signatureRef.current.innerHTML = updatedSig;
       }
+
       toast.success("تم تحديث الشعار بنجاح");
     }
   };
 
-  // 🚀 دالة رفع المرفقات (تحويل الملف لـ Base64 لكي يُحفظ في الـ JSON والمسودات بسلاسة)
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
+
     if (file) {
       const reader = new FileReader();
-      
+
       reader.onloadend = () => {
-        setComposeData({
-          ...composeData,
+        setComposeData((prev) => ({
+          ...prev,
           attachments: [
-            ...composeData.attachments,
-            { 
-              filename: file.name, // 👈 Nodemailer يحتاج كلمة filename ليتعرف على الاسم الحقيقي
-              path: reader.result, // 👈 Nodemailer يقبل ملفات Base64 داخل خاصية path
+            ...(prev.attachments || []),
+            {
+              filename: file.name,
+              path: reader.result,
               size: file.size,
-              type: file.type
-            }
+              type: file.type,
+            },
           ],
-        });
+        }));
       };
-      
-      // بدء قراءة الملف وتحويله
+
       reader.readAsDataURL(file);
     }
-    
-    // تصفير المدخل ليقبل نفس الملف لو حذفته وأردت إضافته مجدداً
-    if(fileInputRef.current) fileInputRef.current.value = "";
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
+  const attachments = composeData.attachments || [];
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden animate-in zoom-in-95"
-        style={{ height: "95vh" }}
-      >
-        {/* ================= HEADER (مطابق للصورة) ================= */}
-        <div className="bg-slate-900 text-white px-5 py-3 flex items-center justify-between shrink-0 border-b border-slate-700">
-          <div className="flex items-center gap-2">
-            <MailPlus className="w-5 h-5 text-blue-400" />
-            <span className="font-bold text-sm">
-              {composerMode === "new"
-                ? "صياغة رسالة جديدة"
-                : "الرد على الرسالة"}
-            </span>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[#0b1f2a]/65 p-2 backdrop-blur-md sm:p-4"
+      dir="rtl"
+    >
+      <style>
+        {`
+          .composer-editable:empty:before {
+            content: attr(data-placeholder);
+            color: #94a3b8;
+            pointer-events: none;
+          }
+
+          .composer-editable img {
+            max-width: 100%;
+            height: auto;
+          }
+
+          .composer-editable a {
+            color: #123f59;
+            font-weight: 700;
+          }
+        `}
+      </style>
+
+      <div className="flex h-[96dvh] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] border border-[#d8b46a]/30 bg-[#f6f1e8] shadow-[0_30px_90px_rgba(0,0,0,0.35)]">
+        {/* HEADER */}
+        <div className="relative shrink-0 overflow-hidden border-b border-[#d8b46a]/25 bg-gradient-to-l from-[#123f59] via-[#174b63] to-[#0f3448] px-4 py-3 text-white sm:px-5">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute right-[-60px] top-[-60px] h-40 w-40 rounded-full bg-[#e2bf74]/15 blur-3xl" />
+            <div className="absolute left-[-60px] bottom-[-60px] h-40 w-40 rounded-full bg-white/10 blur-3xl" />
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* الأزرار العلوية كما في التصميم المطلوب */}
-            <button
-              onClick={handleSaveDraft}
-              className="text-xs font-bold text-red-400 hover:text-red-300 transition-colors"
-            >
-              الحفظ مسودة
-            </button>
-            <div className="w-px h-4 bg-slate-700"></div>
-            <button
-              onClick={handlePrintDraft}
-              className="text-xs font-bold text-red-400 hover:text-red-300 transition-colors"
-            >
-              طباعتها كمسودة
-            </button>
-            <div className="w-px h-4 bg-slate-700"></div>
-            <button
-              onClick={handleSendForReview}
-              className="text-xs font-bold text-red-400 hover:text-red-300 transition-colors"
-            >
-              ارسال لموظف لمراجعة الرساله
-            </button>
+          <div className="relative z-10 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="grid h-11 w-11 place-items-center rounded-2xl border border-[#d8b46a]/40 bg-white/10 text-[#e2bf74]">
+                <MailPlus className="h-5 w-5" />
+              </div>
 
-            <div className="w-px h-5 bg-slate-600 mx-2"></div>
+              <div>
+                <h2 className="text-base font-black">
+                  {composerMode === "new"
+                    ? "صياغة رسالة جديدة"
+                    : "الرد على الرسالة"}
+                </h2>
+                <p className="text-[11px] font-semibold text-white/60">
+                  Details Mail Composer
+                </p>
+              </div>
+            </div>
 
-            <button
-              onClick={() => setIsComposerOpen(false)}
-              className="hover:bg-slate-700 p-1 rounded-lg transition-colors text-slate-300 hover:text-white"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleSaveDraft}
+                className="flex h-9 items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 text-xs font-bold text-white transition hover:bg-white/15"
+                type="button"
+              >
+                <Save className="h-3.5 w-3.5 text-[#e2bf74]" />
+                حفظ مسودة
+              </button>
+
+              <button
+                onClick={handlePrintDraft}
+                className="flex h-9 items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 text-xs font-bold text-white transition hover:bg-white/15"
+                type="button"
+              >
+                <Printer className="h-3.5 w-3.5 text-[#e2bf74]" />
+                طباعة
+              </button>
+
+              <button
+                onClick={handleSendForReview}
+                className="flex h-9 items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 text-xs font-bold text-white transition hover:bg-white/15"
+                type="button"
+              >
+                <UserCheck className="h-3.5 w-3.5 text-[#e2bf74]" />
+                مراجعة
+              </button>
+
+              <button
+                onClick={() => setIsComposerOpen(false)}
+                className="grid h-9 w-9 place-items-center rounded-xl border border-white/15 bg-white/10 text-white transition hover:bg-red-500/30"
+                type="button"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
-          {/* ================= INPUT FIELDS ================= */}
-          <div className="bg-white border-b border-gray-200 shrink-0">
-            {/* حقل إلى (To) */}
-            <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3 relative">
-              <span className="text-gray-500 text-sm font-bold w-12">إلى:</span>
+        {/* FIELDS */}
+        <div className="shrink-0 border-b border-[#e8ddc8] bg-white/75 px-4 py-3 backdrop-blur-xl sm:px-5">
+          <div className="grid gap-2 lg:grid-cols-2">
+            {/* TO */}
+            <div className="relative flex min-w-0 items-center gap-3 rounded-2xl border border-[#e8ddc8] bg-white px-3 py-2 shadow-sm">
+              <span className="shrink-0 text-xs font-black text-[#123f59]">
+                إلى:
+              </span>
+
               <input
                 type="email"
                 list="contactsList"
@@ -283,33 +383,37 @@ export default function ComposerModal({
                 onChange={(e) =>
                   setComposeData({ ...composeData, to: e.target.value })
                 }
-                className="flex-1 outline-none text-sm font-mono text-left focus:text-blue-600"
+                className="min-w-0 flex-1 bg-transparent text-left font-mono text-sm text-[#123f59] outline-none placeholder:text-slate-400"
                 dir="ltr"
                 placeholder="example@domain.com"
               />
 
-              <div className="relative">
+              <div className="relative shrink-0">
                 <button
                   onClick={() => setShowSystemSelect(!showSystemSelect)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-200 transition-colors border border-gray-200"
+                  className="flex h-8 items-center gap-1.5 rounded-xl border border-[#d8b46a]/25 bg-[#f8efe0]/70 px-3 text-[11px] font-bold text-[#123f59] transition hover:bg-[#f8efe0]"
+                  type="button"
                 >
-                  <Users className="w-3.5 h-3.5" /> إدراج من النظام
+                  <Users className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">من النظام</span>
                 </button>
+
                 {showSystemSelect && (
-                  <div className="absolute top-full right-0 mt-1 w-64 bg-white border border-gray-200 shadow-xl rounded-xl py-1 z-50">
-                    <div className="px-3 py-2 text-[10px] font-bold text-gray-400 bg-gray-50 border-b border-gray-100 mb-1 leading-relaxed">
-                      اتاحة اختيار من جهات التواصل المحفوظة في السيستم - او ملف
-                      عميل او ملف ملكية او ملف معامله او ملف عرض سعر او ملف عقد
-                      او رقم فاتورة او بحث باسم العميل او برقم الرخصة او برقم
-                      الخدمة
+                  <div className="absolute top-full right-0 z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-[#e8ddc8] bg-white shadow-2xl">
+                    <div className="border-b border-[#e8ddc8] bg-[#fbf8f1] px-3 py-2 text-[10px] font-bold leading-relaxed text-[#6b7a80]">
+                      اختيار من جهات التواصل أو ملفات العملاء أو الأملاك أو
+                      المعاملات أو العقود أو الفواتير.
                     </div>
-                    <button className="w-full text-right px-4 py-2 text-xs font-semibold hover:bg-blue-50 text-gray-700">
+
+                    <button className="w-full px-4 py-2.5 text-right text-xs font-bold text-[#123f59] hover:bg-[#f8efe0]/60">
                       جهات الاتصال
                     </button>
-                    <button className="w-full text-right px-4 py-2 text-xs font-semibold hover:bg-blue-50 text-gray-700">
+
+                    <button className="w-full px-4 py-2.5 text-right text-xs font-bold text-[#123f59] hover:bg-[#f8efe0]/60">
                       ملفات العملاء / الأملاك
                     </button>
-                    <button className="w-full text-right px-4 py-2 text-xs font-semibold hover:bg-blue-50 text-gray-700">
+
+                    <button className="w-full px-4 py-2.5 text-right text-xs font-bold text-[#123f59] hover:bg-[#f8efe0]/60">
                       المعاملات / العقود / الفواتير
                     </button>
                   </div>
@@ -317,11 +421,12 @@ export default function ComposerModal({
               </div>
             </div>
 
-            {/* حقل نسخة (CC) وزر (BCC) */}
-            <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3">
-              <span className="text-gray-500 text-sm font-bold w-12">
+            {/* CC */}
+            <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-[#e8ddc8] bg-white px-3 py-2 shadow-sm">
+              <span className="shrink-0 text-xs font-black text-[#123f59]">
                 نسخة:
               </span>
+
               <input
                 type="email"
                 list="contactsList"
@@ -329,22 +434,31 @@ export default function ComposerModal({
                 onChange={(e) =>
                   setComposeData({ ...composeData, cc: e.target.value })
                 }
-                className="flex-1 outline-none text-sm font-mono text-left focus:text-blue-600"
+                className="min-w-0 flex-1 bg-transparent text-left font-mono text-sm text-[#123f59] outline-none"
                 dir="ltr"
               />
+
               <button
                 onClick={() => setShowBcc(!showBcc)}
-                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${showBcc ? "bg-red-50 text-red-600 border border-red-100" : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200"}`}
+                className={`flex h-8 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-[11px] font-bold transition ${
+                  showBcc
+                    ? "border-red-200 bg-red-50 text-red-600"
+                    : "border-[#d8b46a]/25 bg-[#f8efe0]/60 text-[#123f59] hover:bg-[#f8efe0]"
+                }`}
+                type="button"
               >
-                <EyeOff className="w-3.5 h-3.5" /> نسخة مخفية (BCC)
+                <EyeOff className="h-3.5 w-3.5" />
+                BCC
               </button>
             </div>
 
+            {/* BCC */}
             {showBcc && (
-              <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3 bg-red-50/30">
-                <span className="text-red-500 text-sm font-bold w-12 flex items-center gap-1">
+              <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-red-200 bg-red-50/55 px-3 py-2 shadow-sm lg:col-span-2">
+                <span className="shrink-0 text-xs font-black text-red-600">
                   مخفية:
                 </span>
+
                 <input
                   type="email"
                   list="contactsList"
@@ -352,17 +466,18 @@ export default function ComposerModal({
                   onChange={(e) =>
                     setComposeData({ ...composeData, bcc: e.target.value })
                   }
-                  className="flex-1 outline-none text-sm font-mono text-left bg-transparent focus:text-red-600"
+                  className="min-w-0 flex-1 bg-transparent text-left font-mono text-sm text-red-700 outline-none"
                   dir="ltr"
                 />
               </div>
             )}
 
-            {/* حقل الموضوع */}
-            <div className="px-5 py-3 flex items-center gap-3 bg-red-50/10">
-              <span className="text-red-500 text-sm font-bold w-12">
+            {/* SUBJECT */}
+            <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-[#e8ddc8] bg-[#fbf8f1] px-3 py-2 shadow-sm lg:col-span-2">
+              <span className="shrink-0 text-xs font-black text-[#c5983c]">
                 الموضوع:
               </span>
+
               <input
                 type="text"
                 placeholder="أدخل وصف للموضوع أو اتركه للذكاء الاصطناعي..."
@@ -370,157 +485,152 @@ export default function ComposerModal({
                 onChange={(e) =>
                   setComposeData({ ...composeData, subject: e.target.value })
                 }
-                className="flex-1 outline-none text-sm font-bold text-gray-800 placeholder-gray-400 bg-transparent"
+                className="min-w-0 flex-1 bg-transparent text-sm font-bold text-[#123f59] outline-none placeholder:text-slate-400"
               />
+
               <button
                 onClick={handleGenerateSubject}
                 disabled={isGeneratingSubject}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-bold transition-colors border border-red-100 disabled:opacity-50"
+                className="flex h-8 shrink-0 items-center gap-1.5 rounded-xl border border-[#d8b46a]/25 bg-white px-3 text-[11px] font-black text-[#123f59] transition hover:bg-[#f8efe0] disabled:opacity-50"
+                type="button"
               >
                 {isGeneratingSubject ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <Sparkles className="w-3.5 h-3.5" />
+                  <Sparkles className="h-3.5 w-3.5 text-[#c5983c]" />
                 )}
-                صياغة الموضوع (AI)
+                <span className="hidden sm:inline">AI</span>
               </button>
             </div>
           </div>
+        </div>
 
-          {/* ================= TOOLBAR ================= */}
-          <div className="bg-purple-50/50 border-b border-purple-100 px-4 py-2 flex items-center justify-between shrink-0 z-10">
-            <div className="relative">
+        {/* TOOLBAR */}
+        <div className="shrink-0 border-b border-[#e8ddc8] bg-[#fbf8f1]/90 px-4 py-2 sm:px-5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="relative shrink-0">
               <button
                 onClick={() => setShowAIComposerMenu(!showAIComposerMenu)}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg text-xs font-bold transition-all border border-purple-200"
+                className="flex h-9 items-center gap-1.5 rounded-xl border border-[#d8b46a]/30 bg-gradient-to-l from-[#123f59] to-[#1a5874] px-3 text-xs font-black text-white shadow-sm"
+                type="button"
               >
-                <Wand2 className="w-3.5 h-3.5" /> الذكاء الاصطناعي 🪄
+                <Wand2 className="h-3.5 w-3.5 text-[#e2bf74]" />
+                الذكاء الاصطناعي
               </button>
 
               {showAIComposerMenu && (
-                <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-gray-200 shadow-2xl rounded-xl py-1.5 z-50 overflow-hidden">
-                  <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 bg-gray-50 border-b border-gray-100 mb-1">
+                <div className="absolute top-full right-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-[#e8ddc8] bg-white shadow-2xl">
+                  <div className="border-b border-[#e8ddc8] bg-[#fbf8f1] px-3 py-2 text-[10px] font-bold text-[#6b7a80]">
                     اختر الإجراء المطلوب:
                   </div>
+
                   <button
                     onClick={() => handleAIAssist("rewrite")}
-                    className="w-full text-right px-4 py-2.5 text-xs font-semibold hover:bg-purple-50 text-gray-700 flex items-center gap-2.5"
+                    className="flex w-full items-center gap-2.5 px-4 py-2.5 text-right text-xs font-bold text-[#123f59] hover:bg-[#f8efe0]/60"
+                    type="button"
                   >
-                    <RefreshCw className="w-3.5 h-3.5 text-purple-500" /> صياغة
-                    احترافية
+                    <RefreshCw className="h-3.5 w-3.5 text-[#c5983c]" />
+                    صياغة احترافية
                   </button>
+
                   <button
                     onClick={() => handleAIAssist("formal")}
-                    className="w-full text-right px-4 py-2.5 text-xs font-semibold hover:bg-blue-50 text-gray-700 flex items-center gap-2.5"
+                    className="flex w-full items-center gap-2.5 px-4 py-2.5 text-right text-xs font-bold text-[#123f59] hover:bg-[#f8efe0]/60"
+                    type="button"
                   >
-                    <BookOpen className="w-3.5 h-3.5 text-blue-500" /> تحويل
-                    لصيغة رسمية
+                    <BookOpen className="h-3.5 w-3.5 text-[#c5983c]" />
+                    تحويل لصيغة رسمية
                   </button>
                 </div>
               )}
             </div>
 
-            <div className="flex items-center gap-1">
-              <button
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  execFormat("bold");
-                }}
-                className="p-1.5 hover:bg-gray-200 rounded text-gray-600"
-              >
-                <Bold className="w-4 h-4" />
-              </button>
-              <button
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  execFormat("italic");
-                }}
-                className="p-1.5 hover:bg-gray-200 rounded text-gray-600"
-              >
-                <Italic className="w-4 h-4" />
-              </button>
-              <button
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  execFormat("underline");
-                }}
-                className="p-1.5 hover:bg-gray-200 rounded text-gray-600"
-              >
-                <Underline className="w-4 h-4" />
-              </button>
-              <div className="w-px h-5 bg-gray-300 mx-1"></div>
-              <button
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  execFormat("justifyRight");
-                }}
-                className="p-1.5 hover:bg-gray-200 rounded text-gray-600"
-              >
-                <AlignRight className="w-4 h-4" />
-              </button>
-              <button
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  execFormat("justifyCenter");
-                }}
-                className="p-1.5 hover:bg-gray-200 rounded text-gray-600"
-              >
-                <AlignCenter className="w-4 h-4" />
-              </button>
-              <button
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  execFormat("justifyLeft");
-                }}
-                className="p-1.5 hover:bg-gray-200 rounded text-gray-600"
-              >
-                <AlignLeft className="w-4 h-4" />
-              </button>
+            <div className="flex min-w-0 items-center gap-1 overflow-x-auto custom-scrollbar-slim">
+              {[
+                { icon: Bold, command: "bold" },
+                { icon: Italic, command: "italic" },
+                { icon: Underline, command: "underline" },
+                { icon: AlignRight, command: "justifyRight" },
+                { icon: AlignCenter, command: "justifyCenter" },
+                { icon: AlignLeft, command: "justifyLeft" },
+              ].map((item, index) => {
+                const Icon = item.icon;
+
+                return (
+                  <button
+                    key={index}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      execFormat(item.command);
+                    }}
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[#e8ddc8] bg-white text-[#123f59] transition hover:bg-[#f8efe0] hover:text-[#c5983c]"
+                    type="button"
+                  >
+                    <Icon className="h-4 w-4" />
+                  </button>
+                );
+              })}
             </div>
           </div>
+        </div>
 
-          {/* ================= COMPOSER BODY AREA ================= */}
-          <div className="flex-1 flex flex-col bg-white overflow-y-auto custom-scrollbar-slim relative">
-            {isAILoading && (
-              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
-                <Sparkles className="w-10 h-10 text-purple-500 animate-pulse mb-3" />
-                <p className="text-sm font-black text-purple-800">
-                  جاري صياغة النص ببراعة...
-                </p>
-              </div>
-            )}
-
-            {/* 1. جسم الرسالة */}
-            <div className="p-2 border-b border-dashed border-red-200 bg-red-50/10 text-[10px] font-bold text-red-400 text-center uppercase tracking-wider">
-              جسم الرسالة
+        {/* BODY */}
+        <div className="relative min-h-0 flex-1 overflow-hidden bg-[#f6f1e8]">
+          {isAILoading && (
+            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
+              <Sparkles className="mb-3 h-10 w-10 animate-pulse text-[#c5983c]" />
+              <p className="text-sm font-black text-[#123f59]">
+                جاري صياغة النص ببراعة...
+              </p>
             </div>
-            <div
-              ref={editorRef}
-              contentEditable
-              onInput={(e) =>
-                setComposeData({
-                  ...composeData,
-                  body: e.currentTarget.innerHTML,
-                })
-              }
-              className="w-full min-h-[200px] p-6 outline-none text-[15px] font-medium text-gray-800 leading-relaxed"
-              placeholder="اكتب رسالتك هنا..."
-            />
+          )}
 
-            {/* 2. منطقة المرفقات */}
-            <div className="px-6 py-4 border-y border-dashed border-red-200 bg-gray-50 shrink-0">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-red-500 flex items-center gap-1.5">
-                  <Paperclip className="w-4 h-4" /> المرفقات سواء الروابط الخاصه
-                  بها او المرفق كملف
+          <div className="grid h-full grid-cols-1 gap-3 overflow-hidden p-3 xl:grid-cols-[minmax(0,1fr)_360px]">
+            {/* EDITOR */}
+            <section className="flex min-h-0 flex-col overflow-hidden rounded-[24px] border border-[#e8ddc8] bg-white shadow-[0_14px_38px_rgba(18,63,89,0.08)]">
+              <div className="flex shrink-0 items-center justify-between border-b border-[#e8ddc8] bg-[#fbf8f1] px-4 py-3">
+                <span className="text-xs font-black text-[#123f59]">
+                  جسم الرسالة
                 </span>
-                <div className="flex gap-2">
+
+                <span className="rounded-full bg-white px-3 py-1 text-[10px] font-bold text-[#6b7a80]">
+                  Message Body
+                </span>
+              </div>
+
+              <div
+                ref={editorRef}
+                contentEditable
+                data-placeholder="اكتب رسالتك هنا..."
+                onInput={(e) =>
+                  setComposeData({
+                    ...composeData,
+                    body: e.currentTarget.innerHTML,
+                  })
+                }
+                className="composer-editable min-h-0 flex-1 overflow-y-auto p-5 text-[15px] font-medium leading-relaxed text-[#25313b] outline-none custom-scrollbar-slim"
+              />
+            </section>
+
+            {/* SIDE PANEL */}
+            <aside className="grid min-h-0 grid-cols-1 gap-3 overflow-hidden sm:grid-cols-2 xl:flex xl:flex-col">
+              {/* ATTACHMENTS */}
+              <section className="min-h-0 overflow-hidden rounded-[24px] border border-[#e8ddc8] bg-white shadow-[0_12px_30px_rgba(18,63,89,0.07)] xl:shrink-0">
+                <div className="flex items-center justify-between border-b border-[#e8ddc8] bg-[#fbf8f1] px-4 py-3">
+                  <span className="flex items-center gap-2 text-xs font-black text-[#123f59]">
+                    <Paperclip className="h-4 w-4 text-[#c5983c]" />
+                    المرفقات
+                  </span>
+
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1 text-[11px] font-bold text-blue-600 bg-white border border-blue-100 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors shadow-sm"
+                    className="flex h-8 items-center gap-1 rounded-xl bg-[#123f59] px-3 text-[11px] font-black text-white transition hover:bg-[#0f3448]"
+                    type="button"
                   >
-                    <UploadCloud className="w-3.5 h-3.5" /> إرفاق ملف
+                    <UploadCloud className="h-3.5 w-3.5 text-[#e2bf74]" />
+                    إرفاق
                   </button>
+
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -528,149 +638,169 @@ export default function ComposerModal({
                     onChange={handleFileUpload}
                   />
                 </div>
-              </div>
 
-              {composeData.attachments.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {composeData.attachments.map((att, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center gap-2 bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm text-xs font-bold text-gray-700"
-                    >
-                      <FileText className="w-3.5 h-3.5 text-blue-500" />
-                      {/* 💡 التعديل هنا: استخدام filename */}
-                      {att.filename || att.name} 
-                      <button
-                        onClick={() =>
-                          setComposeData({
-                            ...composeData,
-                            attachments: composeData.attachments.filter((_, i) => i !== idx),
-                          })
-                        }
-                        className="ml-2 text-red-400 hover:text-red-600 transition-colors"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                <div className="max-h-[170px] overflow-y-auto p-3 custom-scrollbar-slim">
+                  {attachments.length > 0 ? (
+                    <div className="space-y-2">
+                      {attachments.map((att, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between gap-2 rounded-xl border border-[#e8ddc8] bg-[#fbf8f1] px-3 py-2"
+                        >
+                          <div className="flex min-w-0 items-center gap-2">
+                            <FileText className="h-3.5 w-3.5 shrink-0 text-[#123f59]" />
+                            <span className="truncate text-xs font-bold text-[#334155]">
+                              {att.filename || att.name}
+                            </span>
+                          </div>
+
+                          <button
+                            onClick={() =>
+                              setComposeData({
+                                ...composeData,
+                                attachments: attachments.filter(
+                                  (_, i) => i !== idx,
+                                ),
+                              })
+                            }
+                            className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-red-400 transition hover:bg-red-50 hover:text-red-600"
+                            type="button"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : (
+                    <p className="py-6 text-center text-xs font-semibold text-slate-400">
+                      لا توجد مرفقات حتى الآن
+                    </p>
+                  )}
                 </div>
-              ):(
-                <p className="text-center text-gray-400 text-sm italic">
-                  لا توجد مرفقات حتى الآن
-                </p>
-              )}
-            </div>
+              </section>
 
-            {/* 3. منطقة التوقيع (التصميم المعتمد + تغيير اللوجو) */}
-            <div className="px-6 py-5 shrink-0 bg-white border-b border-dashed border-red-200">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] font-bold text-red-500 uppercase tracking-wider">
-                  التوقيع
-                </span>
-                <button
-                  onClick={handleChangeLogo}
-                  className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 flex items-center gap-1 border border-blue-100"
-                >
-                  <ImageIcon className="w-3 h-3" /> تغيير الشعار
-                </button>
-              </div>
-              <div
-                ref={signatureRef}
-                contentEditable
-                onInput={(e) =>
-                  setComposeData({
-                    ...composeData,
-                    signature: e.currentTarget.innerHTML,
-                  })
-                }
-                className="w-full p-4 outline-none border border-gray-200 rounded-xl bg-white focus:border-blue-400 transition-colors custom-scrollbar-slim"
-                style={{ minHeight: "150px" }}
-              />
-            </div>
+              {/* SIGNATURE */}
+              <section className="min-h-0 overflow-hidden rounded-[24px] border border-[#e8ddc8] bg-white shadow-[0_12px_30px_rgba(18,63,89,0.07)] xl:flex-1">
+                <div className="flex items-center justify-between border-b border-[#e8ddc8] bg-[#fbf8f1] px-4 py-3">
+                  <span className="text-xs font-black text-[#123f59]">
+                    التوقيع
+                  </span>
 
-            {/* 4. منطقة الفوتر (إخلاء المسؤولية) */}
-            <div className="px-6 py-5 shrink-0 bg-slate-50">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] font-bold text-red-500 uppercase tracking-wider leading-relaxed max-w-sm">
-                  نص ثابت في جميع الرسائل لإخلاء المسؤولية يكون قابل لتعديل
-                  والتحكم في حجم الخط الخاص به ولونه بشكل منفرد مع ذكاء صناعي
-                  لترجمته للإنجليزية
-                </span>
-
-                {/* 💡 أدوات التحكم بالفوتر */}
-                <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-gray-200 shadow-sm">
-                  <input
-                    type="color"
-                    value={composeData.footerColor}
-                    onChange={(e) =>
-                      setComposeData({
-                        ...composeData,
-                        footerColor: e.target.value,
-                      })
-                    }
-                    className="w-6 h-6 rounded cursor-pointer border-0 p-0"
-                    title="لون الخط"
-                  />
-                  <select
-                    value={composeData.footerSize}
-                    onChange={(e) =>
-                      setComposeData({
-                        ...composeData,
-                        footerSize: e.target.value,
-                      })
-                    }
-                    className="text-[10px] font-bold bg-gray-50 border border-gray-200 rounded px-1 py-1 outline-none"
-                  >
-                    <option value="9px">9px</option>
-                    <option value="10px">10px</option>
-                    <option value="11px">11px</option>
-                    <option value="12px">12px</option>
-                    <option value="14px">14px</option>
-                  </select>
-                  <div className="w-px h-4 bg-gray-200 mx-1"></div>
                   <button
-                    onClick={handleTranslateFooter}
-                    disabled={isTranslatingFooter}
-                    className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded hover:bg-purple-100 flex items-center gap-1"
+                    onClick={handleChangeLogo}
+                    className="flex h-8 items-center gap-1 rounded-xl border border-[#d8b46a]/25 bg-white px-3 text-[11px] font-bold text-[#123f59] transition hover:bg-[#f8efe0]"
+                    type="button"
                   >
-                    {isTranslatingFooter ? (
-                      <RefreshCw className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Languages className="w-3 h-3" />
-                    )}{" "}
-                    ترجمة (AI)
+                    <ImageIcon className="h-3.5 w-3.5 text-[#c5983c]" />
+                    الشعار
                   </button>
                 </div>
-              </div>
 
-              <textarea
-                value={composeData.footerText}
-                onChange={(e) =>
-                  setComposeData({ ...composeData, footerText: e.target.value })
-                }
-                className="w-full p-3 outline-none border border-gray-200 rounded-xl bg-white focus:border-blue-400 transition-colors resize-none"
-                style={{
-                  color: composeData.footerColor,
-                  fontSize: composeData.footerSize,
-                }}
-                rows="4"
-              />
-            </div>
+                <div
+                  ref={signatureRef}
+                  contentEditable
+                  data-placeholder="أضف التوقيع هنا..."
+                  onInput={(e) =>
+                    setComposeData({
+                      ...composeData,
+                      signature: e.currentTarget.innerHTML,
+                    })
+                  }
+                  className="composer-editable min-h-[160px] overflow-y-auto p-4 text-sm leading-relaxed text-[#25313b] outline-none custom-scrollbar-slim xl:h-full xl:min-h-0"
+                />
+              </section>
+
+              {/* FOOTER */}
+              <section className="min-h-0 overflow-hidden rounded-[24px] border border-[#e8ddc8] bg-white shadow-[0_12px_30px_rgba(18,63,89,0.07)] sm:col-span-2 xl:shrink-0">
+                <div className="flex flex-col gap-2 border-b border-[#e8ddc8] bg-[#fbf8f1] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-xs font-black text-[#123f59]">
+                    نص إخلاء المسؤولية
+                  </span>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="color"
+                      value={composeData.footerColor}
+                      onChange={(e) =>
+                        setComposeData({
+                          ...composeData,
+                          footerColor: e.target.value,
+                        })
+                      }
+                      className="h-8 w-8 cursor-pointer rounded-lg border-0 bg-transparent p-0"
+                      title="لون الخط"
+                    />
+
+                    <select
+                      value={composeData.footerSize}
+                      onChange={(e) =>
+                        setComposeData({
+                          ...composeData,
+                          footerSize: e.target.value,
+                        })
+                      }
+                      className="h-8 rounded-xl border border-[#e8ddc8] bg-white px-2 text-[11px] font-bold text-[#123f59] outline-none"
+                    >
+                      <option value="9px">9px</option>
+                      <option value="10px">10px</option>
+                      <option value="11px">11px</option>
+                      <option value="12px">12px</option>
+                      <option value="14px">14px</option>
+                    </select>
+
+                    <button
+                      onClick={handleTranslateFooter}
+                      disabled={isTranslatingFooter}
+                      className="flex h-8 items-center gap-1 rounded-xl border border-[#d8b46a]/25 bg-white px-3 text-[11px] font-bold text-[#123f59] transition hover:bg-[#f8efe0] disabled:opacity-50"
+                      type="button"
+                    >
+                      {isTranslatingFooter ? (
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Languages className="h-3.5 w-3.5 text-[#c5983c]" />
+                      )}
+                      ترجمة
+                    </button>
+                  </div>
+                </div>
+
+                <textarea
+                  value={composeData.footerText}
+                  onChange={(e) =>
+                    setComposeData({
+                      ...composeData,
+                      footerText: e.target.value,
+                    })
+                  }
+                  className="h-[120px] w-full resize-none bg-white p-3 text-sm font-medium leading-relaxed outline-none custom-scrollbar-slim"
+                  style={{
+                    color: composeData.footerColor,
+                    fontSize: composeData.footerSize,
+                  }}
+                />
+              </section>
+            </aside>
           </div>
+        </div>
 
-          {/* ================= FOOTER ACTIONS ================= */}
-          <div className="p-4 border-t border-gray-200 bg-white flex items-center justify-between shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.02)] z-20">
+        {/* FOOTER ACTIONS */}
+        <div className="shrink-0 border-t border-[#e8ddc8] bg-white/90 px-4 py-3 backdrop-blur-xl">
+          <div className="flex items-center justify-between gap-3">
             <button
               onClick={() => setIsComposerOpen(false)}
-              className="px-6 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl text-sm font-bold transition-colors"
+              className="h-10 rounded-2xl border border-[#e8ddc8] bg-white px-5 text-sm font-black text-[#6b7a80] transition hover:bg-[#f8efe0]"
+              type="button"
             >
               إلغاء
             </button>
+
             <button
               onClick={handleSendEmail}
-              className="flex items-center gap-2 px-10 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-black hover:bg-blue-700 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] hover:-translate-y-0.5"
+              className="flex h-10 items-center gap-2 rounded-2xl bg-gradient-to-l from-[#123f59] to-[#1a5874] px-7 text-sm font-black text-white shadow-[0_12px_26px_rgba(18,63,89,0.22)] transition hover:-translate-y-[1px]"
+              type="button"
             >
-              إرسال الرسالة <Send className="w-4 h-4" />
+              إرسال الرسالة
+              <Send className="h-4 w-4 text-[#e2bf74]" />
             </button>
           </div>
         </div>
