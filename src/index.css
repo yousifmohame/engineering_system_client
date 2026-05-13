@@ -4,6 +4,18 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
   direction: rtl;
   font-family: "Tajawal", sans-serif;
@@ -11,29 +23,29 @@ body {
 }
 
 :root {
-  /* ألوان الخلفيات */
-  --wms-bg-0: #f8fafc; /* لون الخلفية الرئيسية */
-  --wms-surface-1: #ffffff; /* لون خلفية البطاقات (أبيض) */
-  --wms-surface-2: #f1f5f9; /* لون خلفية فرعي (رمادي فاتح) */
-  --wms-row-alt: #f8fafc; /* لون صفوف الجداول البديلة */
+  /* Ø£Ù„ÙˆØ§Ù† Ø§Ù„Ø®Ù„ÙÙŠØ§Øª */
+  --wms-bg-0: #f8fafc;
+  --wms-surface-1: #ffffff;
+  --wms-surface-2: #f1f5f9;
+  --wms-row-alt: #f8fafc;
 
-  /* ألوان الحدود */
-  --wms-border: #e2e8f0; /* لون الحدود (Borders) */
+  /* Ø£Ù„ÙˆØ§Ù† Ø§Ù„Ø­Ø¯ÙˆØ¯ */
+  --wms-border: #e2e8f0;
 
-  /* الألوان الأساسية للحالات */
-  --wms-accent-blue: #3b82f6; /* الأزرق (للحفظ والمعاملات) */
-  --wms-success: #10b981; /* الأخضر (للأرباح والنجاح) */
-  --wms-warning: #f59e0b; /* البرتقالي/الأصفر (للخزنة والتحذيرات) */
-  --wms-danger: #ef4444; /* الأحمر (للتنبيهات والمستحقات) */
-  --chart-4: #8b5cf6; /* البنفسجي (للوسطاء) */
+  /* Ø§Ù„Ø£Ù„ÙˆØ§Ù† Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ© Ù„Ù„Ø­Ø§Ù„Ø§Øª */
+  --wms-accent-blue: #3b82f6;
+  --wms-success: #10b981;
+  --wms-warning: #f59e0b;
+  --wms-danger: #ef4444;
+  --chart-4: #8b5cf6;
 
-  /* ألوان النصوص */
-  --wms-text: #0f172a; /* أسود غامق (للعناوين) */
-  --wms-text-sec: #475569; /* رمادي غامق (للنصوص الفرعية) */
-  --wms-text-muted: #64748b; /* رمادي فاتح (للملاحظات) */
+  /* Ø£Ù„ÙˆØ§Ù† Ø§Ù„Ù†ØµÙˆØµ */
+  --wms-text: #0f172a;
+  --wms-text-sec: #475569;
+  --wms-text-muted: #64748b;
 }
 
-/* في حال كنت تستخدم الوضع الليلي (Dark Mode) في المستقبل */
+/* Dark Mode */
 .dark {
   --wms-bg-0: #0f172a;
   --wms-surface-1: #1e293b;
@@ -43,4 +55,82 @@ body {
   --wms-text: #f8fafc;
   --wms-text-sec: #cbd5e1;
   --wms-text-muted: #94a3b8;
+}
+
+/* ===== Premium Sidebar Scrollbar ===== */
+
+.sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(197, 152, 60, 0.45) transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(226, 191, 116, 0.75),
+    rgba(18, 63, 89, 0.95)
+  );
+  box-shadow:
+    0 0 10px rgba(197, 152, 60, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(239, 207, 136, 0.95),
+    rgba(18, 63, 89, 1)
+  );
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ===== Slim scrollbar utilisÃ©e dans les autres zones ===== */
+
+.custom-scrollbar,
+.custom-scrollbar-slim {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(197, 152, 60, 0.35) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar,
+.custom-scrollbar-slim::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track,
+.custom-scrollbar-slim::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb,
+.custom-scrollbar-slim::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(197, 152, 60, 0.42);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar-slim::-webkit-scrollbar-thumb:hover {
+  background: rgba(197, 152, 60, 0.68);
+}
+
+/* EmpÃªche les scrollbars horizontales indÃ©sirables */
+.overflow-safe {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
