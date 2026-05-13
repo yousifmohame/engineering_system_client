@@ -29,9 +29,14 @@ export default function InboxCenter() {
   const [hasMore, setHasMore] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
+  const [visibleCount, setVisibleCount] = useState(30);
+
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showSignatureSettings, setShowSignatureSettings] = useState(false);
   const [showAISmartSearch, setShowAISmartSearch] = useState(false);
+  const [isAISearching, setIsAISearching] = useState(false);
+
+  
 
   // 💡 تصميم التوقيع الافتراضي (مطابق تماماً للصورة المرفقة)
   // 💡 التوقيع فقط (بدون الفوتر)
@@ -112,6 +117,10 @@ export default function InboxCenter() {
   const [searchQuery, setSearchQuery] = useState("");
   const listRef = useRef(null);
 
+  useEffect(() => {
+    setVisibleCount(30);
+  }, [currentView, searchQuery]);
+
   const spamKeywords = [
     "باقة",
     "رصيد",
@@ -140,7 +149,10 @@ export default function InboxCenter() {
         }
       }
 
-      const imapRes = await api.get(`/email/sync?page=${pageNumber}&limit=50`);
+      // داخل دالة fetchEmails
+      const imapRes = await api.get(
+        `/email/sync?page=${pageNumber}&limit=50&folder=${currentView}`,
+      );
       const liveMsgs = (imapRes.data?.data || []).map((m) => ({
         ...m,
         date: new Date(m.date),
@@ -181,7 +193,42 @@ export default function InboxCenter() {
 
   useEffect(() => {
     fetchEmails(1);
-  }, []);
+  }, [currentView]);
+
+  // 💡 دالة البحث الذكي المتصلة بالـ API الجديد
+  const handleAISearch = async () => {
+    if (!searchQuery.trim()) {
+      return toast.error(
+        "يرجى كتابة ما تبحث عنه (مثال: رسائل شركة الاتصالات الأسبوع الماضي)",
+      );
+    }
+
+    setIsAISearching(true);
+    const toastId = toast.loading("🤖 الذكاء الاصطناعي يبحث في رسائلك...");
+
+    try {
+      // استدعاء הـ API الجديد الذي أنشأناه في الباك إند
+      const res = await api.post("/email/search-ai", { query: searchQuery });
+
+      if (res.data?.success) {
+        setMessages(res.data.data); // وضع نتائج الذكاء الاصطناعي في القائمة
+
+        // 🚨 خدعة برمجية هامة:
+        // نقوم بمسح نص البحث حتى لا تقوم الفلترة المحلية (Client-side)
+        // بإخفاء الرسائل المعقدة التي جلبها الـ AI بناءً على السياق
+        setSearchQuery("");
+
+        // تغيير التاب تلقائياً لـ "الوارد" لعرض نتائج البحث مباشرة
+        setCurrentView("inbox");
+
+        toast.success("تم جلب نتائج البحث الذكي بنجاح ✨", { id: toastId });
+      }
+    } catch (error) {
+      toast.error("حدث خطأ أثناء البحث بالذكاء الاصطناعي", { id: toastId });
+    } finally {
+      setIsAISearching(false);
+    }
+  };
 
   const filteredMessages = messages.filter((msg) => {
     // 💡 1. الإضافة الأهم: إخفاء الرسائل المحذوفة من جميع التبويبات (باستثناء تاب المهملات)
@@ -228,6 +275,8 @@ export default function InboxCenter() {
   const sortedMessages = [...filteredMessages].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
+
+  const messagesToRender = sortedMessages.slice(0, visibleCount);
 
   useEffect(() => {
     const validCount = messages.filter((m) => {
@@ -428,9 +477,18 @@ export default function InboxCenter() {
 
   const handleScroll = (e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.target;
-    if (scrollHeight - scrollTop <= clientHeight + 100) {
-      if (hasMore && !isFetchingMore && !isLoading && currentView === "inbox")
+    
+    // استخدمنا 300 بكسل بدلاً من 100 لضمان تحميل الرسائل قبل وصول المستخدم لنهاية الشاشة بقليل
+    if (scrollHeight - scrollTop <= clientHeight + 300) {
+      
+      // أ) إذا كان لدينا رسائل محملة في الذاكرة ولم تُعرض بعد، نعرض 20 رسالة إضافية
+      if (visibleCount < sortedMessages.length) {
+        setVisibleCount((prev) => prev + 20);
+      }
+      // ب) إذا انتهينا من عرض كل ما في الذاكرة، نطلب رسائل قديمة من السيرفر (IMAP)
+      else if (hasMore && !isFetchingMore && !isLoading && currentView === "inbox") {
         fetchEmails(page + 1);
+      }
     }
   };
 
@@ -480,6 +538,8 @@ export default function InboxCenter() {
               fetchEmails(1);
               toast.success("تم التحديث");
             }}
+            handleAISearch={handleAISearch}
+            isAILoading={isAISearching}
             setShowAISmartSearch={setShowAISmartSearch}
             setShowSignatureSettings={setShowSignatureSettings}
           />
@@ -487,7 +547,7 @@ export default function InboxCenter() {
 
         {!selectedMessage && (
           <MessageList
-            sortedMessages={sortedMessages}
+            sortedMessages={messagesToRender}
             isLoading={isLoading}
             isFetchingMore={isFetchingMore}
             searchQuery={searchQuery}

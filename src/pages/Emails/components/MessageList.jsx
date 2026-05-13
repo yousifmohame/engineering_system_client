@@ -46,6 +46,18 @@ export default function MessageList({
     </div>
   );
 
+  // أضف هذه الدالة داخل مكون MessageList
+  const getEmptyMessageTitle = () => {
+    switch (currentView) {
+      case "sent": return "صندوق الصادر فارغ";
+      case "starred": return "لا توجد رسائل مميزة";
+      case "archived": return "الأرشيف فارغ";
+      case "drafts": return "لا توجد مسودات";
+      case "trash": return "سلة المهملات فارغة";
+      default: return "صندوق الوارد فارغ";
+    }
+  };
+
   const NoResults = () => (
     <div className="flex min-h-[360px] w-full items-center justify-center rounded-[28px] border border-[#d8b46a]/25 bg-white/75 px-4 py-10 shadow-[0_18px_45px_rgba(18,63,89,0.10)]">
       <div className="mx-auto flex max-w-sm flex-col items-center justify-center text-center">
@@ -53,8 +65,9 @@ export default function MessageList({
           <Mail className="h-10 w-10" />
         </div>
 
+        {/* 💡 التعديل هنا: استخدام الدالة بدلاً من النص الثابت */}
         <h3 className="mb-2 text-xl font-black text-[#123f59]">
-          صندوق الوارد فارغ
+          {getEmptyMessageTitle()}
         </h3>
 
         <p className="max-w-xs text-sm font-semibold leading-7 text-[#53676d]">
