@@ -32,6 +32,79 @@ export default function EmailViewer({
 
   const isUnread = !selectedMessage.isRead;
 
+  const decodeHtmlEntities = (value = "") => {
+    if (!value) return "";
+
+    let decoded = String(value);
+
+    if (typeof document === "undefined") {
+      return decoded
+        .replace(/&nbsp;/g, " ")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .replace(/&#039;/g, "'");
+    }
+
+    const textarea = document.createElement("textarea");
+
+    for (let i = 0; i < 3; i++) {
+      textarea.innerHTML = decoded;
+      const next = textarea.value;
+
+      if (next === decoded) break;
+      decoded = next;
+    }
+
+    return decoded;
+  };
+
+  const escapeHtml = (value = "") => {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  };
+
+  const cleanEmailHtml = (html = "") => {
+    return String(html)
+      .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+      .replace(/<iframe[\s\S]*?>[\s\S]*?<\/iframe>/gi, "")
+      .replace(/<object[\s\S]*?>[\s\S]*?<\/object>/gi, "")
+      .replace(/<embed[\s\S]*?>[\s\S]*?<\/embed>/gi, "")
+      .replace(/\son\w+="[^"]*"/gi, "")
+      .replace(/\son\w+='[^']*'/gi, "")
+      .replace(/\shref=["']javascript:[^"']*["']/gi, "")
+      .replace(/\ssrc=["']javascript:[^"']*["']/gi, "");
+  };
+
+  const getRawEmailContent = () => {
+    return selectedMessage.html || selectedMessage.body || selectedMessage.text || "";
+  };
+
+  const isEmailHtmlContent = () => {
+    const decodedContent = decodeHtmlEntities(getRawEmailContent());
+    return /<\/?[a-z][\s\S]*>/i.test(decodedContent);
+  };
+
+  const getEmailContent = () => {
+    const rawContent = getRawEmailContent();
+
+    if (!rawContent) return "";
+
+    const decodedContent = decodeHtmlEntities(rawContent);
+    const isHtml = /<\/?[a-z][\s\S]*>/i.test(decodedContent);
+
+    if (isHtml) {
+      return cleanEmailHtml(decodedContent);
+    }
+
+    return escapeHtml(decodedContent).replace(/\n/g, "<br />");
+  };
+
   const InfoCard = ({ label, value, icon: Icon, tone = "gold" }) => {
     if (!value) return null;
 
@@ -51,10 +124,10 @@ export default function EmailViewer({
         iconText: "text-[#0f3448]",
       },
       emerald: {
-        border: "border-emerald-600/30",
-        bg: "bg-emerald-50/70",
-        iconBg: "bg-emerald-100",
-        iconBorder: "border-emerald-500/25",
+        border: "border-emerald-500/25",
+        bg: "bg-emerald-50/60",
+        iconBg: "bg-emerald-100/80",
+        iconBorder: "border-emerald-400/20",
         iconText: "text-emerald-700",
       },
       cyan: {
@@ -65,11 +138,11 @@ export default function EmailViewer({
         iconText: "text-cyan-800",
       },
       red: {
-        border: "border-red-400/35",
-        bg: "bg-red-50/70",
-        iconBg: "bg-red-100",
-        iconBorder: "border-red-400/30",
-        iconText: "text-red-600",
+        border: "border-rose-300/40",
+        bg: "bg-rose-50/60",
+        iconBg: "bg-rose-100/80",
+        iconBorder: "border-rose-300/30",
+        iconText: "text-rose-600",
       },
     };
 
@@ -99,29 +172,47 @@ export default function EmailViewer({
   };
 
   const senderName =
-    selectedMessage.from?.split("<")[0].replace(/"/g, "").trim() || "بدون مرسل";
+    selectedMessage.from?.split("<")[0].replace(/"/g, "").trim() ||
+    "بدون مرسل";
 
   const senderEmail =
     selectedMessage.from?.match(/<([^>]+)>/)?.[1] || selectedMessage.from;
+
+  const emailIsHtml = isEmailHtmlContent();
 
   return (
     <div className="absolute inset-0 z-20 flex flex-col overflow-hidden bg-gradient-to-br from-[#dfe8e7] via-[#f6f1e8] to-[#e8f0ef] animate-in slide-in-from-right-4 duration-300">
       <style>
         {`
           .email-viewer-content {
-            line-height: 1.65;
-            font-size: 13px;
+            line-height: 1.8;
+            font-size: 14px;
             color: #111827;
             font-weight: 500;
             word-break: break-word;
             overflow-wrap: anywhere;
           }
 
-          @media (min-width: 1280px) {
-            .email-viewer-content {
-              line-height: 1.8;
-              font-size: 14px;
-            }
+          .email-viewer-content p {
+            margin: 0 0 10px 0;
+          }
+
+          .email-viewer-content div,
+          .email-viewer-content span,
+          .email-viewer-content font {
+            max-width: 100%;
+          }
+
+          .email-viewer-content table {
+            max-width: 100%;
+            width: auto;
+            border-collapse: collapse;
+          }
+
+          .email-viewer-content td,
+          .email-viewer-content th {
+            word-break: break-word;
+            overflow-wrap: anywhere;
           }
 
           .email-viewer-content img {
@@ -141,6 +232,14 @@ export default function EmailViewer({
           .email-viewer-content a:hover {
             color: #c5983c;
             text-decoration: underline;
+          }
+
+          .email-viewer-content blockquote {
+            margin: 10px 0;
+            padding: 10px 14px;
+            border-right: 4px solid #c5983c;
+            background: #f8efe0;
+            border-radius: 12px;
           }
         `}
       </style>
@@ -177,7 +276,7 @@ export default function EmailViewer({
                   () => setSelectedMessage(null),
                 )
               }
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-red-300 bg-red-50 text-red-600 shadow-sm transition hover:bg-red-100 hover:text-red-700"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-rose-300 bg-rose-50 text-rose-600 shadow-sm transition hover:bg-rose-100 hover:text-rose-700"
               title="حذف"
               type="button"
             >
@@ -189,7 +288,7 @@ export default function EmailViewer({
                 updateMessageInDB(selectedMessage, { isRead: false });
                 setSelectedMessage(null);
               }}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-emerald-600/25 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-emerald-500/25 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100"
               title="تعليم كغير مقروء"
               type="button"
             >
@@ -297,7 +396,6 @@ export default function EmailViewer({
                 </div>
 
                 <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-br from-[#fbf8f1] via-white to-cyan-50 p-3 xl:p-4 custom-scrollbar-slim">
-                  {/* SMALL / MEDIUM */}
                   <div className="grid grid-cols-2 gap-2 xl:hidden">
                     <InfoCard
                       label="نوع الخدمة"
@@ -363,7 +461,6 @@ export default function EmailViewer({
                     )}
                   </div>
 
-                  {/* LARGE */}
                   <div className="hidden grid-cols-1 gap-3 xl:grid">
                     <InfoCard
                       label="نوع الخدمة"
@@ -449,23 +546,23 @@ export default function EmailViewer({
             dir="rtl"
             className={`order-1 flex min-h-0 flex-col overflow-hidden rounded-[20px] border shadow-[0_18px_42px_rgba(18,63,89,0.16)] xl:order-2 xl:rounded-[24px] ${
               isUnread
-                ? "border-red-500 bg-white ring-2 ring-red-300/70"
-                : "border-[#0f3448]/25 bg-white"
+                ? "border-rose-300 bg-white ring-2 ring-rose-200/60"
+                : "border-emerald-300 bg-white ring-1 ring-emerald-200/50"
             }`}
           >
             <div
               className={`h-1.5 shrink-0 ${
                 isUnread
-                  ? "bg-gradient-to-l from-red-800 via-red-500 to-orange-500"
-                  : "bg-gradient-to-l from-[#0f3448] via-[#0e7490] to-[#c5983c]"
+                  ? "bg-gradient-to-l from-rose-500 via-rose-400 to-orange-300"
+                  : "bg-gradient-to-l from-emerald-600 via-emerald-400 to-cyan-400"
               }`}
             />
 
             <div
               className={`shrink-0 border-b px-4 py-3 xl:px-5 xl:py-4 ${
                 isUnread
-                  ? "border-red-300 bg-gradient-to-l from-red-50 via-white to-orange-50"
-                  : "border-[#0f3448]/15 bg-gradient-to-l from-white via-[#f8efe0] to-cyan-50"
+                  ? "border-rose-200 bg-gradient-to-l from-rose-50/80 via-white to-orange-50/50"
+                  : "border-emerald-200 bg-gradient-to-l from-emerald-50/80 via-white to-cyan-50/50"
               }`}
             >
               <div className="mb-2 flex items-start justify-between gap-3 xl:mb-3">
@@ -473,15 +570,19 @@ export default function EmailViewer({
                   <div className="mb-1 flex items-center gap-2">
                     <p
                       className={`text-[10px] font-black xl:text-[11px] ${
-                        isUnread ? "text-red-700" : "text-[#0e7490]"
+                        isUnread ? "text-rose-600" : "text-emerald-700"
                       }`}
                     >
                       تفاصيل الرسالة
                     </p>
 
-                    {isUnread && (
-                      <span className="rounded-full bg-red-600 px-2.5 py-0.5 text-[10px] font-black text-white shadow-sm">
+                    {isUnread ? (
+                      <span className="rounded-full bg-rose-500 px-2.5 py-0.5 text-[10px] font-black text-white shadow-sm">
                         غير مقروء
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-black text-white shadow-sm">
+                        مقروء
                       </span>
                     )}
                   </div>
@@ -494,8 +595,8 @@ export default function EmailViewer({
                 <div
                   className={`hidden shrink-0 rounded-xl border px-3 py-1.5 text-[10px] font-black lg:block xl:rounded-2xl xl:px-4 xl:py-2 xl:text-xs ${
                     isUnread
-                      ? "border-red-300 bg-red-100 text-red-800"
-                      : "border-cyan-700/25 bg-cyan-50 text-cyan-900"
+                      ? "border-rose-200 bg-rose-50 text-rose-700"
+                      : "border-emerald-200 bg-emerald-50 text-emerald-800"
                   }`}
                 >
                   {new Date(selectedMessage.date).toLocaleString("ar-SA", {
@@ -508,16 +609,16 @@ export default function EmailViewer({
               <div
                 className={`rounded-2xl border px-3 py-2 shadow-sm xl:rounded-3xl xl:px-4 xl:py-3 ${
                   isUnread
-                    ? "border-red-300 bg-red-50"
-                    : "border-cyan-700/20 bg-white"
+                    ? "border-rose-200 bg-rose-50/70"
+                    : "border-emerald-200 bg-white"
                 }`}
               >
                 <div className="flex items-center gap-2.5 xl:gap-3">
                   <div
                     className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-black text-white shadow-md xl:h-12 xl:w-12 xl:rounded-2xl xl:text-lg ${
                       isUnread
-                        ? "bg-gradient-to-br from-red-700 to-red-500"
-                        : "bg-gradient-to-br from-[#0f3448] to-[#0e7490]"
+                        ? "bg-gradient-to-br from-rose-500 to-rose-400"
+                        : "bg-gradient-to-br from-emerald-600 to-emerald-400"
                     }`}
                   >
                     {selectedMessage.from?.charAt(0).toUpperCase() || "?"}
@@ -528,7 +629,7 @@ export default function EmailViewer({
                       <div className="min-w-0">
                         <p
                           className={`truncate text-sm font-black xl:text-base ${
-                            isUnread ? "text-red-950" : "text-[#0f3448]"
+                            isUnread ? "text-rose-950" : "text-emerald-950"
                           }`}
                         >
                           {senderName}
@@ -549,7 +650,7 @@ export default function EmailViewer({
 
                     <p
                       className={`mt-0.5 text-[10px] font-black lg:hidden ${
-                        isUnread ? "text-red-700" : "text-cyan-800"
+                        isUnread ? "text-rose-600" : "text-emerald-700"
                       }`}
                     >
                       {new Date(selectedMessage.date).toLocaleString("ar-SA", {
@@ -565,24 +666,18 @@ export default function EmailViewer({
             {/* EMAIL TEXT */}
             <div className="min-h-0 flex-1 overflow-y-auto bg-white px-4 py-3 custom-scrollbar-slim xl:px-5 xl:py-4">
               <div className="email-viewer-content">
-                {selectedMessage.html ? (
-                  <div
-                    dangerouslySetInnerHTML={{ __html: selectedMessage.html }}
-                  />
-                ) : (
-                  <div className="whitespace-pre-wrap">
-                    {selectedMessage.body || selectedMessage.text}
-                  </div>
-                )}
+                <div dangerouslySetInnerHTML={{ __html: getEmailContent() }} />
 
                 {(selectedMessage.signature || selectedMessage.footerText) &&
-                  !selectedMessage.html && (
+                  !emailIsHtml && (
                     <div className="mt-4 border-t border-[#0e7490]/30 pt-3">
                       {selectedMessage.signature && (
                         <div
                           className="mb-2"
                           dangerouslySetInnerHTML={{
-                            __html: selectedMessage.signature,
+                            __html: cleanEmailHtml(
+                              decodeHtmlEntities(selectedMessage.signature),
+                            ),
                           }}
                         />
                       )}
