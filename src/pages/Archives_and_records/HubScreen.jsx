@@ -17,9 +17,9 @@ import {
 
 // 💡 1. استيراد الشاشات التي سيتم فتحها داخل الـ Popup
 // (تأكد من تعديل المسارات حسب مشروعك)
-import ProjectsArchiveScreen from "../ProjectsArchive/ProjectsArchiveScreen";
-import BuildingPermitsRegistry from "../Permits/BuildingPermitsRegistry";
-import ReferenceBaseScreen from "../Reference/ReferenceBaseScreen";
+import ProjectsArchiveScreen from "./ProjectsArchive/ProjectsArchiveScreen";
+import BuildingPermitsRegistry from "./Permits/BuildingPermitsRegistry";
+import ReferenceBaseScreen from "./Reference/ReferenceBaseScreen";
 
 const HubScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");

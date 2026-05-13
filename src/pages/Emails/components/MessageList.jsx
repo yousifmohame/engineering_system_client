@@ -1,6 +1,5 @@
 import React from "react";
 import { Star, Archive, Trash2, Mail, Loader2 } from "lucide-react";
-import { LoadingSkeleton, EmptyState } from "./SharedComponents";
 
 export default function MessageList({
   sortedMessages,
@@ -16,69 +15,112 @@ export default function MessageList({
   formatDate,
 }) {
   const cleanText = (text = "") => {
-    return text.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+    return text
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
   };
+
+  const LocalLoadingSkeleton = () => (
+    <div className="space-y-3">
+      {[...Array(5)].map((_, i) => (
+        <div
+          key={i}
+          className="animate-pulse rounded-[24px] border border-emerald-200/50 bg-white/75 px-5 py-4 shadow-[0_10px_26px_rgba(18,63,89,0.07)]"
+        >
+          <div className="flex items-center gap-4">
+            <div className="h-10 w-10 shrink-0 rounded-2xl bg-emerald-50" />
+
+            <div className="min-w-0 flex-1 space-y-3">
+              <div className="flex items-center justify-between gap-4">
+                <div className="h-3.5 w-36 rounded-full bg-emerald-100" />
+                <div className="h-5 w-20 rounded-full bg-[#d8b46a]/20" />
+              </div>
+
+              <div className="h-4 w-3/4 rounded-full bg-emerald-50" />
+              <div className="h-3 w-full rounded-full bg-[#e8ddc8]/70" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const NoResults = () => (
+    <div className="flex min-h-[360px] w-full items-center justify-center rounded-[28px] border border-[#d8b46a]/25 bg-white/75 px-4 py-10 shadow-[0_18px_45px_rgba(18,63,89,0.10)]">
+      <div className="mx-auto flex max-w-sm flex-col items-center justify-center text-center">
+        <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-[24px] bg-gradient-to-br from-[#123f59] to-[#1a5874] text-[#e2bf74] shadow-[0_16px_34px_rgba(18,63,89,0.25)]">
+          <Mail className="h-10 w-10" />
+        </div>
+
+        <h3 className="mb-2 text-xl font-black text-[#123f59]">
+          صندوق الوارد فارغ
+        </h3>
+
+        <p className="max-w-xs text-sm font-semibold leading-7 text-[#53676d]">
+          {searchQuery
+            ? "لا توجد نتائج مطابقة للبحث الحالي"
+            : "لم يتم العثور على رسائل في هذا القسم"}
+        </p>
+      </div>
+    </div>
+  );
 
   return (
     <div
       ref={listRef}
-      className="relative min-w-0 max-w-full flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 custom-scrollbar-slim"
+      className="relative min-w-0 max-w-full flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 custom-scrollbar-slim sm:px-4 sm:py-4"
       onScroll={handleScroll}
       dir="rtl"
     >
-      {/* خلفية ناعمة داخل منطقة الرسائل */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-white/35 via-[#f8efe0]/20 to-white/25" />
-        <div className="absolute left-[-90px] top-20 h-56 w-56 rounded-full bg-[#c5983c]/10 blur-3xl" />
-        <div className="absolute right-[-90px] bottom-20 h-56 w-56 rounded-full bg-[#123f59]/10 blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#ecfdf5]/35 via-white/50 to-[#fff7ed]/35" />
+        <div className="absolute left-[-90px] top-20 h-56 w-56 rounded-full bg-emerald-400/8 blur-3xl" />
+        <div className="absolute right-[-90px] bottom-20 h-56 w-56 rounded-full bg-rose-400/7 blur-3xl" />
       </div>
 
-      <div className="relative z-10 min-w-0 max-w-full overflow-x-hidden">
+      <div className="relative z-10 min-w-0 max-w-full overflow-hidden">
         {isLoading ? (
-          <div className="max-w-full overflow-hidden rounded-[26px] border border-white/60 bg-white/45 p-4 shadow-[0_16px_40px_rgba(18,63,89,0.08)] backdrop-blur-xl">
-            <LoadingSkeleton />
-          </div>
+          <LocalLoadingSkeleton />
         ) : sortedMessages.length === 0 ? (
-          <div className="flex min-h-[420px] max-w-full items-center justify-center overflow-hidden rounded-[28px] border border-white/65 bg-white/50 shadow-[0_18px_45px_rgba(18,63,89,0.08)] backdrop-blur-xl">
-            <EmptyState
-              icon={Mail}
-              title="صندوق الوارد فارغ"
-              message={
-                searchQuery
-                  ? "لا توجد نتائج مطابقة للبحث"
-                  : "لم يتم العثور على رسائل"
-              }
-            />
-          </div>
+          <NoResults />
         ) : (
-          <div className="min-w-0 max-w-full space-y-3 overflow-x-hidden">
+          <div className="min-w-0 max-w-full space-y-3 overflow-hidden">
             {sortedMessages.map((msg) => {
               const isUnread = !msg.isRead;
+
               const sender =
-                msg.from?.split("<")[0].replace(/"/g, "").trim() ||
-                "بدون مرسل";
-              const bodyPreview = cleanText(msg.body).substring(0, 95);
+                msg.from?.split("<")[0].replace(/"/g, "").trim() || "بدون مرسل";
+
+              const bodyPreview = cleanText(msg.body).substring(0, 105);
 
               return (
                 <div
                   key={msg.id}
                   onClick={() => handleSelectMessage(msg)}
-                  className={`group relative w-full min-w-0 max-w-full cursor-pointer overflow-hidden rounded-[24px] border transition-all duration-300 ${
+                  className={`group relative w-full min-w-0 max-w-full cursor-pointer overflow-hidden rounded-[22px] border transition-all duration-300 sm:rounded-[24px] ${
                     isUnread
-                      ? "border-[#d8b46a]/45 bg-white/72 shadow-[0_14px_34px_rgba(18,63,89,0.12)]"
-                      : "border-white/60 bg-white/46 shadow-[0_10px_26px_rgba(18,63,89,0.07)]"
-                  } hover:-translate-y-[1px] hover:border-[#c5983c]/55 hover:bg-white/78 hover:shadow-[0_18px_42px_rgba(18,63,89,0.15)] backdrop-blur-xl`}
+                      ? "border-rose-300/65 bg-gradient-to-l from-rose-50/80 via-white to-rose-50/60 shadow-[0_14px_34px_rgba(190,18,60,0.10)] ring-1 ring-rose-200/50"
+                      : "border-emerald-300/60 bg-gradient-to-l from-emerald-50/75 via-white to-emerald-50/55 shadow-[0_14px_34px_rgba(5,150,105,0.10)] ring-1 ring-emerald-200/45"
+                  } hover:-translate-y-[1px] ${
+                    isUnread
+                      ? "hover:border-rose-400 hover:shadow-[0_18px_42px_rgba(190,18,60,0.14)]"
+                      : "hover:border-emerald-400 hover:shadow-[0_18px_42px_rgba(5,150,105,0.14)]"
+                  } backdrop-blur-xl`}
                 >
-                  {/* خط ذهبي/أزرق جانبي للرسائل غير المقروءة */}
-                  {isUnread && (
-                    <div className="absolute right-0 top-1/2 h-12 w-1.5 -translate-y-1/2 rounded-l-full bg-gradient-to-b from-[#c5983c] to-[#123f59]" />
+                  {isUnread ? (
+                    <>
+                      <div className="absolute right-0 top-0 h-full w-2 bg-gradient-to-b from-rose-500 via-rose-400 to-rose-500" />
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-l from-rose-400/8 via-transparent to-rose-700/4" />
+                    </>
+                  ) : (
+                    <>
+                      <div className="absolute right-0 top-0 h-full w-2 bg-gradient-to-b from-emerald-500 via-emerald-400 to-emerald-500" />
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-l from-emerald-400/8 via-transparent to-emerald-700/4" />
+                    </>
                   )}
 
-                  {/* لمعة داخلية خفيفة */}
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-l from-white/22 via-transparent to-[#f8efe0]/16 opacity-80" />
-
-                  <div className="relative z-10 flex min-w-0 max-w-full items-center gap-4 overflow-hidden px-5 py-4">
-                    {/* Star + unread dot */}
+                  <div className="relative z-10 flex min-w-0 max-w-full items-center gap-3 overflow-hidden px-3 py-3 sm:gap-4 sm:px-5 sm:py-4">
                     <div className="flex shrink-0 flex-col items-center gap-2">
                       <button
                         onClick={(e) => {
@@ -87,10 +129,12 @@ export default function MessageList({
                             isStarred: !msg.isStarred,
                           });
                         }}
-                        className={`grid h-9 w-9 place-items-center rounded-2xl border transition-all duration-300 ${
+                        className={`grid h-10 w-10 place-items-center rounded-2xl border transition-all duration-300 ${
                           msg.isStarred
-                            ? "border-[#d8b46a]/50 bg-[#f8efe0] text-[#c5983c]"
-                            : "border-white/50 bg-white/35 text-[#94a3b8] hover:border-[#d8b46a]/45 hover:bg-[#f8efe0]/75 hover:text-[#c5983c]"
+                            ? "border-[#c5983c]/60 bg-[#f8efe0] text-[#c5983c] shadow-[0_8px_18px_rgba(197,152,60,0.14)]"
+                            : isUnread
+                              ? "border-rose-200 bg-white/85 text-rose-500 hover:bg-rose-50 hover:text-rose-600"
+                              : "border-emerald-200 bg-white/85 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
                         }`}
                         title="تمييز الرسالة"
                         type="button"
@@ -102,29 +146,44 @@ export default function MessageList({
                         />
                       </button>
 
-                      {isUnread && (
-                        <div className="h-2.5 w-2.5 rounded-full bg-[#c5983c] shadow-[0_0_0_4px_rgba(197,152,60,0.14)]" />
+                      {isUnread ? (
+                        <div className="relative h-3.5 w-3.5 rounded-full bg-rose-500 shadow-[0_0_0_5px_rgba(190,18,60,0.13)]">
+                          <span className="absolute inset-0 rounded-full bg-rose-400 opacity-45 animate-ping" />
+                        </div>
+                      ) : (
+                        <div className="h-3.5 w-3.5 rounded-full bg-emerald-500 shadow-[0_0_0_5px_rgba(5,150,105,0.12)]" />
                       )}
                     </div>
 
-                    {/* Main content */}
                     <div className="min-w-0 flex-1 overflow-hidden">
-                      <div className="mb-1.5 flex min-w-0 items-center justify-between gap-4 overflow-hidden">
-                        <span
-                          className={`min-w-0 truncate text-[13px] ${
-                            isUnread
-                              ? "font-extrabold text-[#123f59]"
-                              : "font-bold text-[#304b57]"
-                          }`}
-                        >
-                          {sender}
-                        </span>
+                      <div className="mb-1.5 flex min-w-0 items-center justify-between gap-3 overflow-hidden sm:gap-4">
+                        <div className="flex min-w-0 items-center gap-2">
+                          {isUnread ? (
+                            <span className="shrink-0 rounded-full bg-rose-500 px-2.5 py-1 text-[10px] font-black text-white shadow-[0_6px_14px_rgba(190,18,60,0.16)]">
+                              غير مقروء
+                            </span>
+                          ) : (
+                            <span className="shrink-0 rounded-full bg-emerald-500 px-2.5 py-1 text-[10px] font-black text-white shadow-[0_6px_14px_rgba(5,150,105,0.16)]">
+                              مقروء
+                            </span>
+                          )}
+
+                          <span
+                            className={`min-w-0 truncate ${
+                              isUnread
+                                ? "text-[14px] font-black text-rose-950"
+                                : "text-[14px] font-black text-emerald-950"
+                            }`}
+                          >
+                            {sender}
+                          </span>
+                        </div>
 
                         <span
-                          className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                          className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black ${
                             isUnread
-                              ? "bg-[#123f59] text-white"
-                              : "bg-white/40 text-[#64748b]"
+                              ? "bg-rose-500 text-white shadow-[0_6px_14px_rgba(190,18,60,0.16)]"
+                              : "bg-emerald-500 text-white shadow-[0_6px_14px_rgba(5,150,105,0.16)]"
                           }`}
                         >
                           {formatDate(msg.date)}
@@ -133,29 +192,42 @@ export default function MessageList({
 
                       <div className="flex min-w-0 max-w-full items-baseline gap-2 overflow-hidden">
                         <h4
-                          className={`min-w-0 flex-1 truncate text-sm ${
+                          className={`min-w-0 flex-1 truncate ${
                             isUnread
-                              ? "font-extrabold text-[#1b3240]"
-                              : "font-semibold text-[#53636b]"
+                              ? "text-[15px] font-black text-[#111827]"
+                              : "text-[15px] font-black text-emerald-950"
                           }`}
                         >
-                          <span className="truncate">
-                            {msg.subject || "(بدون موضوع)"}
-                          </span>
+                          <span>{msg.subject || "(بدون موضوع)"}</span>
 
-                          <span className="mx-2 font-normal text-[#c5983c]">
+                          <span
+                            className={`mx-2 font-black ${
+                              isUnread ? "text-rose-500" : "text-emerald-500"
+                            }`}
+                          >
                             —
                           </span>
 
-                          <span className="text-xs font-medium text-[#6b7a80]">
+                          <span
+                            className={`text-xs ${
+                              isUnread
+                                ? "font-bold text-[#263238]"
+                                : "font-bold text-emerald-900"
+                            }`}
+                          >
                             {bodyPreview}
                           </span>
                         </h4>
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-white/55 bg-white/45 p-1 opacity-0 shadow-[0_10px_24px_rgba(18,63,89,0.10)] backdrop-blur-md transition-all duration-300 group-hover:opacity-100">
+                    <div
+                      className={`hidden shrink-0 items-center gap-1 rounded-2xl border p-1 shadow-[0_10px_24px_rgba(18,63,89,0.08)] backdrop-blur-md transition-all duration-300 md:flex ${
+                        isUnread
+                          ? "border-rose-200 bg-white/85 opacity-100"
+                          : "border-emerald-200 bg-white/85 opacity-0 group-hover:opacity-100"
+                      }`}
+                    >
                       {currentView === "trash" ? (
                         <>
                           <button
@@ -163,7 +235,7 @@ export default function MessageList({
                               e.stopPropagation();
                               updateMessageInDB(msg, { isDeleted: false });
                             }}
-                            className="grid h-8 w-8 place-items-center rounded-xl text-[#64748b] transition hover:bg-emerald-50 hover:text-emerald-600"
+                            className="grid h-8 w-8 place-items-center rounded-xl text-emerald-700 transition hover:bg-emerald-50 hover:text-emerald-800"
                             title="استعادة"
                             type="button"
                           >
@@ -175,7 +247,7 @@ export default function MessageList({
                               e.stopPropagation();
                               handleDelete(msg);
                             }}
-                            className="grid h-8 w-8 place-items-center rounded-xl text-[#64748b] transition hover:bg-red-50 hover:text-red-600"
+                            className="grid h-8 w-8 place-items-center rounded-xl text-rose-500 transition hover:bg-rose-50 hover:text-rose-700"
                             title="حذف نهائي"
                             type="button"
                           >
@@ -189,7 +261,7 @@ export default function MessageList({
                               e.stopPropagation();
                               updateMessageInDB(msg, { isArchived: true });
                             }}
-                            className="grid h-8 w-8 place-items-center rounded-xl text-[#64748b] transition hover:bg-[#f8efe0] hover:text-[#123f59]"
+                            className="grid h-8 w-8 place-items-center rounded-xl text-emerald-700 transition hover:bg-emerald-50 hover:text-emerald-800"
                             title="أرشفة"
                             type="button"
                           >
@@ -201,7 +273,7 @@ export default function MessageList({
                               e.stopPropagation();
                               handleDelete(msg);
                             }}
-                            className="grid h-8 w-8 place-items-center rounded-xl text-[#64748b] transition hover:bg-red-50 hover:text-red-600"
+                            className="grid h-8 w-8 place-items-center rounded-xl text-rose-500 transition hover:bg-rose-50 hover:text-rose-700"
                             title="حذف"
                             type="button"
                           >
@@ -217,8 +289,8 @@ export default function MessageList({
 
             {isFetchingMore && (
               <div className="flex justify-center py-5">
-                <div className="flex items-center gap-2 rounded-2xl border border-white/60 bg-white/55 px-4 py-2 text-[#123f59] shadow-sm backdrop-blur-xl">
-                  <Loader2 className="h-5 w-5 animate-spin text-[#c5983c]" />
+                <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-white/80 px-4 py-2 text-emerald-800 shadow-sm backdrop-blur-xl">
+                  <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
                   <span className="text-xs font-bold">
                     جاري تحميل المزيد...
                   </span>

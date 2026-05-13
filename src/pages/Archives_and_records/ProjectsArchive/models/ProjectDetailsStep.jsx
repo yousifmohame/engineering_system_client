@@ -19,8 +19,8 @@ import {
   FileDigit,
   ExternalLink,
 } from "lucide-react";
-import api from "../../../api/axios";
-import { useAuth } from "../../../context/AuthContext";
+import api from "../../../../api/axios";
+import { useAuth } from "../../../../context/AuthContext";
 
 // ==========================================
 // 1. مكون حالة الربط الذكي

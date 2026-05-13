@@ -26,8 +26,8 @@ import BrokersPage from "./pages/BrokersPage";
 import PartnersPage from "./pages/PartnersPage";
 
 import SystemSettingsWrapper from "./pages/systemSettings/SystemSettingsWrapper";
-import BuildingPermitsRegistry from "./pages/Permits/BuildingPermitsRegistry";
-import OurOfficePermits from "./pages/Permits/OurOfficePermits";
+import BuildingPermitsRegistry from "./pages/Archives_and_records/Permits/BuildingPermitsRegistry";
+import OurOfficePermits from "./pages/Archives_and_records/Permits/OurOfficePermits";
 import TransactionsDashboard from "./pages/Transactions/TransactionsDashboard";
 import HRScreenWrapper from "./pages/Hr/HRScreenWrapper";
 import SystemFilesExplorer from "./pages/FilesExplorer/SystemFilesExplorer";
@@ -38,14 +38,13 @@ import ClientRequestWrapper from "./pages/Emails/FileManagement/Components/Clien
 import ClientDownloadWrapper from "./pages/Emails/FileManagement/Components/ClientDownloadWrapper";
 import EmailSettingsScreen from "./pages/Emails/EmailSettingsScreen";
 import QuickLinksScreen from "./pages/QuickLinksScreen";
-import ReferenceLibraryScreen from "./pages/Reference/ReferenceLibraryScreen";
 import ContractsManagementScreen from "./pages/ContractsManagement/ContractsManagementScreen";
 import OfficeNotepadScreen from "./pages/OfficeNotepad/OfficeNotepadScreen";
 import DetailsOfficeDashboard from "./pages/DetailsOffice/DetailsOfficeDashboard";
 import MeetingsMain from "./pages/MeetingMinute/MeetingsMain";
 import MinuteVerificationPage from "./pages/verify/MinuteVerificationPage";
 import ElectronicDocumentation from "./pages/ElectronicDocumentation/index";
-import ProjectsArchiveScreen from "./pages/ProjectsArchive/ProjectsArchiveScreen";
+import ProjectsArchiveScreen from "./pages/Archives_and_records/ProjectsArchive/ProjectsArchiveScreen";
 import AiDashboard from "./pages/AiScreen/AiDashboard";
 import HubScreen from "./pages/Archives_and_records/ArchivesHubWrapper";
 
@@ -300,11 +299,7 @@ const AppContent = () => {
             >
               <QuickLinksScreen />
             </div>
-            <div
-              className={activeScreenId === "112" ? "block h-full" : "hidden"}
-            >
-              <ReferenceLibraryScreen />
-            </div>
+            
             <div
               className={activeScreenId === "170" ? "block h-full" : "hidden"}
             >

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import api from "../api/axios";
+import api from "../../../../api/axios";
 import { toast } from "sonner";
 import {
   X,
@@ -8,12 +8,8 @@ import {
   Edit3,
   Layers,
   MapPin,
-  History,
-  BarChart3,
-  QrCode,
   Eye,
   FileDown,
-  ExternalLink,
   CheckCircle2,
   AlertTriangle,
   XCircle,
@@ -38,7 +34,7 @@ import {
   Paperclip,
   Clock,
 } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../../../../context/AuthContext";
 
 // ==========================================
 // 💡 دوال المعالجة الذكية والمساعدة

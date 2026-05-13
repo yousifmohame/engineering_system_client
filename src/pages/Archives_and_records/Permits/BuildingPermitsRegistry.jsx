@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "../../api/axios";
+import api from "../../../api/axios";
 import { toast } from "sonner";
 import {
   Search,
@@ -27,8 +27,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import { SmartDropdownButton } from "../../components/SmartDropdownButton";
-import { ModalPermitDetails } from "../../components/ModalPermitDetails";
+import { SmartDropdownButton } from "../../../components/SmartDropdownButton";
+import { ModalPermitDetails } from "./components/ModalPermitDetails";
 import { ModalManualPermit } from "./components/ModalManualPermit";
 import { ModalUploadAi } from "./components/ModalUploadAi";
 import { AiBadge, FormBadge } from "./components/PermitSharedUI";

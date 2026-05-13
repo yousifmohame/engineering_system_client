@@ -3,9 +3,9 @@ import { useAppStore } from "../../stores/useAppStore";
 import { FileText } from "lucide-react";
 // استيراد الشاشات الحقيقية التي برمجناها سابقاً
 import HubScreen from "./HubScreen";
-import ProjectsArchiveScreen from "../ProjectsArchive/ProjectsArchiveScreen";
-import BuildingPermitsRegistry from "../Permits/BuildingPermitsRegistry";
-import ReferenceBaseScreen from "../Reference/ReferenceBaseScreen";
+import ProjectsArchiveScreen from "./ProjectsArchive/ProjectsArchiveScreen";
+import BuildingPermitsRegistry from "./Permits/BuildingPermitsRegistry";
+import ReferenceBaseScreen from "./Reference/ReferenceBaseScreen";
 
 export default function ArchivesHubWrapper() {
   const screenId = "ARCHIVE_HUB_SCREEN"; // 💡 كود فريد لهذا القسم في السيستم

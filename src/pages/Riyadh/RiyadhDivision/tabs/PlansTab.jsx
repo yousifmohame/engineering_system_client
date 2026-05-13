@@ -29,7 +29,7 @@ import GeneralInfoTab from "./plan_components/GeneralInfoTab";
 import FilesTab from "./plan_components/FilesTab";
 import SpecialRegTab from "./plan_components/SpecialRegTab";
 import NotesTab from "./plan_components/NotesTab";
-import ReferenceDetailsModal from "../../../ProjectsArchive/ReferenceDetails/ReferenceDetailsModal";
+import ReferenceDetailsModal from "../../../Archives_and_records/ProjectsArchive/ReferenceDetails/ReferenceDetailsModal";
 import ClientFileDetails from "../../../Clients/ClientFileDetails";
 
 const MODAL_TABS = [

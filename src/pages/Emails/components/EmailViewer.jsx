@@ -30,55 +30,96 @@ export default function EmailViewer({
   const hasAttachments =
     selectedMessage.attachments && selectedMessage.attachments.length > 0;
 
-  const InfoCard = ({
-    label,
-    value,
-    icon: Icon,
-    colorClass = "text-[#c5983c]",
-  }) => {
+  const isUnread = !selectedMessage.isRead;
+
+  const InfoCard = ({ label, value, icon: Icon, tone = "gold" }) => {
     if (!value) return null;
 
+    const tones = {
+      gold: {
+        border: "border-[#c5983c]/45",
+        bg: "bg-white",
+        iconBg: "bg-[#f8efe0]",
+        iconBorder: "border-[#d8b46a]/35",
+        iconText: "text-[#c5983c]",
+      },
+      blue: {
+        border: "border-[#0f3448]/30",
+        bg: "bg-[#f8fafc]",
+        iconBg: "bg-[#e7f3f7]",
+        iconBorder: "border-[#0f3448]/20",
+        iconText: "text-[#0f3448]",
+      },
+      emerald: {
+        border: "border-emerald-600/30",
+        bg: "bg-emerald-50/70",
+        iconBg: "bg-emerald-100",
+        iconBorder: "border-emerald-500/25",
+        iconText: "text-emerald-700",
+      },
+      cyan: {
+        border: "border-cyan-700/25",
+        bg: "bg-cyan-50/70",
+        iconBg: "bg-cyan-100",
+        iconBorder: "border-cyan-700/20",
+        iconText: "text-cyan-800",
+      },
+      red: {
+        border: "border-red-400/35",
+        bg: "bg-red-50/70",
+        iconBg: "bg-red-100",
+        iconBorder: "border-red-400/30",
+        iconText: "text-red-600",
+      },
+    };
+
+    const t = tones[tone] || tones.gold;
+
     return (
-      <div className="rounded-xl border border-[#e7dcc5] bg-white px-3 py-2 shadow-sm">
+      <div
+        className={`rounded-xl border ${t.border} ${t.bg} px-3 py-2 shadow-[0_8px_18px_rgba(18,63,89,0.10)] transition hover:shadow-[0_12px_24px_rgba(18,63,89,0.16)]`}
+      >
         <div className="mb-1 flex items-center justify-between gap-2">
-          <p className="truncate text-[10px] font-bold text-[#6b7a80]">
+          <p className="truncate text-[10px] font-black text-[#334155]">
             {label}
           </p>
 
           {Icon && (
-            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#f8efe0]">
-              <Icon className={`h-3.5 w-3.5 ${colorClass}`} />
+            <span
+              className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg border ${t.iconBorder} ${t.iconBg}`}
+            >
+              <Icon className={`h-3.5 w-3.5 ${t.iconText}`} />
             </span>
           )}
         </div>
 
-        <p className="truncate text-xs font-black text-[#123f59]">{value}</p>
+        <p className="truncate text-xs font-black text-[#0f172a]">{value}</p>
       </div>
     );
   };
 
   const senderName =
-    selectedMessage.from?.split("<")[0].replace(/"/g, "").trim() ||
-    "بدون مرسل";
+    selectedMessage.from?.split("<")[0].replace(/"/g, "").trim() || "بدون مرسل";
 
   const senderEmail =
     selectedMessage.from?.match(/<([^>]+)>/)?.[1] || selectedMessage.from;
 
   return (
-    <div className="absolute inset-0 z-20 flex flex-col overflow-hidden bg-[#f6f1e8] animate-in slide-in-from-right-4 duration-300">
+    <div className="absolute inset-0 z-20 flex flex-col overflow-hidden bg-gradient-to-br from-[#dfe8e7] via-[#f6f1e8] to-[#e8f0ef] animate-in slide-in-from-right-4 duration-300">
       <style>
         {`
           .email-viewer-content {
-            line-height: 1.55;
+            line-height: 1.65;
             font-size: 13px;
-            color: #25313b;
+            color: #111827;
+            font-weight: 500;
             word-break: break-word;
             overflow-wrap: anywhere;
           }
 
           @media (min-width: 1280px) {
             .email-viewer-content {
-              line-height: 1.7;
+              line-height: 1.8;
               font-size: 14px;
             }
           }
@@ -91,8 +132,8 @@ export default function EmailViewer({
           }
 
           .email-viewer-content a {
-            color: #123f59;
-            font-weight: 700;
+            color: #0f3448;
+            font-weight: 800;
             text-decoration: none;
             word-break: break-all;
           }
@@ -105,12 +146,12 @@ export default function EmailViewer({
       </style>
 
       {/* HEADER */}
-      <div className="relative z-10 shrink-0 border-b border-white/55 bg-white/55 px-2 py-2 shadow-[0_10px_28px_rgba(18,63,89,0.06)] backdrop-blur-xl">
+      <div className="relative z-10 shrink-0 border-b border-[#c5983c]/40 bg-white/90 px-2 py-2 shadow-[0_10px_30px_rgba(18,63,89,0.16)] backdrop-blur-xl">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1.5">
             <button
               onClick={() => setSelectedMessage(null)}
-              className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-[#d8b46a]/25 bg-white/70 px-3 text-xs font-extrabold text-[#123f59] shadow-sm transition hover:bg-[#f8efe0]/75 hover:text-[#c5983c]"
+              className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-[#c5983c]/50 bg-white px-3 text-xs font-black text-[#0f3448] shadow-[0_6px_16px_rgba(18,63,89,0.12)] transition hover:bg-[#f8efe0] hover:text-[#c5983c]"
               type="button"
             >
               <ArrowRight className="h-4 w-4" />
@@ -120,10 +161,10 @@ export default function EmailViewer({
             <button
               onClick={() =>
                 updateMessageInDB(selectedMessage, { isArchived: true }).then(
-                  () => setSelectedMessage(null)
+                  () => setSelectedMessage(null),
                 )
               }
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[#d8b46a]/20 bg-white/70 text-[#123f59] shadow-sm transition hover:bg-[#f8efe0]/80 hover:text-[#c5983c]"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-cyan-700/25 bg-cyan-50 text-cyan-800 shadow-sm transition hover:bg-cyan-100"
               title="أرشفة"
               type="button"
             >
@@ -133,10 +174,10 @@ export default function EmailViewer({
             <button
               onClick={() =>
                 updateMessageInDB(selectedMessage, { isDeleted: true }).then(
-                  () => setSelectedMessage(null)
+                  () => setSelectedMessage(null),
                 )
               }
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-red-200/40 bg-white/70 text-[#64748b] shadow-sm transition hover:bg-red-50 hover:text-red-600"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-red-300 bg-red-50 text-red-600 shadow-sm transition hover:bg-red-100 hover:text-red-700"
               title="حذف"
               type="button"
             >
@@ -148,7 +189,7 @@ export default function EmailViewer({
                 updateMessageInDB(selectedMessage, { isRead: false });
                 setSelectedMessage(null);
               }}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[#d8b46a]/20 bg-white/70 text-[#123f59] shadow-sm transition hover:bg-[#f8efe0]/80 hover:text-[#c5983c]"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-emerald-600/25 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100"
               title="تعليم كغير مقروء"
               type="button"
             >
@@ -159,7 +200,7 @@ export default function EmailViewer({
           <div className="flex shrink-0 items-center gap-1.5">
             <button
               onClick={() => handleCompose("reply", selectedMessage)}
-              className="flex h-9 items-center gap-1.5 rounded-xl border border-[#d8b46a]/25 bg-white/70 px-2.5 text-xs font-extrabold text-[#123f59] shadow-sm transition hover:bg-[#f8efe0]/80 hover:text-[#c5983c] md:px-3"
+              className="flex h-9 items-center gap-1.5 rounded-xl border border-[#c5983c]/35 bg-white px-2.5 text-xs font-black text-[#0f3448] shadow-sm transition hover:bg-[#f8efe0] hover:text-[#c5983c] md:px-3"
               type="button"
             >
               <Reply className="h-3.5 w-3.5" />
@@ -168,7 +209,7 @@ export default function EmailViewer({
 
             <button
               onClick={() => handleCompose("replyall", selectedMessage)}
-              className="flex h-9 items-center gap-1.5 rounded-xl border border-[#d8b46a]/25 bg-white/70 px-2.5 text-xs font-extrabold text-[#123f59] shadow-sm transition hover:bg-[#f8efe0]/80 hover:text-[#c5983c] md:px-3"
+              className="flex h-9 items-center gap-1.5 rounded-xl border border-[#c5983c]/35 bg-white px-2.5 text-xs font-black text-[#0f3448] shadow-sm transition hover:bg-[#f8efe0] hover:text-[#c5983c] md:px-3"
               type="button"
             >
               <ReplyAll className="h-3.5 w-3.5" />
@@ -177,7 +218,7 @@ export default function EmailViewer({
 
             <button
               onClick={() => handleCompose("forward", selectedMessage)}
-              className="flex h-9 items-center gap-1.5 rounded-xl border border-[#d8b46a]/35 bg-gradient-to-l from-[#123f59] to-[#1a5874] px-2.5 text-xs font-extrabold text-white shadow-sm transition hover:-translate-y-[1px] md:px-3"
+              className="flex h-9 items-center gap-1.5 rounded-xl border border-[#c5983c]/45 bg-gradient-to-l from-[#0f3448] via-[#15536f] to-[#0e7490] px-2.5 text-xs font-black text-white shadow-[0_10px_22px_rgba(18,63,89,0.28)] transition hover:-translate-y-[1px] md:px-3"
               type="button"
             >
               <Forward className="h-3.5 w-3.5 text-[#e2bf74]" />
@@ -199,29 +240,29 @@ export default function EmailViewer({
             xl:grid-rows-1
           "
         >
-          {/* ANALYSIS LEFT ON LARGE SCREEN / BOTTOM ON SMALL SCREEN */}
+          {/* ANALYSIS */}
           <aside
             dir="rtl"
-            className="order-2 min-h-0 overflow-hidden rounded-[20px] border border-[#e8ddc8] bg-white shadow-[0_12px_30px_rgba(18,63,89,0.09)] xl:order-1 xl:rounded-[24px]"
+            className="order-2 min-h-0 overflow-hidden rounded-[20px] border border-[#0f3448]/25 bg-white shadow-[0_18px_42px_rgba(18,63,89,0.16)] xl:order-1 xl:rounded-[24px]"
           >
             {!selectedMessage.isAnalyzed ? (
-              <div className="flex h-full flex-col items-center justify-center p-4 text-center">
-                <div className="mx-auto mb-2 grid h-11 w-11 place-items-center rounded-xl bg-[#123f59] xl:h-14 xl:w-14 xl:rounded-2xl">
+              <div className="flex h-full flex-col items-center justify-center bg-gradient-to-br from-white via-[#f8efe0] to-cyan-50 p-4 text-center">
+                <div className="mx-auto mb-2 grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-[#0f3448] to-[#0e7490] shadow-lg xl:h-14 xl:w-14 xl:rounded-2xl">
                   <Bot className="h-6 w-6 text-[#e2bf74] xl:h-7 xl:w-7" />
                 </div>
 
-                <h3 className="mb-1 text-sm font-black text-[#123f59] xl:text-lg">
+                <h3 className="mb-1 text-sm font-black text-[#0f3448] xl:text-lg">
                   استخراج البيانات
                 </h3>
 
-                <p className="mb-3 max-w-sm text-[11px] font-semibold leading-5 text-[#53676d] xl:text-xs xl:leading-6">
+                <p className="mb-3 max-w-sm text-[11px] font-bold leading-5 text-[#334155] xl:text-xs xl:leading-6">
                   قراءة الرسالة واستخراج التفاصيل تلقائياً.
                 </p>
 
                 <button
                   onClick={() => analyzeMutation.mutate(selectedMessage)}
                   disabled={analyzeMutation.isPending}
-                  className="mx-auto flex items-center gap-2 rounded-xl bg-[#123f59] px-4 py-2 text-xs font-black text-white shadow-md transition hover:bg-[#0f3448] disabled:cursor-not-allowed disabled:opacity-50 xl:px-5 xl:py-2.5"
+                  className="mx-auto flex items-center gap-2 rounded-xl bg-gradient-to-l from-[#0f3448] to-[#0e7490] px-4 py-2 text-xs font-black text-white shadow-md transition hover:bg-[#092637] disabled:cursor-not-allowed disabled:opacity-50 xl:px-5 xl:py-2.5"
                   type="button"
                 >
                   {analyzeMutation.isPending ? (
@@ -234,63 +275,67 @@ export default function EmailViewer({
               </div>
             ) : (
               <div className="flex h-full min-h-0 flex-col overflow-hidden">
-                <div className="shrink-0 border-b border-[#eadfca] bg-[#fbf8f1] px-4 py-3 xl:px-5 xl:py-4">
+                <div className="shrink-0 border-b border-[#0f3448]/20 bg-gradient-to-l from-[#0f3448] via-[#15536f] to-[#0e7490] px-4 py-3 text-white xl:px-5 xl:py-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 xl:gap-3">
-                      <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#123f59] text-[#e2bf74] xl:h-12 xl:w-12 xl:rounded-2xl">
+                      <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/12 text-[#e2bf74] shadow-md xl:h-12 xl:w-12 xl:rounded-2xl">
                         <CheckCircle className="h-5 w-5 xl:h-6 xl:w-6" />
                       </span>
 
-                      <h3 className="text-base font-black text-[#123f59] xl:text-lg">
+                      <h3 className="text-base font-black text-white xl:text-lg">
                         ملخص التحليل الذكي
                       </h3>
                     </div>
 
                     {selectedMessage.linkedTxId && (
-                      <div className="hidden items-center gap-1 rounded-full bg-white px-3 py-1.5 text-[10px] font-black text-[#123f59] sm:flex">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-[#c5983c]" />
+                      <div className="hidden items-center gap-1 rounded-full border border-white/25 bg-white/15 px-3 py-1.5 text-[10px] font-black text-[#e2bf74] sm:flex">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-[#e2bf74]" />
                         مربوط
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* ANALYSIS CONTENT SCROLLS INTERNALLY IF NEEDED */}
-                <div className="min-h-0 flex-1 overflow-y-auto p-3 xl:p-4 custom-scrollbar-slim">
-                  {/* SMALL / MEDIUM SCREEN COMPACT VERSION */}
+                <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-br from-[#fbf8f1] via-white to-cyan-50 p-3 xl:p-4 custom-scrollbar-slim">
+                  {/* SMALL / MEDIUM */}
                   <div className="grid grid-cols-2 gap-2 xl:hidden">
                     <InfoCard
                       label="نوع الخدمة"
                       value={selectedMessage.serviceType}
+                      tone="emerald"
                     />
 
                     <InfoCard
                       label="الجهة المصدرة"
                       value={selectedMessage.entityName}
                       icon={Building2}
+                      tone="blue"
                     />
 
                     <InfoCard
                       label="رقم الطلب"
                       value={selectedMessage.reqNumber}
                       icon={FileText}
+                      tone="gold"
                     />
 
                     <InfoCard
                       label="سنة الطلب"
                       value={selectedMessage.reqYear}
+                      tone="cyan"
                     />
 
                     <InfoCard
                       label="رقم الخدمة"
                       value={selectedMessage.serviceNumber}
                       icon={FileText}
-                      colorClass="text-[#1c6b59]"
+                      tone="emerald"
                     />
 
                     <InfoCard
                       label="سنة الخدمة"
                       value={selectedMessage.serviceYear}
+                      tone="cyan"
                     />
 
                     {selectedMessage.ownerName && (
@@ -299,43 +344,45 @@ export default function EmailViewer({
                           label="اسم المالك"
                           value={selectedMessage.ownerName}
                           icon={User}
-                          colorClass="text-[#123f59]"
+                          tone="blue"
                         />
                       </div>
                     )}
 
                     {selectedMessage.replyText && (
-                      <div className="col-span-2 rounded-xl border border-[#e8ddc8] bg-[#fbf8f1] p-2">
-                        <div className="mb-1 flex items-center gap-2 text-[10px] font-black text-[#53676d]">
+                      <div className="col-span-2 rounded-xl border border-[#c5983c]/35 bg-white p-2 shadow-sm">
+                        <div className="mb-1 flex items-center gap-2 text-[10px] font-black text-[#0f3448]">
                           <FileText className="h-3.5 w-3.5 text-[#c5983c]" />
                           الإفادة / الملاحظات
                         </div>
 
-                        <div className="max-h-[70px] overflow-y-auto rounded-xl bg-white p-2 text-[11px] font-semibold leading-5 text-[#334155] custom-scrollbar-slim">
+                        <div className="max-h-[70px] overflow-y-auto rounded-xl bg-[#f8efe0] p-2 text-[11px] font-bold leading-5 text-[#111827] custom-scrollbar-slim">
                           {selectedMessage.replyText}
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* LARGE SCREEN ORIGINAL FULL VERSION */}
+                  {/* LARGE */}
                   <div className="hidden grid-cols-1 gap-3 xl:grid">
                     <InfoCard
                       label="نوع الخدمة"
                       value={selectedMessage.serviceType}
+                      tone="emerald"
                     />
 
                     <InfoCard
                       label="اسم الجهة المصدرة"
                       value={selectedMessage.entityName}
                       icon={Building2}
+                      tone="blue"
                     />
 
                     <InfoCard
                       label="اسم المالك"
                       value={selectedMessage.ownerName}
                       icon={User}
-                      colorClass="text-[#123f59]"
+                      tone="cyan"
                     />
 
                     <div className="grid grid-cols-2 gap-3">
@@ -343,46 +390,50 @@ export default function EmailViewer({
                         label="رقم الطلب"
                         value={selectedMessage.reqNumber}
                         icon={FileText}
+                        tone="gold"
                       />
 
                       <InfoCard
                         label="سنة الطلب"
                         value={selectedMessage.reqYear}
+                        tone="cyan"
                       />
 
                       <InfoCard
                         label="رقم الخدمة"
                         value={selectedMessage.serviceNumber}
                         icon={FileText}
-                        colorClass="text-[#1c6b59]"
+                        tone="emerald"
                       />
 
                       <InfoCard
                         label="سنة الخدمة"
                         value={selectedMessage.serviceYear}
+                        tone="blue"
                       />
                     </div>
 
                     <InfoCard
                       label="القطاع"
                       value={selectedMessage.sectorName}
+                      tone="gold"
                     />
 
                     <InfoCard
                       label="وقت الإطلاع"
                       value={selectedMessage.viewTime}
                       icon={Clock}
-                      colorClass="text-[#c5983c]"
+                      tone="red"
                     />
 
                     {selectedMessage.replyText && (
-                      <div className="rounded-2xl border border-[#e8ddc8] bg-[#fbf8f1] p-4">
-                        <div className="mb-2 flex items-center gap-2 text-xs font-black text-[#53676d]">
+                      <div className="rounded-2xl border border-[#c5983c]/35 bg-white p-4 shadow-sm">
+                        <div className="mb-2 flex items-center gap-2 text-xs font-black text-[#0f3448]">
                           <FileText className="h-4 w-4 text-[#c5983c]" />
                           الإفادة / الملاحظات
                         </div>
 
-                        <div className="max-h-[95px] overflow-y-auto rounded-2xl bg-white p-3 text-xs font-semibold leading-6 text-[#334155] custom-scrollbar-slim">
+                        <div className="max-h-[95px] overflow-y-auto rounded-2xl bg-[#f8efe0] p-3 text-xs font-bold leading-6 text-[#111827] custom-scrollbar-slim">
                           {selectedMessage.replyText}
                         </div>
                       </div>
@@ -393,26 +444,60 @@ export default function EmailViewer({
             )}
           </aside>
 
-          {/* MESSAGE RIGHT ON LARGE SCREEN / TOP ON SMALL SCREEN */}
+          {/* MESSAGE */}
           <section
             dir="rtl"
-            className="order-1 flex min-h-0 flex-col overflow-hidden rounded-[20px] border border-[#e8ddc8] bg-white shadow-[0_12px_30px_rgba(18,63,89,0.09)] xl:order-2 xl:rounded-[24px]"
+            className={`order-1 flex min-h-0 flex-col overflow-hidden rounded-[20px] border shadow-[0_18px_42px_rgba(18,63,89,0.16)] xl:order-2 xl:rounded-[24px] ${
+              isUnread
+                ? "border-red-500 bg-white ring-2 ring-red-300/70"
+                : "border-[#0f3448]/25 bg-white"
+            }`}
           >
-            <div className="h-1.5 shrink-0 bg-gradient-to-l from-[#123f59] via-[#c5983c] to-[#1c6b59]" />
+            <div
+              className={`h-1.5 shrink-0 ${
+                isUnread
+                  ? "bg-gradient-to-l from-red-800 via-red-500 to-orange-500"
+                  : "bg-gradient-to-l from-[#0f3448] via-[#0e7490] to-[#c5983c]"
+              }`}
+            />
 
-            <div className="shrink-0 px-4 py-3 xl:px-5 xl:py-4">
+            <div
+              className={`shrink-0 border-b px-4 py-3 xl:px-5 xl:py-4 ${
+                isUnread
+                  ? "border-red-300 bg-gradient-to-l from-red-50 via-white to-orange-50"
+                  : "border-[#0f3448]/15 bg-gradient-to-l from-white via-[#f8efe0] to-cyan-50"
+              }`}
+            >
               <div className="mb-2 flex items-start justify-between gap-3 xl:mb-3">
                 <div className="min-w-0">
-                  <p className="mb-0.5 text-[10px] font-bold text-[#c5983c] xl:mb-1 xl:text-[11px]">
-                    تفاصيل الرسالة
-                  </p>
+                  <div className="mb-1 flex items-center gap-2">
+                    <p
+                      className={`text-[10px] font-black xl:text-[11px] ${
+                        isUnread ? "text-red-700" : "text-[#0e7490]"
+                      }`}
+                    >
+                      تفاصيل الرسالة
+                    </p>
 
-                  <h1 className="line-clamp-2 text-lg font-black leading-tight text-[#111827] xl:text-[23px]">
+                    {isUnread && (
+                      <span className="rounded-full bg-red-600 px-2.5 py-0.5 text-[10px] font-black text-white shadow-sm">
+                        غير مقروء
+                      </span>
+                    )}
+                  </div>
+
+                  <h1 className="line-clamp-2 text-lg font-black leading-tight text-[#0f172a] xl:text-[23px]">
                     {selectedMessage.subject || "(بدون موضوع)"}
                   </h1>
                 </div>
 
-                <div className="hidden shrink-0 rounded-xl border border-[#e1d4bd] bg-[#fbf8f1] px-3 py-1.5 text-[10px] font-bold text-[#53676d] lg:block xl:rounded-2xl xl:px-4 xl:py-2 xl:text-xs">
+                <div
+                  className={`hidden shrink-0 rounded-xl border px-3 py-1.5 text-[10px] font-black lg:block xl:rounded-2xl xl:px-4 xl:py-2 xl:text-xs ${
+                    isUnread
+                      ? "border-red-300 bg-red-100 text-red-800"
+                      : "border-cyan-700/25 bg-cyan-50 text-cyan-900"
+                  }`}
+                >
                   {new Date(selectedMessage.date).toLocaleString("ar-SA", {
                     dateStyle: "medium",
                     timeStyle: "short",
@@ -420,33 +505,53 @@ export default function EmailViewer({
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-[#eadfca] bg-[#fbf8f1] px-3 py-2 xl:rounded-3xl xl:px-4 xl:py-3">
+              <div
+                className={`rounded-2xl border px-3 py-2 shadow-sm xl:rounded-3xl xl:px-4 xl:py-3 ${
+                  isUnread
+                    ? "border-red-300 bg-red-50"
+                    : "border-cyan-700/20 bg-white"
+                }`}
+              >
                 <div className="flex items-center gap-2.5 xl:gap-3">
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#123f59] text-sm font-black text-white shadow-md xl:h-12 xl:w-12 xl:rounded-2xl xl:text-lg">
+                  <div
+                    className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-black text-white shadow-md xl:h-12 xl:w-12 xl:rounded-2xl xl:text-lg ${
+                      isUnread
+                        ? "bg-gradient-to-br from-red-700 to-red-500"
+                        : "bg-gradient-to-br from-[#0f3448] to-[#0e7490]"
+                    }`}
+                  >
                     {selectedMessage.from?.charAt(0).toUpperCase() || "?"}
                   </div>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-black text-[#123f59] xl:text-base">
+                        <p
+                          className={`truncate text-sm font-black xl:text-base ${
+                            isUnread ? "text-red-950" : "text-[#0f3448]"
+                          }`}
+                        >
                           {senderName}
                         </p>
 
                         <p
-                          className="truncate text-[10px] font-mono text-[#6b7280] xl:text-[11px]"
+                          className="truncate text-[10px] font-mono font-bold text-[#475569] xl:text-[11px]"
                           dir="ltr"
                         >
                           {senderEmail}
                         </p>
                       </div>
 
-                      <p className="hidden shrink-0 text-[10px] font-semibold text-[#94a3b8] md:block xl:text-[11px]">
+                      <p className="hidden shrink-0 text-[10px] font-black text-[#475569] md:block xl:text-[11px]">
                         إلى: {selectedMessage.to || "أنا"}
                       </p>
                     </div>
 
-                    <p className="mt-0.5 text-[10px] font-bold text-[#53676d] lg:hidden">
+                    <p
+                      className={`mt-0.5 text-[10px] font-black lg:hidden ${
+                        isUnread ? "text-red-700" : "text-cyan-800"
+                      }`}
+                    >
                       {new Date(selectedMessage.date).toLocaleString("ar-SA", {
                         dateStyle: "medium",
                         timeStyle: "short",
@@ -457,8 +562,8 @@ export default function EmailViewer({
               </div>
             </div>
 
-            {/* EMAIL TEXT SCROLLS HERE INTERNALLY */}
-            <div className="min-h-0 flex-1 overflow-y-auto border-t border-[#eadfca] px-4 py-3 custom-scrollbar-slim xl:px-5 xl:py-4">
+            {/* EMAIL TEXT */}
+            <div className="min-h-0 flex-1 overflow-y-auto bg-white px-4 py-3 custom-scrollbar-slim xl:px-5 xl:py-4">
               <div className="email-viewer-content">
                 {selectedMessage.html ? (
                   <div
@@ -472,7 +577,7 @@ export default function EmailViewer({
 
                 {(selectedMessage.signature || selectedMessage.footerText) &&
                   !selectedMessage.html && (
-                    <div className="mt-4 border-t border-[#eadfca] pt-3">
+                    <div className="mt-4 border-t border-[#0e7490]/30 pt-3">
                       {selectedMessage.signature && (
                         <div
                           className="mb-2"
@@ -485,10 +590,11 @@ export default function EmailViewer({
                       {selectedMessage.footerText && (
                         <div
                           style={{
-                            color: selectedMessage.footerColor || "#64748b",
+                            color: selectedMessage.footerColor || "#334155",
                             fontSize: selectedMessage.footerSize || "11px",
                             textAlign: "center",
                             marginTop: "8px",
+                            fontWeight: 700,
                           }}
                         >
                           {selectedMessage.footerText}
@@ -501,9 +607,9 @@ export default function EmailViewer({
 
             {/* Attachments */}
             {hasAttachments && (
-              <div className="shrink-0 border-t border-[#eadfca] bg-[#fbf8f1] px-4 py-2 xl:px-5 xl:py-3">
-                <h4 className="mb-1.5 flex items-center gap-2 text-xs font-black text-[#123f59] xl:mb-2">
-                  <span className="grid h-7 w-7 place-items-center rounded-xl bg-white text-[#c5983c]">
+              <div className="shrink-0 border-t border-[#0e7490]/30 bg-gradient-to-l from-[#f8efe0] to-cyan-50 px-4 py-2 xl:px-5 xl:py-3">
+                <h4 className="mb-1.5 flex items-center gap-2 text-xs font-black text-[#0f3448] xl:mb-2">
+                  <span className="grid h-7 w-7 place-items-center rounded-xl bg-white text-[#0e7490] shadow-sm">
                     <Paperclip className="h-3.5 w-3.5" />
                   </span>
                   المرفقات ({selectedMessage.attachments.length})
@@ -513,11 +619,11 @@ export default function EmailViewer({
                   {selectedMessage.attachments.map((att, idx) => (
                     <div
                       key={idx}
-                      className="flex min-w-[180px] items-center justify-between gap-2 rounded-xl border border-[#e8ddc8] bg-white px-3 py-1.5 xl:min-w-[190px] xl:py-2"
+                      className="flex min-w-[180px] items-center justify-between gap-2 rounded-xl border border-[#0e7490]/25 bg-white px-3 py-1.5 shadow-sm xl:min-w-[190px] xl:py-2"
                     >
                       <div className="flex min-w-0 items-center gap-2">
-                        <FileText className="h-3.5 w-3.5 shrink-0 text-[#123f59]" />
-                        <span className="truncate text-[11px] font-bold text-[#334155]">
+                        <FileText className="h-3.5 w-3.5 shrink-0 text-[#0f3448]" />
+                        <span className="truncate text-[11px] font-black text-[#334155]">
                           {att.filename || att.name || "مرفق"}
                         </span>
                       </div>
@@ -528,7 +634,7 @@ export default function EmailViewer({
                           download={att.filename || att.name || "attachment"}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#f8efe0] text-[#c5983c] transition hover:bg-[#123f59] hover:text-white"
+                          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#0f3448] text-[#e2bf74] transition hover:bg-[#0e7490] hover:text-white"
                           title="تحميل المرفق"
                         >
                           <Download className="h-3.5 w-3.5" />

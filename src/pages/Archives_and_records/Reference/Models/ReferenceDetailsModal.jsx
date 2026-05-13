@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import api from "../../../api/axios";
-import { useAuth } from "../../../context/AuthContext";
+import api from "../../../../api/axios";
+import { useAuth } from "../../../../context/AuthContext";
 import {
   X,
   Trash2,

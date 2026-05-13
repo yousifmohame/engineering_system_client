@@ -44,12 +44,12 @@ export const DEFAULT_MENU_CATEGORIES = [
         code: "SCREEN_815_VIEW",
         isFavorite: true,
       },
-      {
-        id: "11",
-        label: "أرشيف المشاريع",
-        code: "SCR_11_VIEW",
-        isFavorite: true,
-      },
+      // {
+      //   id: "11",
+      //   label: "أرشيف المشاريع",
+      //   code: "SCR_11_VIEW",
+      //   isFavorite: true,
+      // },
       {
         id: "12",
         label: "مركز الأرشيف و السجلات",
@@ -76,13 +76,13 @@ export const DEFAULT_MENU_CATEGORIES = [
       // { id: "07", label: "الصكوك", code: "SCR_07_VIEW" },
       { id: "222", label: "تعاقدات العملاء", code: "SCR_222_VIEW" },
       // { id: "08", label: "الهويات", code: "SCR_08_VIEW" },
-      { id: "09", label: "سجلات الرخص الخارجية", code: "SCR_09_VIEW" },
-      { id: "0010", label: "سجلات رخص مكتبنا", code: "SCR_0010_VIEW" },
-      {
-        id: "112",
-        label: "اشتراطات و أدلة و تعاميم و عروض",
-        code: "SCR_112_VIEW",
-      },
+      // { id: "09", label: "سجلات الرخص الخارجية", code: "SCR_09_VIEW" },
+      // { id: "0010", label: "سجلات رخص مكتبنا", code: "SCR_0010_VIEW" },
+      // {
+      //   id: "112",
+      //   label: "اشتراطات و أدلة و تعاميم و عروض",
+      //   code: "SCR_112_VIEW",
+      // },
     ],
   },
   {

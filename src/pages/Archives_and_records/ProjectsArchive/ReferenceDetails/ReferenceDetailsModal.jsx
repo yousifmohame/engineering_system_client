@@ -14,8 +14,8 @@ import {
   GitMerge,
 } from "lucide-react";
 import { toast } from "sonner";
-import api from "../../../api/axios";
-import { useAuth } from "../../../context/AuthContext";
+import api from "../../../../api/axios";
+import { useAuth } from "../../../../context/AuthContext";
 
 // استيراد المكونات التي قمنا بتقسيمها
 import BasicInfoTab from "./Tabs/BasicInfoTab";

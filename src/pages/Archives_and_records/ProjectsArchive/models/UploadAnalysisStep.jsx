@@ -16,8 +16,8 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner"; // 👈 أضفنا الـ toast للإشعارات
-import api from "../../../api/axios";
-import { useAuth } from "../../../context/AuthContext";
+import api from "../../../../api/axios";
+import { useAuth } from "../../../../context/AuthContext";
 
 export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
   const { user } = useAuth();

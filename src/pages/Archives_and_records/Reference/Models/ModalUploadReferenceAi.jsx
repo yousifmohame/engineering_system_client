@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { X, Brain, CloudUpload, FileText, Sparkles, Loader2 } from "lucide-react";
-import api from "../../../api/axios";
+import api from "../../../../api/axios";
 
 export default function ModalUploadReferenceAi({ onClose, fixedCategory }) {
   const queryClient = useQueryClient();

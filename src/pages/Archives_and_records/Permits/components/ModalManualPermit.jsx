@@ -1,447 +1,41 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import api from "../../../../api/axios"; // تأكد من مسار الاستيراد
 import { toast } from "sonner";
-import api from "../api/axios";
 import moment from "moment-hijri";
 import {
+  Edit3,
   X,
-  Plus,
-  FileText,
+  Link,
   User,
-  Calculator,
   Briefcase,
-  MapPin,
-  Trash2,
-  Paperclip,
-  CheckCircle2,
-  EyeOff,
-  Search,
-  ChevronDown,
-  Loader2,
-  AlertTriangle,
-  Copy,
-  ChevronLeft,
   Building,
   FileSignature,
-  Link,
-  Save,
-  CloudUpload,
-  CalendarDays,
+  AlertTriangle,
   Clock,
-  Edit3,
-  Check
+  CalendarDays,
+  CloudUpload,
+  Check,
+  Loader2,
+  Copy
 } from "lucide-react";
+import {
+  SmartLinkedField,
+  CopyableInput,
+  SearchableDropdown,
+} from "./PermitSharedUI"; // الاستيراد من الملف المشترك
+import {
+  toEnglishNumbers,
+  normalizeArabicText,
+  normalizePlan,
+  copyToClipboard,
+} from "../utils/permitHelpers"; // المساعدات
 
-// ============================================================================
-// 💡 Helpers
-// ============================================================================
-const formatNumberWithCommas = (val) => {
-  if (!val) return "";
-  const numStr = val.toString().replace(/,/g, "");
-  if (isNaN(numStr)) return val;
-  return Number(numStr).toLocaleString("en-US");
-};
-
-const parseNumber = (val) => {
-  if (!val) return 0;
-  return Number(val.toString().replace(/,/g, ""));
-};
-
-const toEnglishNumbers = (str) => {
-  if (str === null || str === undefined) return "";
-  return String(str).replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
-};
-
-const normalizeArabicText = (str) => {
-  if (!str) return "";
-  return toEnglishNumbers(str)
-    .replace(/(^|\s)(حي|مخطط|رقم)(\s+|$)/g, "")
-    .replace(/[أإآ]/g, "ا")
-    .replace(/ة/g, "ه")
-    .replace(/ي/g, "ى")
-    .replace(/[\s\-_]/g, "")
-    .toLowerCase();
-};
-
-const normalizePlan = (str) => {
-  if (!str) return "";
-  let cleaned = toEnglishNumbers(str)
-    .replace(/(^|\s)(مخطط|رقم)(\s+|$)/g, "")
-    .replace(/[أإآ]/g, "ا")
-    .replace(/[\s\\_\-]/g, "/")
-    .replace(/\/+/g, "/");
-
-  if (cleaned.includes("/")) {
-    cleaned = cleaned.split("/").filter(Boolean).sort().join("/");
-  }
-  return cleaned.toLowerCase();
-};
-
-const copyToClipboard = (text) => {
-  if (!text) return toast.error("الحقل فارغ لا يوجد شيء لنسخه!");
-  navigator.clipboard.writeText(text);
-  toast.success("تم النسخ بنجاح! 📋");
-};
-
-const initialOwnerState = {
-  isNewClient: false,
-  clientId: "",
-  ownerName: "",
-  newClient: {
-    type: "فرد سعودي",
-    first: "",
-    last: "",
-    companyName: "",
-    idNumber: "",
-  },
-};
-
-// ============================================================================
-// 💡 القائمة الذكية القابلة للبحث
-// ============================================================================
-const SearchableDropdown = ({
-  options,
-  value,
-  onChange,
-  placeholder,
-  isAdding,
-  onQuickAdd,
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const wrapperRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target))
-        setIsOpen(false);
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const filteredOptions = useMemo(() => {
-    if (!searchTerm) return options;
-    return options.filter((opt) =>
-      opt.label.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
-  }, [options, searchTerm]);
-
-  const selectedOption = options.find((opt) => opt.value === value);
-
-  return (
-    <div className="relative w-full" ref={wrapperRef}>
-      <div className="flex gap-2">
-        <div
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 cursor-pointer flex items-center justify-between hover:border-blue-400 focus:ring-1 focus:ring-blue-400 focus:bg-white transition-all"
-        >
-          <span>{selectedOption ? selectedOption.label : placeholder}</span>
-          <ChevronLeft
-            size={14}
-            className={`text-slate-400 transition-transform ${isOpen ? "-rotate-90" : ""}`}
-          />
-        </div>
-        {onQuickAdd && (
-          <button
-            onClick={onQuickAdd}
-            disabled={isAdding}
-            className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 disabled:opacity-50 transition-colors"
-            title="إضافة سريعة"
-          >
-            {isAdding ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Plus size={16} />
-            )}
-          </button>
-        )}
-      </div>
-
-      {isOpen && (
-        <div className="absolute z-[100] w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
-          <div className="p-2 border-b border-slate-100 bg-slate-50 sticky top-0">
-            <div className="relative">
-              <Search
-                size={14}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                type="text"
-                className="w-full pl-3 pr-8 py-2 text-[11px] font-bold border border-slate-200 rounded-lg outline-none focus:border-blue-400"
-                placeholder="اكتب للبحث..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                autoFocus
-              />
-            </div>
-          </div>
-          <div className="overflow-y-auto p-1 custom-scrollbar-slim">
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map((opt) => (
-                <div
-                  key={opt.value}
-                  onClick={() => {
-                    onChange(opt.value);
-                    setIsOpen(false);
-                    setSearchTerm("");
-                  }}
-                  className={`px-3 py-2 text-[11px] font-bold rounded-lg cursor-pointer transition-colors ${
-                    value === opt.value
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  {opt.label}
-                </div>
-              ))
-            ) : (
-              <div className="p-4 text-center text-[11px] text-slate-400 font-bold">
-                لا توجد نتائج مطابقة
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ============================================================================
-// 💡 مكون مساعد: قائمة منسدلة قابلة للبحث (Searchable Select) - للاستخدامات القديمة
-// ============================================================================
-const SearchableSelect = ({
-  options,
-  value,
-  onChange,
-  placeholder,
-  disabled,
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const wrapperRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target))
-        setIsOpen(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const filteredOptions = useMemo(() => {
-    return options.filter((opt) =>
-      opt.label.toLowerCase().includes(toEnglishNumbers(search).toLowerCase()),
-    );
-  }, [options, search]);
-
-  const selectedLabel = options.find((o) => o.value === value)?.label || "";
-
-  return (
-    <div className="relative w-full" ref={wrapperRef}>
-      <div
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`w-full border rounded-lg px-3 py-2.5 text-sm font-bold flex items-center justify-between cursor-pointer transition-colors ${disabled ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed" : "bg-gray-50 border-gray-300 focus-within:border-blue-500 focus-within:bg-white"}`}
-      >
-        <span className={selectedLabel ? "text-gray-800" : "text-gray-400"}>
-          {selectedLabel || placeholder}
-        </span>
-        <ChevronDown className="w-4 h-4 text-gray-400" />
-      </div>
-
-      {isOpen && !disabled && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-hidden flex flex-col">
-          <div className="p-2 border-b border-gray-100 bg-gray-50 sticky top-0">
-            <div className="relative">
-              <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-              <input
-                autoFocus
-                type="text"
-                placeholder="اكتب للبحث..."
-                value={search}
-                onChange={(e) => setSearch(toEnglishNumbers(e.target.value))}
-                className="w-full pl-2 pr-7 py-1.5 text-xs font-bold border border-gray-300 rounded outline-none focus:border-blue-500"
-              />
-            </div>
-          </div>
-          <div className="overflow-y-auto custom-scrollbar-slim">
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map((opt) => (
-                <div
-                  key={opt.value}
-                  onClick={() => {
-                    onChange(opt.value, opt);
-                    setIsOpen(false);
-                    setSearch("");
-                  }}
-                  className="px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer border-b border-gray-50 last:border-0 font-bold"
-                >
-                  {opt.label}
-                </div>
-              ))
-            ) : (
-              <div className="p-3 text-center text-xs text-gray-400">
-                لا توجد نتائج مطابقة
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ==========================================
-// 💡 مكون الحقل الذكي الهجين (Hybrid Smart Field)
-// يدمج بين إمكانية الكتابة الحرة والبحث من الداتاليست والبحث السريع
-// ==========================================
-const SmartLinkedField = ({
-  label,
-  value,
-  onChange,
-  options,
-  matchFn,
-  onQuickAdd,
-  isAdding,
-  placeholder,
-  listId,
-  linkedId,
-  disabled = false,
-}) => {
-  const isLinked = useMemo(() => {
-    if (linkedId) return true;
-    if (!value || value.trim() === "") return false;
-    return options.some((opt) => matchFn(opt, value));
-  }, [value, options, matchFn, linkedId]);
-
-  return (
-    <div className="flex flex-col gap-1 w-full">
-      <div className="flex items-center justify-between mb-0.5">
-        <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
-          {label}
-          <button
-            onClick={() => copyToClipboard(value)}
-            className="text-slate-400 hover:text-blue-600 transition-colors"
-            title="نسخ المحتوى"
-          >
-            <Copy size={12} />
-          </button>
-        </label>
-        {!disabled &&
-          value &&
-          value.trim() !== "" &&
-          (isLinked ? (
-            <span className="flex items-center gap-1 text-[9px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-bold shadow-sm">
-              <CheckCircle2 size={10} /> مسجل
-            </span>
-          ) : (
-            <div className="flex items-center gap-1.5">
-              <span className="text-[9px] text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-bold flex items-center gap-0.5 shadow-sm">
-                <AlertTriangle size={10} /> غير مسجل
-              </span>
-              {onQuickAdd && (
-                <button
-                  onClick={onQuickAdd}
-                  disabled={isAdding}
-                  className="text-[9px] bg-blue-600 text-white hover:bg-blue-700 px-2 py-0.5 rounded font-bold flex items-center gap-1 transition-all shadow-sm disabled:opacity-50"
-                  title="إضافة سريعة للنظام"
-                >
-                  {isAdding ? (
-                    <Loader2 size={10} className="animate-spin" />
-                  ) : (
-                    <Plus size={10} />
-                  )}{" "}
-                  إضافة
-                </button>
-              )}
-            </div>
-          ))}
-      </div>
-      <div className="relative">
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(toEnglishNumbers(e.target.value))}
-          disabled={disabled}
-          className={`w-full px-3 py-2 border rounded-lg text-[11px] font-bold outline-none transition-all ${
-            disabled
-              ? "bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed"
-              : value && isLinked
-                ? "border-emerald-300 focus:ring-1 focus:ring-emerald-400 bg-white text-slate-700"
-                : "bg-slate-50 border-slate-200 focus:ring-1 focus:ring-blue-400 focus:bg-white text-slate-700"
-          }`}
-          placeholder={placeholder}
-          list={listId}
-        />
-        {!disabled && (
-          <datalist id={listId}>
-            {options.map((opt, idx) => (
-              <option
-                key={idx}
-                value={opt.name || opt.nameAr || opt.label || opt.planNumber}
-              />
-            ))}
-          </datalist>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ==========================================
-// 💡 مكون الإدخال العادي القابل للنسخ
-// ==========================================
-const CopyableInput = ({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  dir = "rtl",
-  style = {},
-  warning = null,
-  disabled = false,
-}) => (
-  <div className="space-y-1">
-    <div className="flex items-center justify-between mb-0.5">
-      <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
-        {label}
-        {warning && (
-          <span className="flex items-center gap-1 bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[9px] border border-amber-300 shadow-sm animate-pulse">
-            <AlertTriangle size={10} /> {warning}
-          </span>
-        )}
-        <button
-          onClick={() => copyToClipboard(value)}
-          className="text-slate-400 hover:text-blue-600 transition-colors"
-          title="نسخ المحتوى"
-        >
-          <Copy size={12} />
-        </button>
-      </label>
-    </div>
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(toEnglishNumbers(e.target.value))}
-      placeholder={placeholder}
-      dir={dir}
-      style={style}
-      disabled={disabled}
-      className={`w-full text-[11px] font-bold border rounded-lg px-3 py-2 outline-none transition-colors ${disabled ? "bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed" : warning ? "border-amber-400 bg-amber-50 focus:ring-amber-500 text-amber-900" : "border-slate-200 bg-slate-50 text-slate-700 focus:ring-blue-400 focus:bg-white"}`}
-    />
-  </div>
-);
-
-// ==========================================
-// 💡 المودل الرئيسي للإضافة اليدوية
-// ==========================================
 export function ModalManualPermit({
   mode = "add",
   permitData = null,
   onClose,
-  fixedOffice, // 👈 نستقبل اسم المكتب الافتراضي
+  fixedOffice,
 }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
@@ -523,7 +117,6 @@ export function ModalManualPermit({
     },
   });
 
-  // 💡 إضافة الـ State لعملية الربط في الهيدر/لوحة التحكم العلوية
   const [linkingMode, setLinkingMode] = useState(null);
   const [selectedValue, setSelectedValue] = useState("");
 
@@ -547,8 +140,6 @@ export function ModalManualPermit({
     issueDate: "",
     expiryDate: "",
     file: null,
-
-    // 💡 حقول الربط المباشر
     linkedClientId: "",
     linkedOfficeId: "",
     linkedOwnershipId: "",
@@ -586,9 +177,6 @@ export function ModalManualPermit({
     }
   }, [formData.district, flatDistricts]);
 
-  // ==========================================
-  // 💡 فحص التكرار اللحظي המتقدم
-  // ==========================================
   const duplicateWarning = useMemo(() => {
     if (!formData.permitNumber || formData.permitNumber.trim() === "")
       return null;
@@ -623,8 +211,7 @@ export function ModalManualPermit({
       const now = new Date();
       end.setHours(0, 0, 0, 0);
       now.setHours(0, 0, 0, 0);
-      const diffTime = end - now;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
       return {
         gregorian: gregorianDate,
         diffDays: diffDays,
@@ -671,7 +258,6 @@ export function ModalManualPermit({
         )
           fd.append(key, safeValue);
       });
-
       if (mode === "edit")
         return await api.put(`/permits/${permitData.id}`, fd, {
           headers: { "Content-Type": "multipart/form-data" },
@@ -700,10 +286,8 @@ export function ModalManualPermit({
     saveMutation.mutate(formData);
   };
 
-  // 💡 دوال الربط
   const handleApplyLink = () => {
     if (!selectedValue) return toast.error("يرجى اختيار السجل من القائمة");
-
     if (linkingMode === "client")
       setFormData({ ...formData, linkedClientId: selectedValue });
     if (linkingMode === "office")
@@ -712,7 +296,6 @@ export function ModalManualPermit({
       setFormData({ ...formData, linkedOwnershipId: selectedValue });
     if (linkingMode === "privateTransaction")
       setFormData({ ...formData, linkedTransactionId: selectedValue });
-
     setLinkingMode(null);
     setSelectedValue("");
     toast.success("تم تحديد السجل للربط، سيتم حفظه مع الرخصة.");
@@ -747,7 +330,7 @@ export function ModalManualPermit({
           <div className="flex items-center gap-2 text-white">
             <Edit3 className="w-5 h-5" />
             <span className="text-base font-bold">
-              {mode === "add" ? "إضافة رخصة يدوية" : "تعديل بيانات الرخصة"}
+              {mode === "add" ? "إضافة رخصة يدوية ذكية" : "تعديل بيانات الرخصة"}
             </span>
           </div>
           <button
@@ -758,7 +341,7 @@ export function ModalManualPermit({
           </button>
         </div>
 
-        {/* 💡 أزرار الربط في أعلى النموذج */}
+        {/* 💡 أزرار الربط */}
         <div className="bg-slate-50 p-4 border-b border-slate-200 shrink-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-bold text-slate-600 ml-2">
@@ -815,7 +398,6 @@ export function ModalManualPermit({
             )}
           </div>
 
-          {/* منطقة البحث المنسدلة للربط */}
           {linkingMode && (
             <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2">
               <div className="flex-1">
@@ -843,7 +425,6 @@ export function ModalManualPermit({
             </div>
           )}
 
-          {/* استعراض السجلات المربوطة */}
           <div className="flex flex-wrap gap-2 mt-3">
             {formData.linkedClientId && (
               <span className="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-emerald-200">
@@ -910,30 +491,26 @@ export function ModalManualPermit({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-6 custom-scrollbar-slim bg-[#fafbfc] space-y-6">
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            <div className="lg:col-span-3 pb-2 border-b border-slate-100 mb-1 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-blue-500" />
-              <h4 className="font-bold text-slate-800 text-sm">
-                المعلومات الأساسية للرخصة
-              </h4>
-            </div>
-
+        <div className="flex-1 overflow-auto p-6 custom-scrollbar-slim bg-[#fafbfc]">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             <div className="lg:col-span-2">
               <SmartLinkedField
                 label="اسم المالك (العميل) *"
                 value={formData.ownerName}
                 linkedId={formData.linkedClientId}
-                onChange={(val) =>
+                onChange={(val) => {
+                  const found = clients.find(
+                    (c) => c.name === val || c.idNumber === formData.idNumber,
+                  );
                   setFormData({
                     ...formData,
                     ownerName: val,
-                    linkedClientId: "",
-                  })
-                } // 👈 عند الكتابة يتم فك الربط المباشر
+                    linkedClientId: found ? found.id : "",
+                  });
+                }}
                 options={clients}
                 listId="manualClientsList"
-                placeholder="اكتب اسم العميل..."
+                placeholder="ابحث أو اكتب اسم العميل..."
                 matchFn={(opt, val) =>
                   normalizeArabicText(opt.fullNameRaw) ===
                     normalizeArabicText(val) ||
@@ -1076,20 +653,25 @@ export function ModalManualPermit({
               <SmartLinkedField
                 label="الحي"
                 value={formData.district}
-                onChange={(val) => setFormData({ ...formData, district: val })}
+                linkedId={formData.linkedDistrictId}
+                onChange={(val) =>
+                  setFormData({
+                    ...formData,
+                    district: val,
+                    linkedDistrictId: "",
+                  })
+                }
                 options={flatDistricts}
                 listId="manualDistrictsList"
                 placeholder={
                   loadingDistricts ? "جاري التحميل..." : "ابحث أو اكتب الحي..."
                 }
-                matchFn={(opt, val) =>
-                  normalizeArabicText(opt.name).includes(
-                    normalizeArabicText(val),
-                  ) ||
-                  normalizeArabicText(val).includes(
-                    normalizeArabicText(opt.name),
-                  )
-                }
+                matchFn={(opt, val) => {
+                  const normOpt = normalizeArabicText(opt.name);
+                  const normVal = normalizeArabicText(val);
+                  if (!normOpt || !normVal) return false;
+                  return normOpt.includes(normVal) || normVal.includes(normOpt);
+                }}
                 isAdding={quickAddDistrict.isPending}
                 onQuickAdd={() =>
                   quickAddDistrict.mutate({
@@ -1103,8 +685,13 @@ export function ModalManualPermit({
               <SmartLinkedField
                 label="رقم المخطط"
                 value={formData.planNumber}
+                linkedId={formData.linkedPlanId}
                 onChange={(val) =>
-                  setFormData({ ...formData, planNumber: val })
+                  setFormData({
+                    ...formData,
+                    planNumber: val,
+                    linkedPlanId: "",
+                  })
                 }
                 options={plans}
                 listId="manualPlansList"
@@ -1122,6 +709,7 @@ export function ModalManualPermit({
                 }
               />
             </div>
+
             <CopyableInput
               label="رقم القطعة"
               value={formData.plotNumber}
@@ -1135,65 +723,47 @@ export function ModalManualPermit({
               onChange={(val) => setFormData({ ...formData, landArea: val })}
               placeholder="المساحة"
             />
+            <CopyableInput
+              label="التصنيف الرئيسي"
+              value={formData.mainUsage}
+              onChange={(val) => setFormData({ ...formData, mainUsage: val })}
+              placeholder="مثال: سكني، تجاري"
+            />
+            <CopyableInput
+              label="التصنيف الفرعي"
+              value={formData.subUsage}
+              onChange={(val) => setFormData({ ...formData, subUsage: val })}
+              placeholder="مثال: مستودعات، مكتبي، فيلا"
+            />
+            <CopyableInput
+              label="نوع الطلب"
+              value={formData.type}
+              onChange={(val) => setFormData({ ...formData, type: val })}
+            />
+            <CopyableInput
+              label="شكل الرخصة (تلقائي)"
+              value={formData.form}
+              onChange={() => {}}
+              disabled={true}
+              style={{ backgroundColor: "#f1f5f9", cursor: "not-allowed" }}
+            />
 
-            <div className="space-y-1">
-              <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
-                  التصنيف الرئيسي{" "}
-                  <button
-                    onClick={() => copyToClipboard(formData.mainUsage)}
-                    className="text-slate-400 hover:text-blue-600 transition-colors"
-                  >
-                    <Copy size={12} />
-                  </button>
-                </label>
-              </div>
-              <input
-                type="text"
-                value={formData.mainUsage}
-                onChange={(e) =>
-                  setFormData({ ...formData, mainUsage: e.target.value })
-                }
-                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 outline-none focus:ring-1 focus:ring-blue-400"
-                placeholder="مثال: سكني، تجاري"
-              />
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
-                  التصنيف الفرعي{" "}
-                  <button
-                    onClick={() => copyToClipboard(formData.subUsage)}
-                    className="text-slate-400 hover:text-blue-600 transition-colors"
-                  >
-                    <Copy size={12} />
-                  </button>
-                </label>
-              </div>
-              <input
-                type="text"
-                value={formData.subUsage}
-                onChange={(e) =>
-                  setFormData({ ...formData, subUsage: e.target.value })
-                }
-                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 outline-none focus:ring-1 focus:ring-blue-400"
-                placeholder="مثال: مستودعات، مكتبي، فيلا"
-              />
-            </div>
-
-            <div>
+            <div className="md:col-span-2">
               <SmartLinkedField
                 label="المكتب الهندسي"
                 value={formData.engineeringOffice}
                 disabled={!!fixedOffice}
                 linkedId={formData.linkedOfficeId}
-                onChange={(val) =>
+                onChange={(val) => {
+                  const found = offices.find(
+                    (o) => o.nameAr === val || o.nameEn === val,
+                  );
                   setFormData({
                     ...formData,
                     engineeringOffice: val,
-                    linkedOfficeId: "",
-                  })
-                }
+                    linkedOfficeId: found ? found.id : "",
+                  });
+                }}
                 options={offices}
                 listId="manualOfficesList"
                 placeholder="ابحث أو اكتب المكتب..."
@@ -1219,48 +789,6 @@ export function ModalManualPermit({
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-500 block">
-                شكل الرخصة
-              </label>
-              <select
-                value={formData.form}
-                onChange={(e) =>
-                  setFormData({ ...formData, form: e.target.value })
-                }
-                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50"
-              >
-                {["يدوي", "أصفر", "أخضر"].map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-500 block">
-                المصدر
-              </label>
-              <select
-                value={formData.source}
-                onChange={(e) =>
-                  setFormData({ ...formData, source: e.target.value })
-                }
-                className="w-full text-[11px] font-bold border border-slate-200 rounded-lg px-3 py-2 bg-slate-50"
-              >
-                {[
-                  "نظام المعاملات",
-                  "رفع يدوي (AI)",
-                  "بوابة بلدي",
-                  "استيراد تاريخي",
-                  "يدوي",
-                ].map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
             <div className="lg:col-span-3 space-y-1 mt-2">
               <CopyableInput
                 label="ملاحظات"
@@ -1275,25 +803,25 @@ export function ModalManualPermit({
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-700 flex items-center gap-2">
                 <CloudUpload className="w-4 h-4 text-blue-500" /> إرفاق مستند
-                الرخصة الأصلي
+                الرخصة
                 <span className="text-[10px] text-slate-400 font-normal">
                   {mode === "edit"
                     ? "(ارفع ملفاً جديداً لاستبدال القديم)"
-                    : "(اختياري ولكن محبذ)"}
+                    : "(اختياري)"}
                 </span>
               </label>
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-colors cursor-pointer bg-slate-50 shadow-sm"
+                className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-colors cursor-pointer bg-white shadow-sm"
               >
-                <CloudUpload className="w-10 h-10 mx-auto text-blue-400 mb-3" />
-                <div className="text-[13px] font-bold text-slate-700">
+                <CloudUpload className="w-8 h-8 mx-auto text-blue-400 mb-2" />
+                <div className="text-[12px] font-bold text-slate-700">
                   {formData.file
                     ? formData.file.name
                     : "اسحب الملف هنا أو اضغط للاختيار"}
                 </div>
-                <div className="text-[10px] font-bold text-slate-400 mt-1.5">
-                  يدعم صيغ PDF, JPG, PNG بحجم أقصى 25MB
+                <div className="text-[10px] font-bold text-slate-400 mt-1">
+                  يدعم PDF, JPG, PNG - حد أقصى 25MB
                 </div>
                 <input
                   ref={fileInputRef}
@@ -1309,7 +837,7 @@ export function ModalManualPermit({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-slate-200 bg-white rounded-b-xl shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-slate-200 bg-white rounded-b-xl shrink-0">
           <button
             onClick={onClose}
             className="px-6 text-xs font-bold bg-slate-100 text-slate-600 rounded-xl py-2.5 hover:bg-slate-200 transition-colors"
@@ -1323,10 +851,8 @@ export function ModalManualPermit({
           >
             {saveMutation.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />
-            ) : mode === "add" ? (
-              <Check className="w-4 h-4" />
             ) : (
-              <Save className="w-4 h-4" />
+              <Check className="w-4 h-4" />
             )}
             {mode === "add" ? "حفظ وتسجيل السجل" : "اعتماد التعديلات"}
           </button>

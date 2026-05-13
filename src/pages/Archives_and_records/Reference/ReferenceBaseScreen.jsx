@@ -6,7 +6,7 @@ import {
   Loader2, Trash2, Edit2, Snowflake, Play, X
 } from "lucide-react";
 
-import api from "../../api/axios";
+import api from "../../../api/axios";
 import AddReferenceModal from "./Models/AddReferenceModal";
 import ReferenceDetailsModal from "./Models/ReferenceDetailsModal";
 import ModalUploadReferenceAi from "./Models/ModalUploadReferenceAi";
