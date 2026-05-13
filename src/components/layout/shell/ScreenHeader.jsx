@@ -1,141 +1,315 @@
 import React from "react";
 import { useAppStore } from "../../../stores/useAppStore";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   X,
   Home,
   ChevronLeft,
   RefreshCw,
-  LayoutTemplate
+  LayoutTemplate,
+  Layers,
 } from "lucide-react";
 import { clsx } from "clsx";
 
 const ScreenHeader = ({ screenId }) => {
-  // 👈 تمت إضافة openScreen للعودة للرئيسية
-  const { screenTabs, activeTabPerScreen, setActiveTab, removeTab, openScreen } = useAppStore();
+  const {
+    screenTabs,
+    activeTabPerScreen,
+    setActiveTab,
+    removeTab,
+    openScreen,
+  } = useAppStore();
+
+  const queryClient = useQueryClient();
 
   const tabs = screenTabs[screenId] || [];
   const activeTabId = activeTabPerScreen[screenId];
   const activeTabTitle = tabs.find((t) => t.id === activeTabId)?.title;
 
-  // تحديد اسم الشاشة للعرض
   const getScreenName = () => {
-    switch (screenId) {
-      case "300": return "إدارة العملاء";
-      case "310": return "ملفات الملكية";
-      case "320": return "المعاملات";
-      default: return "شاشة النظام";
+    const screenNames = {
+      "01": "لوحة التحكم",
+      DASH: "لوحة التحكم",
+      "300": "إدارة العملاء",
+      "310": "ملفات الملكية",
+      "815": "عروض الأسعار",
+      "39": "تقسيمات الرياض",
+      "40": "القطاعات",
+      "41": "الأحياء",
+      "222": "العقود",
+      "30": "الوسطاء",
+      "31": "مكاتب الوسطاء",
+      "32": "الشركاء",
+      "71": "إعدادات النظام",
+      "09": "رخص البناء",
+      "0010": "رخص المكتب",
+      "10": "المعاملات",
+      "88": "الموارد البشرية",
+      "16": "مستكشف الملفات",
+      "98": "إشعارات البريد",
+      "99": "صندوق البريد",
+      "100": "طلبات الملفات",
+      "101": "إعدادات البريد",
+      "109": "الروابط السريعة",
+      "112": "المكتبة المرجعية",
+      "170": "إدارة العقود",
+      "030": "مفكرة المكتب",
+      "58": "Details Office",
+      "91": "محاضر الاجتماعات",
+      "20": "التوثيق الإلكتروني",
+      "11": "أرشيف المشاريع",
+      "52": "الذكاء الاصطناعي",
+    };
+
+    return screenNames[screenId] || "شاشة النظام";
+  };
+
+  const handleGoHome = () => {
+    openScreen("01", "لوحة التحكم");
+  };
+
+  const handleResetScreen = () => {
+    if (tabs.length > 0) {
+      setActiveTab(screenId, tabs[0].id);
     }
   };
 
+  const handleRefresh = () => {
+    queryClient.invalidateQueries();
+  };
+
   return (
-    <div className="sticky top-0 z-20 flex flex-col bg-white shrink-0">
-      
-      {/* ==================================================================================
-          1. شريط مسار التنقل (Breadcrumbs) - الآن تفاعلي بالكامل
-      ================================================================================== */}
-      <div className="h-10 flex items-center justify-between px-4 bg-white border-b border-slate-100 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
-        
-        <div className="flex items-center text-[11px] font-medium text-slate-500">
-          
-          {/* 👈 1. زر الرئيسية (ينقلك للداشبورد) */}
-          <div 
-            onClick={() => openScreen('001')} // افتراض أن 001 هو كود الرئيسية، عدله حسب نظامك
-            className="flex items-center hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded transition-colors cursor-pointer group"
+    <div
+      className="
+        sticky top-0 z-20 flex shrink-0 flex-col overflow-hidden
+        border-b border-[#c5983c]/20 bg-white
+        shadow-[0_8px_24px_rgba(18,63,89,0.08)]
+      "
+      dir="rtl"
+    >
+      {/* Breadcrumb */}
+      <div
+        className="
+          relative flex h-11 items-center justify-between overflow-hidden
+          border-b border-[#e8ddc8]
+          bg-gradient-to-l from-white via-[#fbf8f1] to-[#eef7f6]
+          px-4
+        "
+      >
+        <div className="pointer-events-none absolute inset-0 z-0">
+          <div className="absolute right-[18%] top-[-45px] h-24 w-24 rounded-full bg-[#123f59]/7 blur-3xl" />
+          <div className="absolute left-[20%] bottom-[-50px] h-24 w-24 rounded-full bg-[#c5983c]/12 blur-3xl" />
+        </div>
+
+        <div className="relative z-10 flex min-w-0 items-center text-[11px] font-bold text-[#64748b]">
+          <button
+            onClick={handleGoHome}
+            className="
+              group flex items-center gap-1.5 rounded-2xl border border-transparent
+              px-2.5 py-1.5 transition-all
+              hover:border-[#c5983c]/25 hover:bg-white hover:text-[#123f59]
+            "
             title="العودة للصفحة الرئيسية للنظام"
+            type="button"
           >
-            <Home className="w-3.5 h-3.5 ml-1.5 text-slate-400 group-hover:text-blue-600 transition-colors" />
-            <span>الرئيسية</span>
-          </div>
+            <span className="grid h-6 w-6 place-items-center rounded-xl bg-[#123f59] text-[#e2bf74] shadow-sm">
+              <Home className="h-3.5 w-3.5" />
+            </span>
 
-          <ChevronLeft className="w-3.5 h-3.5 mx-0.5 text-slate-300" />
+            <span className="hidden sm:inline">الرئيسية</span>
+          </button>
 
-          {/* 👈 2. زر الشاشة (يعيدك للتاب الأساسي الأول للشاشة المفتوحة) */}
-          <div 
-            onClick={() => {
-              if (tabs.length > 0) setActiveTab(screenId, tabs[0].id);
-            }}
-            className="flex items-center gap-1.5 cursor-pointer hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+          <ChevronLeft className="mx-1 h-3.5 w-3.5 text-[#c5983c]/70" />
+
+          <button
+            onClick={handleResetScreen}
+            className="
+              flex min-w-0 items-center gap-2 rounded-2xl border border-[#d8b46a]/25
+              bg-white/75 px-2.5 py-1.5 shadow-sm transition-all
+              hover:border-[#c5983c]/45 hover:bg-[#f8efe0]/70
+            "
             title={`إعادة تعيين شاشة ${getScreenName()}`}
+            type="button"
           >
-            <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[9px] font-mono border border-slate-200">
+            <span
+              className="
+                shrink-0 rounded-lg border border-[#c5983c]/25
+                bg-[#f8efe0] px-2 py-0.5 font-mono text-[9px]
+                font-black text-[#123f59]
+              "
+            >
               {screenId}
             </span>
-            <span className="text-slate-700 font-bold hover:text-blue-700">{getScreenName()}</span>
-          </div>
 
-          {/* التاب النشط الحالي (غير قابل للضغط لأنه التاب الحالي) */}
+            <span className="min-w-0 truncate text-[12px] font-black text-[#123f59]">
+              {getScreenName()}
+            </span>
+          </button>
+
           {activeTabTitle && (
             <>
-              <ChevronLeft className="w-3.5 h-3.5 mx-0.5 text-slate-300" />
-              <span className="text-blue-700 font-bold bg-blue-50/50 px-2 py-1 rounded cursor-default select-text">
+              <ChevronLeft className="mx-1 h-3.5 w-3.5 text-[#c5983c]/70" />
+
+              <span
+                className="
+                  max-w-[240px] truncate rounded-2xl border border-cyan-700/20
+                  bg-cyan-50 px-3 py-1.5 text-[11px]
+                  font-black text-cyan-900
+                "
+                title={activeTabTitle}
+              >
                 {activeTabTitle}
               </span>
             </>
           )}
         </div>
 
+        <div className="relative z-10 hidden items-center gap-2 md:flex">
+          <div
+            className="
+              flex items-center gap-2 rounded-2xl border border-[#d8b46a]/25
+              bg-white/70 px-3 py-1.5 shadow-sm
+            "
+          >
+            <Layers className="h-3.5 w-3.5 text-[#c5983c]" />
+            <span className="text-[10px] font-black text-[#123f59]">
+              التبويبات الداخلية
+            </span>
+          </div>
+
+          <button
+            onClick={handleRefresh}
+            className="
+              grid h-8 w-8 place-items-center rounded-2xl border border-cyan-700/20
+              bg-cyan-50 text-cyan-800 transition-all
+              hover:bg-cyan-100
+            "
+            title="تحديث بيانات الشاشة"
+            type="button"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
-      {/* ==================================================================================
-          2. شريط الألسنة المحلية (Local Tabs Strip)
-      ================================================================================== */}
-      <div className="flex items-end px-3 pt-2 gap-[2px] bg-slate-50 border-b border-slate-200 overflow-x-auto custom-scrollbar-hide h-[42px]">
-        {tabs.map((tab) => {
-          const isActive = activeTabId === tab.id;
-          return (
-            <div
-              key={tab.id}
-              onClick={() => setActiveTab(screenId, tab.id)}
-              // 👈 إضافة خاصية Title لظهور التلميح (Tooltip) عند وقوف الماوس
-              title={`الشاشة: ${tab.title}\nالكود: ${tab.id}`} 
-              className={clsx(
-                "group relative flex items-center h-[34px] min-w-[130px] max-w-[200px] px-3 rounded-t-md text-xs cursor-pointer select-none transition-all duration-200",
-                isActive
-                  ? "bg-white text-blue-700 font-bold border border-b-0 border-slate-200 z-10 shadow-[0_-2px_4px_rgba(0,0,0,0.03)] pb-px" 
-                  : "bg-slate-100/50 text-slate-500 hover:bg-slate-200 hover:text-slate-800 border border-transparent border-b-slate-200"
-              )}
-              style={isActive ? { marginBottom: "-1px", borderBottomColor: "white" } : {}}
-            >
-              
-              <LayoutTemplate className={clsx("w-3 h-3 ml-2 shrink-0 transition-colors", isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-500")} />
-              <span className="truncate flex-1 pt-0.5">{tab.title}</span>
+      {/* Local Tabs Strip */}
+      {tabs.length > 0 && (
+        <div
+          className="
+            flex h-[46px] items-end gap-1 overflow-x-auto overflow-y-hidden
+            border-b border-[#d8b46a]/25
+            bg-gradient-to-l from-[#f8efe0]/70 via-white to-[#eef7f6]
+            px-3 pt-2 custom-scrollbar-slim
+          "
+        >
+          {tabs.map((tab) => {
+            const isActive = activeTabId === tab.id;
 
-              {/* أزرار الإجراءات للتاب */}
-              <div className={clsx(
-                "flex items-center mr-1 transition-opacity duration-200",
-                isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-              )}>
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(screenId, tab.id)}
+                title={`الشاشة: ${tab.title}\nالكود: ${tab.id}`}
+                type="button"
+                className={clsx(
+                  `
+                    group relative flex h-[36px] min-w-[140px] max-w-[230px]
+                    items-center gap-2 overflow-hidden rounded-t-2xl border
+                    px-3 text-right text-xs transition-all duration-300
+                  `,
+                  isActive
+                    ? `
+                      z-10 border-[#c5983c]/45 border-b-white
+                      bg-white text-[#123f59]
+                      shadow-[0_-8px_22px_rgba(197,152,60,0.14)]
+                    `
+                    : `
+                      border-[#e8ddc8] bg-white/45 text-[#64748b]
+                      hover:border-[#c5983c]/35 hover:bg-white hover:text-[#123f59]
+                    `,
+                )}
+                style={
+                  isActive
+                    ? {
+                        marginBottom: "-1px",
+                      }
+                    : {}
+                }
+              >
                 {isActive && (
-                  <button
-                    className="p-1 hover:bg-blue-50 rounded text-blue-400 hover:text-blue-600 ml-1 transition-colors"
-                    title="تحديث البيانات"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                  </button>
+                  <>
+                    <span className="absolute inset-x-3 top-0 h-px bg-gradient-to-l from-transparent via-[#c5983c] to-transparent" />
+                    <span className="absolute bottom-0 left-3 right-3 h-[3px] rounded-full bg-gradient-to-l from-[#123f59] via-[#c5983c] to-[#0e7490]" />
+                  </>
                 )}
 
-                {tab.closable && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeTab(screenId, tab.id);
-                    }}
-                    className="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-500 transition-colors"
-                    title="إغلاق التبويب"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
+                <span
+                  className={clsx(
+                    `
+                      relative z-10 grid h-7 w-7 shrink-0 place-items-center rounded-xl
+                      border transition-all
+                    `,
+                    isActive
+                      ? "border-[#c5983c]/30 bg-[#f8efe0] text-[#c5983c]"
+                      : "border-[#e8ddc8] bg-white text-[#94a3b8] group-hover:text-[#c5983c]",
+                  )}
+                >
+                  <LayoutTemplate className="h-3.5 w-3.5" />
+                </span>
 
-              {isActive && (
-                <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-blue-600 rounded-t-md"></div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      
+                <span
+                  className={clsx(
+                    "relative z-10 min-w-0 flex-1 truncate pt-0.5",
+                    isActive ? "font-black" : "font-bold",
+                  )}
+                >
+                  {tab.title}
+                </span>
+
+                <div
+                  className={clsx(
+                    "relative z-10 flex shrink-0 items-center gap-1 transition-opacity duration-300",
+                    isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+                  )}
+                >
+                  {isActive && (
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRefresh();
+                      }}
+                      className="
+                        grid h-6 w-6 place-items-center rounded-xl
+                        text-cyan-700 transition hover:bg-cyan-50
+                      "
+                      title="تحديث البيانات"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </span>
+                  )}
+
+                  {tab.closable && (
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeTab(screenId, tab.id);
+                      }}
+                      className="
+                        grid h-6 w-6 place-items-center rounded-xl
+                        text-slate-400 transition
+                        hover:bg-rose-50 hover:text-rose-600
+                      "
+                      title="إغلاق التبويب"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

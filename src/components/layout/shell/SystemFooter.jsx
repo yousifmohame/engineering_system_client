@@ -1,138 +1,237 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
-  Wifi, WifiOff, Server, Activity,
-  Database, ShieldCheck
-} from 'lucide-react';
-import { clsx } from 'clsx';
-import api from '../../../api/axios';
+  Wifi,
+  WifiOff,
+  Server,
+  Activity,
+  Database,
+  ShieldCheck,
+  CircleDot,
+} from "lucide-react";
+import { clsx } from "clsx";
+import api from "../../../api/axios";
 
 const SystemFooter = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [serverStatus, setServerStatus] = useState('checking');
+  const [serverStatus, setServerStatus] = useState("checking");
   const [latency, setLatency] = useState(null);
-  const [dbStatus, setDbStatus] = useState('connected');
+  const [dbStatus, setDbStatus] = useState("connected");
 
-  /* Network status */
   useEffect(() => {
     const on = () => setIsOnline(true);
     const off = () => setIsOnline(false);
-    window.addEventListener('online', on);
-    window.addEventListener('offline', off);
+
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+
     return () => {
-      window.removeEventListener('online', on);
-      window.removeEventListener('offline', off);
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
     };
   }, []);
 
-  /* Server Health */
   useEffect(() => {
     const check = async () => {
       const start = Date.now();
+
       try {
-        await api.get('/clients', { params: { limit: 1 }, timeout: 5000 });
+        await api.get("/clients", {
+          params: { limit: 1 },
+          timeout: 5000,
+        });
+
         setLatency(Date.now() - start);
-        setServerStatus('online');
-        setDbStatus('connected');
+        setServerStatus("online");
+        setDbStatus("connected");
       } catch (e) {
         if (e?.response?.status === 401 || e?.response?.status === 403) {
           setLatency(Date.now() - start);
-          setServerStatus('online');
+          setServerStatus("online");
+          setDbStatus("connected");
         } else {
-          setServerStatus('offline');
+          setServerStatus("offline");
           setLatency(null);
-          setDbStatus('disconnected');
+          setDbStatus("disconnected");
         }
       }
     };
+
     check();
-    const i = setInterval(check, 10000);
-    return () => clearInterval(i);
+
+    const interval = setInterval(check, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const latencyLevel =
-    latency === null ? 'down' :
-    latency < 150 ? 'good' :
-    latency < 400 ? 'warn' : 'bad';
+    latency === null
+      ? "down"
+      : latency < 150
+        ? "good"
+        : latency < 400
+          ? "warn"
+          : "bad";
 
-  const latencyColor = {
-    good: 'bg-emerald-400',
-    warn: 'bg-yellow-400',
-    bad: 'bg-red-500',
-    down: 'bg-slate-600'
+  const latencyBarClass = {
+    good: "bg-emerald-400",
+    warn: "bg-[#e2bf74]",
+    bad: "bg-rose-500",
+    down: "bg-slate-600",
+  }[latencyLevel];
+
+  const latencyTextClass = {
+    good: "text-emerald-300",
+    warn: "text-[#e2bf74]",
+    bad: "text-rose-300",
+    down: "text-slate-400",
   }[latencyLevel];
 
   return (
-    <footer className="fixed bottom-0 z-50 w-full h-8 bg-slate-900/95 border-t border-slate-800 backdrop-blur text-[11px] text-slate-300 flex items-center  px-4 font-mono">
-
-      {/* Left */}
-      <div className="flex items-center gap-3">
-        <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-        <span className="tracking-wide">
-          Engineering System <span className="text-slate-400">v2.1.0</span>
-        </span>
+    <footer
+      className="
+        relative z-30 flex h-9 shrink-0 items-center justify-between
+        overflow-hidden border-t border-[#c5983c]/20
+        bg-gradient-to-l from-[#08111c] via-[#0f172a] to-[#123f59]
+        px-4 text-[11px] text-slate-300 shadow-[0_-8px_24px_rgba(15,23,42,0.22)]
+        backdrop-blur-xl
+      "
+      dir="ltr"
+    >
+      {/* Background glow */}
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute left-[10%] top-[-40px] h-20 w-20 rounded-full bg-[#c5983c]/12 blur-2xl" />
+        <div className="absolute right-[20%] bottom-[-45px] h-24 w-24 rounded-full bg-cyan-500/10 blur-2xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#c5983c]/60 to-transparent" />
       </div>
 
-      {/* Right */}
-      <div className="flex items-center gap-5 mr-20">
+      {/* Left */}
+      <div className="relative z-10 flex min-w-0 items-center gap-3">
+        <div className="flex items-center gap-2 rounded-xl border border-[#c5983c]/20 bg-white/[0.06] px-2.5 py-1">
+          <ShieldCheck className="h-3.5 w-3.5 text-[#e2bf74]" />
 
-        {/* Network */}
-        <StatusItem
-          ok={isOnline}
-          label={isOnline ? 'Online' : 'Offline'}
-          icon={isOnline ? Wifi : WifiOff}
-          okColor="emerald"
-        />
+          <span className="hidden font-black tracking-wide text-white sm:inline">
+            Details WMS
+          </span>
 
-        {/* Server */}
-        <StatusItem
-          ok={serverStatus === 'online'}
-          label="API"
-          icon={Server}
-          okColor="emerald"
-        />
-
-        {/* DB */}
-        <StatusItem
-          ok={dbStatus === 'connected'}
-          label="DB"
-          icon={Database}
-          okColor="blue"
-        />
-
-        {/* Latency */}
-        <div className="flex items-center gap-2 min-w-[90px]">
-          <Activity className="w-3.5 h-3.5 text-slate-400" />
-          <div className="w-14 h-1.5 bg-slate-700 rounded overflow-hidden">
-            <div
-              className={clsx(
-                'h-full transition-all duration-300',
-                latencyColor
-              )}
-              style={{ width: latency ? `${Math.min(latency / 6, 100)}%` : '100%' }}
-            />
-          </div>
-          <span className="text-slate-400">
-            {latency ? `${latency}ms` : '--'}
+          <span className="font-mono text-[10px] font-bold text-[#e2bf74]">
+            v2.1.0
           </span>
         </div>
 
+        <div className="hidden items-center gap-1.5 text-[10px] font-bold text-slate-400 md:flex">
+          <CircleDot className="h-3 w-3 text-emerald-400" />
+          Engineering Work System
+        </div>
+      </div>
+
+      {/* Right */}
+      <div className="relative z-10 flex items-center gap-2 sm:gap-3 md:gap-4">
+        <StatusItem
+          ok={isOnline}
+          label={isOnline ? "Online" : "Offline"}
+          icon={isOnline ? Wifi : WifiOff}
+          tone={isOnline ? "emerald" : "rose"}
+        />
+
+        <StatusItem
+          ok={serverStatus === "online"}
+          label="API"
+          icon={Server}
+          tone={serverStatus === "online" ? "emerald" : "rose"}
+        />
+
+        <StatusItem
+          ok={dbStatus === "connected"}
+          label="DB"
+          icon={Database}
+          tone={dbStatus === "connected" ? "cyan" : "rose"}
+        />
+
+        <div
+          className="
+            hidden items-center gap-2 rounded-xl border border-white/10
+            bg-white/[0.05] px-2.5 py-1 sm:flex
+          "
+        >
+          <Activity className="h-3.5 w-3.5 text-[#e2bf74]" />
+
+          <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-700">
+            <div
+              className={clsx("h-full transition-all duration-300", latencyBarClass)}
+              style={{
+                width: latency ? `${Math.min(latency / 6, 100)}%` : "100%",
+              }}
+            />
+          </div>
+
+          <span className={clsx("min-w-[42px] font-mono text-[10px] font-bold", latencyTextClass)}>
+            {latency ? `${latency}ms` : "--"}
+          </span>
+        </div>
       </div>
     </footer>
   );
 };
 
-/* Reusable status pill */
-const StatusItem = ({ ok, label, icon: Icon, okColor }) => (
-  <div className="flex items-center gap-1.5">
-    <span
+const StatusItem = ({ ok, label, icon: Icon, tone = "emerald" }) => {
+  const toneClasses = {
+    emerald: {
+      dot: "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.75)]",
+      icon: "text-emerald-300",
+      text: "text-emerald-200",
+      border: "border-emerald-400/20",
+      bg: "bg-emerald-400/8",
+    },
+    cyan: {
+      dot: "bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.65)]",
+      icon: "text-cyan-300",
+      text: "text-cyan-200",
+      border: "border-cyan-400/20",
+      bg: "bg-cyan-400/8",
+    },
+    rose: {
+      dot: "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.65)]",
+      icon: "text-rose-300",
+      text: "text-rose-200",
+      border: "border-rose-400/20",
+      bg: "bg-rose-400/8",
+    },
+  };
+
+  const currentTone = toneClasses[tone] || toneClasses.emerald;
+
+  return (
+    <div
       className={clsx(
-        'w-2 h-2 rounded-full animate-pulse',
-        ok ? `bg-${okColor}-400` : 'bg-red-500'
+        "flex items-center gap-1.5 rounded-xl border px-2.5 py-1",
+        currentTone.border,
+        currentTone.bg,
       )}
-    />
-    <Icon className="w-3.5 h-3.5 text-slate-400" />
-    <span className="text-slate-400">{label}</span>
-  </div>
-);
+    >
+      <span
+        className={clsx(
+          "h-2 w-2 rounded-full",
+          ok ? currentTone.dot : toneClasses.rose.dot,
+        )}
+      />
+
+      <Icon
+        className={clsx(
+          "h-3.5 w-3.5",
+          ok ? currentTone.icon : toneClasses.rose.icon,
+        )}
+      />
+
+      <span
+        className={clsx(
+          "hidden text-[10px] font-black sm:inline",
+          ok ? currentTone.text : toneClasses.rose.text,
+        )}
+      >
+        {label}
+      </span>
+    </div>
+  );
+};
 
 export default SystemFooter;

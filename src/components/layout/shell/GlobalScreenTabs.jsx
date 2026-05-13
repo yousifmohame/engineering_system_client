@@ -7,13 +7,14 @@ import { clsx } from "clsx";
 const GlobalScreenTabs = () => {
   const { openScreens, activeScreenId, openScreen, closeScreen } =
     useAppStore();
+
   const queryClient = useQueryClient();
 
+  const closableScreens = openScreens.filter((screen) => screen.isClosable);
+
   const handleCloseAll = () => {
-    openScreens.forEach((screen) => {
-      if (screen.isClosable) {
-        closeScreen(screen.id);
-      }
+    closableScreens.forEach((screen) => {
+      closeScreen(screen.id);
     });
   };
 
@@ -22,38 +23,99 @@ const GlobalScreenTabs = () => {
   };
 
   return (
-    <div className="h-[40px] bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 shadow-xl border-t-2 border-red-600 flex items-end px-2 select-none">
+    <div
+      className="
+        relative z-20 flex h-[44px] shrink-0 items-end overflow-hidden
+        border-b border-[#c5983c]/20 border-t border-[#c5983c]/25
+        bg-gradient-to-l from-[#08111c] via-[#0f172a] to-[#123f59]
+        px-2 shadow-[0_8px_24px_rgba(15,23,42,0.22)]
+        select-none
+      "
+      dir="rtl"
+    >
+      {/* Background glow */}
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute right-[12%] top-[-45px] h-24 w-24 rounded-full bg-[#c5983c]/12 blur-3xl" />
+        <div className="absolute left-[18%] bottom-[-55px] h-28 w-28 rounded-full bg-cyan-500/10 blur-3xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-l from-transparent via-[#c5983c]/70 to-transparent" />
+      </div>
+
       {/* App Icon */}
-      <div className="h-full flex items-center px-2 text-slate-500 flex-shrink-0">
-        <Layers className="w-4.5 h-4.5" />
+      <div className="relative z-10 flex h-full shrink-0 items-center px-2">
+        <div
+          className="
+            grid h-8 w-8 place-items-center rounded-2xl
+            border border-[#c5983c]/25 bg-white/[0.06]
+            text-[#e2bf74] shadow-sm
+          "
+          title="الشاشات المفتوحة"
+        >
+          <Layers className="h-4 w-4" />
+        </div>
       </div>
 
       {/* Tabs Container */}
-      <div className="flex flex-1 items-end gap-[2px] overflow-hidden pl-2">
+      <div
+        className="
+          relative z-10 flex min-w-0 flex-1 items-end gap-1
+          overflow-x-auto overflow-y-hidden px-1 pb-0.5
+          custom-scrollbar-slim
+        "
+      >
         {openScreens.map((screen) => {
           const isActive = screen.id === activeScreenId;
 
           return (
-            <div
+            <button
               key={screen.id}
               onClick={() => openScreen(screen.id)}
-              // 👈 إضافة خاصية title لظهور التلميح عند وقوف الماوس
               title={`الشاشة: ${screen.title}\nالكود: ${screen.id}`}
+              type="button"
               className={clsx(
-                "group relative flex items-center h-[32px]",
-                "flex-1 min-w-[90px] max-w-[220px]",
-                "px-3 cursor-pointer rounded-t-md",
-                "transition-all duration-200 ease-out",
+                `
+                  group relative flex h-[34px] min-w-[115px] max-w-[230px]
+                  flex-1 items-center gap-2 overflow-hidden rounded-t-2xl
+                  border px-3 text-right transition-all duration-300
+                `,
                 isActive
-                  ? "bg-slate-100 text-slate-900 z-20 shadow-[0_-1px_6px_rgba(0,0,0,0.25)]"
-                  : "bg-slate-100/70 text-slate-900 hover:bg-slate-700 hover:text-slate-200",
+                  ? `
+                    border-[#c5983c]/45 bg-gradient-to-l from-white via-[#fbf8f1] to-[#eef7f6]
+                    text-[#0f3448] shadow-[0_-8px_22px_rgba(197,152,60,0.16)]
+                  `
+                  : `
+                    border-white/10 bg-white/[0.055] text-slate-300
+                    hover:border-[#c5983c]/30 hover:bg-white/[0.10] hover:text-white
+                  `,
               )}
             >
+              {/* Active glow */}
+              {isActive && (
+                <>
+                  <span className="absolute inset-x-3 top-0 h-px bg-gradient-to-l from-transparent via-[#c5983c] to-transparent" />
+                  <span className="absolute bottom-0 left-3 right-3 h-[3px] rounded-full bg-gradient-to-l from-[#123f59] via-[#c5983c] to-[#0e7490]" />
+                </>
+              )}
+
+              {/* Code badge */}
+              <span
+                className={clsx(
+                  `
+                    relative z-10 shrink-0 rounded-lg border px-1.5 py-0.5
+                    text-[9px] font-black font-mono
+                  `,
+                  isActive
+                    ? "border-[#c5983c]/30 bg-[#f8efe0] text-[#123f59]"
+                    : "border-white/10 bg-[#08111c]/70 text-[#e2bf74]",
+                )}
+              >
+                {screen.id}
+              </span>
+
               {/* Title */}
               <span
                 className={clsx(
-                  "truncate flex-1 text-[11.5px]",
-                  isActive && "font-semibold",
+                  "relative z-10 min-w-0 flex-1 truncate text-[11.5px]",
+                  isActive ? "font-black" : "font-bold",
                 )}
               >
                 {screen.title}
@@ -61,48 +123,67 @@ const GlobalScreenTabs = () => {
 
               {/* Close */}
               {screen.isClosable && (
-                <button
+                <span
                   onClick={(e) => {
                     e.stopPropagation();
                     closeScreen(screen.id);
                   }}
+                  title="إغلاق"
                   className={clsx(
-                    "ml-2 p-1 rounded transition",
+                    `
+                      relative z-10 grid h-6 w-6 shrink-0 place-items-center
+                      rounded-xl transition-all duration-300
+                    `,
                     isActive
-                      ? "opacity-100 hover:bg-slate-300 text-slate-600"
-                      : "opacity-0 group-hover:opacity-100 hover:bg-slate-600 text-slate-300",
+                      ? "bg-[#123f59]/10 text-[#123f59] hover:bg-rose-50 hover:text-rose-600"
+                      : "bg-white/[0.04] text-slate-400 opacity-0 hover:bg-rose-500/15 hover:text-rose-300 group-hover:opacity-100",
                   )}
-                  title="إغلاق" // تلميح لزر الإغلاق أيضاً
                 >
-                  <X className="w-3 h-3" />
-                </button>
+                  <X className="h-3.5 w-3.5" />
+                </span>
               )}
-
-              {/* Active Indicator */}
-              {isActive && (
-                <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-blue-600 rounded-full" />
-              )}
-            </div>
+            </button>
           );
         })}
       </div>
 
-      {/* أزرار الإجراءات السريعة (تحديث وإغلاق الكل) */}
-      <div className="h-full flex items-center gap-1.5 px-3 border-r border-slate-700/50 flex-shrink-0 mb-1">
+      {/* Quick Actions */}
+      <div
+        className="
+          relative z-10 mb-1 flex h-[34px] shrink-0 items-center gap-1.5
+          border-r border-[#c5983c]/20 px-2
+        "
+      >
         <button
           onClick={handleRefreshAll}
-          className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-800 rounded transition-colors group relative"
+          className="
+            group grid h-8 w-8 place-items-center rounded-2xl
+            border border-cyan-500/20 bg-cyan-500/8
+            text-cyan-200 transition-all duration-300
+            hover:border-cyan-400/40 hover:bg-cyan-400/15 hover:text-cyan-100
+          "
           title="تحديث بيانات النظام"
+          type="button"
         >
-          <RefreshCw className="w-4 h-4 group-hover:animate-spin-once" />
+          <RefreshCw className="h-4 w-4 transition-transform duration-500 group-hover:rotate-180" />
         </button>
 
         <button
           onClick={handleCloseAll}
-          className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded transition-colors"
+          disabled={closableScreens.length === 0}
+          className={clsx(
+            `
+              grid h-8 w-8 place-items-center rounded-2xl border
+              transition-all duration-300
+            `,
+            closableScreens.length === 0
+              ? "cursor-not-allowed border-white/5 bg-white/[0.03] text-slate-600"
+              : "border-rose-400/20 bg-rose-400/8 text-rose-200 hover:border-rose-400/40 hover:bg-rose-400/15 hover:text-rose-100",
+          )}
           title="إغلاق جميع الشاشات"
+          type="button"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="h-4 w-4" />
         </button>
       </div>
     </div>
