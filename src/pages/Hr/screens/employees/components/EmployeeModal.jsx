@@ -10,6 +10,7 @@ import {
   Calendar,
   Eye,
   EyeOff,
+  Clock
 } from "lucide-react";
 import { DEPARTMENTS, POSITIONS, EMPLOYEE_CODES } from "../constants";
 
@@ -472,6 +473,39 @@ export default function EmployeeModal({
                         updateData("actualStartDate", e.target.value)
                       }
                       className="w-full p-1.5 border border-slate-200 rounded text-[11px] outline-none focus:border-emerald-400"
+                    />
+                  </div>
+                </div>
+                {/* أضف هذا الكود داخل القسم 3 (تحت التواريخ مباشرة) */}
+                <div className="md:col-span-2 bg-emerald-50/50 p-2 rounded-lg border border-emerald-100 flex gap-3 mt-3">
+                  <div className="flex-1">
+                    <label className="block text-[9px] font-bold mb-1 text-emerald-800">
+                      <Clock className="inline w-3 h-3 mr-1" /> وقت بداية الدوام
+                      *
+                    </label>
+                    <input
+                      required
+                      type="time"
+                      value={data.shiftStartTime || "08:00"}
+                      onChange={(e) =>
+                        updateData("shiftStartTime", e.target.value)
+                      }
+                      className="w-full p-1.5 border border-emerald-200 rounded text-[11px] outline-none focus:border-emerald-400 font-mono"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-[9px] font-bold mb-1 text-emerald-800">
+                      <Clock className="inline w-3 h-3 mr-1" /> وقت نهاية الدوام
+                      *
+                    </label>
+                    <input
+                      required
+                      type="time"
+                      value={data.shiftEndTime || "17:00"}
+                      onChange={(e) =>
+                        updateData("shiftEndTime", e.target.value)
+                      }
+                      className="w-full p-1.5 border border-emerald-200 rounded text-[11px] outline-none focus:border-emerald-400 font-mono"
                     />
                   </div>
                 </div>

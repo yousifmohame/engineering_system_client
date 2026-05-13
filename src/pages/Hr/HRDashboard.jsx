@@ -69,7 +69,7 @@ export default function HRDashboard({ onNavigate }) {
       },
       {
         id: "HR_EMPLOYEES",
-        title: "دليل الكوادر والشركاء",
+        title: "إدارة الموظفين",
         icon: Users,
         gradient: "from-cyan-500 to-blue-600",
         badge: dashboardStats.employeesLoading ? "LOADING" : `${dashboardStats.activeEmployeesCount} نشط`,
