@@ -1,7 +1,7 @@
 // src/utils/stampTemplate.js
 
 export const STAMP_TEMPLATE = `
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="410" viewBox="0 0 900 410">
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 900 410" preserveAspectRatio="xMidYMid meet">
   <defs>
     <style>
       :root {
@@ -40,19 +40,16 @@ export const STAMP_TEMPLATE = `
     </style>
   </defs>
 
-  <!-- Outer and inner rounded borders -->
-  <rect x="28" y="34" width="844" height="342" rx="36" class="border-main"/>
-  <rect x="43" y="50" width="814" height="311" rx="26" class="border-inner"/>
+  <rect x="28" y="34" width="844" height="342" rx="36" fill="none" stroke="#1d3d75" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="43" y="50" width="814" height="311" rx="26" fill="none" stroke="#1d3d75" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- Decorative border elements -->
-  <line x1="70" y1="50" x2="620" y2="50" class="border-inner"/>
-  <path d="M640 50 L650 40 M655 50 L665 40 M670 50 L680 40" class="border-inner"/>
+  <line x1="70" y1="50" x2="620" y2="50" fill="none" stroke="#1d3d75" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M640 50 L650 40 M655 50 L665 40 M670 50 L680 40" fill="none" stroke="#1d3d75" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <line x1="62" y1="361" x2="315" y2="361" class="border-inner"/>
-  <path d="M335 361 L345 371 M350 361 L360 371 M365 361 L375 371" class="border-inner"/>
-  <line x1="395" y1="361" x2="832" y2="361" class="border-inner"/>
+  <line x1="62" y1="361" x2="315" y2="361" fill="none" stroke="#1d3d75" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M335 361 L345 371 M350 361 L360 371 M365 361 L375 371" fill="none" stroke="#1d3d75" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="395" y1="361" x2="832" y2="361" fill="none" stroke="#1d3d75" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- Full vector logo embedded directly in the SVG -->
   <svg x="70" y="82" width="600" height="200" viewBox="0 0 674.2786 225.0336">
 <defs>
     <style>

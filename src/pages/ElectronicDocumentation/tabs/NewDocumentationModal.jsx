@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Document, Page, pdfjs } from "react-pdf";
 import {
   Upload,
   FileText,
@@ -17,6 +18,11 @@ import { toast } from "sonner";
 import { STAMP_TEMPLATE } from "../../../components/Stamp/stampTemplate";
 import { STAMP_TEMPLATE_QR } from "../../../components/Stamp/stampTemplateـqrcode";
 
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url,
+).toString();
+
 export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -30,6 +36,8 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
   const [stampRotation, setStampRotation] = useState(0);
   const [qrScale, setQrScale] = useState(1);
   const [qrRotation, setQrRotation] = useState(0);
+
+  const renderWidth = 800;
 
   const constraintsRef = useRef(null);
   const mainStampRef = useRef(null);
@@ -83,7 +91,6 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  // 💡 تأكيد وجود مساحة عمل XML للـ SVG لكي يقبله الباك إند
   const ensureXmlns = (svg) => {
     if (!svg.includes('xmlns="http://www.w3.org/2000/svg"')) {
       return svg.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ');
@@ -107,41 +114,73 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
       .replace(/{{TOKEN}}/g, stampData.token);
   };
 
-  // 💡 إرسال الدوران (Rotation) مع الإحداثيات للباك إند
-  const getCoordinates = (elementRef, rotation) => {
+  // 💡 الحل الرياضي الدقيق لحساب الـ Pivot Point (Bottom-Left)
+  const getCoordinates = (elementRef, scale, rotation) => {
     if (!elementRef.current || !constraintsRef.current) return null;
+
     const container = constraintsRef.current.getBoundingClientRect();
-    const element = elementRef.current.getBoundingClientRect(); // Bounding box after rotation
+    const rect = elementRef.current.getBoundingClientRect();
+
+    // 1. الأبعاد الحقيقية بدون دوران
+    const actualWidth = elementRef.current.offsetWidth * scale;
+    const actualHeight = elementRef.current.offsetHeight * scale;
+
+    // 2. المركز الفعلي للختم على الشاشة
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    // 3. تحويل المركز لنسب مئوية (الـ Y تُحسب من الأسفل ليتطابق مع PDF)
+    const centerXPercent = (centerX - container.left) / container.width;
+    const centerYPercent = (container.bottom - centerY) / container.height;
+
+    const widthPercent = actualWidth / container.width;
+    const heightPercent = actualHeight / container.height;
+
+    const angleRad = (rotation * Math.PI) / 180;
+
+    // 4. معادلة حساب النقطة السفلية اليسرى (Pivot) بدلالة المركز وزاوية الدوران
+    const xPercent =
+      centerXPercent -
+      (widthPercent / 2) * Math.cos(angleRad) -
+      (heightPercent / 2) * Math.sin(angleRad);
+    // 💡 التعديل الجذري هنا: المعادلة أصبحت تحسب من الأسفل بشكل صحيح
+    const yPercent =
+      centerYPercent +
+      (widthPercent / 2) * Math.sin(angleRad) -
+      (heightPercent / 2) * Math.cos(angleRad);
 
     return {
-      xPercent: (element.left - container.left) / container.width,
-      yPercent: (container.bottom - element.bottom) / container.height,
-      widthPercent: element.width / container.width,
-      heightPercent: element.height / container.height,
-      rotation: rotation, // 👈 إرسال زاوية الدوران
+      xPercent,
+      yPercent,
+      widthPercent,
+      heightPercent,
+      rotation: -rotation, // نعكس الزاوية للـ pdf-lib
     };
   };
 
-  // 💡 الاعتماد: إرسال القالب الكامل (SVG) للباك إند
   const handleApprove = async () => {
     if (!recordId || !stampData) return;
     setIsApproving(true);
 
     try {
-      const mainCoords = getCoordinates(mainStampRef, stampRotation);
-      const qrCoords = getCoordinates(qrStampRef, qrRotation);
+      const mainCoords = getCoordinates(
+        mainStampRef,
+        stampScale,
+        stampRotation,
+      );
+      const qrCoords = getCoordinates(qrStampRef, qrScale, qrRotation);
 
       const stampsToBurn = [];
       if (mainCoords) {
         stampsToBurn.push({
           ...mainCoords,
-          svgString: ensureXmlns(renderMainStampPreview()), // 👈 إرسال الختم الرئيسي بالكامل
+          svgString: ensureXmlns(renderMainStampPreview()),
         });
       }
       if (qrCoords) {
         stampsToBurn.push({
           ...qrCoords,
-          svgString: ensureXmlns(renderQrStampPreview()), // 👈 إرسال ختم الـ QR بالكامل
+          svgString: ensureXmlns(renderQrStampPreview()),
         });
       }
 
@@ -154,7 +193,7 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
           <span className="font-black text-emerald-600">
             تم حرق الأختام واعتماد الوثيقة! ✅
           </span>
-          <span className="text-xs">تم دمج الأختام بالملف الأصلي بنجاح.</span>
+          <span className="text-xs">التطابق 100% مع مكان المعاينة.</span>
         </div>,
         { duration: 5000 },
       );
@@ -200,7 +239,7 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                   توثيق وختم مستند جديد
                 </h2>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Advanced Digital Stamping
+                  Enterprise Stamping Engine
                 </p>
               </div>
             </div>
@@ -233,9 +272,6 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                     <h3 className="text-2xl font-black text-slate-800 group-hover:text-blue-700 transition-colors">
                       اسحب الملف هنا أو اضغط للرفع
                     </h3>
-                    <p className="text-sm font-bold text-slate-400">
-                      يدعم ملفات PDF متعددة الصفحات والصور بكافة أحجامها
-                    </p>
                   </div>
                 </div>
               </div>
@@ -247,18 +283,6 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                       <FileText className="w-4 h-4 text-blue-600" /> تفاصيل
                       وإجراءات
                     </h3>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 mb-5">
-                      <p
-                        className="text-xs font-bold text-slate-700 truncate mb-1"
-                        dir="ltr"
-                      >
-                        {file?.name}
-                      </p>
-                      <p className="text-[10px] font-black text-slate-400">
-                        {(file?.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-
                     {!stampData ? (
                       <button
                         onClick={generateStamp}
@@ -303,9 +327,7 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                           <div>
                             <div className="flex justify-between text-[10px] font-black text-slate-500 mb-2">
                               <span>تكبير/تصغير</span>{" "}
-                              <span className="bg-slate-100 px-1.5 py-0.5 rounded">
-                                {Math.round(stampScale * 100)}%
-                              </span>
+                              <span>{Math.round(stampScale * 100)}%</span>
                             </div>
                             <input
                               type="range"
@@ -316,26 +338,23 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                               onChange={(e) =>
                                 setStampScale(parseFloat(e.target.value))
                               }
-                              className="w-full accent-blue-600 cursor-pointer"
+                              className="w-full"
                             />
                           </div>
                           <div>
                             <div className="flex justify-between text-[10px] font-black text-slate-500 mb-2">
-                              <span>زاوية الدوران</span>{" "}
-                              <span className="bg-slate-100 px-1.5 py-0.5 rounded">
-                                {stampRotation}°
-                              </span>
+                              <span>دوران</span> <span>{stampRotation}°</span>
                             </div>
                             <input
                               type="range"
                               min="0"
                               max="360"
-                              step="15"
+                              step="1"
                               value={stampRotation}
                               onChange={(e) =>
                                 setStampRotation(parseInt(e.target.value))
                               }
-                              className="w-full accent-blue-600 cursor-pointer"
+                              className="w-full"
                             />
                           </div>
                         </div>
@@ -350,9 +369,7 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                           <div>
                             <div className="flex justify-between text-[10px] font-black text-slate-500 mb-2">
                               <span>تكبير/تصغير</span>{" "}
-                              <span className="bg-slate-100 px-1.5 py-0.5 rounded">
-                                {Math.round(qrScale * 100)}%
-                              </span>
+                              <span>{Math.round(qrScale * 100)}%</span>
                             </div>
                             <input
                               type="range"
@@ -363,37 +380,26 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                               onChange={(e) =>
                                 setQrScale(parseFloat(e.target.value))
                               }
-                              className="w-full accent-purple-600 cursor-pointer"
+                              className="w-full"
                             />
                           </div>
                           <div>
                             <div className="flex justify-between text-[10px] font-black text-slate-500 mb-2">
-                              <span>زاوية الدوران</span>{" "}
-                              <span className="bg-slate-100 px-1.5 py-0.5 rounded">
-                                {qrRotation}°
-                              </span>
+                              <span>دوران</span> <span>{qrRotation}°</span>
                             </div>
                             <input
                               type="range"
                               min="0"
                               max="360"
-                              step="15"
+                              step="1"
                               value={qrRotation}
                               onChange={(e) =>
                                 setQrRotation(parseInt(e.target.value))
                               }
-                              className="w-full accent-purple-600 cursor-pointer"
+                              className="w-full"
                             />
                           </div>
                         </div>
-                      </div>
-
-                      <div className="bg-amber-50 p-3 rounded-xl border border-amber-100 flex items-start gap-2">
-                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                        <p className="text-[10px] font-bold text-amber-700 leading-relaxed">
-                          اسحب الأختام ورتبها في الأماكن المناسبة ليتم حرقها في
-                          الملف الأصلي.
-                        </p>
                       </div>
                     </motion.div>
                   )}
@@ -402,36 +408,25 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                 <div className="flex-1 flex justify-center items-start overflow-y-auto p-4 sm:p-8 custom-scrollbar bg-slate-300/30">
                   <div
                     ref={constraintsRef}
-                    className="relative bg-white shadow-2xl overflow-hidden flex flex-col border border-slate-200 mx-auto"
-                    style={{
-                      width: "100%",
-                      maxWidth: file?.type.startsWith("image/")
-                        ? "max-content"
-                        : "1000px",
-                      minHeight: file?.type.startsWith("image/")
-                        ? "auto"
-                        : "85vh",
-                    }}
+                    className="relative shadow-2xl bg-white flex flex-col mx-auto"
+                    style={{ width: "max-content" }}
                   >
                     {file?.type.startsWith("image/") ? (
                       <img
                         src={previewUrl}
                         alt="Preview"
-                        className="w-full h-auto object-contain block pointer-events-none"
+                        width={renderWidth}
+                        className="block pointer-events-none"
                       />
                     ) : file?.type === "application/pdf" ? (
-                      <div className="w-full h-full min-h-[85vh] relative flex flex-col">
-                        <div className="absolute inset-0 z-10 pointer-events-none" />
-                        <object
-                          data={previewUrl}
-                          type="application/pdf"
-                          className="w-full flex-1"
-                        >
-                          <p className="p-4 text-center">
-                            لا يمكن عرض الـ PDF في هذا المتصفح.
-                          </p>
-                        </object>
-                      </div>
+                      <Document file={file} className="pointer-events-none">
+                        <Page
+                          pageNumber={1}
+                          width={renderWidth}
+                          renderTextLayer={false}
+                          renderAnnotationLayer={false}
+                        />
+                      </Document>
                     ) : null}
 
                     {stampData && (
@@ -440,18 +435,28 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                         drag
                         dragConstraints={constraintsRef}
                         dragMomentum={false}
-                        initial={{ scale: 2, opacity: 0 }}
+                        initial={{ opacity: 0, x: 0, y: 0 }}
                         animate={{
                           scale: stampScale,
                           rotate: stampRotation,
                           opacity: 1,
                         }}
-                        style={{ originX: 0.5, originY: 0.5 }}
-                        className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 z-50 cursor-grab active:cursor-grabbing drop-shadow-2xl"
-                        dangerouslySetInnerHTML={{
-                          __html: renderMainStampPreview(),
+                        // 💡 تم مسح كلاسات الـ translate واستبدالها بتموضع CSS بسيط للسلاسة
+                        style={{
+                          originX: 0.5,
+                          originY: 0.5,
+                          top: "20%",
+                          left: "30%",
                         }}
-                      />
+                        className="absolute w-72 z-50 cursor-grab active:cursor-grabbing drop-shadow-2xl"
+                      >
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: renderMainStampPreview(),
+                          }}
+                          className="pointer-events-none"
+                        />
+                      </motion.div>
                     )}
 
                     {stampData && (
@@ -460,18 +465,27 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                         drag
                         dragConstraints={constraintsRef}
                         dragMomentum={false}
-                        initial={{ scale: 2, opacity: 0 }}
+                        initial={{ opacity: 0, x: 0, y: 0 }}
                         animate={{
                           scale: qrScale,
                           rotate: qrRotation,
                           opacity: 1,
                         }}
-                        style={{ originX: 0.5, originY: 0.5 }}
-                        className="absolute bottom-16 left-16 w-32 z-50 cursor-grab active:cursor-grabbing drop-shadow-xl"
-                        dangerouslySetInnerHTML={{
-                          __html: renderQrStampPreview(),
+                        style={{
+                          originX: 0.5,
+                          originY: 0.5,
+                          bottom: "10%",
+                          left: "10%",
                         }}
-                      />
+                        className="absolute w-32 z-50 cursor-grab active:cursor-grabbing drop-shadow-xl"
+                      >
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: renderQrStampPreview(),
+                          }}
+                          className="pointer-events-none"
+                        />
+                      </motion.div>
                     )}
                   </div>
                 </div>

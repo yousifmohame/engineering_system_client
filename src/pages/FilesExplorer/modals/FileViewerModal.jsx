@@ -39,7 +39,7 @@ export default function FileViewerModal({ file, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/90 flex flex-col z-[400] animate-in fade-in duration-200"
+      className="fixed inset-0 bg-black/90 flex flex-col z-[1000000000] animate-in fade-in duration-200"
       dir="rtl"
     >
       {/* ── Top Toolbar ── */}

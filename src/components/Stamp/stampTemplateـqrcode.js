@@ -1,5 +1,7 @@
+// src/components/Stamp/stampTemplateـqrcode.js أو مسار الملف لديك
+
 export const STAMP_TEMPLATE_QR = `
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="410" viewBox="0 0 900 410">
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 900 410" preserveAspectRatio="xMidYMid meet">
   <defs>
     <style>
       :root {
@@ -11,13 +13,12 @@ export const STAMP_TEMPLATE_QR = `
     </style>
   </defs>
 
-  <!-- ✅ QR Code فقط (بدون باركود) -->
   <image
     href="{{QR_DATA_URL}}"
-    x="680"
-    y="60"
-    width="160"
-    height="160"
+    x="540"
+    y="55"
+    width="300"
+    height="300"
     preserveAspectRatio="xMidYMid meet"
   />
 </svg>
