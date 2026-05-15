@@ -22,28 +22,24 @@ import {
   Send as SendIcon,
   ClipboardPaste,
   FileCheck,
-  History
+  History,
 } from "lucide-react";
 
 export const AuthorityNotesTab = ({ tx, currentUser, persons }) => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
 
-  // States
   const [noteText, setNoteText] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [assignedTo, setAssignedTo] = useState("");
 
-  // حالات التعديل والعرض
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
 
-  // 💡 دالة معالجة الروابط الاحترافية (تتخلص من ../ وتضمن الرابط الصحيح)
   const getFullUrl = (url) => {
     if (!url) return null;
     if (url.startsWith("http")) return url;
 
-    // تنظيف الرابط من النقاط الزائدة (مثل ../uploads)
     let fixedUrl = url.replace(/\.\.\//g, "");
     if (!fixedUrl.startsWith("/")) fixedUrl = `/${fixedUrl}`;
     if (fixedUrl.startsWith("/uploads/")) fixedUrl = `/api${fixedUrl}`;
@@ -52,61 +48,76 @@ export const AuthorityNotesTab = ({ tx, currentUser, persons }) => {
     return `${baseUrl}${fixedUrl}`;
   };
 
-  // 💡 دعم اللصق المتقدم (Clipboard) للصور وملفات الـ PDF
+  const resetForm = () => {
+    setEditingNoteId(null);
+    setNoteText("");
+    setAssignedTo("");
+    setSelectedFile(null);
+  };
+
   useEffect(() => {
     const handlePaste = (e) => {
       const items = e.clipboardData?.items;
       if (!items) return;
 
       for (let i = 0; i < items.length; i++) {
-        // التحقق مما إذا كان العنصر صورة أو ملف PDF
         if (
           items[i].type.indexOf("image") !== -1 ||
           items[i].type.indexOf("pdf") !== -1
         ) {
           const file = items[i].getAsFile();
+
           if (file) {
-            // التحقق من الحجم أو مجرد التعيين
             setSelectedFile(file);
+
             toast.success(
               <div className="flex items-center gap-2">
-                <ClipboardPaste className="w-4 h-4 text-emerald-600" />
+                <ClipboardPaste className="h-4 w-4 text-emerald-600" />
                 <span>تم إرفاق الملف من الحافظة بنجاح</span>
               </div>,
             );
-            e.preventDefault(); // منع السلوك الافتراضي للصق داخل الـ textarea إذا كان ملفاً
+
+            e.preventDefault();
           }
         }
       }
     };
 
     window.addEventListener("paste", handlePaste);
+
     return () => window.removeEventListener("paste", handlePaste);
   }, []);
 
-  // جلب الإيميلات المرتبطة (السحب الآلي)
   const { data: relatedEmails = [], isLoading: emailsLoading } = useQuery({
     queryKey: ["related-emails", tx.serviceNumber, tx.requestNumber],
     queryFn: async () => {
       if (!tx.serviceNumber && !tx.requestNumber) return [];
+
       const res = await api.get(`/email/messages/search`, {
         params: {
           serviceNumber: tx.serviceNumber,
           reqNumber: tx.requestNumber,
         },
       });
+
       return res.data?.data || [];
     },
     enabled: !!(tx.serviceNumber || tx.requestNumber),
   });
 
-  // حفظ أو تعديل الملاحظة
   const saveNoteMutation = useMutation({
     mutationFn: async () => {
       const fd = new FormData();
+
       fd.append("note", noteText);
-      if (assignedTo) fd.append("assignedTo", assignedTo);
-      if (selectedFile) fd.append("file", selectedFile);
+
+      if (assignedTo) {
+        fd.append("assignedTo", assignedTo);
+      }
+
+      if (selectedFile) {
+        fd.append("file", selectedFile);
+      }
 
       if (editingNoteId) {
         return api.put(
@@ -114,27 +125,25 @@ export const AuthorityNotesTab = ({ tx, currentUser, persons }) => {
           fd,
           { headers: { "Content-Type": "multipart/form-data" } },
         );
-      } else {
-        fd.append("addedBy", currentUser);
-        return api.post(`/private-transactions/${tx.id}/authority-notes`, fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
       }
+
+      fd.append("addedBy", currentUser);
+
+      return api.post(`/private-transactions/${tx.id}/authority-notes`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
     },
     onSuccess: () => {
       toast.success(
         editingNoteId ? "تم تعديل الإفادة بنجاح" : "تم حفظ الإفادة بنجاح",
       );
-      setNoteText("");
-      setSelectedFile(null);
-      setAssignedTo("");
-      setEditingNoteId(null);
+
+      resetForm();
       queryClient.invalidateQueries(["private-transactions-full"]);
     },
     onError: () => toast.error("حدث خطأ أثناء الحفظ، يرجى المحاولة لاحقاً"),
   });
 
-  // حذف الملاحظة
   const deleteNoteMutation = useMutation({
     mutationFn: async (noteId) =>
       api.delete(`/private-transactions/${tx.id}/authority-notes/${noteId}`),
@@ -146,7 +155,11 @@ export const AuthorityNotesTab = ({ tx, currentUser, persons }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!noteText.trim()) return toast.error("يرجى كتابة نص الإفادة أولاً");
+
+    if (!noteText.trim()) {
+      return toast.error("يرجى كتابة نص الإفادة أولاً");
+    }
+
     saveNoteMutation.mutate();
   };
 
@@ -154,10 +167,9 @@ export const AuthorityNotesTab = ({ tx, currentUser, persons }) => {
     setNoteText(noteObj.note);
     setAssignedTo(noteObj.assignedTo || "");
     setEditingNoteId(noteObj.id);
-    setSelectedFile(null); // لا نجلب الملف القديم كـ File، سيبقى في السيرفر إن لم نغيره
+    setSelectedFile(null);
   };
 
-  // دمج الملاحظات اليدوية والآلية (الإيميلات) وترتيبها
   const combinedNotes = useMemo(() => {
     const manualNotes = (tx.notes?.authorityNotesHistory || []).map((note) => ({
       ...note,
@@ -182,59 +194,122 @@ export const AuthorityNotesTab = ({ tx, currentUser, persons }) => {
 
   return (
     <div
-      className="h-full flex flex-col gap-4 animate-in fade-in pb-10"
+      className="
+        flex h-full flex-col gap-5 overflow-hidden
+        bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
+        p-4 pb-10 animate-in fade-in md:p-5
+      "
       dir="rtl"
     >
-      {/* ── قسم إدخال الملاحظة ── */}
-      <div className="bg-white p-4 md:p-5 rounded-2xl border border-slate-200 shadow-sm shrink-0 transition-all">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-blue-600" />
-            {editingNoteId
-              ? "تعديل الإفادة المحددة"
-              : "تدوين إفادة أو توجيه جديد"}
-          </h3>
-          {editingNoteId && (
-            <button
-              onClick={() => {
-                setEditingNoteId(null);
-                setNoteText("");
-                setAssignedTo("");
-                setSelectedFile(null);
-              }}
-              className="text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
-            >
-              <X className="w-3 h-3" /> إلغاء التعديل
-            </button>
-          )}
+      {/* Composer */}
+      <form
+        onSubmit={handleSubmit}
+        className="
+          relative shrink-0 overflow-hidden rounded-[28px]
+          border border-[#d8b46a]/30
+          bg-white shadow-[0_18px_45px_rgba(18,63,89,0.10)]
+        "
+      >
+        <div
+          className="
+            relative overflow-hidden
+            bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59]
+            px-5 py-4 text-white
+          "
+        >
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute right-[-70px] top-[-70px] h-40 w-40 rounded-full bg-[#c5983c]/18 blur-3xl" />
+            <div className="absolute left-[-80px] bottom-[-80px] h-48 w-48 rounded-full bg-cyan-400/12 blur-3xl" />
+          </div>
+
+          <div className="relative z-10 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div
+                className="
+                  grid h-11 w-11 place-items-center rounded-2xl
+                  bg-[#e2bf74] text-[#123f59]
+                  shadow-[0_12px_24px_rgba(0,0,0,0.18)]
+                "
+              >
+                <MessageSquare className="h-5 w-5" />
+              </div>
+
+              <div>
+                <h3 className="text-sm font-black text-white">
+                  {editingNoteId
+                    ? "تعديل الإفادة المحددة"
+                    : "تدوين إفادة أو توجيه جديد"}
+                </h3>
+
+                <p className="mt-1 text-[11px] font-bold text-white/55">
+                  يمكنك إضافة إفادة، توجيهها لموظف، أو إرفاق ملف داعم.
+                </p>
+              </div>
+            </div>
+
+            {editingNoteId && (
+              <button
+                onClick={resetForm}
+                type="button"
+                className="
+                  flex items-center gap-1.5 rounded-2xl
+                  border border-rose-300/25 bg-rose-500/15
+                  px-3 py-2 text-[11px] font-black text-rose-100
+                  transition hover:bg-rose-500 hover:text-white
+                "
+              >
+                <X className="h-3.5 w-3.5" />
+                إلغاء التعديل
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="space-y-4 p-4 md:p-5">
           <textarea
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
             placeholder="اكتب تفاصيل التوجيه أو الإفادة هنا..."
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 min-h-[80px] resize-y leading-relaxed transition-all"
+            className="
+              min-h-[90px] w-full resize-y rounded-2xl
+              border border-[#d8b46a]/35 bg-[#fbf8f1]/70
+              p-4 text-xs font-bold leading-relaxed text-[#123f59]
+              outline-none transition
+              placeholder:text-[#64748b]/70
+              focus:border-[#c5983c]
+              focus:bg-white
+              focus:ring-4 focus:ring-[#c5983c]/10
+            "
           />
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
-            <div className="flex flex-wrap items-center gap-2 flex-1">
-              {/* زر الإرفاق الواضح */}
+          <div
+            className="
+              flex flex-col gap-3 rounded-2xl
+              border border-[#e8ddc8] bg-[#fbf8f1]/70
+              p-3 sm:flex-row sm:items-center sm:justify-between
+            "
+          >
+            <div className="flex flex-1 flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-black border transition-all ${
-                  selectedFile
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:border-slate-300 shadow-sm"
-                }`}
+                className={`
+                  flex items-center gap-1.5 rounded-2xl border
+                  px-4 py-2 text-[11px] font-black transition-all
+                  ${
+                    selectedFile
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                      : "border-[#d8b46a]/35 bg-white text-[#123f59] hover:bg-[#f8efe0]"
+                  }
+                `}
               >
                 {selectedFile ? (
-                  <FileCheck className="w-4 h-4" />
+                  <FileCheck className="h-4 w-4" />
                 ) : (
-                  <Paperclip className="w-4 h-4 text-blue-500" />
+                  <Paperclip className="h-4 w-4 text-[#c5983c]" />
                 )}
-                {selectedFile ? "تغيير المرفق" : "رفع ملف أو لصقه (Ctrl+V)"}
+
+                {selectedFile ? "تغيير المرفق" : "رفع ملف أو لصقه Ctrl+V"}
               </button>
 
               <input
@@ -245,33 +320,55 @@ export const AuthorityNotesTab = ({ tx, currentUser, persons }) => {
                 accept="image/*,.pdf"
               />
 
-              {/* اسم الملف المرفق مع زر الحذف */}
               {selectedFile && (
-                <div className="flex items-center gap-1.5 bg-emerald-100/50 border border-emerald-200 px-3 py-1.5 rounded-lg max-w-[200px]">
+                <div
+                  className="
+                    flex max-w-[240px] items-center gap-2 rounded-2xl
+                    border border-emerald-200 bg-emerald-50
+                    px-3 py-2
+                  "
+                >
+                  <FileCheck className="h-4 w-4 shrink-0 text-emerald-600" />
+
                   <span
-                    className="text-[10px] font-bold text-emerald-800 truncate"
+                    className="truncate text-[10px] font-black text-emerald-800"
                     title={selectedFile.name}
                   >
                     {selectedFile.name}
                   </span>
-                  <X
-                    className="w-3.5 h-3.5 text-emerald-600 cursor-pointer hover:text-red-500 shrink-0"
+
+                  <button
+                    type="button"
                     onClick={() => setSelectedFile(null)}
-                  />
+                    className="shrink-0 text-emerald-600 transition hover:text-rose-500"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               )}
 
-              <div className="h-6 w-px bg-slate-200 hidden sm:block mx-1"></div>
+              <div className="hidden h-7 w-px bg-[#e8ddc8] sm:block" />
 
-              {/* التوجيه لموظف */}
-              <div className="flex items-center bg-white border border-slate-200 rounded-lg px-3 shadow-sm hover:border-slate-300 transition-colors flex-1 sm:flex-none">
-                <UserPlus className="w-4 h-4 text-blue-500 shrink-0" />
+              <div
+                className="
+                  flex min-w-[190px] items-center rounded-2xl
+                  border border-[#d8b46a]/35 bg-white
+                  px-3 shadow-sm
+                "
+              >
+                <UserPlus className="h-4 w-4 shrink-0 text-[#c5983c]" />
+
                 <select
                   value={assignedTo}
                   onChange={(e) => setAssignedTo(e.target.value)}
-                  className="bg-transparent border-none text-[11px] font-bold py-2 px-2 outline-none w-full sm:w-36 cursor-pointer text-slate-700"
+                  className="
+                    w-full cursor-pointer border-none bg-transparent
+                    px-2 py-2 text-[11px] font-black text-[#123f59]
+                    outline-none
+                  "
                 >
                   <option value="">توجيه لموظف...</option>
+
                   {persons?.map((p) => (
                     <option key={p.name} value={p.name}>
                       {p.name}
@@ -281,174 +378,321 @@ export const AuthorityNotesTab = ({ tx, currentUser, persons }) => {
               </div>
             </div>
 
-            {/* زر الإرسال */}
             <button
-              onClick={handleSubmit}
+              type="submit"
               disabled={saveNoteMutation.isPending || !noteText.trim()}
-              className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg text-[11px] font-black hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-200 disabled:opacity-50 shrink-0"
+              className="
+                flex w-full items-center justify-center gap-2
+                rounded-2xl bg-[#123f59] px-6 py-2.5
+                text-[11px] font-black text-white
+                shadow-[0_12px_26px_rgba(18,63,89,0.20)]
+                transition hover:bg-[#0f3448]
+                disabled:cursor-not-allowed disabled:opacity-50
+                sm:w-auto
+              "
             >
               {saveNoteMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin text-[#e2bf74]" />
               ) : (
-                <Send className="w-4 h-4" />
+                <Send className="h-4 w-4 text-[#e2bf74]" />
               )}
+
               {editingNoteId ? "حفظ التعديل" : "إرسال واعتماد"}
             </button>
           </div>
         </div>
-      </div>
+      </form>
 
-      {/* ── الخط الزمني للملاحظات ── */}
-      <div className="flex-1 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-        <div className="flex justify-between items-center bg-slate-50/80 px-5 py-3.5 border-b border-slate-100 shrink-0">
-          <h3 className="text-xs font-black text-slate-800 flex items-center gap-2">
-            <History className="w-4 h-4 text-slate-500" />
+      {/* Timeline */}
+      <div
+        className="
+          flex min-h-0 flex-1 flex-col overflow-hidden
+          rounded-[28px] border border-[#d8b46a]/30
+          bg-white shadow-[0_18px_45px_rgba(18,63,89,0.10)]
+        "
+      >
+        <div
+          className="
+            flex shrink-0 items-center justify-between
+            border-b border-[#e8ddc8]
+            bg-gradient-to-l from-[#f8efe0] via-white to-[#eef7f6]
+            px-5 py-4
+          "
+        >
+          <h3 className="flex items-center gap-2 text-xs font-black text-[#123f59]">
+            <span
+              className="
+                grid h-8 w-8 place-items-center rounded-2xl
+                bg-[#123f59] text-[#e2bf74]
+              "
+            >
+              <History className="h-4 w-4" />
+            </span>
             سجل الإفادات والملاحظات
           </h3>
+
           {emailsLoading && (
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" /> جاري التحديث
+            <div className="flex items-center gap-1.5 rounded-2xl bg-white px-3 py-1.5 text-[10px] font-black text-[#64748b]">
+              <RefreshCw className="h-3.5 w-3.5 animate-spin text-[#c5983c]" />
+              جاري التحديث
             </div>
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-4 bg-slate-50/30">
+        <div
+          className="
+            custom-scrollbar flex-1 space-y-4 overflow-y-auto
+            bg-gradient-to-br from-[#eef7f6]/60 via-[#fbf8f1]/60 to-white
+            p-5
+          "
+        >
           {combinedNotes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center opacity-50 py-10">
-              <MessageSquare className="w-12 h-12 mb-3 text-slate-300" />
-              <p className="text-xs font-black text-slate-500">
+            <div className="flex h-full flex-col items-center justify-center py-12 text-center">
+              <div
+                className="
+                  mb-4 grid h-20 w-20 place-items-center rounded-[28px]
+                  border border-[#d8b46a]/35 bg-[#f8efe0]
+                  text-[#c5983c]
+                "
+              >
+                <MessageSquare className="h-10 w-10" />
+              </div>
+
+              <p className="text-sm font-black text-[#123f59]">
                 لا توجد إفادات أو ملاحظات مسجلة حتى الآن.
               </p>
-              <p className="text-[10px] font-bold text-slate-400 mt-1">
-                ابدأ بكتابة إفادة في المربع أعلاه
+
+              <p className="mt-1 text-xs font-bold text-[#64748b]">
+                ابدأ بكتابة إفادة في المربع أعلاه.
               </p>
             </div>
           ) : (
             combinedNotes.map((item, idx) => {
               const fullAttachmentUrl = getFullUrl(item.attachment);
+              const isAuto = item.type === "auto";
 
               return (
                 <div
                   key={item.id || idx}
-                  className={`p-4 md:p-5 rounded-2xl border transition-all hover:shadow-md ${
-                    item.type === "auto"
-                      ? "bg-gradient-to-l from-purple-50/50 to-white border-purple-100"
-                      : "bg-white border-slate-200"
-                  }`}
+                  className={`
+                    overflow-hidden rounded-[24px] border
+                    shadow-sm transition-all hover:shadow-[0_14px_34px_rgba(18,63,89,0.12)]
+                    ${
+                      isAuto
+                        ? "border-purple-200 bg-gradient-to-l from-purple-50 via-white to-white"
+                        : "border-[#d8b46a]/30 bg-white"
+                    }
+                  `}
                 >
-                  <div className="flex justify-between items-start mb-3 border-b border-slate-100/80 pb-3 gap-4">
-                    <div className="flex items-start gap-3">
-                      {item.type === "auto" ? (
-                        <div className="p-2.5 bg-purple-100 text-purple-600 rounded-xl shadow-sm border border-purple-200">
-                          <Bot className="w-5 h-5" />
-                        </div>
-                      ) : (
-                        <div className="p-2.5 bg-blue-100 text-blue-600 rounded-xl shadow-sm border border-blue-200">
-                          <User className="w-5 h-5" />
-                        </div>
-                      )}
-                      <div className="flex flex-col gap-1.5 mt-0.5">
-                        <span
-                          className={`text-xs font-black ${item.type === "auto" ? "text-purple-800" : "text-slate-800"}`}
+                  <div
+                    className={`
+                      border-b px-4 py-3
+                      ${
+                        isAuto
+                          ? "border-purple-100 bg-purple-50/65"
+                          : "border-[#e8ddc8] bg-[#fbf8f1]/60"
+                      }
+                    `}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <div
+                          className={`
+                            grid h-11 w-11 shrink-0 place-items-center rounded-2xl border shadow-sm
+                            ${
+                              isAuto
+                                ? "border-purple-200 bg-purple-100 text-purple-700"
+                                : "border-[#d8b46a]/30 bg-[#123f59] text-[#e2bf74]"
+                            }
+                          `}
                         >
-                          {item.type === "auto"
-                            ? "سحب آلي (نظام بلدي)"
-                            : item.addedBy}
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {item.assignedTo && (
-                            <span className="text-[9px] font-black bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md border border-amber-200 flex items-center gap-1">
-                              <UserPlus className="w-3 h-3" /> توجيه لـ:{" "}
-                              {item.assignedTo}
-                            </span>
-                          )}
-                          {item.type === "manual" && (
-                            <span className="text-[9px] font-black bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200">
-                              إضافة يدوية
-                            </span>
+                          {isAuto ? (
+                            <Bot className="h-5 w-5" />
+                          ) : (
+                            <User className="h-5 w-5" />
                           )}
                         </div>
-                        {item.subject && (
-                          <span
-                            className="text-[10px] text-slate-500 font-bold max-w-[250px] truncate bg-slate-50 px-2 py-0.5 rounded border border-slate-100"
-                            title={item.subject}
+
+                        <div className="min-w-0">
+                          <div
+                            className={`truncate text-xs font-black ${
+                              isAuto ? "text-purple-900" : "text-[#123f59]"
+                            }`}
                           >
-                            الموضوع: {item.subject}
+                            {isAuto ? "سحب آلي من البريد" : item.addedBy}
+                          </div>
+
+                          <div className="mt-1 flex flex-wrap gap-1.5">
+                            {item.assignedTo && (
+                              <span
+                                className="
+                                  flex items-center gap-1 rounded-xl
+                                  border border-amber-200 bg-amber-50
+                                  px-2 py-0.5 text-[9px]
+                                  font-black text-amber-700
+                                "
+                              >
+                                <UserPlus className="h-3 w-3" />
+                                توجيه لـ: {item.assignedTo}
+                              </span>
+                            )}
+
+                            {!isAuto && (
+                              <span
+                                className="
+                                  rounded-xl border border-[#d8b46a]/25
+                                  bg-white px-2 py-0.5
+                                  text-[9px] font-black text-[#64748b]
+                                "
+                              >
+                                إضافة يدوية
+                              </span>
+                            )}
+                          </div>
+
+                          {item.subject && (
+                            <div
+                              className="
+                                mt-2 max-w-[320px] truncate rounded-xl
+                                border border-[#e8ddc8] bg-white
+                                px-2 py-1 text-[10px]
+                                font-bold text-[#64748b]
+                              "
+                              title={item.subject}
+                            >
+                              الموضوع: {item.subject}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex shrink-0 flex-col items-end gap-2">
+                        <div
+                          className="
+                            flex items-center gap-1.5 rounded-xl
+                            border border-[#d8b46a]/25 bg-white
+                            px-2.5 py-1.5 text-[11px]
+                            font-black text-[#123f59] shadow-sm
+                          "
+                        >
+                          <CalendarClock className="h-3.5 w-3.5 text-[#c5983c]" />
+
+                          <span dir="ltr">
+                            {new Date(item.date).toLocaleString("en-GB", {
+                              dateStyle: "short",
+                              timeStyle: "short",
+                            })}
                           </span>
+                        </div>
+
+                        {!isAuto && (
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={() => handleEditInit(item)}
+                              className="
+                                flex items-center gap-1 rounded-xl
+                                border border-cyan-200 bg-cyan-50
+                                px-2.5 py-1 text-[10px]
+                                font-black text-cyan-700
+                                transition hover:bg-cyan-100
+                              "
+                              type="button"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                              تعديل
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    "هل أنت متأكد من حذف هذه الإفادة؟",
+                                  )
+                                ) {
+                                  deleteNoteMutation.mutate(item.id);
+                                }
+                              }}
+                              className="
+                                flex items-center gap-1 rounded-xl
+                                border border-rose-200 bg-rose-50
+                                px-2.5 py-1 text-[10px]
+                                font-black text-rose-600
+                                transition hover:bg-rose-100
+                              "
+                              type="button"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              حذف
+                            </button>
+                          </div>
                         )}
                       </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-sm">
-                        <CalendarClock className="w-3.5 h-3.5 text-blue-500" />
-                        <span dir="ltr">
-                          {new Date(item.date).toLocaleString("en-GB", {
-                            dateStyle: "short",
-                            timeStyle: "short",
-                          })}
-                        </span>
-                      </div>
-
-                      {item.type === "manual" && (
-                        <div className="flex gap-1.5">
-                          <button
-                            onClick={() => handleEditInit(item)}
-                            className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-md transition-colors"
-                          >
-                            <Edit2 className="w-3 h-3" /> تعديل
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  "هل أنت متأكد من حذف هذه الإفادة؟",
-                                )
-                              )
-                                deleteNoteMutation.mutate(item.id);
-                            }}
-                            className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 rounded-md transition-colors"
-                          >
-                            <Trash2 className="w-3 h-3" /> حذف
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
 
                   <div
-                    className={`text-xs font-bold leading-relaxed whitespace-pre-wrap ${item.type === "auto" ? "text-purple-900" : "text-slate-700"}`}
+                    className={`whitespace-pre-wrap px-5 py-4 text-xs font-bold leading-7 ${
+                      isAuto ? "text-purple-950" : "text-[#334155]"
+                    }`}
                   >
                     {item.note}
                   </div>
 
-                  {/* شريط الإجراءات السفلي (للمرفقات والمشاركة) */}
                   {fullAttachmentUrl && (
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                    <div
+                      className="
+                        flex flex-wrap items-center gap-2
+                        border-t border-[#e8ddc8] bg-[#fbf8f1]/65
+                        px-5 py-3
+                      "
+                    >
                       <button
                         onClick={() => setPreviewFile(fullAttachmentUrl)}
-                        className="flex items-center gap-1.5 text-[11px] font-black text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors border border-indigo-200 shadow-sm"
+                        className="
+                          flex items-center gap-1.5 rounded-2xl
+                          border border-[#d8b46a]/35 bg-white
+                          px-3 py-2 text-[11px]
+                          font-black text-[#123f59]
+                          shadow-sm transition hover:bg-[#f8efe0]
+                        "
+                        type="button"
                       >
-                        <ExternalLink className="w-4 h-4" /> عرض المرفق
+                        <ExternalLink className="h-4 w-4 text-[#c5983c]" />
+                        عرض المرفق
                       </button>
 
-                      <div className="w-px h-5 bg-slate-200 hidden sm:block mx-1"></div>
+                      <div className="hidden h-6 w-px bg-[#e8ddc8] sm:block" />
 
                       <a
                         href={`https://wa.me/?text=مرفق إفادة بلدي: ${fullAttachmentUrl}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center gap-1.5 text-[10px] font-bold text-green-700 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg border border-green-200 transition-colors"
+                        className="
+                          flex items-center gap-1.5 rounded-2xl
+                          border border-emerald-200 bg-emerald-50
+                          px-3 py-2 text-[10px]
+                          font-black text-emerald-700
+                          transition hover:bg-emerald-100
+                        "
                       >
-                        <Share2 className="w-3.5 h-3.5" /> واتساب
+                        <Share2 className="h-3.5 w-3.5" />
+                        واتساب
                       </a>
+
                       <a
                         href={`https://t.me/share/url?url=${fullAttachmentUrl}&text=مرفق إفادة بلدي`}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center gap-1.5 text-[10px] font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg border border-sky-200 transition-colors"
+                        className="
+                          flex items-center gap-1.5 rounded-2xl
+                          border border-sky-200 bg-sky-50
+                          px-3 py-2 text-[10px]
+                          font-black text-sky-700
+                          transition hover:bg-sky-100
+                        "
                       >
-                        <SendIcon className="w-3.5 h-3.5" /> تليجرام
+                        <SendIcon className="h-3.5 w-3.5" />
+                        تليجرام
                       </a>
                     </div>
                   )}
@@ -459,77 +703,147 @@ export const AuthorityNotesTab = ({ tx, currentUser, persons }) => {
         </div>
       </div>
 
-      {/* ── عارض المرفقات الداخلي (Modal) ── */}
+      {/* Preview Modal */}
       {previewFile && (
         <div
-          className="fixed inset-0 z-[200] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-2 sm:p-6 animate-in fade-in"
+          className="
+            fixed inset-0 z-[200] flex items-center justify-center
+            bg-slate-900/90 p-2 backdrop-blur-sm
+            animate-in fade-in sm:p-6
+          "
           onClick={() => setPreviewFile(null)}
         >
           <div
-            className="bg-white rounded-2xl w-full max-w-5xl h-[95vh] sm:h-[90vh] flex flex-col overflow-hidden shadow-2xl relative"
+            className="
+              relative flex h-[95vh] w-full max-w-5xl
+              flex-col overflow-hidden rounded-[28px]
+              bg-white shadow-[0_28px_80px_rgba(15,23,42,0.35)]
+              sm:h-[90vh]
+            "
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-3 sm:p-4 bg-slate-900 text-white flex justify-between items-center shrink-0">
-              <h3 className="font-bold text-sm flex items-center gap-2">
-                <Paperclip className="w-4 h-4 text-emerald-400" /> معاينة المرفق
+            <div
+              className="
+                flex shrink-0 items-center justify-between
+                bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59]
+                px-4 py-4 text-white sm:px-5
+              "
+            >
+              <h3 className="flex min-w-0 items-center gap-2 text-sm font-black">
+                <span
+                  className="
+                    grid h-10 w-10 shrink-0 place-items-center
+                    rounded-2xl bg-[#e2bf74] text-[#123f59]
+                  "
+                >
+                  <Paperclip className="h-5 w-5" />
+                </span>
+
+                <span className="truncate">معاينة المرفق</span>
               </h3>
-              <div className="flex gap-2 items-center">
+
+              <div className="flex shrink-0 items-center gap-2">
                 <a
                   href={previewFile}
                   download
                   target="_blank"
                   rel="noreferrer"
-                  className="text-slate-300 hover:text-white flex items-center gap-1.5 text-[11px] font-bold bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-lg transition-colors border border-slate-700"
+                  className="
+                    flex items-center gap-1.5 rounded-2xl
+                    border border-white/15 bg-white/10
+                    px-3 py-2 text-[11px]
+                    font-black text-white transition
+                    hover:bg-white/15
+                  "
                 >
-                  <Download className="w-4 h-4" />{" "}
+                  <Download className="h-4 w-4 text-[#e2bf74]" />
                   <span className="hidden sm:inline">تحميل</span>
                 </a>
+
                 <button
                   onClick={() => {
                     const printWindow = window.open(previewFile);
-                    printWindow.print();
+                    if (printWindow) {
+                      printWindow.print();
+                    }
                   }}
-                  className="text-slate-300 hover:text-white flex items-center gap-1.5 text-[11px] font-bold bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-lg transition-colors border border-slate-700"
+                  className="
+                    flex items-center gap-1.5 rounded-2xl
+                    border border-white/15 bg-white/10
+                    px-3 py-2 text-[11px]
+                    font-black text-white transition
+                    hover:bg-white/15
+                  "
+                  type="button"
                 >
-                  <Printer className="w-4 h-4" />{" "}
+                  <Printer className="h-4 w-4 text-[#e2bf74]" />
                   <span className="hidden sm:inline">طباعة</span>
                 </button>
-                <div className="w-px h-6 bg-slate-700 mx-1"></div>
+
+                <div className="mx-1 h-7 w-px bg-white/15" />
+
                 <button
                   onClick={() => setPreviewFile(null)}
-                  className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-colors"
+                  className="
+                    grid h-10 w-10 place-items-center rounded-2xl
+                    bg-rose-500 text-white transition hover:bg-rose-600
+                  "
+                  type="button"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 bg-slate-100 p-2 sm:p-4 overflow-hidden flex items-center justify-center relative">
+            <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-[#eef7f6] p-3 sm:p-4">
               {previewFile.toLowerCase().includes(".pdf") ? (
                 <iframe
                   src={previewFile}
-                  className="w-full h-full rounded-xl bg-white shadow-inner border border-slate-200"
+                  className="
+                    h-full w-full rounded-2xl
+                    border border-[#d8b46a]/35
+                    bg-white shadow-inner
+                  "
                   title="PDF Preview"
                 />
               ) : previewFile.match(/\.(jpeg|jpg|gif|png|webp|svg)/i) ? (
                 <img
                   src={previewFile}
                   alt="Preview"
-                  className="max-w-full max-h-full object-contain rounded-xl shadow-lg border border-slate-200 bg-white p-2"
+                  className="
+                    max-h-full max-w-full rounded-2xl
+                    border border-[#d8b46a]/35
+                    bg-white object-contain p-2
+                    shadow-[0_18px_45px_rgba(18,63,89,0.20)]
+                  "
                 />
               ) : (
-                <div className="text-center text-slate-500 bg-white p-10 rounded-2xl border border-slate-200 shadow-sm">
-                  <ExternalLink className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-                  <p className="font-bold text-sm mb-4">
+                <div
+                  className="
+                    rounded-3xl border border-[#d8b46a]/35
+                    bg-white p-10 text-center
+                    shadow-[0_18px_45px_rgba(18,63,89,0.12)]
+                  "
+                >
+                  <ExternalLink className="mx-auto mb-4 h-16 w-16 text-[#c5983c]/50" />
+
+                  <p className="mb-4 text-sm font-black text-[#123f59]">
                     هذا النوع من الملفات لا يمكن معاينته مباشرة داخل المتصفح
                   </p>
+
                   <a
                     href={previewFile}
                     target="_blank"
                     rel="noreferrer"
-                    className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 inline-flex items-center gap-2 shadow-md"
+                    className="
+                      inline-flex items-center gap-2 rounded-2xl
+                      bg-[#123f59] px-6 py-3
+                      text-xs font-black text-white
+                      transition hover:bg-[#0f3448]
+                    "
                   >
-                    <Download className="w-4 h-4" /> انقر هنا لفتحه أو تحميله
+                    <Download className="h-4 w-4 text-[#e2bf74]" />
+                    فتحه أو تحميله
                   </a>
                 </div>
               )}

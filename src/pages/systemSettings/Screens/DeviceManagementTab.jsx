@@ -42,6 +42,7 @@ import {
 import { twMerge } from "tailwind-merge";
 import { clsx } from "clsx";
 import { toast } from "sonner";
+import { STAMP_TEMPLATE } from "../../../components/Stamp/stampTemplate"; // قم بتعديل المسار حسب مكان حفظك للملف
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -372,48 +373,49 @@ export default function DevicesMain() {
   const handleAIImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // 💡 التحقق: بما أن العملية تتم في الخلفية، يجب أن يكون الجهاز محفوظاً أولاً لنتمكن من تحديثه
+    if (deviceModalMode === "add" || !deviceForm.id) {
+      toast.error(
+        "يرجى حفظ الجهاز أولاً (إضافة الأصل) قبل رفع الصورة للتحليل التلقائي.",
+      );
+      if (aiImageInputRef.current) aiImageInputRef.current.value = "";
+      return;
+    }
+
     setIsAIExtracting(true);
     const formData = new FormData();
     formData.append("image", file);
+    formData.append("deviceId", deviceForm.id); // 👈 نرسل ID الجهاز للطابور
 
     try {
       const res = await api.post("/devices/extract-specs", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      if (res.data?.success) {
-        const { cpu, ram, storage, gpu, os, macAddresses } = res.data.data;
+
+      // 202 Accepted تعني أنه تم استلام الطلب ووضعه في الطابور
+      if (res.status === 202 || res.data?.success) {
         const imageUrl = res.data.imageUrl;
-        setDeviceForm((prev) => {
-          const existingMacs =
-            prev.network?.macAddresses?.filter((m) => m.trim() !== "") || [];
-          const newMacsFromAI = Array.isArray(macAddresses) ? macAddresses : [];
-          const mergedMacs = [...new Set([...existingMacs, ...newMacsFromAI])];
-          if (mergedMacs.length === 0) mergedMacs.push("");
-          return {
-            ...prev,
-            specs: {
-              ...prev.specs,
-              cpu: cpu || prev.specs.cpu,
-              ram: ram || prev.specs.ram,
-              storage: storage || prev.specs.storage,
-              gpu: gpu || prev.specs.gpu,
-              os: os || prev.specs.os,
+
+        // نضيف الصورة للمرفقات محلياً كشكل مبدئي مع إشارة أنها قيد التحليل
+        setDeviceForm((prev) => ({
+          ...prev,
+          attachments: [
+            ...(prev.attachments || []),
+            {
+              name: "مواصفات (قيد التحليل بالخلفية ⏳)",
+              url: imageUrl,
+              date: new Date().toISOString(),
             },
-            network: { ...prev.network, macAddresses: mergedMacs },
-            attachments: [
-              ...(prev.attachments || []),
-              {
-                name: "مواصفات مستخرجة (صورة AI)",
-                url: imageUrl,
-                date: new Date().toISOString(),
-              },
-            ],
-          };
-        });
-        toast.success("تم استخراج المواصفات بنجاح ✨");
+          ],
+        }));
+
+        toast.success(
+          "تم إرسال الصورة للتحليل في الخلفية 🪄. يمكنك إغلاق النافذة وسنرسل لك إشعاراً فور انتهاء التحديث.",
+        );
       }
     } catch (error) {
-      toast.error("تعذر قراءة الصورة");
+      toast.error(error.response?.data?.message || "تعذر إرسال الصورة للتحليل");
     } finally {
       setIsAIExtracting(false);
       if (aiImageInputRef.current) aiImageInputRef.current.value = "";
@@ -452,167 +454,66 @@ export default function DevicesMain() {
   };
 
   // 🚀 دالة طباعة الملصق بشكل احترافي وحقيقي
-  const handlePrintSticker = () => {
+  // 🚀 دالة طباعة الملصق الاحترافي والآمن (تتحدث مع الباك إند)
+  const handlePrintSticker = async () => {
     if (!selectedDevice) return;
 
-    // توليد QR Code حقيقي يحمل كود الجهاز باستخدام خدمة مجانية
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${selectedDevice.deviceCode}`;
+    try {
+      // 1. طلب الختم الآمن من السيرفر
+      const res = await api.get(`/devices/${selectedDevice.id}/stamp`);
+      const { qrBase64, barcodeBase64, dynamicBarcodeText } = res.data.data;
 
-    // فتح نافذة طباعة جديدة
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
-    
-    // تصميم الملصق (مصمم بمقاسات حقيقية لطابعات الملصقات مثل 8cm x 4cm)
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html lang="ar" dir="rtl">
-      <head>
-        <meta charset="UTF-8">
-        <title>طباعة ملصق - ${selectedDevice.deviceCode}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
-        <style>
-          @page {
-            size: 8cm 4cm; /* مقاس الاستيكر القياسي، يمكنك تغييره */
-            margin: 0;
-          }
-          body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Tajawal', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #fff;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          .sticker-container {
-            width: 7.6cm;
-            height: 3.6cm;
-            border: 2px solid #0f172a;
-            border-radius: 8px;
-            padding: 0.2cm;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            background-color: #fff;
-          }
-          .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 2px solid #059669;
-            padding-bottom: 4px;
-            margin-bottom: 4px;
-          }
-          .logo-box {
-            background-color: #0f172a;
-            color: #fff;
-            font-weight: 900;
-            font-size: 14px;
-            padding: 2px 6px;
-            border-radius: 4px;
-          }
-          .company-name {
-            font-size: 11px;
-            font-weight: 900;
-            color: #475569;
-            letter-spacing: 0.5px;
-          }
-          .content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex: 1;
-          }
-          .details {
-            flex: 1;
-          }
-          .detail-row {
-            margin-bottom: 3px;
-            font-size: 10px;
-          }
-          .detail-label {
-            font-weight: 700;
-            color: #64748b;
-            display: inline-block;
-            width: 45px;
-          }
-          .detail-value {
-            font-weight: 900;
-            color: #0f172a;
-          }
-          .qr-box {
-            width: 1.8cm;
-            height: 1.8cm;
-            margin-right: 10px;
-          }
-          .qr-box img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-          }
-          .footer {
-            text-align: center;
-            font-size: 8px;
-            font-weight: 900;
-            color: #0f172a;
-            background-color: #f1f5f9;
-            padding: 2px;
-            border-radius: 4px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="sticker-container">
-          <div class="header">
-            <div class="logo-box">DC</div>
-            <div class="company-name">ديتيلز كونسولتس DETAILS</div>
-          </div>
-          
-          <div class="content">
-            <div class="details">
-              <div class="detail-row">
-                <span class="detail-label">الكود:</span>
-                <span class="detail-value" style="font-family: monospace; font-size: 12px;">${selectedDevice.deviceCode}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">S/N:</span>
-                <span class="detail-value" style="font-family: monospace;">${selectedDevice.serialNumber || '—'}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">الجهاز:</span>
-                <span class="detail-value">${selectedDevice.brand} ${selectedDevice.model?.substring(0,10)}</span>
-              </div>
-            </div>
-            <div class="qr-box">
-              <img src="${qrCodeUrl}" alt="QR Code" />
-            </div>
-          </div>
+      // 2. حقن البيانات الموثقة والمشفرة داخل الـ SVG
+      const dynamicStampSvg = STAMP_TEMPLATE.replace(
+        "{{QR_DATA_URL}}",
+        qrBase64,
+      )
+        .replace("{{BARCODE_DATA_URL}}", barcodeBase64)
+        // نستخدم النص المتغير الذي يحتوي كود الجهاز + رمز الطباعة
+        .replace("{{BARCODE_TEXT}}", dynamicBarcodeText);
 
-          <div class="footer">
-            Property of Details Consults | ملكية خاصة
-          </div>
-        </div>
+      const printWindow = window.open("", "_blank", "width=800,height=600");
 
-        <script>
-          // الانتظار قليلاً حتى يتم تحميل الخطوط وصورة الـ QR Code ثم أمر الطباعة
-          window.onload = () => {
-            setTimeout(() => {
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="ar" dir="rtl">
+        <head>
+          <meta charset="UTF-8">
+          <title>وثيقة أمنية - ${dynamicBarcodeText}</title>
+          <style>
+            @page { size: auto; margin: 0; }
+            body {
+              margin: 0; padding: 0; display: flex; justify-content: center;
+              align-items: center; height: 100vh; background-color: #fff;
+              -webkit-print-color-adjust: exact; print-color-adjust: exact;
+            }
+            .svg-container { width: 100%; max-width: 900px; }
+          </style>
+        </head>
+        <body>
+          <div class="svg-container">
+            ${dynamicStampSvg}
+          </div>
+          <script>
+            // الطباعة فوراً لأن الصور تم تحويلها بالفعل إلى Base64 ولا تحتاج للتحميل من الإنترنت!
+            window.onload = () => {
               window.print();
               window.close();
-            }, 500);
-          };
-        </script>
-      </body>
-      </html>
-    `;
+            };
+          </script>
+        </body>
+        </html>
+      `;
 
-    printWindow.document.open();
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    
-    setIsStickerModalOpen(false);
+      printWindow.document.open();
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+
+      setIsStickerModalOpen(false);
+      toast.success("تم إصدار الوثيقة الأمنية للطباعة بنجاح 🛡️");
+    } catch (error) {
+      toast.error("حدث خطأ أثناء الاتصال بخادم الأمان لتوليد الختم");
+    }
   };
 
   return (
@@ -1958,23 +1859,61 @@ export default function DevicesMain() {
                         />
                         <button
                           type="button"
-                          onClick={() => aiImageInputRef.current?.click()}
+                          onClick={() => {
+                            if (deviceModalMode === "add") {
+                              toast.info(
+                                "يرجى حفظ الجهاز أولاً لتتمكن من استخدام التحليل في الخلفية.",
+                              );
+                            } else {
+                              aiImageInputRef.current?.click();
+                            }
+                          }}
                           disabled={isAIExtracting}
-                          className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 hover:from-purple-200 hover:to-blue-200 rounded-lg text-xs font-bold transition-all border border-purple-200 shadow-sm disabled:opacity-50"
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border shadow-sm",
+                            deviceModalMode === "add"
+                              ? "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
+                              : "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 hover:from-purple-200 hover:to-blue-200 border-purple-200 disabled:opacity-50",
+                          )}
+                          title={
+                            deviceModalMode === "add"
+                              ? "احفظ الجهاز أولاً لتفعيل هذه الخاصية"
+                              : "رفع الصورة وتحليلها في الخلفية"
+                          }
                         >
                           {isAIExtracting ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : (
                             <Wand2 className="w-3.5 h-3.5" />
                           )}
-                          استخراج تلقائي (صورة) 🪄
+                          استخراج بالذكاء الاصطناعي (بالخلفية) 🪄
                         </button>
                       </div>
+
+                      {deviceModalMode === "add" && (
+                        <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-2 text-blue-700 text-xs font-bold">
+                          <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                          <span>
+                            لتحليل مواصفات الجهاز تلقائياً عبر الذكاء الاصطناعي،
+                            يرجى ملء البيانات الأساسية وحفظ الجهاز أولاً، ثم قم
+                            بفتح التعديل ورفع الصورة ليتم تحليلها في الخلفية دون
+                            تعطيل عملك.
+                          </span>
+                        </div>
+                      )}
+
+                      {/* شاشة التحميل اللحظية (Feedback) عند رفع الصورة */}
                       {isAIExtracting && (
-                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
-                          <BrainCircuit className="w-10 h-10 text-purple-500 animate-pulse mb-2" />
-                          <div className="text-sm font-black text-purple-800">
-                            جاري تحليل الصورة وقراءة المواصفات والـ MAC...
+                        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-20 flex flex-col items-center justify-center rounded-2xl">
+                          <BrainCircuit className="w-10 h-10 text-purple-500 animate-pulse mb-3" />
+                          <div className="text-sm font-black text-purple-800 mb-1">
+                            جاري إرسال الصورة للطابور المركزي...
+                          </div>
+                          <div className="text-xs font-bold text-slate-500 text-center px-6">
+                            العملية ستستمر في الخلفية.
+                            <br />
+                            يمكنك إغلاق النافذة وسنرسل لك إشعاراً فور انتهاء
+                            التحديث.
                           </div>
                         </div>
                       )}

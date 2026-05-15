@@ -9,63 +9,79 @@ import {
   Pin,
   Pen,
   Trash2,
-  LayoutDashboard,
   AlertCircle,
   ArrowUp,
   ArrowDown,
   X,
+  Link2,
+  ShieldCheck,
+  CalendarDays,
+  Activity,
 } from "lucide-react";
 import api from "../api/axios";
 import { toast } from "sonner";
-import { useAuth } from "../context/AuthContext"; // 👈 استيراد الصلاحيات
+import { useAuth } from "../context/AuthContext";
 
-// 💡 دوال مساعدة لحساب التواريخ
 const getRemainingTime = (dateString) => {
   if (!dateString) return null;
+
   const target = new Date(dateString);
   const now = new Date();
   const diff = target - now;
-  if (diff <= 0)
-    return { text: "منتهي الصلاحية", color: "bg-rose-100 text-rose-700" };
+
+  if (diff <= 0) {
+    return {
+      text: "منتهي الصلاحية",
+      color: "bg-rose-50 text-rose-700 border-rose-200",
+    };
+  }
+
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
   return {
     text: `متبقي ${days} يوم`,
     color:
       days < 3
-        ? "bg-amber-100 text-amber-700"
-        : "bg-emerald-100 text-emerald-700",
+        ? "bg-amber-50 text-amber-700 border-amber-200"
+        : "bg-emerald-50 text-emerald-700 border-emerald-200",
   };
 };
 
 const getDaysSince = (dateString) => {
   if (!dateString) return "";
+
   const diff = new Date() - new Date(dateString);
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
   if (days === 0) return "اليوم";
   if (days === 1) return "أمس";
+
   return `منذ ${days} يوم`;
 };
 
 const getImportanceBadge = (imp) => {
-  if (imp === "عالي الأهمية")
-    return "bg-rose-100 text-rose-700 border-rose-200";
-  if (imp === "متوسط") return "bg-amber-100 text-amber-700 border-amber-200";
-  return "bg-blue-50 text-blue-600 border-blue-200";
+  if (imp === "عالي الأهمية") {
+    return "bg-rose-50 text-rose-700 border-rose-200";
+  }
+
+  if (imp === "متوسط") {
+    return "bg-amber-50 text-amber-700 border-amber-200";
+  }
+
+  return "bg-cyan-50 text-cyan-700 border-cyan-200";
 };
 
 export default function QuickLinksScreen() {
   const queryClient = useQueryClient();
-  const { user } = useAuth(); // 👈 جلب بيانات الموظف المسجل
+  const { user } = useAuth();
+
   const currentUser = user?.name || "موظف النظام";
 
-  // States
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [sortBy, setSortBy] = useState("usage"); // usage | date
+  const [sortBy, setSortBy] = useState("usage");
   const [revealedPasswords, setRevealedPasswords] = useState({});
   const [editingLink, setEditingLink] = useState(null);
-
-  // Form States
   const [newCategoryName, setNewCategoryName] = useState("");
 
   const initialForm = {
@@ -79,13 +95,13 @@ export default function QuickLinksScreen() {
     assignedEmployees: "",
     hasInfiniteExpiry: false,
     validUntil: "",
-    loginExpiry: "", // 👈 خيار مفتوح
+    loginExpiry: "",
     importance: "عادي",
     notes: "",
   };
+
   const [formData, setFormData] = useState(initialForm);
 
-  // Queries
   const { data: links = [] } = useQuery({
     queryKey: ["quick-links"],
     queryFn: async () => (await api.get("/quick-links")).data.data,
@@ -96,16 +112,19 @@ export default function QuickLinksScreen() {
     queryFn: async () => (await api.get("/quick-links/categories")).data.data,
   });
 
-  // Mutations
   const saveLinkMutation = useMutation({
     mutationFn: async (data) => {
       const payload = { ...data };
-      if (payload.hasInfiniteExpiry) payload.validUntil = null; // 👈 غير محدد
+
+      if (payload.hasInfiniteExpiry) {
+        payload.validUntil = null;
+      }
 
       if (editingLink) {
         payload.updatedBy = currentUser;
         return api.put(`/quick-links/${editingLink.id}`, payload);
       }
+
       payload.createdBy = currentUser;
       return api.post("/quick-links", payload);
     },
@@ -157,10 +176,9 @@ export default function QuickLinksScreen() {
     },
   });
 
-  // Logic
   const groupedLinks = useMemo(() => {
-    let sorted = [...links];
-    // لا نعبث بترتيب المثبت (دائماً في الأعلى بالترتيب)
+    const sorted = [...links];
+
     if (sortBy === "usage") {
       sorted.sort((a, b) => {
         if (a.isPinned && b.isPinned) return a.pinOrder - b.pinOrder;
@@ -169,6 +187,7 @@ export default function QuickLinksScreen() {
         return b.usageCount - a.usageCount;
       });
     }
+
     if (sortBy === "date") {
       sorted.sort((a, b) => {
         if (a.isPinned && b.isPinned) return a.pinOrder - b.pinOrder;
@@ -179,11 +198,17 @@ export default function QuickLinksScreen() {
     }
 
     const groups = {};
+
     sorted.forEach((link) => {
       const catName = link.category?.name || "بدون تصنيف";
-      if (!groups[catName]) groups[catName] = [];
+
+      if (!groups[catName]) {
+        groups[catName] = [];
+      }
+
       groups[catName].push(link);
     });
+
     return groups;
   }, [links, sortBy]);
 
@@ -194,15 +219,17 @@ export default function QuickLinksScreen() {
 
   const handlePinToggle = (link) => {
     const pinnedCount = links.filter((l) => l.isPinned).length;
+
     if (!link.isPinned && pinnedCount >= 10) {
       return toast.error("لا يمكن تثبيت أكثر من 10 روابط (الحد الأقصى).");
     }
+
     togglePinMutation.mutate({ id: link.id, isPinned: !link.isPinned });
   };
 
   const handleMovePinned = (catLinks, index, direction) => {
-    // الحصول على الروابط المثبتة فقط في هذا التصنيف لتغيير ترتيبها
     const pinnedOnly = catLinks.filter((l) => l.isPinned);
+
     const globalIndex = pinnedOnly.findIndex(
       (l) => l.id === catLinks[index].id,
     );
@@ -237,6 +264,7 @@ export default function QuickLinksScreen() {
       setEditingLink(null);
       setFormData({ ...initialForm, categoryId: categories[0]?.id || "" });
     }
+
     setIsLinkModalOpen(true);
   };
 
@@ -252,128 +280,263 @@ export default function QuickLinksScreen() {
 
   return (
     <div
-      className="p-4 md:p-6 space-y-6 font-sans bg-slate-50 min-h-screen"
+      className="
+        min-h-screen space-y-5 overflow-hidden
+        bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
+        p-4 font-sans md:p-6
+      "
       dir="rtl"
     >
-      {/* Header - مكثف (صغير) */}
-      <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-3">
-          <button className="p-1.5 bg-slate-100 border border-slate-200 rounded-lg hover:bg-slate-200 transition-colors">
-            <ChevronRight className="w-4 h-4 text-slate-600" />
-          </button>
-          <h3 className="text-lg font-black text-slate-900">الروابط السريعة</h3>
+      {/* Header */}
+      <div
+        className="
+          relative overflow-hidden rounded-[26px]
+          border border-[#c5983c]/25
+          bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59]
+          p-4 shadow-[0_20px_55px_rgba(18,63,89,0.22)]
+        "
+      >
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-[#c5983c]/18 blur-3xl" />
+          <div className="absolute left-[-80px] bottom-[-80px] h-52 w-52 rounded-full bg-cyan-400/12 blur-3xl" />
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={() => setSortBy("usage")}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold ${sortBy === "usage" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"}`}
-          >
-            الاستخدام
-          </button>
-          <button
-            onClick={() => setSortBy("date")}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold ${sortBy === "date" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"}`}
-          >
-            التاريخ
-          </button>
-          <button
-            onClick={() => openLinkModal()}
-            className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[11px] font-bold flex items-center gap-1.5 hover:bg-blue-700 shadow-sm"
-          >
-            <Plus className="w-3.5 h-3.5" /> رابط جديد
-          </button>
-          <button
-            onClick={() => setIsCategoryModalOpen(true)}
-            className="p-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg shadow-sm"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
+
+        <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              className="
+                grid h-11 w-11 place-items-center rounded-2xl
+                border border-white/15 bg-white/10 text-[#e2bf74]
+                transition hover:bg-white/15
+              "
+              type="button"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+
+            <div>
+              <div className="flex items-center gap-2">
+                <span
+                  className="
+                    grid h-9 w-9 place-items-center rounded-2xl
+                    bg-[#e2bf74] text-[#123f59] shadow-sm
+                  "
+                >
+                  <Link2 className="h-4 w-4" />
+                </span>
+
+                <h3 className="text-xl font-black text-white">
+                  الروابط السريعة
+                </h3>
+              </div>
+
+              <p className="mt-1 text-xs font-bold text-white/55">
+                إدارة روابط الأنظمة والمنصات المهمة مع الصلاحيات وبيانات الدخول.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setSortBy("usage")}
+              className={`rounded-2xl border px-4 py-2 text-xs font-black transition-all ${
+                sortBy === "usage"
+                  ? "border-[#e2bf74]/45 bg-[#e2bf74] text-[#123f59] shadow-[0_10px_24px_rgba(226,191,116,0.20)]"
+                  : "border-white/15 bg-white/10 text-white hover:bg-white/15"
+              }`}
+              type="button"
+            >
+              الأكثر استخداماً
+            </button>
+
+            <button
+              onClick={() => setSortBy("date")}
+              className={`rounded-2xl border px-4 py-2 text-xs font-black transition-all ${
+                sortBy === "date"
+                  ? "border-[#e2bf74]/45 bg-[#e2bf74] text-[#123f59] shadow-[0_10px_24px_rgba(226,191,116,0.20)]"
+                  : "border-white/15 bg-white/10 text-white hover:bg-white/15"
+              }`}
+              type="button"
+            >
+              الأحدث
+            </button>
+
+            <button
+              onClick={() => openLinkModal()}
+              className="
+                flex items-center gap-2 rounded-2xl
+                bg-white px-4 py-2 text-xs font-black text-[#123f59]
+                shadow-[0_12px_30px_rgba(255,255,255,0.16)]
+                transition hover:-translate-y-[1px] hover:bg-[#fbf8f1]
+              "
+              type="button"
+            >
+              <Plus className="h-4 w-4 text-[#c5983c]" />
+              رابط جديد
+            </button>
+
+            <button
+              onClick={() => setIsCategoryModalOpen(true)}
+              className="
+                grid h-10 w-10 place-items-center rounded-2xl
+                border border-white/15 bg-white/10 text-[#e2bf74]
+                transition hover:bg-white/15
+              "
+              type="button"
+              title="إدارة التصنيفات"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Tables Grouped by Category - مكثفة */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* Tables Grouped by Category */}
+      <div
+        className="
+          overflow-hidden rounded-[26px] border border-[#d8b46a]/30
+          bg-white shadow-[0_18px_45px_rgba(18,63,89,0.10)]
+        "
+      >
         {Object.entries(groupedLinks).map(
           ([categoryName, catLinks], catIdx) => (
             <div
               key={categoryName}
-              className={catIdx !== 0 ? "border-t-[3px] border-slate-200" : ""}
+              className={catIdx !== 0 ? "border-t-4 border-[#f8efe0]" : ""}
             >
-              <div className="px-4 py-2 bg-slate-100 border-b border-slate-200 font-black text-slate-800 text-xs flex items-center gap-2">
-                <div className="w-1 h-4 bg-blue-600 rounded-full"></div>
-                {categoryName}
+              <div
+                className="
+                  flex items-center justify-between gap-3
+                  border-b border-[#e8ddc8]
+                  bg-gradient-to-l from-[#f8efe0] via-white to-[#eef7f6]
+                  px-4 py-3
+                "
+              >
+                <div className="flex items-center gap-2">
+                  <span className="h-6 w-1.5 rounded-full bg-[#c5983c]" />
+                  <div>
+                    <div className="text-sm font-black text-[#123f59]">
+                      {categoryName}
+                    </div>
+                    <div className="text-[10px] font-bold text-[#64748b]">
+                      {catLinks.length} رابط داخل هذا التصنيف
+                    </div>
+                  </div>
+                </div>
+
+                <span
+                  className="
+                    rounded-2xl border border-[#c5983c]/25
+                    bg-white px-3 py-1 text-[10px]
+                    font-black text-[#123f59]
+                  "
+                >
+                  Quick Links
+                </span>
               </div>
+
               <div className="overflow-x-auto custom-scrollbar-slim">
-                <table className="w-full text-right text-[11px]">
-                  <thead className="bg-slate-50 text-slate-500 font-bold whitespace-nowrap">
+                <table className="w-full min-w-[1100px] text-right text-[11px]">
+                  <thead
+                    className="
+                      bg-[#0f3448] text-[10px]
+                      font-black text-white
+                    "
+                  >
                     <tr>
-                      <th className="px-3 py-2 border-l border-slate-100">
+                      <th className="border-l border-white/10 px-3 py-3">
                         الرابط
                       </th>
-                      <th className="px-3 py-2 border-l border-slate-100">
+                      <th className="border-l border-white/10 px-3 py-3">
                         الأهمية
                       </th>
-                      <th className="px-3 py-2 border-l border-slate-100">
+                      <th className="border-l border-white/10 px-3 py-3">
                         مستوى الوصول
                       </th>
-                      <th className="px-3 py-2 border-l border-slate-100">
+                      <th className="border-l border-white/10 px-3 py-3">
                         الدخول/الباسوورد
                       </th>
-                      <th className="px-3 py-2 border-l border-slate-100">
+                      <th className="border-l border-white/10 px-3 py-3">
                         الصلاحية
                       </th>
-                      <th className="px-3 py-2 border-l border-slate-100">
+                      <th className="border-l border-white/10 px-3 py-3">
                         الإنشاء
                       </th>
-                      <th className="px-3 py-2 border-l border-slate-100">
+                      <th className="border-l border-white/10 px-3 py-3">
                         آخر تعديل
                       </th>
-                      <th className="px-3 py-2 text-center border-l border-slate-100">
+                      <th className="border-l border-white/10 px-3 py-3 text-center">
                         استخدام
                       </th>
-                      <th className="px-3 py-2 text-center w-28">إجراءات</th>
+                      <th className="px-3 py-3 text-center">إجراءات</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+
+                  <tbody className="divide-y divide-[#e8ddc8]/70">
                     {catLinks.map((link, index) => {
                       const validity = link.validUntil
                         ? getRemainingTime(link.validUntil)
                         : null;
+
                       return (
                         <tr
                           key={link.id}
-                          className={`hover:bg-blue-50/40 transition-colors ${link.isPinned ? "bg-amber-50/20" : ""}`}
+                          className={`transition-colors hover:bg-cyan-50/45 ${
+                            link.isPinned ? "bg-[#fff7ed]" : "bg-white"
+                          }`}
                         >
-                          <td className="px-3 py-2 border-l border-slate-100">
+                          <td className="border-l border-[#e8ddc8]/70 px-3 py-2.5">
                             <button
                               onClick={() => handleOpenLink(link)}
-                              className="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-900 rounded font-bold flex items-center gap-1.5 hover:bg-blue-600 hover:text-white transition-all w-fit shadow-sm"
+                              className="
+                                flex w-fit items-center gap-1.5 rounded-xl
+                                border border-[#d8b46a]/35
+                                bg-[#fbf8f1] px-3 py-1.5
+                                text-[11px] font-black text-[#123f59]
+                                shadow-sm transition-all
+                                hover:-translate-y-[1px] hover:bg-[#123f59] hover:text-white
+                              "
+                              type="button"
                             >
-                              {link.title} <ExternalLink className="w-3 h-3" />
+                              {link.title}
+                              <ExternalLink className="h-3 w-3" />
                             </button>
                           </td>
-                          <td className="px-3 py-2 border-l border-slate-100">
+
+                          <td className="border-l border-[#e8ddc8]/70 px-3 py-2.5">
                             <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getImportanceBadge(link.importance)}`}
+                              className={`rounded-xl border px-2 py-1 text-[10px] font-black ${getImportanceBadge(
+                                link.importance,
+                              )}`}
                             >
                               {link.importance}
                             </span>
                           </td>
-                          <td className="px-3 py-2 border-l border-slate-100 font-bold text-slate-700">
+
+                          <td className="border-l border-[#e8ddc8]/70 px-3 py-2.5 font-black text-[#334155]">
                             {link.accessLevel}
+
                             {link.assignedEmployees && (
-                              <div className="text-[9px] text-slate-400 mt-0.5 font-normal truncate max-w-[100px]">
+                              <div className="mt-0.5 max-w-[110px] truncate text-[9px] font-bold text-[#64748b]">
                                 {link.assignedEmployees}
                               </div>
                             )}
                           </td>
-                          <td className="px-3 py-2 border-l border-slate-100">
+
+                          <td className="border-l border-[#e8ddc8]/70 px-3 py-2.5">
                             {link.requiresLogin ? (
                               <button
                                 onClick={() => togglePassword(link.id)}
-                                className="px-2 py-1 bg-rose-50 border border-rose-100 text-rose-700 rounded font-bold flex items-center gap-1.5 hover:bg-rose-100 text-[10px]"
+                                className="
+                                  flex items-center gap-1.5 rounded-xl
+                                  border border-rose-200 bg-rose-50
+                                  px-2.5 py-1 text-[10px]
+                                  font-black text-rose-700
+                                  transition hover:bg-rose-100
+                                "
+                                type="button"
                               >
-                                <Lock className="w-3 h-3" />{" "}
+                                <Lock className="h-3 w-3" />
                                 {revealedPasswords[link.id]
                                   ? link.loginData
                                   : "*****"}
@@ -382,102 +545,149 @@ export default function QuickLinksScreen() {
                               <span className="text-slate-400">-</span>
                             )}
                           </td>
-                          <td className="px-3 py-2 border-l border-slate-100">
+
+                          <td className="border-l border-[#e8ddc8]/70 px-3 py-2.5">
                             {validity ? (
                               <div
-                                className={`px-2 py-1 rounded text-[9px] font-black inline-block border border-transparent ${validity.color.replace("bg-", "border-")}`}
+                                className={`inline-block rounded-xl border px-2 py-1 text-[9px] font-black ${validity.color}`}
                               >
                                 <span className="block">
-                                  {link.validUntil.split("T")[0]}
+                                  {link.validUntil?.split("T")[0]}
                                 </span>
-                                <span className="opacity-80 block mt-0.5">
+
+                                <span className="mt-0.5 block opacity-80">
                                   {validity.text}
                                 </span>
                               </div>
                             ) : (
-                              <span className="px-2 py-1 bg-slate-100 text-slate-500 rounded text-[9px] font-bold border border-slate-200">
-                                غير محدد (مفتوح)
+                              <span
+                                className="
+                                  rounded-xl border border-[#d8b46a]/30
+                                  bg-[#f8efe0] px-2 py-1
+                                  text-[9px] font-black text-[#123f59]
+                                "
+                              >
+                                غير محدد
                               </span>
                             )}
                           </td>
 
-                          {/* 👈 عمود الإنشاء مع العداد */}
-                          <td className="px-3 py-2 border-l border-slate-100 text-slate-600">
-                            <div className="font-bold text-[10px]">
+                          <td className="border-l border-[#e8ddc8]/70 px-3 py-2.5 text-[#334155]">
+                            <div className="text-[10px] font-black">
                               {link.createdBy}
                             </div>
-                            <div className="text-[9px] font-mono">
-                              {link.createdAt.split("T")[0]}
+
+                            <div className="font-mono text-[9px] font-bold">
+                              {link.createdAt?.split("T")[0]}
                             </div>
-                            <div className="text-[8.5px] font-bold text-blue-600 bg-blue-50 px-1 rounded w-max mt-0.5">
+
+                            <div className="mt-0.5 w-max rounded-lg bg-cyan-50 px-1.5 py-0.5 text-[8.5px] font-black text-cyan-700">
                               {getDaysSince(link.createdAt)}
                             </div>
                           </td>
 
-                          {/* 👈 عمود التعديل مع العداد */}
-                          <td className="px-3 py-2 border-l border-slate-100 text-slate-600">
-                            <div className="font-bold text-[10px]">
+                          <td className="border-l border-[#e8ddc8]/70 px-3 py-2.5 text-[#334155]">
+                            <div className="text-[10px] font-black">
                               {link.updatedBy}
                             </div>
-                            <div className="text-[9px] font-mono">
-                              {link.updatedAt.split("T")[0]}
+
+                            <div className="font-mono text-[9px] font-bold">
+                              {link.updatedAt?.split("T")[0]}
                             </div>
-                            <div className="text-[8.5px] font-bold text-emerald-600 bg-emerald-50 px-1 rounded w-max mt-0.5">
+
+                            <div className="mt-0.5 w-max rounded-lg bg-emerald-50 px-1.5 py-0.5 text-[8.5px] font-black text-emerald-700">
                               {getDaysSince(link.updatedAt)}
                             </div>
                           </td>
 
-                          <td className="px-3 py-2 text-center border-l border-slate-100 font-black text-slate-800 font-mono">
-                            {link.usageCount}
+                          <td className="border-l border-[#e8ddc8]/70 px-3 py-2.5 text-center">
+                            <span
+                              className="
+                                inline-flex items-center gap-1 rounded-xl
+                                bg-[#123f59] px-2 py-1
+                                font-mono text-[10px] font-black text-white
+                              "
+                            >
+                              <Activity className="h-3 w-3 text-[#e2bf74]" />
+                              {link.usageCount}
+                            </span>
                           </td>
 
-                          <td className="px-3 py-2 text-center">
+                          <td className="px-3 py-2.5 text-center">
                             <div className="flex items-center justify-center gap-1">
                               {link.isPinned && sortBy === "usage" && (
-                                <div className="flex flex-col gap-0.5 ml-1 mr-2">
+                                <div className="ml-1 mr-2 flex flex-col gap-0.5">
                                   <button
                                     onClick={() =>
                                       handleMovePinned(catLinks, index, "up")
                                     }
-                                    className="text-slate-400 hover:text-blue-600 bg-slate-100 rounded p-0.5"
+                                    className="
+                                      rounded-lg bg-[#f8efe0] p-0.5
+                                      text-[#64748b] transition
+                                      hover:text-[#123f59]
+                                    "
+                                    type="button"
                                   >
-                                    <ArrowUp className="w-3 h-3" />
+                                    <ArrowUp className="h-3 w-3" />
                                   </button>
+
                                   <button
                                     onClick={() =>
                                       handleMovePinned(catLinks, index, "down")
                                     }
-                                    className="text-slate-400 hover:text-blue-600 bg-slate-100 rounded p-0.5"
+                                    className="
+                                      rounded-lg bg-[#f8efe0] p-0.5
+                                      text-[#64748b] transition
+                                      hover:text-[#123f59]
+                                    "
+                                    type="button"
                                   >
-                                    <ArrowDown className="w-3 h-3" />
+                                    <ArrowDown className="h-3 w-3" />
                                   </button>
                                 </div>
                               )}
+
                               <button
                                 onClick={() => handlePinToggle(link)}
-                                className={`p-1.5 rounded transition-colors ${link.isPinned ? "bg-amber-100 text-amber-600" : "text-slate-400 hover:bg-slate-100"}`}
+                                className={`rounded-xl p-1.5 transition-colors ${
+                                  link.isPinned
+                                    ? "bg-amber-50 text-amber-600"
+                                    : "text-slate-400 hover:bg-[#f8efe0] hover:text-[#c5983c]"
+                                }`}
                                 title={
                                   link.isPinned
                                     ? "إلغاء التثبيت"
                                     : "تثبيت في الأعلى"
                                 }
+                                type="button"
                               >
-                                <Pin className="w-3.5 h-3.5" />
+                                <Pin className="h-3.5 w-3.5" />
                               </button>
+
                               <button
                                 onClick={() => openLinkModal(link)}
-                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                className="
+                                  rounded-xl p-1.5 text-slate-400
+                                  transition-colors hover:bg-cyan-50 hover:text-cyan-700
+                                "
+                                type="button"
                               >
-                                <Pen className="w-3.5 h-3.5" />
+                                <Pen className="h-3.5 w-3.5" />
                               </button>
+
                               <button
                                 onClick={() => {
-                                  if (window.confirm("حذف؟"))
+                                  if (window.confirm("حذف؟")) {
                                     deleteLinkMutation.mutate(link.id);
+                                  }
                                 }}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                                className="
+                                  rounded-xl p-1.5 text-slate-400
+                                  transition-colors hover:bg-rose-50 hover:text-rose-600
+                                "
+                                type="button"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             </div>
                           </td>
@@ -490,62 +700,98 @@ export default function QuickLinksScreen() {
             </div>
           ),
         )}
+
         {Object.keys(groupedLinks).length === 0 && (
-          <div className="p-10 text-center text-slate-400 font-bold text-sm">
-            لا توجد روابط مضافة بعد.
+          <div className="p-12 text-center">
+            <div
+              className="
+                mx-auto mb-3 grid h-16 w-16 place-items-center
+                rounded-3xl border border-[#d8b46a]/35
+                bg-[#f8efe0] text-[#c5983c]
+              "
+            >
+              <AlertCircle className="h-8 w-8" />
+            </div>
+
+            <p className="text-sm font-black text-[#123f59]">
+              لا توجد روابط مضافة بعد.
+            </p>
           </div>
         )}
       </div>
 
-      {/* ========================================================= */}
-      {/* Modal: إضافة/تعديل رابط (مكثف) */}
+      {/* Modal: إضافة/تعديل رابط */}
       {isLinkModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]">
-            <div className="px-5 py-4 bg-slate-800 text-white flex justify-between items-center shrink-0 rounded-t-2xl">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-blue-600 rounded">
-                  <Plus className="w-4 h-4" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 p-4 backdrop-blur-sm">
+          <div
+            className="
+              flex max-h-[90vh] w-full max-w-2xl flex-col
+              overflow-hidden rounded-[28px] bg-white
+              shadow-[0_28px_80px_rgba(15,23,42,0.34)]
+            "
+          >
+            <div className="shrink-0 bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59] px-5 py-4 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="grid h-9 w-9 place-items-center rounded-2xl bg-[#e2bf74] text-[#123f59]">
+                    <Plus className="h-4 w-4" />
+                  </span>
+
+                  <h3 className="text-sm font-black">
+                    {editingLink
+                      ? "تعديل بيانات الرابط"
+                      : "إضافة رابط سريع جديد"}
+                  </h3>
                 </div>
-                <h3 className="text-sm font-black">
-                  {editingLink ? "تعديل بيانات الرابط" : "إضافة رابط سريع جديد"}
-                </h3>
+
+                <button
+                  onClick={closeLinkModal}
+                  className="grid h-8 w-8 place-items-center rounded-2xl bg-white/10 transition hover:bg-white/15"
+                  type="button"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-              <button
-                onClick={closeLinkModal}
-                className="p-1.5 hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
             </div>
 
-            <div className="p-6 overflow-y-auto space-y-6 custom-scrollbar-slim">
+            <div className="custom-scrollbar-slim space-y-6 overflow-y-auto p-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-600">
+                  <label className="text-[10px] font-black text-[#123f59]">
                     اسم الرابط *
                   </label>
+
                   <input
                     value={formData.title}
                     onChange={(e) =>
                       setFormData({ ...formData, title: e.target.value })
                     }
                     placeholder="نظام بلدي..."
-                    className="w-full p-2.5 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:border-blue-500"
+                    className="
+                      w-full rounded-xl border border-[#d8b46a]/35
+                      p-2.5 text-xs font-bold outline-none
+                      focus:border-[#c5983c] focus:ring-4 focus:ring-[#c5983c]/10
+                    "
                   />
                 </div>
+
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-600">
+                  <label className="text-[10px] font-black text-[#123f59]">
                     التصنيف *
                   </label>
+
                   <select
                     value={formData.categoryId}
                     onChange={(e) =>
                       setFormData({ ...formData, categoryId: e.target.value })
                     }
-                    className="w-full p-2.5 border border-slate-300 rounded-lg text-xs font-bold outline-none bg-white"
+                    className="
+                      w-full rounded-xl border border-[#d8b46a]/35
+                      bg-white p-2.5 text-xs font-bold outline-none
+                    "
                   >
                     <option value="">اختر...</option>
+
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -553,10 +799,12 @@ export default function QuickLinksScreen() {
                     ))}
                   </select>
                 </div>
+
                 <div className="col-span-2 space-y-1">
-                  <label className="text-[10px] font-bold text-slate-600">
+                  <label className="text-[10px] font-black text-[#123f59]">
                     الرابط (URL) *
                   </label>
+
                   <input
                     value={formData.url}
                     onChange={(e) =>
@@ -564,53 +812,68 @@ export default function QuickLinksScreen() {
                     }
                     dir="ltr"
                     placeholder="https://..."
-                    className="w-full p-2.5 border border-slate-300 rounded-lg text-xs font-mono font-bold outline-none focus:border-blue-500 text-left"
+                    className="
+                      w-full rounded-xl border border-[#d8b46a]/35
+                      p-2.5 text-left font-mono text-xs font-bold
+                      outline-none focus:border-[#c5983c]
+                      focus:ring-4 focus:ring-[#c5983c]/10
+                    "
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 border-t border-slate-100 pt-4">
+              <div className="grid grid-cols-3 gap-4 border-t border-[#e8ddc8] pt-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-600">
+                  <label className="text-[10px] font-black text-[#123f59]">
                     الأهمية
                   </label>
+
                   <select
                     value={formData.importance}
                     onChange={(e) =>
                       setFormData({ ...formData, importance: e.target.value })
                     }
-                    className="w-full p-2.5 border border-slate-300 rounded-lg text-xs font-bold outline-none bg-white"
+                    className="
+                      w-full rounded-xl border border-[#d8b46a]/35
+                      bg-white p-2.5 text-xs font-bold outline-none
+                    "
                   >
                     <option value="عادي">عادي</option>
                     <option value="متوسط">متوسط</option>
                     <option value="عالي الأهمية">عالي الأهمية</option>
                   </select>
                 </div>
+
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-600">
+                  <label className="text-[10px] font-black text-[#123f59]">
                     مستوى الوصول
                   </label>
+
                   <select
                     value={formData.accessLevel}
                     onChange={(e) =>
                       setFormData({ ...formData, accessLevel: e.target.value })
                     }
-                    className="w-full p-2.5 border border-slate-300 rounded-lg text-xs font-bold outline-none bg-white"
+                    className="
+                      w-full rounded-xl border border-[#d8b46a]/35
+                      bg-white p-2.5 text-xs font-bold outline-none
+                    "
                   >
                     <option>الإدارة العليا</option>
                     <option>الموظفين</option>
                     <option>الكل</option>
                   </select>
                 </div>
+
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-600">
+                  <label className="text-[10px] font-black text-[#123f59]">
                     تاريخ الانتهاء
                   </label>
-                  {/* 👈 خيار غير محدد (مفتوح) */}
-                  <label className="flex items-center gap-1 mb-1 mt-1 cursor-pointer">
+
+                  <label className="mb-1 mt-1 flex cursor-pointer items-center gap-1">
                     <input
                       type="checkbox"
-                      className="accent-blue-600"
+                      className="accent-[#123f59]"
                       checked={formData.hasInfiniteExpiry}
                       onChange={(e) =>
                         setFormData({
@@ -620,10 +883,12 @@ export default function QuickLinksScreen() {
                         })
                       }
                     />
-                    <span className="text-[9px] font-bold text-blue-700">
-                      غير محدد (مفتوح دائماً)
+
+                    <span className="text-[9px] font-black text-[#123f59]">
+                      غير محدد
                     </span>
                   </label>
+
                   <input
                     type="date"
                     disabled={formData.hasInfiniteExpiry}
@@ -631,16 +896,20 @@ export default function QuickLinksScreen() {
                     onChange={(e) =>
                       setFormData({ ...formData, validUntil: e.target.value })
                     }
-                    className="w-full p-2 border border-slate-300 rounded-lg text-xs font-bold outline-none disabled:bg-slate-100 disabled:text-slate-400"
+                    className="
+                      w-full rounded-xl border border-[#d8b46a]/35
+                      p-2 text-xs font-bold outline-none
+                      disabled:bg-slate-100 disabled:text-slate-400
+                    "
                   />
                 </div>
               </div>
 
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div className="space-y-3 rounded-2xl border border-[#d8b46a]/35 bg-[#fbf8f1] p-4">
+                <label className="flex cursor-pointer items-center gap-2">
                   <input
                     type="checkbox"
-                    className="accent-blue-600 w-4 h-4"
+                    className="h-4 w-4 accent-[#123f59]"
                     checked={formData.requiresLogin}
                     onChange={(e) =>
                       setFormData({
@@ -649,10 +918,12 @@ export default function QuickLinksScreen() {
                       })
                     }
                   />
-                  <span className="text-xs font-bold text-slate-800">
-                    تفعيل حماية بيانات الدخول (يوزر/باسوورد)
+
+                  <span className="text-xs font-black text-[#123f59]">
+                    تفعيل حماية بيانات الدخول
                   </span>
                 </label>
+
                 {formData.requiresLogin && (
                   <input
                     type="text"
@@ -661,32 +932,48 @@ export default function QuickLinksScreen() {
                       setFormData({ ...formData, loginData: e.target.value })
                     }
                     placeholder="بيانات الدخول..."
-                    className="w-full p-2.5 border border-slate-300 rounded-lg text-xs font-bold outline-none"
+                    className="
+                      w-full rounded-xl border border-[#d8b46a]/35
+                      p-2.5 text-xs font-bold outline-none
+                    "
                   />
                 )}
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-600">
+                <label className="text-[10px] font-black text-[#123f59]">
                   وصف / ملاحظات
                 </label>
+
                 <textarea
                   value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="w-full p-3 border border-slate-300 rounded-xl text-xs font-bold outline-none min-h-[60px] resize-none"
-                ></textarea>
+                  className="
+                    min-h-[70px] w-full resize-none rounded-2xl
+                    border border-[#d8b46a]/35 p-3
+                    text-xs font-bold outline-none
+                    focus:border-[#c5983c]
+                    focus:ring-4 focus:ring-[#c5983c]/10
+                  "
+                />
               </div>
             </div>
 
-            <div className="p-4 bg-gray-50 border-t border-slate-200 flex justify-end gap-2 shrink-0 rounded-b-2xl">
+            <div className="flex shrink-0 justify-end gap-2 border-t border-[#e8ddc8] bg-[#fbf8f1] p-4">
               <button
                 onClick={closeLinkModal}
-                className="px-6 py-2 bg-white text-slate-600 border border-slate-300 rounded-lg text-xs font-bold hover:bg-slate-100 transition-all"
+                className="
+                  rounded-xl border border-[#d8b46a]/35
+                  bg-white px-6 py-2 text-xs font-black
+                  text-[#64748b] transition hover:bg-[#f8efe0]
+                "
+                type="button"
               >
                 إلغاء
               </button>
+
               <button
                 onClick={() => saveLinkMutation.mutate(formData)}
                 disabled={
@@ -695,7 +982,13 @@ export default function QuickLinksScreen() {
                   !formData.url ||
                   !formData.categoryId
                 }
-                className="px-8 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-blue-700 transition-all disabled:opacity-50"
+                className="
+                  rounded-xl bg-[#123f59] px-8 py-2
+                  text-xs font-black text-white shadow-sm
+                  transition hover:bg-[#0f3448]
+                  disabled:opacity-50
+                "
+                type="button"
               >
                 {saveLinkMutation.isPending ? "جاري الحفظ..." : "حفظ الرابط"}
               </button>
@@ -706,51 +999,84 @@ export default function QuickLinksScreen() {
 
       {/* Modal: إدارة التصنيفات */}
       {isCategoryModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
           <div
-            className="bg-white rounded-2xl shadow-xl w-full max-w-xs p-6 space-y-5"
+            className="
+              w-full max-w-xs overflow-hidden rounded-[26px]
+              bg-white shadow-[0_24px_70px_rgba(15,23,42,0.30)]
+            "
             dir="rtl"
           >
-            <h3 className="text-sm font-black flex items-center gap-2">
-              <Settings className="w-4 h-4 text-blue-600" /> التصنيفات
-            </h3>
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar-slim">
-              {categories.map((cat) => (
-                <div
-                  key={cat.id}
-                  className="flex justify-between items-center p-2.5 bg-slate-50 rounded-lg border border-slate-100"
-                >
-                  <span className="font-bold text-xs">{cat.name}</span>
-                  <button
-                    onClick={() => deleteCategoryMutation.mutate(cat.id)}
-                    className="text-rose-400 hover:text-rose-600"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
+            <div className="bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59] px-5 py-4 text-white">
+              <h3 className="flex items-center gap-2 text-sm font-black">
+                <Settings className="h-4 w-4 text-[#e2bf74]" />
+                التصنيفات
+              </h3>
             </div>
-            <div className="flex gap-2">
-              <input
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="تصنيف جديد..."
-                className="flex-1 p-2 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:border-blue-500"
-              />
+
+            <div className="space-y-4 p-5">
+              <div className="custom-scrollbar-slim max-h-48 space-y-2 overflow-y-auto pr-1">
+                {categories.map((cat) => (
+                  <div
+                    key={cat.id}
+                    className="
+                      flex items-center justify-between rounded-2xl
+                      border border-[#d8b46a]/25
+                      bg-[#fbf8f1] p-2.5
+                    "
+                  >
+                    <span className="text-xs font-black text-[#123f59]">
+                      {cat.name}
+                    </span>
+
+                    <button
+                      onClick={() => deleteCategoryMutation.mutate(cat.id)}
+                      className="text-rose-400 transition hover:text-rose-600"
+                      type="button"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="تصنيف جديد..."
+                  className="
+                    flex-1 rounded-xl border border-[#d8b46a]/35
+                    p-2 text-xs font-bold outline-none
+                    focus:border-[#c5983c]
+                  "
+                />
+
+                <button
+                  onClick={() => addCategoryMutation.mutate(newCategoryName)}
+                  disabled={!newCategoryName.trim()}
+                  className="
+                    rounded-xl bg-[#123f59] p-2
+                    text-white transition hover:bg-[#0f3448]
+                    disabled:opacity-50
+                  "
+                  type="button"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+
               <button
-                onClick={() => addCategoryMutation.mutate(newCategoryName)}
-                disabled={!newCategoryName.trim()}
-                className="p-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="
+                  w-full rounded-xl bg-[#08111c] p-2
+                  text-xs font-black text-white transition hover:bg-[#123f59]
+                "
+                type="button"
               >
-                <Plus className="w-4 h-4" />
+                إغلاق
               </button>
             </div>
-            <button
-              onClick={() => setIsCategoryModalOpen(false)}
-              className="w-full p-2 bg-slate-800 text-white rounded-lg text-xs font-bold hover:bg-slate-700"
-            >
-              إغلاق
-            </button>
           </div>
         </div>
       )}

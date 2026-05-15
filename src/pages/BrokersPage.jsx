@@ -8,36 +8,101 @@ import {
   X,
   Handshake,
   Phone,
-  Mail,
   FileText,
   Wallet,
   Receipt,
   Paperclip,
-  Upload,
   Loader2,
   Edit3,
   Trash2,
   Eye,
   Globe,
   User,
-  Banknote,
-  CheckSquare,
-  Square,
+  Lock,
   Archive,
   Download,
-  UserPlus,
+  ChevronRight,
+  Settings,
+  ShieldCheck,
+  Banknote,
 } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
 import { usePrivacy } from "../context/PrivacyContext";
-
-// 💡 استيراد المكون الشامل من مساره الصحيح (تأكد من مسار الملف لديك)
-import { AddPersonModal } from "../components/AddPersonModal"; // افترضت أنه في نفس المجلد أو قم بتعديل المسار
+import { AddPersonModal } from "../components/AddPersonModal";
 
 const safeText = (val) => {
   if (val === null || val === undefined) return "—";
-  if (typeof val === "object")
+  if (typeof val === "object") {
     return val.ar || val.name || val.en || JSON.stringify(val);
+  }
   return String(val);
+};
+
+const getPaymentMethodsLabel = (transferMethod) => {
+  if (!transferMethod) return "—";
+
+  try {
+    const parsed = JSON.parse(transferMethod);
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed.join(" + ");
+  } catch (e) {
+    return transferMethod;
+  }
+
+  return transferMethod;
+};
+
+const DataCard = ({ label, value, icon: Icon, tone = "blue", dir }) => {
+  const tones = {
+    blue: {
+      box: "border-[#123f59]/20 bg-[#f8fafc]",
+      icon: "bg-[#123f59] text-[#e2bf74]",
+      label: "text-[#64748b]",
+      value: "text-[#123f59]",
+    },
+    gold: {
+      box: "border-[#d8b46a]/35 bg-[#fbf8f1]",
+      icon: "bg-[#f8efe0] text-[#c5983c]",
+      label: "text-[#64748b]",
+      value: "text-[#123f59]",
+    },
+    emerald: {
+      box: "border-emerald-300/45 bg-emerald-50/70",
+      icon: "bg-emerald-600 text-white",
+      label: "text-emerald-700",
+      value: "text-emerald-950",
+    },
+    rose: {
+      box: "border-rose-300/45 bg-rose-50/70",
+      icon: "bg-rose-500 text-white",
+      label: "text-rose-700",
+      value: "text-rose-950",
+    },
+  };
+
+  const t = tones[tone] || tones.blue;
+
+  return (
+    <div className={`rounded-2xl border p-4 shadow-sm ${t.box}`}>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className={`text-[10px] font-black uppercase ${t.label}`}>
+          {label}
+        </div>
+
+        {Icon && (
+          <span className={`grid h-9 w-9 place-items-center rounded-2xl ${t.icon}`}>
+            <Icon className="h-4 w-4" />
+          </span>
+        )}
+      </div>
+
+      <div
+        className={`truncate text-sm font-black ${t.value}`}
+        dir={dir || "rtl"}
+        title={safeText(value)}
+      >
+        {safeText(value)}
+      </div>
+    </div>
+  );
 };
 
 export default function BrokersPage() {
@@ -50,13 +115,12 @@ export default function BrokersPage() {
   const [activeTab, setActiveTab] = useState("data");
 
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [modalMode, setModalMode] = useState("add"); // "add" or "edit"
+  const [modalMode, setModalMode] = useState("add");
   const [editingPerson, setEditingPerson] = useState(null);
 
   const [previewData, setPreviewData] = useState(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
-  // 💡 Data Fetching
   const { data: brokersList = [], isLoading } = useQuery({
     queryKey: ["brokers-directory"],
     queryFn: async () => {
@@ -88,11 +152,13 @@ export default function BrokersPage() {
     onSuccess: (res) => {
       toast.success("تم حذف المرفق بنجاح");
       queryClient.invalidateQueries(["brokers-directory"]);
-      if (selectedPerson)
+
+      if (selectedPerson) {
         setSelectedPerson((prev) => ({
           ...prev,
           attachments: res.data?.attachments || prev.attachments,
         }));
+      }
     },
   });
 
@@ -103,22 +169,30 @@ export default function BrokersPage() {
 
   const filteredData = useMemo(() => {
     return brokersList.filter((p) => {
+      const name = safeText(p.name);
+      const phone = safeText(p.phone);
+
       const matchSearch =
-        p.name.includes(searchQuery) ||
-        (p.phone && p.phone.includes(searchQuery));
+        name.includes(searchQuery) || phone.includes(searchQuery);
+
       const matchAgreement =
         filterAgreement === "all" || p.agreementType === filterAgreement;
+
       return matchSearch && matchAgreement;
     });
   }, [brokersList, searchQuery, filterAgreement]);
 
   const handleViewAttachment = async (e, attachmentUrl) => {
     e.stopPropagation();
+
     if (!attachmentUrl) return;
+
     setIsPreviewLoading(true);
+
     try {
       const response = await api.get(attachmentUrl, { responseType: "blob" });
       const contentType = response.headers["content-type"];
+
       setPreviewData({
         url: URL.createObjectURL(response.data),
         isPdf:
@@ -132,167 +206,261 @@ export default function BrokersPage() {
     }
   };
 
+  const filterButtonClass = (active) =>
+    active
+      ? "border-[#c5983c]/45 bg-[#123f59] text-white shadow-[0_10px_24px_rgba(18,63,89,0.18)]"
+      : "border-[#d8b46a]/25 bg-white text-[#123f59] hover:border-[#c5983c]/45 hover:bg-[#f8efe0]";
+
+  const tabs = [
+    { id: "data", label: "بيانات الوسيط", icon: User },
+    { id: "transactions", label: "المعاملات المرتبطة", icon: FileText },
+    { id: "settlements", label: "تسويات الوسيط", icon: Handshake },
+    { id: "collections", label: "التحصيلات", icon: Wallet },
+    { id: "disbursements", label: "المنصرفات", icon: Receipt },
+    { id: "attachments", label: "المرفقات", icon: Paperclip },
+  ];
+
   return (
     <>
       <div
-        className="p-3 flex flex-col h-full overflow-hidden bg-[var(--wms-bg-0)] font-sans"
+        className="
+          flex h-full flex-col overflow-hidden
+          bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
+          p-4 font-sans md:p-5
+        "
         dir="rtl"
       >
-        {/* Header Toolbar */}
-        <div className="flex items-center gap-3 mb-3 shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-md flex items-center justify-center bg-blue-50 border border-blue-100">
-              <Handshake className="w-4 h-4 text-blue-600" />
+        {/* Header */}
+        <div
+          className="
+            relative mb-4 shrink-0 overflow-hidden rounded-[26px]
+            border border-[#c5983c]/25
+            bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59]
+            p-4 shadow-[0_20px_55px_rgba(18,63,89,0.20)]
+          "
+        >
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-[#c5983c]/18 blur-3xl" />
+            <div className="absolute left-[-80px] bottom-[-80px] h-52 w-52 rounded-full bg-cyan-400/12 blur-3xl" />
+          </div>
+
+          <div className="relative z-10 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                className="
+                  grid h-11 w-11 place-items-center rounded-2xl
+                  border border-white/15 bg-white/10 text-[#e2bf74]
+                  transition hover:bg-white/15
+                "
+                type="button"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#e2bf74] text-[#123f59] shadow-sm">
+                <Handshake className="h-6 w-6" />
+              </div>
+
+              <div>
+                <h2 className="text-xl font-black text-white">
+                  سجل الوسطاء والمسوقين
+                </h2>
+                <p className="mt-1 text-xs font-bold text-white/55">
+                  {brokersList.length} وسيط مسجل في النظام
+                </p>
+              </div>
             </div>
-            <div>
-              <div className="text-[var(--wms-text)] text-[15px] font-bold">
-                سجل الوسطاء والمسوقين
+
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative">
+                <Search className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#c5983c]" />
+
+                <input
+                  type="text"
+                  placeholder="بحث بالاسم أو الجوال..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="
+                    h-11 w-[260px] rounded-2xl border border-white/15
+                    bg-white/10 pr-10 pl-3 text-xs font-bold text-white
+                    outline-none backdrop-blur-xl transition
+                    placeholder:text-white/45
+                    focus:border-[#e2bf74]/60 focus:bg-white/15
+                  "
+                />
               </div>
-              <div className="text-[var(--wms-text-muted)] text-[10px]">
-                {brokersList.length} وسيط مسجل
-              </div>
+
+              <button
+                onClick={() => {
+                  setModalMode("add");
+                  setEditingPerson(null);
+                  setIsAddOpen(true);
+                }}
+                className="
+                  flex h-11 items-center gap-2 rounded-2xl
+                  bg-white px-4 text-xs font-black text-[#123f59]
+                  shadow-[0_12px_30px_rgba(255,255,255,0.14)]
+                  transition hover:-translate-y-[1px] hover:bg-[#fbf8f1]
+                "
+                type="button"
+              >
+                <Plus className="h-4 w-4 text-[#c5983c]" />
+                تسجيل وسيط جديد
+              </button>
             </div>
           </div>
-          <div className="flex-1"></div>
-          <div className="relative">
-            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--wms-text-muted)]" />
-            <input
-              type="text"
-              placeholder="بحث بالاسم أو الجوال..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-[var(--wms-surface-2)] border border-[var(--wms-border)] rounded-md pr-8 pl-3 text-[var(--wms-text)] outline-none w-[220px] h-[32px] text-[12px]"
-            />
-          </div>
-          <button
-            onClick={() => {
-              setModalMode("add");
-              setEditingPerson(null);
-              setIsAddOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-3 rounded-md bg-[var(--wms-accent-blue)] text-white hover:opacity-90 h-[32px] text-[12px] font-semibold shadow-sm"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>تسجيل وسيط جديد</span>
-          </button>
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-1.5 flex-wrap mb-3 shrink-0">
-          <span className="text-[11px] font-bold text-gray-500 ml-2">
+        <div className="mb-4 flex shrink-0 flex-wrap items-center gap-2">
+          <span className="ml-1 text-[11px] font-black text-[#64748b]">
             نوع الاتفاق المالي:
           </span>
+
           <button
             onClick={() => setFilterAgreement("all")}
-            className={`px-2.5 py-1 rounded-md transition-colors text-[11px] font-bold ${filterAgreement === "all" ? "bg-[var(--wms-accent-blue)] text-white" : "bg-[var(--wms-surface-2)] text-[var(--wms-text-sec)]"}`}
+            className={`rounded-2xl border px-3 py-2 text-[11px] font-black transition-all ${filterButtonClass(
+              filterAgreement === "all",
+            )}`}
+            type="button"
           >
             الكل
           </button>
+
           <button
             onClick={() => setFilterAgreement("نسبة")}
-            className={`px-2.5 py-1 rounded-md transition-colors text-[11px] font-bold ${filterAgreement === "نسبة" ? "bg-[var(--wms-accent-blue)] text-white" : "bg-[var(--wms-surface-2)] text-[var(--wms-text-sec)]"}`}
+            className={`rounded-2xl border px-3 py-2 text-[11px] font-black transition-all ${filterButtonClass(
+              filterAgreement === "نسبة",
+            )}`}
+            type="button"
           >
             نسبة مئوية
           </button>
+
           <button
             onClick={() => setFilterAgreement("مبلغ ثابت")}
-            className={`px-2.5 py-1 rounded-md transition-colors text-[11px] font-bold ${filterAgreement === "مبلغ ثابت" ? "bg-[var(--wms-accent-blue)] text-white" : "bg-[var(--wms-surface-2)] text-[var(--wms-text-sec)]"}`}
+            className={`rounded-2xl border px-3 py-2 text-[11px] font-black transition-all ${filterButtonClass(
+              filterAgreement === "مبلغ ثابت",
+            )}`}
+            type="button"
           >
             مبلغ ثابت
           </button>
         </div>
 
         {/* Main Table */}
-        <div className="bg-[var(--wms-surface-1)] border border-[var(--wms-border)] rounded-lg overflow-hidden flex flex-col flex-1 min-h-0 shadow-sm">
-          <div className="overflow-auto custom-scrollbar-slim flex-1">
-            <table className="w-full text-right whitespace-nowrap text-[12px]">
-              <thead className="sticky top-0 z-10 bg-[var(--wms-surface-2)]">
-                <tr className="h-[36px]">
-                  <th className="px-3 text-[var(--wms-text-sec)] font-bold text-[11px]">
+        <div
+          className="
+            min-h-0 flex-1 overflow-hidden rounded-[26px]
+            border border-[#d8b46a]/30 bg-white
+            shadow-[0_18px_45px_rgba(18,63,89,0.10)]
+          "
+        >
+          <div className="custom-scrollbar-slim h-full overflow-auto">
+            <table className="w-full min-w-[880px] text-right text-[12px]">
+              <thead className="sticky top-0 z-10 bg-[#0f3448] text-white">
+                <tr className="h-[44px]">
+                  <th className="border-l border-white/10 px-4 text-[11px] font-black">
                     اسم الوسيط
                   </th>
-                  <th className="px-3 text-[var(--wms-text-sec)] font-bold text-[11px]">
+                  <th className="border-l border-white/10 px-4 text-[11px] font-black">
                     الجوال
                   </th>
-                  <th className="px-3 text-[var(--wms-text-sec)] font-bold text-[11px]">
+                  <th className="border-l border-white/10 px-4 text-[11px] font-black">
                     نوع الاتفاق
                   </th>
-                  <th className="px-3 text-[var(--wms-text-sec)] font-bold text-[11px]">
+                  <th className="border-l border-white/10 px-4 text-[11px] font-black">
                     طرق الدفع
                   </th>
-                  <th className="px-3 text-center text-[var(--wms-text-sec)] font-bold text-[11px]">
+                  <th className="px-4 text-center text-[11px] font-black">
                     إجراءات
                   </th>
                 </tr>
               </thead>
-              <tbody>
+
+              <tbody className="divide-y divide-[#e8ddc8]/70">
                 {isLoading ? (
                   <tr>
-                    <td colSpan="5" className="text-center py-8">
-                      <Loader2 className="w-6 h-6 animate-spin text-blue-500 mx-auto" />
+                    <td colSpan="5" className="py-10 text-center">
+                      <Loader2 className="mx-auto h-7 w-7 animate-spin text-[#c5983c]" />
                     </td>
                   </tr>
                 ) : filteredData.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan="5"
-                      className="text-center py-8 text-gray-500 font-semibold"
-                    >
-                      لا يوجد وسطاء مسجلين
+                    <td colSpan="5" className="py-12 text-center">
+                      <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-3xl border border-[#d8b46a]/35 bg-[#f8efe0] text-[#c5983c]">
+                        <Archive className="h-8 w-8" />
+                      </div>
+                      <p className="text-sm font-black text-[#123f59]">
+                        لا يوجد وسطاء مسجلين
+                      </p>
                     </td>
                   </tr>
                 ) : (
                   filteredData.map((row, idx) => {
-                    let methodsLabel = "—";
-                    if (row.transferMethod) {
-                      try {
-                        const parsed = JSON.parse(row.transferMethod);
-                        if (Array.isArray(parsed) && parsed.length > 0)
-                          methodsLabel = parsed.join(" + ");
-                      } catch (e) {
-                        methodsLabel = row.transferMethod;
-                      }
-                    }
+                    const methodsLabel = getPaymentMethodsLabel(row.transferMethod);
+
                     return (
                       <tr
                         key={row.id}
-                        className={`border-b border-[var(--wms-border)]/30 hover:bg-[var(--wms-surface-2)]/40 transition-colors h-[40px] ${idx % 2 === 1 ? "bg-[var(--wms-row-alt)]" : "bg-transparent"}`}
+                        className={`h-[48px] transition-colors hover:bg-cyan-50/45 ${
+                          idx % 2 === 1 ? "bg-[#fbf8f1]/55" : "bg-white"
+                        }`}
                       >
-                        <td className="px-3 text-[var(--wms-text)] font-bold">
-                          {safeText(row.name)}
-                          {row.role === "وسيط المكتب الهندسي" && (
-                            <span className="mr-2 text-[9px] bg-cyan-100 text-cyan-700 px-1.5 py-0.5 rounded">
-                              مكتب هندسي
+                        <td className="border-l border-[#e8ddc8]/70 px-4">
+                          <div className="flex items-center gap-2">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-[#123f59] text-white">
+                              <User className="h-4 w-4 text-[#e2bf74]" />
                             </span>
-                          )}
+
+                            <div className="min-w-0">
+                              <div className="truncate text-[12px] font-black text-[#123f59]">
+                                {safeText(row.name)}
+                              </div>
+
+                              {row.role === "وسيط المكتب الهندسي" && (
+                                <span className="mt-1 inline-block rounded-xl border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[9px] font-black text-cyan-700">
+                                  مكتب هندسي
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </td>
+
                         <td
-                          className="px-3 text-[var(--wms-text-sec)] font-mono text-[11px] font-bold"
+                          className="border-l border-[#e8ddc8]/70 px-4 font-mono text-[11px] font-black text-[#334155]"
                           dir="ltr"
                         >
                           {safeText(row.phone)}
                         </td>
-                        <td className="px-3 text-[var(--wms-text-muted)] text-[10px] font-semibold">
-                          {safeText(row.agreementType)}
+
+                        <td className="border-l border-[#e8ddc8]/70 px-4">
+                          <span className="rounded-xl border border-[#d8b46a]/35 bg-[#f8efe0] px-2.5 py-1 text-[10px] font-black text-[#123f59]">
+                            {safeText(row.agreementType)}
+                          </span>
                         </td>
+
                         <td
-                          className="px-3 text-blue-600 text-[10px] font-bold truncate max-w-[150px]"
+                          className="max-w-[180px] truncate border-l border-[#e8ddc8]/70 px-4 text-[10px] font-black text-cyan-700"
                           title={methodsLabel}
                         >
                           {methodsLabel}
                         </td>
-                        <td className="px-3 text-center">
-                          <div className="flex items-center justify-center gap-2">
+
+                        <td className="px-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
                             <button
                               onClick={() => {
                                 setSelectedPerson(row);
                                 setActiveTab("data");
                               }}
-                              className="text-blue-500 hover:bg-blue-50 p-1.5 rounded transition-colors"
+                              className="grid h-8 w-8 place-items-center rounded-xl bg-cyan-50 text-cyan-700 transition hover:bg-cyan-600 hover:text-white"
                               title="عرض التفاصيل"
+                              type="button"
                             >
-                              <Eye className="w-4 h-4" />
+                              <Eye className="h-4 w-4" />
                             </button>
+
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -300,21 +468,25 @@ export default function BrokersPage() {
                                 setEditingPerson(row);
                                 setIsAddOpen(true);
                               }}
-                              className="text-amber-500 hover:bg-amber-50 p-1.5 rounded transition-colors"
+                              className="grid h-8 w-8 place-items-center rounded-xl bg-amber-50 text-amber-600 transition hover:bg-amber-500 hover:text-white"
                               title="تعديل"
+                              type="button"
                             >
-                              <Edit3 className="w-4 h-4" />
+                              <Edit3 className="h-4 w-4" />
                             </button>
+
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (window.confirm("متأكد من حذف الوسيط؟"))
+                                if (window.confirm("متأكد من حذف الوسيط؟")) {
                                   deleteMutation.mutate(row.id);
+                                }
                               }}
-                              className="text-red-500 hover:bg-red-50 p-1.5 rounded transition-colors"
+                              className="grid h-8 w-8 place-items-center rounded-xl bg-rose-50 text-rose-600 transition hover:bg-rose-500 hover:text-white"
                               title="حذف"
+                              type="button"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </td>
@@ -331,421 +503,310 @@ export default function BrokersPage() {
       {isAddOpen && (
         <AddPersonModal
           type="وسيط"
-          mode={modalMode} // "add" أو "edit"
+          mode={modalMode}
           personData={editingPerson}
           onClose={() => setIsAddOpen(false)}
         />
       )}
 
-      {/* ========================================== */}
-      {/* 🌟 2. Details Modal */}
-      {/* ========================================== */}
+      {/* Details Modal */}
       {selectedPerson && (
         <div
-          className="fixed inset-0 z-[50] flex items-center justify-center bg-black/60 p-4 animate-in fade-in"
+          className="fixed inset-0 z-[50] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm animate-in fade-in"
           dir="rtl"
           onClick={() => setSelectedPerson(null)}
         >
           <div
-            className="bg-white border border-gray-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden w-full max-w-5xl h-[85vh]"
+            className="
+              flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden
+              rounded-[30px] border border-[#d8b46a]/30 bg-white
+              shadow-[0_28px_80px_rgba(15,23,42,0.34)]
+            "
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0 bg-gray-50/80">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-[18px] shadow-sm bg-blue-600 text-white">
-                  {safeText(selectedPerson.name).charAt(0)}
-                </div>
-                <div>
-                  <div className="text-gray-800 text-[18px] font-black">
-                    {safeText(selectedPerson.name)}
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold border bg-blue-50 text-blue-700 border-blue-700">
-                      {safeText(selectedPerson.role)}
-                    </span>
-                    <span className="text-gray-400 font-mono text-[11px] font-bold">
-                      {safeText(selectedPerson.personCode)}
-                    </span>
-                  </div>
-                </div>
+            {/* Modal Header */}
+            <div className="relative shrink-0 overflow-hidden bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59] px-6 py-5 text-white">
+              <div className="pointer-events-none absolute inset-0">
+                <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-[#c5983c]/18 blur-3xl" />
+                <div className="absolute left-[-80px] bottom-[-80px] h-52 w-52 rounded-full bg-cyan-400/12 blur-3xl" />
               </div>
-              <button
-                onClick={() => setSelectedPerson(null)}
-                className="text-gray-400 hover:text-red-500 bg-white p-2 rounded-md border shadow-sm transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            {/* Tabs Navigation */}
-            <div className="flex border-b border-gray-200 overflow-x-auto custom-scrollbar-slim bg-white shrink-0">
-              {[
-                { id: "data", label: "بيانات الوسيط", icon: User },
-                {
-                  id: "transactions",
-                  label: "المعاملات المرتبطة",
-                  icon: FileText,
-                },
-                { id: "settlements", label: "تسويات الوسيط", icon: Handshake },
-                { id: "collections", label: "التحصيلات", icon: Wallet },
-                { id: "disbursements", label: "المنصرفات", icon: Receipt },
-                { id: "attachments", label: "المرفقات", icon: Paperclip },
-              ].map((tab) => (
+              <div className="relative z-10 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="grid h-14 w-14 place-items-center rounded-3xl bg-[#e2bf74] text-[#123f59] shadow-sm">
+                    <span className="text-xl font-black">
+                      {safeText(selectedPerson.name).charAt(0)}
+                    </span>
+                  </div>
+
+                  <div>
+                    <div className="text-xl font-black">
+                      {safeText(selectedPerson.name)}
+                    </div>
+
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="rounded-xl border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-black text-[#e2bf74]">
+                        {safeText(selectedPerson.role)}
+                      </span>
+
+                      <span className="font-mono text-[11px] font-bold text-white/55">
+                        {safeText(selectedPerson.personCode)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-6 py-3.5 whitespace-nowrap cursor-pointer transition-all text-xs font-bold border-b-2 ${activeTab === tab.id ? "text-blue-600 border-blue-600 bg-blue-50/30" : "text-gray-500 border-transparent hover:text-gray-800 hover:bg-gray-50"}`}
+                  onClick={() => setSelectedPerson(null)}
+                  className="grid h-10 w-10 place-items-center rounded-2xl bg-white/10 text-white transition hover:bg-rose-500"
+                  type="button"
                 >
-                  <tab.icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
+                  <X className="h-5 w-5" />
                 </button>
-              ))}
+              </div>
             </div>
 
-            {/* Tabs Content */}
-            <div className="flex-1 overflow-y-auto p-6 bg-gray-50/50 relative">
-              {/* TAB 1: Data */}
+            {/* Tabs */}
+            <div className="custom-scrollbar-slim flex shrink-0 overflow-x-auto border-b border-[#e8ddc8] bg-[#fbf8f1] px-2">
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 border-b-2 px-5 py-3.5 text-xs font-black transition-all ${
+                      isActive
+                        ? "border-[#c5983c] text-[#123f59]"
+                        : "border-transparent text-[#64748b] hover:bg-white hover:text-[#123f59]"
+                    }`}
+                    type="button"
+                  >
+                    <tab.icon className="h-4 w-4" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Content */}
+            <div className="custom-scrollbar-slim relative flex-1 overflow-y-auto bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white p-6">
               {activeTab === "data" && (
                 <div className="space-y-6 animate-in fade-in">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                      <div className="text-gray-400 text-[10px] font-bold mb-1 uppercase">
-                        رقم التواصل
-                      </div>
-                      <div
-                        className="text-[14px] font-mono text-gray-800 font-bold"
-                        dir="ltr"
-                      >
-                        {safeText(selectedPerson.phone)}
-                      </div>
-                    </div>
-                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                      <div className="text-gray-400 text-[10px] font-bold mb-1 uppercase">
-                        نوع الاتفاق
-                      </div>
-                      <div className="text-[14px] font-bold text-gray-800">
-                        {safeText(selectedPerson.agreementType)}
-                      </div>
-                    </div>
-                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                      <div className="text-gray-400 text-[10px] font-bold mb-1 uppercase">
-                        الدولة
-                      </div>
-                      <div className="text-[14px] font-bold text-gray-800">
-                        {safeText(selectedPerson.country) || "غير محدد"}
-                      </div>
-                    </div>
-                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                      <div className="text-gray-400 text-[10px] font-bold mb-1 uppercase">
-                        رقم الهوية
-                      </div>
-                      <div className="text-[14px] font-mono font-bold text-gray-800">
-                        {safeText(selectedPerson.idNumber) || "غير محدد"}
-                      </div>
-                    </div>
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                    <DataCard
+                      label="رقم التواصل"
+                      value={selectedPerson.phone}
+                      icon={Phone}
+                      tone="blue"
+                      dir="ltr"
+                    />
+
+                    <DataCard
+                      label="نوع الاتفاق"
+                      value={selectedPerson.agreementType}
+                      icon={Handshake}
+                      tone="gold"
+                    />
+
+                    <DataCard
+                      label="الدولة"
+                      value={selectedPerson.country || "غير محدد"}
+                      icon={Globe}
+                      tone="emerald"
+                    />
+
+                    <DataCard
+                      label="رقم الهوية"
+                      value={selectedPerson.idNumber || "غير محدد"}
+                      icon={ShieldCheck}
+                      tone="blue"
+                      dir="ltr"
+                    />
                   </div>
 
-                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                    <div className="text-gray-400 text-[10px] font-bold mb-2 uppercase">
-                      طرق الدفع والاستلام المفضلة
+                  <div className="rounded-2xl border border-[#d8b46a]/35 bg-white p-5 shadow-sm">
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className="grid h-9 w-9 place-items-center rounded-2xl bg-[#f8efe0] text-[#c5983c]">
+                        <Banknote className="h-4 w-4" />
+                      </span>
+
+                      <div>
+                        <div className="text-xs font-black text-[#123f59]">
+                          طرق الدفع والاستلام المفضلة
+                        </div>
+
+                        <div className="mt-1 text-sm font-black text-cyan-700">
+                          {selectedPerson.transferMethod
+                            ? selectedPerson.transferMethod
+                                .replace(/[\[\]"]/g, "")
+                                .replace(/,/g, " + ")
+                            : "غير محدد"}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-[13px] font-bold text-blue-600">
-                      {selectedPerson.transferMethod
-                        ? selectedPerson.transferMethod
-                            .replace(/[\[\]"]/g, "")
-                            .replace(/,/g, " + ")
-                        : "غير محدد"}
-                    </div>
+
                     {selectedPerson.transferDetails &&
-                      Object.keys(selectedPerson.transferDetails).length >
-                        0 && (
+                      Object.keys(selectedPerson.transferDetails).length > 0 && (
                         <pre
-                          className="mt-3 bg-gray-50 p-3 rounded-lg border border-gray-100 text-xs text-gray-700 font-mono"
+                          className="mt-3 rounded-2xl border border-[#e8ddc8] bg-[#fbf8f1] p-4 font-mono text-xs font-bold text-[#334155]"
                           dir="ltr"
                         >
-                          {JSON.stringify(
-                            selectedPerson.transferDetails,
-                            null,
-                            2,
-                          )}
+                          {JSON.stringify(selectedPerson.transferDetails, null, 2)}
                         </pre>
                       )}
                   </div>
 
-                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                    <div className="text-gray-400 text-[10px] font-bold mb-2 uppercase">
+                  <div className="rounded-2xl border border-[#d8b46a]/35 bg-white p-5 shadow-sm">
+                    <div className="mb-2 text-xs font-black text-[#123f59]">
                       ملاحظات مسجلة
                     </div>
-                    <div className="text-[13px] whitespace-pre-wrap text-gray-700 leading-relaxed font-semibold">
+
+                    <div className="whitespace-pre-wrap text-sm font-semibold leading-relaxed text-[#334155]">
                       {selectedPerson.notes || "لا توجد ملاحظات."}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* TAB 2: Transactions */}
               {activeTab === "transactions" && (
-                <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-in fade-in">
-                  <table className="w-full text-right text-xs">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          المرجع
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          النوع
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          الدور
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          الأتعاب
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          التاريخ
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {!selectedPerson.brokeredTransactions &&
-                      !selectedPerson.assignedBrokers ? (
-                        <tr>
-                          <td
-                            colSpan="5"
-                            className="text-center py-8 text-gray-400 font-bold"
-                          >
-                            لا توجد معاملات مرتبطة
-                          </td>
-                        </tr>
-                      ) : (
-                        <>
-                          {selectedPerson.brokeredTransactions?.map((tx) => (
-                            <tr
-                              key={tx.id}
-                              className="border-b border-gray-100 hover:bg-gray-50"
-                            >
-                              <td className="px-4 py-3 font-mono text-blue-600 font-bold">
-                                {tx.transactionCode}
-                              </td>
-                              <td className="px-4 py-3 text-gray-700 font-bold">
-                                {tx.category || "عامة"}
-                              </td>
-                              <td className="px-4 py-3 text-gray-500 font-bold">
-                                مسوق أساسي
-                              </td>
-                              <td className="px-4 py-3 text-gray-700 font-bold">
-                                —
-                              </td>
-                              <td className="px-4 py-3 text-gray-500 font-mono">
-                                {new Date(tx.createdAt).toLocaleDateString(
-                                  "ar-SA",
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                <SimpleTable
+                  columns={["المرجع", "النوع", "الدور", "الأتعاب", "التاريخ"]}
+                  emptyText="لا توجد معاملات مرتبطة"
+                  rows={selectedPerson.brokeredTransactions}
+                  renderRow={(tx) => (
+                    <tr
+                      key={tx.id}
+                      className="border-b border-[#e8ddc8]/70 bg-white hover:bg-cyan-50/45"
+                    >
+                      <td className="px-4 py-3 font-mono font-black text-cyan-700">
+                        {tx.transactionCode}
+                      </td>
+                      <td className="px-4 py-3 font-bold text-[#334155]">
+                        {tx.category || "عامة"}
+                      </td>
+                      <td className="px-4 py-3 font-bold text-[#64748b]">
+                        مسوق أساسي
+                      </td>
+                      <td className="px-4 py-3 font-bold text-[#64748b]">
+                        —
+                      </td>
+                      <td className="px-4 py-3 font-mono text-[#64748b]">
+                        {new Date(tx.createdAt).toLocaleDateString("ar-SA")}
+                      </td>
+                    </tr>
+                  )}
+                />
               )}
 
-              {/* TAB 3: Settlements */}
               {activeTab === "settlements" && (
-                <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-in fade-in">
-                  <table className="w-full text-right text-xs">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          التاريخ
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          المبلغ
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          المصدر
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          الحالة
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {!selectedPerson.settlementsTarget ||
-                      selectedPerson.settlementsTarget.length === 0 ? (
-                        <tr>
-                          <td
-                            colSpan="4"
-                            className="text-center py-8 text-gray-400 font-bold"
-                          >
-                            لا توجد تسويات مالية
-                          </td>
-                        </tr>
-                      ) : (
-                        selectedPerson.settlementsTarget.map((s) => (
-                          <tr
-                            key={s.id}
-                            className="border-b border-gray-100 hover:bg-gray-50"
-                          >
-                            <td className="px-4 py-3 font-mono text-gray-500">
-                              {new Date(s.createdAt).toLocaleDateString(
-                                "ar-SA",
-                              )}
-                            </td>
-                            <td className="px-4 py-3 font-mono font-bold text-green-600">
-                              {s.amount.toLocaleString()} ر.س
-                            </td>
-                            <td className="px-4 py-3 text-gray-700 font-bold">
-                              {s.source}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-[10px] font-bold">
-                                {s.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                <SimpleTable
+                  columns={["التاريخ", "المبلغ", "المصدر", "الحالة"]}
+                  emptyText="لا توجد تسويات مالية"
+                  rows={selectedPerson.settlementsTarget}
+                  renderRow={(s) => (
+                    <tr
+                      key={s.id}
+                      className="border-b border-[#e8ddc8]/70 bg-white hover:bg-cyan-50/45"
+                    >
+                      <td className="px-4 py-3 font-mono text-[#64748b]">
+                        {new Date(s.createdAt).toLocaleDateString("ar-SA")}
+                      </td>
+                      <td className="px-4 py-3 font-mono font-black text-emerald-700">
+                        {maskAmount
+                          ? maskAmount(s.amount)
+                          : `${s.amount.toLocaleString()} ر.س`}
+                      </td>
+                      <td className="px-4 py-3 font-bold text-[#334155]">
+                        {s.source}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="rounded-xl bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-700">
+                          {s.status}
+                        </span>
+                      </td>
+                    </tr>
+                  )}
+                />
               )}
 
-              {/* TAB 4: Collections */}
               {activeTab === "collections" && (
-                <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-in fade-in">
-                  <table className="w-full text-right text-xs">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          التاريخ
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          المبلغ
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          المرجع
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          الطريقة
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {!selectedPerson.paymentsCollected ||
-                      selectedPerson.paymentsCollected.length === 0 ? (
-                        <tr>
-                          <td
-                            colSpan="4"
-                            className="text-center py-8 text-gray-400 font-bold"
-                          >
-                            لا توجد تحصيلات مسجلة
-                          </td>
-                        </tr>
-                      ) : (
-                        selectedPerson.paymentsCollected.map((p) => (
-                          <tr
-                            key={p.id}
-                            className="border-b border-gray-100 hover:bg-gray-50"
-                          >
-                            <td className="px-4 py-3 font-mono text-gray-500">
-                              {new Date(p.date).toLocaleDateString("ar-SA")}
-                            </td>
-                            <td className="px-4 py-3 font-mono font-bold text-blue-600">
-                              {p.amount.toLocaleString()} ر.س
-                            </td>
-                            <td className="px-4 py-3 text-gray-700 font-bold">
-                              {p.periodRef || "—"}
-                            </td>
-                            <td className="px-4 py-3 text-gray-500 font-bold">
-                              {p.method}
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                <SimpleTable
+                  columns={["التاريخ", "المبلغ", "المرجع", "الطريقة"]}
+                  emptyText="لا توجد تحصيلات مسجلة"
+                  rows={selectedPerson.paymentsCollected}
+                  renderRow={(p) => (
+                    <tr
+                      key={p.id}
+                      className="border-b border-[#e8ddc8]/70 bg-white hover:bg-cyan-50/45"
+                    >
+                      <td className="px-4 py-3 font-mono text-[#64748b]">
+                        {new Date(p.date).toLocaleDateString("ar-SA")}
+                      </td>
+                      <td className="px-4 py-3 font-mono font-black text-cyan-700">
+                        {maskAmount
+                          ? maskAmount(p.amount)
+                          : `${p.amount.toLocaleString()} ر.س`}
+                      </td>
+                      <td className="px-4 py-3 font-bold text-[#334155]">
+                        {p.periodRef || "—"}
+                      </td>
+                      <td className="px-4 py-3 font-bold text-[#64748b]">
+                        {p.method}
+                      </td>
+                    </tr>
+                  )}
+                />
               )}
 
-              {/* TAB 5: Disbursements */}
               {activeTab === "disbursements" && (
-                <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-in fade-in">
-                  <table className="w-full text-right text-xs">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          التاريخ
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          المبلغ
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          السبب/النوع
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          ملاحظات
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {!selectedPerson.disbursements ||
-                      selectedPerson.disbursements.length === 0 ? (
-                        <tr>
-                          <td
-                            colSpan="4"
-                            className="text-center py-8 text-gray-400 font-bold"
-                          >
-                            لا توجد منصرفات أو سلف
-                          </td>
-                        </tr>
-                      ) : (
-                        selectedPerson.disbursements.map((d) => (
-                          <tr
-                            key={d.id}
-                            className="border-b border-gray-100 hover:bg-gray-50"
-                          >
-                            <td className="px-4 py-3 font-mono text-gray-500">
-                              {new Date(d.date).toLocaleDateString("ar-SA")}
-                            </td>
-                            <td className="px-4 py-3 font-mono font-bold text-red-600">
-                              {d.amount.toLocaleString()} ر.س
-                            </td>
-                            <td className="px-4 py-3 text-gray-700 font-bold">
-                              {d.type}
-                            </td>
-                            <td className="px-4 py-3 text-gray-500 font-semibold">
-                              {d.notes}
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                <SimpleTable
+                  columns={["التاريخ", "المبلغ", "السبب/النوع", "ملاحظات"]}
+                  emptyText="لا توجد منصرفات أو سلف"
+                  rows={selectedPerson.disbursements}
+                  renderRow={(d) => (
+                    <tr
+                      key={d.id}
+                      className="border-b border-[#e8ddc8]/70 bg-white hover:bg-cyan-50/45"
+                    >
+                      <td className="px-4 py-3 font-mono text-[#64748b]">
+                        {new Date(d.date).toLocaleDateString("ar-SA")}
+                      </td>
+                      <td className="px-4 py-3 font-mono font-black text-rose-600">
+                        {maskAmount
+                          ? maskAmount(d.amount)
+                          : `${d.amount.toLocaleString()} ر.س`}
+                      </td>
+                      <td className="px-4 py-3 font-bold text-[#334155]">
+                        {d.type}
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-[#64748b]">
+                        {d.notes}
+                      </td>
+                    </tr>
+                  )}
+                />
               )}
 
-              {/* TAB 6: Attachments */}
               {activeTab === "attachments" && (
                 <div className="space-y-4 animate-in fade-in">
-                  <div className="bg-white border border-gray-200 p-5 rounded-xl shadow-sm flex items-center justify-between">
+                  <div className="flex items-center justify-between rounded-2xl border border-[#d8b46a]/35 bg-white p-5 shadow-sm">
                     <div>
-                      <h3 className="text-gray-800 font-black text-sm">
+                      <h3 className="text-sm font-black text-[#123f59]">
                         مرفقات ووثائق الشخص
                       </h3>
-                      <p className="text-gray-500 text-xs font-semibold mt-1">
+                      <p className="mt-1 text-xs font-semibold text-[#64748b]">
                         يمكنك عرض الملفات المرفقة أو حذفها من هنا.
                       </p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                     {!selectedPerson.attachments ||
                     selectedPerson.attachments.length === 0 ? (
-                      <div className="col-span-full text-center py-10 bg-white border border-dashed border-gray-300 rounded-xl">
-                        <Archive className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                        <span className="text-gray-400 font-bold text-sm">
+                      <div className="col-span-full rounded-2xl border border-dashed border-[#d8b46a]/45 bg-white py-12 text-center">
+                        <Archive className="mx-auto mb-2 h-10 w-10 text-[#c5983c]/50" />
+                        <span className="text-sm font-black text-[#64748b]">
                           لا توجد مرفقات محفوظة
                         </span>
                       </div>
@@ -753,35 +814,41 @@ export default function BrokersPage() {
                       selectedPerson.attachments.map((file, i) => (
                         <div
                           key={i}
-                          className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col items-center text-center group hover:border-blue-300 transition-colors"
+                          className="group flex flex-col items-center rounded-2xl border border-[#d8b46a]/35 bg-white p-4 text-center shadow-sm transition hover:border-[#c5983c]/55"
                         >
-                          <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center mb-3 text-blue-500">
-                            <FileText className="w-6 h-6" />
+                          <div className="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-[#f8efe0] text-[#c5983c]">
+                            <FileText className="h-6 w-6" />
                           </div>
+
                           <span
-                            className="text-xs font-bold text-gray-700 truncate w-full mb-3"
+                            className="mb-3 w-full truncate text-xs font-black text-[#334155]"
                             title={file.name}
                           >
                             {file.name}
                           </span>
-                          <div className="flex items-center gap-2 w-full">
+
+                          <div className="flex w-full items-center gap-2">
                             <button
                               onClick={(e) => handleViewAttachment(e, file.url)}
-                              className="flex-1 bg-blue-50 text-blue-600 py-1.5 rounded-md text-[10px] font-bold hover:bg-blue-600 hover:text-white transition-colors"
+                              className="flex-1 rounded-xl bg-cyan-50 py-1.5 text-[10px] font-black text-cyan-700 transition hover:bg-cyan-600 hover:text-white"
+                              type="button"
                             >
                               معاينة
                             </button>
+
                             <button
                               onClick={() => {
-                                if (window.confirm("هل تريد حذف المرفق؟"))
+                                if (window.confirm("هل تريد حذف المرفق؟")) {
                                   removeAttachmentMutation.mutate({
                                     id: selectedPerson.id,
                                     fileUrl: file.url,
                                   });
+                                }
                               }}
-                              className="p-1.5 bg-red-50 text-red-500 rounded-md hover:bg-red-500 hover:text-white transition-colors"
+                              className="rounded-xl bg-rose-50 p-1.5 text-rose-500 transition hover:bg-rose-500 hover:text-white"
+                              type="button"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>
@@ -795,55 +862,73 @@ export default function BrokersPage() {
         </div>
       )}
 
-      {/* Modal: Preview File */}
+      {/* Loading Preview */}
+      {isPreviewLoading && (
+        <div className="fixed inset-0 z-[160] grid place-items-center bg-black/45 backdrop-blur-sm">
+          <div className="rounded-2xl bg-white px-5 py-4 shadow-xl">
+            <Loader2 className="mx-auto h-7 w-7 animate-spin text-[#c5983c]" />
+            <p className="mt-2 text-xs font-black text-[#123f59]">
+              جاري تحميل المرفق...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Preview File */}
       {previewData && (
         <div
-          className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 animate-in fade-in"
+          className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in"
           dir="rtl"
           onClick={closePreview}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden w-full max-w-5xl h-[90vh]"
+            className="
+              flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden
+              rounded-[28px] bg-white shadow-2xl
+            "
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0 bg-gray-50">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#e8ddc8] bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59] px-6 py-4 text-white">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Eye className="w-4 h-4 text-blue-600" />
+                <div className="grid h-9 w-9 place-items-center rounded-2xl bg-[#e2bf74] text-[#123f59]">
+                  <Eye className="h-4 w-4" />
                 </div>
-                <span className="text-gray-800 font-bold text-[16px]">
-                  معاينة المستند
-                </span>
+
+                <span className="text-base font-black">معاينة المستند</span>
               </div>
+
               <div className="flex gap-2">
                 <a
                   href={previewData.url}
                   download
-                  className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 text-gray-700 transition-colors"
+                  className="grid h-9 w-9 place-items-center rounded-2xl bg-white/10 text-white transition hover:bg-white/15"
                   title="تحميل"
                 >
-                  <Download className="w-5 h-5" />
+                  <Download className="h-5 w-5" />
                 </a>
+
                 <button
                   onClick={closePreview}
-                  className="text-gray-500 hover:text-red-500 bg-white border border-gray-200 shadow-sm p-2 rounded-lg transition-colors"
+                  className="grid h-9 w-9 place-items-center rounded-2xl bg-white/10 text-white transition hover:bg-rose-500"
+                  type="button"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
-            <div className="flex-1 bg-gray-200 p-6 flex items-center justify-center overflow-hidden">
+
+            <div className="flex flex-1 items-center justify-center overflow-hidden bg-[#eef7f6] p-6">
               {previewData.isPdf ? (
                 <iframe
                   src={previewData.url}
-                  className="w-full h-full rounded-xl border border-gray-300 shadow-lg bg-white"
+                  className="h-full w-full rounded-2xl border border-[#d8b46a]/35 bg-white shadow-lg"
                   title="PDF Preview"
                 />
               ) : (
                 <img
                   src={previewData.url}
                   alt="مرفق"
-                  className="max-w-full max-h-full rounded-xl shadow-lg border border-gray-300 object-contain bg-white"
+                  className="max-h-full max-w-full rounded-2xl border border-[#d8b46a]/35 bg-white object-contain shadow-lg"
                 />
               )}
             </div>
@@ -853,3 +938,38 @@ export default function BrokersPage() {
     </>
   );
 }
+
+const SimpleTable = ({ columns, rows, emptyText, renderRow }) => {
+  const safeRows = Array.isArray(rows) ? rows : [];
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[#d8b46a]/35 bg-white shadow-sm animate-in fade-in">
+      <table className="w-full text-right text-xs">
+        <thead className="bg-[#0f3448] text-white">
+          <tr>
+            {columns.map((col) => (
+              <th key={col} className="px-4 py-3 font-black">
+                {col}
+              </th>
+            ))}
+          </tr>
+        </thead>
+
+        <tbody>
+          {safeRows.length === 0 ? (
+            <tr>
+              <td
+                colSpan={columns.length}
+                className="py-10 text-center text-sm font-black text-[#64748b]"
+              >
+                {emptyText}
+              </td>
+            </tr>
+          ) : (
+            safeRows.map(renderRow)
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+};

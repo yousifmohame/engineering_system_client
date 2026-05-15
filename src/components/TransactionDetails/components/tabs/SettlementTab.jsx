@@ -7,6 +7,15 @@ import {
   User,
   Handshake,
   Monitor,
+  Scale,
+  Banknote,
+  TrendingUp,
+  Receipt,
+  ShieldCheck,
+  Circle,
+  Wallet,
+  Activity,
+  ArrowLeft,
 } from "lucide-react";
 
 export const SettlementTab = ({
@@ -21,828 +30,741 @@ export const SettlementTab = ({
   safeNum,
   setActiveTab,
 }) => {
+  const deliveredSettlements =
+    tx.settlements
+      ?.filter((s) => s.status === "DELIVERED")
+      .reduce((sum, s) => sum + safeNum(s.amount), 0) || 0;
+
+  const remainingToSettle = Math.max(0, safeNum(totalCosts) - deliveredSettlements);
+
+  const settlementProgress =
+    safeNum(totalCosts) > 0
+      ? Math.min(100, (deliveredSettlements / safeNum(totalCosts)) * 100)
+      : 0;
+
+  const brokersPaid =
+    tx.settlements
+      ?.filter((s) => s.targetType === "وسيط" && s.status === "DELIVERED")
+      .reduce((sum, s) => sum + safeNum(s.amount), 0) || 0;
+
+  const agentsPaid =
+    tx.settlements
+      ?.filter((s) => s.targetType === "معقب" && s.status === "DELIVERED")
+      .reduce((sum, s) => sum + safeNum(s.amount), 0) || 0;
+
+  const remotePaid =
+    tx.remoteTasks
+      ?.filter((t) => t.isPaid)
+      .reduce((sum, t) => sum + safeNum(t.cost), 0) || 0;
+
   return (
     <div
-      className="flex-1 overflow-y-auto custom-scrollbar-slim p-3 animate-in fade-in"
-      style={{ minHeight: "0px" }}
+      className="
+        min-h-full space-y-5 p-4 pb-10 md:p-5
+        bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
+        animate-in fade-in
+      "
+      dir="rtl"
     >
-      <div className="space-y-2.5">
-        {/* 1. Header Stats */}
-        <div className="grid grid-cols-4 gap-1.5">
-          <div
-            className="p-2 rounded-md"
-            style={{ backgroundColor: "var(--wms-surface-2)" }}
-          >
-            <div className="text-gray-500" style={{ fontSize: "9px" }}>
-              السعر المتفق الإجمالي
-            </div>
+      {/* Header */}
+      <div
+        className="
+          relative overflow-hidden rounded-[28px]
+          border border-[#d8b46a]/30
+          bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59]
+          p-5 shadow-[0_20px_55px_rgba(18,63,89,0.20)]
+        "
+      >
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-[#c5983c]/18 blur-3xl" />
+          <div className="absolute left-[-80px] bottom-[-80px] h-52 w-52 rounded-full bg-emerald-400/12 blur-3xl" />
+        </div>
+
+        <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-4">
             <div
-              className="font-mono mt-0.5 text-gray-800"
-              style={{ fontSize: "14px", fontWeight: 700 }}
+              className="
+                grid h-14 w-14 place-items-center rounded-3xl
+                bg-[#e2bf74] text-[#123f59]
+                shadow-[0_12px_24px_rgba(0,0,0,0.18)]
+              "
             >
-              {totalFees.toLocaleString()}{" "}
-              <span style={{ fontSize: "9px", fontWeight: 400 }}>ر.س</span>
+              <Scale className="h-7 w-7" />
+            </div>
+
+            <div>
+              <h2 className="text-lg font-black text-white">
+                التسوية الشاملة للمعاملة
+              </h2>
+
+              <p className="mt-1 text-xs font-bold text-white/55">
+                مراجعة التكاليف، المدفوعات، المتبقي، ثم اعتماد التسوية النهائية.
+              </p>
             </div>
           </div>
+
           <div
-            className="p-2 rounded-md"
-            style={{ backgroundColor: "rgba(239, 68, 68, 0.06)" }}
+            className="
+              flex w-max items-center gap-2 rounded-2xl
+              border border-white/15 bg-white/10
+              px-4 py-3 backdrop-blur-md
+            "
           >
-            <div className="text-gray-500" style={{ fontSize: "9px" }}>
-              إجمالي التكاليف
-            </div>
-            <div
-              className="font-mono mt-0.5 text-red-600"
-              style={{ fontSize: "14px", fontWeight: 700 }}
+            <span
+              className="
+                grid h-10 w-10 place-items-center rounded-2xl
+                bg-[#e2bf74]/15 text-[#e2bf74]
+              "
             >
-              {totalCosts.toLocaleString()}{" "}
-              <span style={{ fontSize: "9px", fontWeight: 400 }}>ر.س</span>
-            </div>
-          </div>
-          <div
-            className="p-2 rounded-md"
-            style={{ backgroundColor: "rgba(34, 197, 94, 0.06)" }}
-          >
-            <div className="text-gray-500" style={{ fontSize: "9px" }}>
-              ربح تقديري
-            </div>
-            <div
-              className="font-mono mt-0.5 text-green-600"
-              style={{ fontSize: "14px", fontWeight: 700 }}
-            >
-              {estimatedProfit.toLocaleString()}{" "}
-              <span style={{ fontSize: "9px", fontWeight: 400 }}>ر.س</span>
-            </div>
-          </div>
-          <div
-            className="p-2 rounded-md"
-            style={{ backgroundColor: "rgba(34, 197, 94, 0.1)" }}
-          >
-            <div className="text-gray-500" style={{ fontSize: "9px" }}>
-              صافي قابل للتسوية
-            </div>
-            <div
-              className="font-mono mt-0.5 text-green-600"
-              style={{ fontSize: "16px", fontWeight: 700 }}
-            >
-              {distributableProfit.toLocaleString()}{" "}
-              <span style={{ fontSize: "9px", fontWeight: 400 }}>ر.س</span>
+              <ShieldCheck className="h-5 w-5" />
+            </span>
+
+            <div>
+              <div className="text-[10px] font-black text-white/55">
+                المتبقي للتسوية
+              </div>
+
+              <div className="font-mono text-base font-black text-white">
+                {remainingToSettle.toLocaleString()} ر.س
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* 2. Progress Bar */}
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <SummaryCard
+          label="السعر المتفق الإجمالي"
+          value={totalFees}
+          icon={Banknote}
+          tone="blue"
+        />
+
+        <SummaryCard
+          label="إجمالي التكاليف"
+          value={totalCosts}
+          icon={Receipt}
+          tone="rose"
+        />
+
+        <SummaryCard
+          label="الربح التقديري"
+          value={estimatedProfit}
+          icon={TrendingUp}
+          tone="emerald"
+        />
+
+        <SummaryCard
+          label="صافي قابل للتسوية"
+          value={distributableProfit}
+          icon={Wallet}
+          tone="gold"
+        />
+      </div>
+
+      {/* Progress */}
+      <div
+        className="
+          overflow-hidden rounded-[28px]
+          border border-[#d8b46a]/30 bg-white
+          shadow-[0_18px_45px_rgba(18,63,89,0.10)]
+        "
+      >
         <div
-          className="flex items-center gap-2 px-1"
-          style={{ fontSize: "10px" }}
+          className="
+            flex items-center justify-between
+            border-b border-[#e8ddc8]
+            bg-gradient-to-l from-[#f8efe0] via-white to-[#eef7f6]
+            px-5 py-4
+          "
         >
-          <span className="text-gray-500 font-bold">تقدم التسوية:</span>
-          <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all bg-amber-500"
-              style={{
-                width: `${totalCosts > 0 ? ((totalCosts - (tx.settlements?.filter((s) => s.status === "DELIVERED").reduce((a, b) => a + b.amount, 0) || 0)) / totalCosts) * 100 : 0}%`,
-              }}
-            ></div>
-          </div>
+          <h3 className="flex items-center gap-2 text-xs font-black text-[#123f59]">
+            <span
+              className="
+                grid h-9 w-9 place-items-center rounded-2xl
+                bg-[#123f59] text-[#e2bf74]
+              "
+            >
+              <Activity className="h-4 w-4" />
+            </span>
+            تقدم التسوية
+          </h3>
+
           <span
-            className="font-mono text-amber-600"
-            style={{ fontSize: "10px", fontWeight: 600 }}
+            className="
+              rounded-2xl border border-[#d8b46a]/25
+              bg-white px-3 py-1.5 text-[10px]
+              font-black text-[#123f59]
+            "
           >
-            {(
-              tx.settlements
-                ?.filter((s) => s.status === "DELIVERED")
-                .reduce((a, b) => a + b.amount, 0) || 0
-            ).toLocaleString()}{" "}
-            / {totalCosts.toLocaleString()}
+            {settlementProgress.toFixed(0)}%
           </span>
         </div>
 
-        {/* 3. تسوية الوسطاء */}
-        <div
-          className="rounded-lg border overflow-hidden"
-          style={{ borderColor: "rgba(8, 145, 178, 0.15)" }}
-        >
-          <div
-            className="flex items-center justify-between px-2.5 py-1.5 cursor-pointer select-none"
-            style={{
-              backgroundColor: "rgba(8, 145, 178, 0.04)",
-              borderBottom: openSections.brokers
-                ? "1px solid rgba(8, 145, 178, 0.15)"
-                : "none",
-            }}
-            onClick={() => toggleSection("brokers")}
-          >
-            <div className="flex items-center gap-1.5">
-              <Handshake className="w-3 h-3 text-cyan-600" />
-              <span
-                style={{
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  color: "rgb(8, 145, 178)",
-                }}
-              >
-                تسوية الوسطاء
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 text-gray-400">
-              {openSections.brokers ? (
-                <ChevronUp className="w-3 h-3" />
-              ) : (
-                <ChevronDown className="w-3 h-3" />
-              )}
-            </div>
-          </div>
-          {openSections.brokers && (
-            <div className="p-2.5">
-              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                <table
-                  className="w-full text-right"
-                  style={{ fontSize: "11px" }}
-                >
-                  <thead>
-                    <tr className="bg-gray-50 h-[28px]">
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      >
-                        الوسيط
-                      </th>
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      >
-                        المبلغ
-                      </th>
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      >
-                        المدفوع
-                      </th>
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      >
-                        المتبقي
-                      </th>
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      >
-                        الحالة
-                      </th>
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      ></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tx.brokers?.length > 0 ? (
-                      tx.brokers.map((b, i) => {
-                        const cost = safeNum(b.fees);
-                        const paid =
-                          tx.settlements
-                            ?.filter(
-                              (s) =>
-                                s.targetId === b.personId &&
-                                s.status === "DELIVERED",
-                            )
-                            .reduce((sum, s) => sum + s.amount, 0) || 0;
-                        const remaining = Math.max(0, cost - paid);
-                        const isFullyPaid = paid >= cost && cost > 0;
-                        return (
-                          <tr
-                            key={i}
-                            className={`border-b border-gray-100 hover:bg-gray-50/50 ${i % 2 === 1 ? "bg-gray-50/30" : "bg-white"}`}
-                            style={{ height: "28px" }}
-                          >
-                            <td
-                              className="px-2 text-gray-700"
-                              style={{
-                                fontSize: "10px",
-                                fontWeight: "bold",
-                              }}
-                            >
-                              {b.name}
-                            </td>
-                            <td className="px-2 font-mono font-bold text-gray-800">
-                              {cost.toLocaleString()}
-                            </td>
-                            <td className="px-2 font-mono font-bold text-gray-800">
-                              {paid.toLocaleString()}
-                            </td>
-                            <td
-                              className={`px-2 font-mono font-bold ${remaining > 0 ? "text-red-500" : "text-green-500"}`}
-                            >
-                              {remaining.toLocaleString()}
-                            </td>
-                            <td className="px-2">
-                              <span
-                                style={{
-                                  height: "18px",
-                                  fontSize: "10px",
-                                  borderRadius: "9px",
-                                  padding: "0 5px",
-                                  lineHeight: "18px",
-                                  fontWeight: 600,
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  backgroundColor: isFullyPaid
-                                    ? "rgba(34, 197, 94, 0.15)"
-                                    : "rgba(245, 158, 11, 0.15)",
-                                  color: isFullyPaid
-                                    ? "var(--wms-success)"
-                                    : "var(--wms-warning)",
-                                }}
-                              >
-                                {isFullyPaid ? "مُسوّى" : "قيد الانتظار"}
-                              </span>
-                            </td>
-                            <td className="px-2">
-                              <button
-                                className="text-blue-500 hover:underline"
-                                style={{ fontSize: "9px" }}
-                              >
-                                تفاصيل
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan="6"
-                          className="text-center py-3 text-gray-400 font-bold"
-                          style={{ fontSize: "10px" }}
-                        >
-                          لا يوجد وسطاء
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-                <div className="flex items-center justify-between px-2 py-1.5 border-t border-gray-200 bg-gray-50">
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      className="px-2 py-0.5 rounded bg-blue-100 text-blue-600 hover:bg-blue-200 font-bold transition-colors"
-                      style={{ fontSize: "9px" }}
-                    >
-                      تسوية كاملة
-                    </button>
-                    <button
-                      className="px-2 py-0.5 rounded bg-blue-100 text-blue-600 hover:bg-blue-200 font-bold transition-colors"
-                      style={{ fontSize: "9px" }}
-                    >
-                      سجل الدفعات
-                    </button>
-                  </div>
-                  <span
-                    className="text-gray-500 font-bold"
-                    style={{ fontSize: "10px" }}
-                  >
-                    المدفوع:{" "}
-                    <span
-                      className="font-mono text-green-600"
-                      style={{ fontWeight: 700 }}
-                    >
-                      {(
-                        tx.settlements
-                          ?.filter(
-                            (s) =>
-                              s.targetType === "وسيط" &&
-                              s.status === "DELIVERED",
-                          )
-                          .reduce((a, b) => a + b.amount, 0) || 0
-                      ).toLocaleString()}
-                    </span>
-                    <span className="mx-1">|</span>
-                    المتبقي:{" "}
-                    <span
-                      className="font-mono text-red-500"
-                      style={{ fontWeight: 700 }}
-                    >
-                      {Math.max(
-                        0,
-                        safeNum(tx.mediatorFees) -
-                          (tx.settlements
-                            ?.filter(
-                              (s) =>
-                                s.targetType === "وسيط" &&
-                                s.status === "DELIVERED",
-                            )
-                            .reduce((a, b) => a + b.amount, 0) || 0),
-                      ).toLocaleString()}
-                    </span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        <div className="p-5">
+          <div className="mb-3 flex items-center justify-between text-[11px] font-black">
+            <span className="text-[#64748b]">المدفوع من إجمالي التكاليف</span>
 
-        {/* 4. تسوية المعقبين */}
-        <div
-          className="rounded-lg border overflow-hidden"
-          style={{ borderColor: "rgba(124, 58, 237, 0.15)" }}
-        >
-          <div
-            className="flex items-center justify-between px-2.5 py-1.5 cursor-pointer select-none"
-            style={{
-              backgroundColor: "rgba(124, 58, 237, 0.04)",
-              borderBottom: openSections.agents
-                ? "1px solid rgba(124, 58, 237, 0.15)"
-                : "none",
-            }}
-            onClick={() => toggleSection("agents")}
-          >
-            <div className="flex items-center gap-1.5">
-              <User className="w-3 h-3 text-purple-600" />
-              <span
-                style={{
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  color: "rgb(124, 58, 237)",
-                }}
-              >
-                تسوية المعقبين
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 text-gray-400">
-              {openSections.agents ? (
-                <ChevronUp className="w-3 h-3" />
-              ) : (
-                <ChevronDown className="w-3 h-3" />
-              )}
-            </div>
+            <span className="font-mono text-[#123f59]" dir="ltr">
+              {deliveredSettlements.toLocaleString()} /{" "}
+              {safeNum(totalCosts).toLocaleString()} ر.س
+            </span>
           </div>
-          {openSections.agents && (
-            <div className="p-2.5">
-              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                <table
-                  className="w-full text-right"
-                  style={{ fontSize: "11px" }}
-                >
-                  <thead>
-                    <tr className="bg-gray-50 h-[28px]">
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      >
-                        المعقب
-                      </th>
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      >
-                        المبلغ
-                      </th>
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      >
-                        المدفوع
-                      </th>
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      >
-                        المتبقي
-                      </th>
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      >
-                        الحالة
-                      </th>
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      ></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tx.agents?.length > 0 ? (
-                      tx.agents.map((ag, i) => {
-                        const cost = safeNum(ag.fees);
-                        const paid =
-                          tx.settlements
-                            ?.filter(
-                              (s) =>
-                                s.targetId === ag.id &&
-                                s.status === "DELIVERED",
-                            )
-                            .reduce((sum, s) => sum + s.amount, 0) || 0;
-                        const remaining = Math.max(0, cost - paid);
-                        const isFullyPaid = paid >= cost && cost > 0;
-                        return (
-                          <tr
-                            key={i}
-                            className={`border-b border-gray-100 hover:bg-gray-50/50 ${i % 2 === 1 ? "bg-gray-50/30" : "bg-white"}`}
-                            style={{ height: "28px" }}
-                          >
-                            <td
-                              className="px-2 text-gray-700"
-                              style={{
-                                fontSize: "10px",
-                                fontWeight: "bold",
-                              }}
-                            >
-                              {ag.name}
-                            </td>
-                            <td className="px-2 font-mono font-bold text-gray-800">
-                              {cost.toLocaleString()}
-                            </td>
-                            <td className="px-2 font-mono font-bold text-gray-800">
-                              {paid.toLocaleString()}
-                            </td>
-                            <td
-                              className={`px-2 font-mono font-bold ${remaining > 0 ? "text-red-500" : "text-green-500"}`}
-                            >
-                              {remaining.toLocaleString()}
-                            </td>
-                            <td className="px-2">
-                              <span
-                                style={{
-                                  height: "18px",
-                                  fontSize: "10px",
-                                  borderRadius: "9px",
-                                  padding: "0 5px",
-                                  lineHeight: "18px",
-                                  fontWeight: 600,
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  backgroundColor: isFullyPaid
-                                    ? "rgba(34, 197, 94, 0.15)"
-                                    : "rgba(245, 158, 11, 0.15)",
-                                  color: isFullyPaid
-                                    ? "var(--wms-success)"
-                                    : "var(--wms-warning)",
-                                }}
-                              >
-                                {isFullyPaid ? "مُسوّى" : "قيد الانتظار"}
-                              </span>
-                            </td>
-                            <td className="px-2">
-                              <button
-                                className="text-blue-500 hover:underline"
-                                style={{ fontSize: "9px" }}
-                              >
-                                تفاصيل
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan="6"
-                          className="text-center py-3 text-gray-400 font-bold"
-                          style={{ fontSize: "10px" }}
-                        >
-                          لا يوجد معقبين
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-                <div className="flex items-center justify-between px-2 py-1.5 border-t border-gray-200 bg-gray-50">
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      className="px-2 py-0.5 rounded bg-blue-100 text-blue-600 hover:bg-blue-200 font-bold transition-colors"
-                      style={{ fontSize: "9px" }}
-                    >
-                      تسوية كاملة
-                    </button>
-                    <button
-                      className="px-2 py-0.5 rounded bg-blue-100 text-blue-600 hover:bg-blue-200 font-bold transition-colors"
-                      style={{ fontSize: "9px" }}
-                    >
-                      إضافة ملاحظة
-                    </button>
-                  </div>
-                  <span
-                    className="text-gray-500 font-bold"
-                    style={{ fontSize: "10px" }}
-                  >
-                    المدفوع:{" "}
-                    <span
-                      className="font-mono text-green-600"
-                      style={{ fontWeight: 700 }}
-                    >
-                      {(
-                        tx.settlements
-                          ?.filter(
-                            (s) =>
-                              s.targetType === "معقب" &&
-                              s.status === "DELIVERED",
-                          )
-                          .reduce((a, b) => a + b.amount, 0) || 0
-                      ).toLocaleString()}
-                    </span>
-                    <span className="mx-1">|</span>
-                    المتبقي:{" "}
-                    <span
-                      className="font-mono text-red-500"
-                      style={{ fontWeight: 700 }}
-                    >
-                      {Math.max(
-                        0,
-                        safeNum(tx.agentCost) -
-                          (tx.settlements
-                            ?.filter(
-                              (s) =>
-                                s.targetType === "معقب" &&
-                                s.status === "DELIVERED",
-                            )
-                            .reduce((a, b) => a + b.amount, 0) || 0),
-                      ).toLocaleString()}
-                    </span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
 
-        {/* 5. تسوية العمل عن بعد */}
-        <div
-          className="rounded-lg border overflow-hidden"
-          style={{ borderColor: "rgba(5, 150, 105, 0.15)" }}
-        >
-          <div
-            className="flex items-center justify-between px-2.5 py-1.5 cursor-pointer select-none"
-            style={{
-              backgroundColor: "rgba(5, 150, 105, 0.04)",
-              borderBottom: openSections.remote
-                ? "1px solid rgba(5, 150, 105, 0.15)"
-                : "none",
-            }}
-            onClick={() => toggleSection("remote")}
-          >
-            <div className="flex items-center gap-1.5">
-              <Monitor className="w-3 h-3 text-emerald-600" />
-              <span
-                style={{
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  color: "rgb(5, 150, 105)",
-                }}
-              >
-                تسوية العمل عن بعد
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 text-gray-400">
-              {openSections.remote ? (
-                <ChevronUp className="w-3 h-3" />
-              ) : (
-                <ChevronDown className="w-3 h-3" />
-              )}
-            </div>
+          <div className="h-3 overflow-hidden rounded-full bg-[#eef7f6]">
+            <div
+              className="
+                h-full rounded-full bg-gradient-to-l
+                from-emerald-500 via-[#c5983c] to-[#123f59]
+                transition-all duration-500
+              "
+              style={{ width: `${settlementProgress}%` }}
+            />
           </div>
-          {openSections.remote && (
-            <div className="p-2.5">
-              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                <table
-                  className="w-full text-right"
-                  style={{ fontSize: "11px" }}
-                >
-                  <thead>
-                    <tr className="bg-gray-50 h-[28px]">
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      >
-                        الموظف
-                      </th>
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      >
-                        المبلغ
-                      </th>
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      >
-                        المدفوع
-                      </th>
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      >
-                        المتبقي
-                      </th>
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      >
-                        الحالة
-                      </th>
-                      <th
-                        className="px-2 text-gray-500"
-                        style={{ fontWeight: 600, fontSize: "10px" }}
-                      ></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tx.remoteTasks?.length > 0 ? (
-                      tx.remoteTasks.map((rt, i) => {
-                        const cost = safeNum(rt.cost);
-                        const paid = rt.isPaid ? cost : safeNum(rt.paidAmount);
-                        const remaining = Math.max(0, cost - paid);
-                        const isFullyPaid = paid >= cost && cost > 0;
-                        return (
-                          <tr
-                            key={i}
-                            className={`border-b border-gray-100 hover:bg-gray-50/50 ${i % 2 === 1 ? "bg-gray-50/30" : "bg-white"}`}
-                            style={{ height: "28px" }}
-                          >
-                            <td
-                              className="px-2 text-gray-700"
-                              style={{
-                                fontSize: "10px",
-                                fontWeight: "bold",
-                              }}
-                            >
-                              {rt.workerName}
-                            </td>
-                            <td className="px-2 font-mono font-bold text-gray-800">
-                              {cost.toLocaleString()}
-                            </td>
-                            <td className="px-2 font-mono font-bold text-gray-800">
-                              {paid.toLocaleString()}
-                            </td>
-                            <td
-                              className={`px-2 font-mono font-bold ${remaining > 0 ? "text-red-500" : "text-green-500"}`}
-                            >
-                              {remaining.toLocaleString()}
-                            </td>
-                            <td className="px-2">
-                              <span
-                                style={{
-                                  height: "18px",
-                                  fontSize: "10px",
-                                  borderRadius: "9px",
-                                  padding: "0 5px",
-                                  lineHeight: "18px",
-                                  fontWeight: 600,
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  backgroundColor: isFullyPaid
-                                    ? "rgba(34, 197, 94, 0.15)"
-                                    : "rgba(127, 147, 186, 0.15)",
-                                  color: isFullyPaid
-                                    ? "var(--wms-success)"
-                                    : "var(--wms-text-muted)",
-                                }}
-                              >
-                                {isFullyPaid ? "مُسوّى" : "قيد الانتظار"}
-                              </span>
-                            </td>
-                            <td className="px-2">
-                              <button
-                                className="text-blue-500 hover:underline"
-                                style={{ fontSize: "9px" }}
-                              >
-                                تفاصيل
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan="6"
-                          className="text-center py-3 text-gray-400 font-bold"
-                          style={{ fontSize: "10px" }}
-                        >
-                          لا توجد مهام مسجلة
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-                <div className="flex items-center justify-between px-2 py-1.5 border-t border-gray-200 bg-gray-50">
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      className="px-2 py-0.5 rounded bg-blue-100 text-blue-600 hover:bg-blue-200 font-bold transition-colors"
-                      style={{ fontSize: "9px" }}
-                    >
-                      تعديل التكلفة
-                    </button>
-                    <button
-                      className="px-2 py-0.5 rounded bg-blue-100 text-blue-600 hover:bg-blue-200 font-bold transition-colors"
-                      style={{ fontSize: "9px" }}
-                    >
-                      إضافة ملاحظة
-                    </button>
-                  </div>
-                  <span
-                    className="text-gray-500 font-bold"
-                    style={{ fontSize: "10px" }}
-                  >
-                    المدفوع:{" "}
-                    <span
-                      className="font-mono text-green-600"
-                      style={{ fontWeight: 700 }}
-                    >
-                      {(
-                        tx.remoteTasks
-                          ?.filter((t) => t.isPaid)
-                          .reduce((a, b) => a + b.cost, 0) || 0
-                      ).toLocaleString()}
-                    </span>
-                    <span className="mx-1">|</span>
-                    المتبقي:{" "}
-                    <span
-                      className="font-mono text-red-500"
-                      style={{ fontWeight: 700 }}
-                    >
-                      {Math.max(
-                        0,
-                        safeNum(tx.remoteCost) -
-                          (tx.remoteTasks
-                            ?.filter((t) => t.isPaid)
-                            .reduce((a, b) => a + b.cost, 0) || 0),
-                      ).toLocaleString()}
-                    </span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
 
-        {/* 6. Footer Button */}
-        <div
-          className="p-3 rounded-lg border flex items-center justify-between mt-4 shadow-sm"
-          style={{
-            backgroundColor: "rgba(34, 197, 94, 0.08)",
-            borderColor: "rgba(34, 197, 94, 0.25)",
-          }}
-        >
-          <div>
-            <div
-              className="text-gray-500 font-bold"
-              style={{ fontSize: "10px" }}
-            >
-              صافي قابل للتسوية
-            </div>
-            <div
-              className="font-mono text-green-600"
-              style={{ fontSize: "20px", fontWeight: 700 }}
-            >
-              {distributableProfit.toLocaleString()}{" "}
-              <span style={{ fontSize: "11px", fontWeight: 400 }}>ر.س</span>
-            </div>
-            <div
-              className="text-gray-500 font-bold"
-              style={{ fontSize: "9px" }}
-            >
-              المتبقي من التسويات:{" "}
-              <span
-                className="font-mono text-red-500"
-                style={{ fontWeight: 600 }}
-              >
-                {Math.max(
-                  0,
-                  totalCosts -
-                    (tx.settlements
-                      ?.filter((s) => s.status === "DELIVERED")
-                      .reduce((a, b) => a + b.amount, 0) || 0),
-                ).toLocaleString()}{" "}
-                ر.س
-              </span>
-            </div>
+          <div className="mt-3 flex justify-between text-[10px] font-bold text-[#64748b]">
+            <span>بداية التسوية</span>
+            <span>اكتمال التسوية</span>
           </div>
-          <button
-            onClick={() => {
-              if (
-                window.confirm(
-                  "هل أنت متأكد من اعتماد التسوية الشاملة؟ سيتم إغلاق التعديلات المالية لهذه المعاملة.",
-                )
-              ) {
-                finalizeSettlementMutation.mutate();
-              }
-            }}
-            disabled={finalizeSettlementMutation.isPending}
-            className="px-4 py-2.5 rounded-lg bg-green-600 text-white cursor-pointer hover:bg-green-700 flex items-center gap-1.5 shadow-md transition-colors disabled:opacity-50"
-            style={{ fontSize: "12px", fontWeight: 600 }}
-          >
-            {finalizeSettlementMutation.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Check className="w-4 h-4" />
-            )}
-            <span>تنفيذ التسوية الشاملة</span>
-          </button>
         </div>
       </div>
+
+      {/* Brokers */}
+      <SettlementSection
+        title="تسوية الوسطاء"
+        subtitle="مراجعة مستحقات الوسطاء والمدفوع والمتبقي"
+        icon={Handshake}
+        tone="cyan"
+        isOpen={openSections.brokers}
+        onToggle={() => toggleSection("brokers")}
+        paid={brokersPaid}
+        remaining={Math.max(0, safeNum(tx.mediatorFees) - brokersPaid)}
+      >
+        <SettlementTable
+          emptyText="لا يوجد وسطاء"
+          rows={tx.brokers || []}
+          columns={["الوسيط", "المبلغ", "المدفوع", "المتبقي", "الحالة", "إجراء"]}
+          renderRow={(b, i) => {
+            const cost = safeNum(b.fees);
+
+            const paid =
+              tx.settlements
+                ?.filter(
+                  (s) =>
+                    s.targetId === b.personId && s.status === "DELIVERED",
+                )
+                .reduce((sum, s) => sum + safeNum(s.amount), 0) || 0;
+
+            const remaining = Math.max(0, cost - paid);
+            const isFullyPaid = paid >= cost && cost > 0;
+
+            return (
+              <SettlementRow
+                key={b.id || i}
+                index={i}
+                name={b.name}
+                typeLabel="وسيط"
+                icon={Handshake}
+                cost={cost}
+                paid={paid}
+                remaining={remaining}
+                isFullyPaid={isFullyPaid}
+              />
+            );
+          }}
+        />
+      </SettlementSection>
+
+      {/* Agents */}
+      <SettlementSection
+        title="تسوية المعقبين"
+        subtitle="مراجعة مستحقات المعقبين والمدفوع والمتبقي"
+        icon={User}
+        tone="purple"
+        isOpen={openSections.agents}
+        onToggle={() => toggleSection("agents")}
+        paid={agentsPaid}
+        remaining={Math.max(0, safeNum(tx.agentCost) - agentsPaid)}
+      >
+        <SettlementTable
+          emptyText="لا يوجد معقبين"
+          rows={tx.agents || []}
+          columns={["المعقب", "المبلغ", "المدفوع", "المتبقي", "الحالة", "إجراء"]}
+          renderRow={(ag, i) => {
+            const cost = safeNum(ag.fees);
+
+            const paid =
+              tx.settlements
+                ?.filter((s) => s.targetId === ag.id && s.status === "DELIVERED")
+                .reduce((sum, s) => sum + safeNum(s.amount), 0) || 0;
+
+            const remaining = Math.max(0, cost - paid);
+            const isFullyPaid = paid >= cost && cost > 0;
+
+            return (
+              <SettlementRow
+                key={ag.id || i}
+                index={i}
+                name={ag.name}
+                typeLabel={ag.role || "معقب"}
+                icon={User}
+                cost={cost}
+                paid={paid}
+                remaining={remaining}
+                isFullyPaid={isFullyPaid}
+              />
+            );
+          }}
+        />
+      </SettlementSection>
+
+      {/* Remote */}
+      <SettlementSection
+        title="تسوية العمل عن بعد"
+        subtitle="مراجعة تكاليف منفذي العمل عن بعد وتسوياتهم"
+        icon={Monitor}
+        tone="emerald"
+        isOpen={openSections.remote}
+        onToggle={() => toggleSection("remote")}
+        paid={remotePaid}
+        remaining={Math.max(0, safeNum(tx.remoteCost) - remotePaid)}
+      >
+        <SettlementTable
+          emptyText="لا توجد مهام مسجلة"
+          rows={tx.remoteTasks || []}
+          columns={["الموظف", "المبلغ", "المدفوع", "المتبقي", "الحالة", "إجراء"]}
+          renderRow={(rt, i) => {
+            const cost = safeNum(rt.cost);
+            const paid = rt.isPaid ? cost : safeNum(rt.paidAmount);
+            const remaining = Math.max(0, cost - paid);
+            const isFullyPaid = paid >= cost && cost > 0;
+
+            return (
+              <SettlementRow
+                key={rt.id || i}
+                index={i}
+                name={rt.workerName}
+                typeLabel={rt.taskName || "مهمة عن بعد"}
+                icon={Monitor}
+                cost={cost}
+                paid={paid}
+                remaining={remaining}
+                isFullyPaid={isFullyPaid}
+              />
+            );
+          }}
+        />
+      </SettlementSection>
+
+      {/* Footer */}
+      <div
+        className="
+          relative overflow-hidden rounded-[28px]
+          border border-emerald-300/35
+          bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59]
+          p-5 shadow-[0_20px_55px_rgba(18,63,89,0.20)]
+        "
+      >
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-emerald-400/12 blur-3xl" />
+          <div className="absolute left-[-80px] bottom-[-80px] h-52 w-52 rounded-full bg-[#c5983c]/18 blur-3xl" />
+        </div>
+
+        <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="text-[11px] font-black text-white/55">
+              صافي قابل للتسوية
+            </div>
+
+            <div className="mt-1 font-mono text-3xl font-black text-white">
+              {safeNum(distributableProfit).toLocaleString()}{" "}
+              <span className="text-[12px] text-white/45">ر.س</span>
+            </div>
+
+            <div className="mt-2 text-[11px] font-bold text-white/55">
+              المتبقي من التسويات:{" "}
+              <span className="font-mono font-black text-rose-300">
+                {remainingToSettle.toLocaleString()} ر.س
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {setActiveTab && (
+              <button
+                onClick={() => setActiveTab("profits")}
+                className="
+                  flex h-12 items-center justify-center gap-2
+                  rounded-2xl border border-white/15
+                  bg-white/10 px-5 text-xs font-black text-white
+                  transition hover:bg-white/15
+                "
+                type="button"
+              >
+                عرض الأرباح
+                <ArrowLeft className="h-4 w-4 text-[#e2bf74]" />
+              </button>
+            )}
+
+            <button
+              onClick={() => {
+                if (
+                  window.confirm(
+                    "هل أنت متأكد من اعتماد التسوية الشاملة؟ سيتم إغلاق التعديلات المالية لهذه المعاملة.",
+                  )
+                ) {
+                  finalizeSettlementMutation.mutate();
+                }
+              }}
+              disabled={finalizeSettlementMutation.isPending}
+              className="
+                flex h-12 items-center justify-center gap-2
+                rounded-2xl bg-emerald-500 px-6
+                text-xs font-black text-white
+                shadow-[0_12px_30px_rgba(16,185,129,0.20)]
+                transition hover:-translate-y-[1px]
+                hover:bg-emerald-600
+                disabled:opacity-50
+              "
+              type="button"
+            >
+              {finalizeSettlementMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Check className="h-4 w-4" />
+              )}
+              تنفيذ التسوية الشاملة
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SummaryCard = ({ label, value, icon: Icon, tone = "blue" }) => {
+  const tones = {
+    blue: {
+      card: "border-[#d8b46a]/30 bg-white",
+      icon: "bg-[#123f59] text-[#e2bf74]",
+      label: "text-[#64748b]",
+      value: "text-[#123f59]",
+    },
+    rose: {
+      card: "border-rose-300/45 bg-rose-50/70",
+      icon: "bg-rose-500 text-white",
+      label: "text-rose-700",
+      value: "text-rose-700",
+    },
+    emerald: {
+      card: "border-emerald-300/45 bg-emerald-50/70",
+      icon: "bg-emerald-600 text-white",
+      label: "text-emerald-700",
+      value: "text-emerald-800",
+    },
+    gold: {
+      card: "border-[#d8b46a]/40 bg-[#fbf8f1]",
+      icon: "bg-[#f8efe0] text-[#c5983c]",
+      label: "text-[#64748b]",
+      value: "text-[#c5983c]",
+    },
+  };
+
+  const t = tones[tone] || tones.blue;
+
+  return (
+    <div
+      className={`
+        rounded-[24px] border p-4
+        shadow-[0_14px_34px_rgba(18,63,89,0.08)]
+        ${t.card}
+      `}
+    >
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className={`text-[11px] font-black ${t.label}`}>{label}</div>
+
+        <span className={`grid h-10 w-10 place-items-center rounded-2xl ${t.icon}`}>
+          <Icon className="h-5 w-5" />
+        </span>
+      </div>
+
+      <div className={`font-mono text-2xl font-black ${t.value}`}>
+        {Number(value || 0).toLocaleString()}
+        <span className="mr-1 text-[10px] font-black text-[#64748b]">
+          ر.س
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const SettlementSection = ({
+  title,
+  subtitle,
+  icon: Icon,
+  tone = "cyan",
+  isOpen,
+  onToggle,
+  paid,
+  remaining,
+  children,
+}) => {
+  const tones = {
+    cyan: {
+      icon: "bg-cyan-50 text-cyan-700 border-cyan-200",
+      title: "text-cyan-900",
+      border: "border-cyan-200",
+      badge: "bg-cyan-50 text-cyan-700 border-cyan-200",
+    },
+    purple: {
+      icon: "bg-purple-50 text-purple-700 border-purple-200",
+      title: "text-purple-900",
+      border: "border-purple-200",
+      badge: "bg-purple-50 text-purple-700 border-purple-200",
+    },
+    emerald: {
+      icon: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      title: "text-emerald-900",
+      border: "border-emerald-200",
+      badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    },
+  };
+
+  const t = tones[tone] || tones.cyan;
+
+  return (
+    <div
+      className={`
+        overflow-hidden rounded-[28px] border bg-white
+        shadow-[0_18px_45px_rgba(18,63,89,0.10)]
+        ${t.border}
+      `}
+    >
+      <button
+        onClick={onToggle}
+        className="
+          flex w-full items-center justify-between gap-4
+          border-b border-[#e8ddc8]
+          bg-gradient-to-l from-[#f8efe0] via-white to-[#eef7f6]
+          px-5 py-4 text-right transition hover:bg-[#fbf8f1]
+        "
+        type="button"
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl border ${t.icon}`}
+          >
+            <Icon className="h-5 w-5" />
+          </span>
+
+          <div className="min-w-0">
+            <h3 className={`truncate text-sm font-black ${t.title}`}>
+              {title}
+            </h3>
+
+            <p className="mt-0.5 truncate text-[10px] font-bold text-[#64748b]">
+              {subtitle}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <span
+            className={`
+              hidden rounded-2xl border px-3 py-1.5
+              text-[10px] font-black md:inline-flex
+              ${t.badge}
+            `}
+          >
+            مدفوع: {Number(paid || 0).toLocaleString()}
+          </span>
+
+          <span
+            className="
+              hidden rounded-2xl border border-rose-200
+              bg-rose-50 px-3 py-1.5
+              text-[10px] font-black text-rose-700 md:inline-flex
+            "
+          >
+            متبقي: {Number(remaining || 0).toLocaleString()}
+          </span>
+
+          <span
+            className="
+              grid h-9 w-9 place-items-center rounded-2xl
+              border border-[#d8b46a]/25 bg-white
+              text-[#c5983c]
+            "
+          >
+            {isOpen ? (
+              <ChevronUp className="h-5 w-5" />
+            ) : (
+              <ChevronDown className="h-5 w-5" />
+            )}
+          </span>
+        </div>
+      </button>
+
+      {isOpen && <div className="p-4 animate-in fade-in">{children}</div>}
+    </div>
+  );
+};
+
+const SettlementTable = ({ columns, rows, emptyText, renderRow }) => {
+  const safeRows = Array.isArray(rows) ? rows : [];
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[#d8b46a]/30 bg-white">
+      <div className="overflow-x-auto custom-scrollbar-slim">
+        <table className="w-full min-w-[850px] text-right text-[12px]">
+          <thead className="bg-[#0f3448] text-white">
+            <tr className="h-[46px]">
+              {columns.map((col) => (
+                <th
+                  key={col}
+                  className="border-l border-white/10 px-4 font-black last:border-l-0"
+                >
+                  {col}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-[#e8ddc8]/70">
+            {safeRows.length > 0 ? (
+              safeRows.map(renderRow)
+            ) : (
+              <tr>
+                <td
+                  colSpan={columns.length}
+                  className="py-12 text-center"
+                >
+                  <div
+                    className="
+                      mx-auto mb-3 grid h-14 w-14 place-items-center
+                      rounded-3xl border border-[#d8b46a]/35
+                      bg-[#f8efe0] text-[#c5983c]
+                    "
+                  >
+                    <ShieldCheck className="h-7 w-7" />
+                  </div>
+
+                  <p className="text-sm font-black text-[#123f59]">
+                    {emptyText}
+                  </p>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const SettlementRow = ({
+  index,
+  name,
+  typeLabel,
+  icon: Icon,
+  cost,
+  paid,
+  remaining,
+  isFullyPaid,
+}) => {
+  return (
+    <tr
+      className={`
+        transition-colors hover:bg-cyan-50/40
+        ${index % 2 === 1 ? "bg-[#fbf8f1]/50" : "bg-white"}
+      `}
+    >
+      <td className="border-l border-[#e8ddc8]/70 px-4 py-4">
+        <div className="flex items-center gap-3">
+          <span
+            className="
+              grid h-10 w-10 place-items-center rounded-2xl
+              bg-[#123f59] text-[#e2bf74]
+            "
+          >
+            <Icon className="h-4 w-4" />
+          </span>
+
+          <div className="min-w-0">
+            <div className="truncate text-[12px] font-black text-[#123f59]">
+              {name || "غير محدد"}
+            </div>
+
+            <div className="mt-0.5 text-[10px] font-bold text-[#64748b]">
+              {typeLabel}
+            </div>
+          </div>
+        </div>
+      </td>
+
+      <td className="border-l border-[#e8ddc8]/70 px-4 py-4">
+        <Amount value={cost} tone="blue" />
+      </td>
+
+      <td className="border-l border-[#e8ddc8]/70 px-4 py-4">
+        <Amount value={paid} tone="emerald" />
+      </td>
+
+      <td className="border-l border-[#e8ddc8]/70 px-4 py-4">
+        <Amount value={remaining} tone={remaining > 0 ? "rose" : "emerald"} />
+      </td>
+
+      <td className="border-l border-[#e8ddc8]/70 px-4 py-4">
+        <span
+          className={`
+            flex w-max items-center gap-1.5 rounded-xl
+            border px-3 py-1.5 text-[10px] font-black
+            ${
+              isFullyPaid
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-amber-200 bg-amber-50 text-amber-700"
+            }
+          `}
+        >
+          {isFullyPaid ? (
+            <Check className="h-3 w-3" />
+          ) : (
+            <Circle className="h-3 w-3" />
+          )}
+
+          {isFullyPaid ? "مُسوّى" : "قيد الانتظار"}
+        </span>
+      </td>
+
+      <td className="px-4 py-4">
+        <button
+          className="
+            rounded-xl border border-[#d8b46a]/25
+            bg-[#fbf8f1] px-3 py-2
+            text-[10px] font-black text-[#123f59]
+            transition hover:bg-[#f8efe0]
+          "
+          type="button"
+        >
+          تفاصيل
+        </button>
+      </td>
+    </tr>
+  );
+};
+
+const Amount = ({ value, tone = "blue" }) => {
+  const colors = {
+    blue: "text-[#123f59]",
+    emerald: "text-emerald-700",
+    rose: "text-rose-600",
+  };
+
+  return (
+    <div className={`font-mono text-[13px] font-black ${colors[tone]}`}>
+      {Number(value || 0).toLocaleString()}
+      <span className="mr-1 text-[10px] text-[#64748b]">ر.س</span>
     </div>
   );
 };

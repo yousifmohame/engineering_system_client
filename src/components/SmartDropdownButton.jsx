@@ -7,39 +7,83 @@ import { ChevronDown } from "lucide-react";
 
 const colorMap = {
   blue: {
-    btn: "bg-blue-600 hover:bg-blue-700 text-white",
-    arrow: "bg-blue-700 hover:bg-blue-800 text-white border-blue-500",
-    menu: "border-blue-100",
-    hoverItem: "hover:bg-blue-50",
-    iconColor: "text-blue-500",
+    btn: `
+      bg-[#123f59] text-white
+      hover:bg-[#0f3448]
+      shadow-[0_10px_24px_rgba(18,63,89,0.18)]
+    `,
+    arrow: `
+      bg-[#0f3448] text-[#e2bf74]
+      border-[#d8b46a]/25
+      hover:bg-[#08111c]
+    `,
+    menu: "border-[#d8b46a]/35",
+    hoverItem: "hover:bg-[#f8efe0]",
+    iconColor: "text-[#c5983c]",
   },
+
   purple: {
-    btn: "bg-purple-600 hover:bg-purple-700 text-white",
-    arrow: "bg-purple-700 hover:bg-purple-800 text-white border-purple-500",
-    menu: "border-purple-100",
+    btn: `
+      bg-purple-600 text-white
+      hover:bg-purple-700
+      shadow-[0_10px_24px_rgba(147,51,234,0.16)]
+    `,
+    arrow: `
+      bg-purple-700 text-white
+      border-purple-500/40
+      hover:bg-purple-800
+    `,
+    menu: "border-purple-200",
     hoverItem: "hover:bg-purple-50",
-    iconColor: "text-purple-500",
+    iconColor: "text-purple-600",
   },
+
   green: {
-    btn: "bg-emerald-600 hover:bg-emerald-700 text-white",
-    arrow: "bg-emerald-700 hover:bg-emerald-800 text-white border-emerald-500",
-    menu: "border-emerald-100",
+    btn: `
+      bg-emerald-600 text-white
+      hover:bg-emerald-700
+      shadow-[0_10px_24px_rgba(16,185,129,0.16)]
+    `,
+    arrow: `
+      bg-emerald-700 text-white
+      border-emerald-500/40
+      hover:bg-emerald-800
+    `,
+    menu: "border-emerald-200",
     hoverItem: "hover:bg-emerald-50",
-    iconColor: "text-emerald-500",
+    iconColor: "text-emerald-600",
   },
+
   red: {
-    btn: "bg-red-600 hover:bg-red-700 text-white",
-    arrow: "bg-red-700 hover:bg-red-800 text-white border-red-500",
-    menu: "border-red-100",
-    hoverItem: "hover:bg-red-50",
-    iconColor: "text-red-500",
+    btn: `
+      bg-rose-600 text-white
+      hover:bg-rose-700
+      shadow-[0_10px_24px_rgba(244,63,94,0.16)]
+    `,
+    arrow: `
+      bg-rose-700 text-white
+      border-rose-500/40
+      hover:bg-rose-800
+    `,
+    menu: "border-rose-200",
+    hoverItem: "hover:bg-rose-50",
+    iconColor: "text-rose-600",
   },
+
   slate: {
-    btn: "bg-slate-600 hover:bg-slate-700 text-white",
-    arrow: "bg-slate-700 hover:bg-slate-800 text-white border-slate-500",
-    menu: "border-slate-100",
+    btn: `
+      bg-slate-700 text-white
+      hover:bg-slate-800
+      shadow-[0_10px_24px_rgba(15,23,42,0.16)]
+    `,
+    arrow: `
+      bg-slate-800 text-[#e2bf74]
+      border-slate-600
+      hover:bg-slate-900
+    `,
+    menu: "border-slate-200",
     hoverItem: "hover:bg-slate-50",
-    iconColor: "text-slate-500",
+    iconColor: "text-slate-600",
   },
 };
 
@@ -58,35 +102,62 @@ export function SmartDropdownButton({
     const handler = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
+
     document.addEventListener("mousedown", handler);
+
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const c = colorMap[color] || colorMap.blue; // أضفنا blue كقيمة افتراضية للحماية
+  const c = colorMap[color] || colorMap.blue;
 
   return (
     <div
       ref={ref}
-      className="relative"
+      className="relative inline-flex"
       style={{ fontFamily: "Tajawal, sans-serif" }}
+      dir="rtl"
     >
       {/* Split Button */}
-      <div className="flex items-center rounded overflow-hidden shadow-sm">
+      <div
+        className="
+          flex items-center overflow-hidden
+          rounded-2xl border border-white/15
+          bg-white/10 shadow-sm
+          transition-all duration-200
+          hover:-translate-y-[1px]
+          hover:shadow-[0_14px_34px_rgba(18,63,89,0.16)]
+        "
+      >
         <button
           onClick={() => {
             onMainClick?.();
           }}
-          className={`flex items-center gap-1 text-[10px] px-2.5 py-1.5 ${c.btn} transition-colors`}
+          className={`
+            flex h-9 items-center gap-1.5
+            px-3.5 text-[11px] font-black
+            transition-all duration-200
+            ${c.btn}
+          `}
+          type="button"
         >
-          {icon} {label}
+          {icon && <span className="shrink-0">{icon}</span>}
+          <span className="whitespace-nowrap">{label}</span>
         </button>
+
         <button
           onClick={() => setOpen(!open)}
-          className={`flex items-center px-1 py-1.5 border-r ${c.arrow} transition-colors`}
+          className={`
+            flex h-9 w-9 items-center justify-center
+            border-r transition-all duration-200
+            ${c.arrow}
+          `}
+          type="button"
         >
           <ChevronDown
-            size={10}
-            className={`transition-transform ${open ? "rotate-180" : ""}`}
+            size={14}
+            className={`transition-transform duration-200 ${
+              open ? "rotate-180" : ""
+            }`}
           />
         </button>
       </div>
@@ -94,36 +165,92 @@ export function SmartDropdownButton({
       {/* Dropdown Menu */}
       {open && (
         <div
-          className={`absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-xl border ${c.menu} z-50 py-1 animate-in fade-in slide-in-from-top-1 duration-150`}
+          className={`
+            absolute left-0 top-full z-50 mt-2
+            w-64 overflow-hidden rounded-2xl
+            border bg-white
+            shadow-[0_20px_50px_rgba(15,23,42,0.22)]
+            animate-in fade-in slide-in-from-top-1 duration-150
+            ${c.menu}
+          `}
         >
-          {options.map((opt, i) => (
-            <div key={opt.id}>
-              {opt.divider && i > 0 && (
-                <div className="border-t border-slate-100 my-0.5" />
-              )}
-              <button
-                onClick={() => {
-                  onSelect?.(opt.id);
-                  setOpen(false);
-                }}
-                className={`w-full flex items-center gap-2 px-3 py-1.5 text-right ${c.hoverItem} transition-colors group`}
-              >
-                {opt.icon && (
-                  <span className={`${c.iconColor} shrink-0`}>{opt.icon}</span>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="text-[10px] text-slate-700 group-hover:text-slate-900">
-                    {opt.label}
-                  </div>
-                  {opt.description && (
-                    <div className="text-[8px] text-slate-400">
-                      {opt.description}
-                    </div>
-                  )}
-                </div>
-              </button>
+          <div
+            className="
+              border-b border-[#e8ddc8]
+              bg-gradient-to-l from-[#f8efe0] via-white to-[#eef7f6]
+              px-3 py-2
+            "
+          >
+            <div className="text-[10px] font-black text-[#64748b]">
+              خيارات الإجراء
             </div>
-          ))}
+
+            <div className="mt-0.5 truncate text-[11px] font-black text-[#123f59]">
+              {label}
+            </div>
+          </div>
+
+          <div className="custom-scrollbar-slim max-h-72 overflow-y-auto p-1.5">
+            {options.map((opt, i) => (
+              <div key={opt.id}>
+                {opt.divider && i > 0 && (
+                  <div className="my-1 border-t border-[#e8ddc8]" />
+                )}
+
+                <button
+                  onClick={() => {
+                    onSelect?.(opt.id);
+                    setOpen(false);
+                  }}
+                  className={`
+                    group flex w-full items-center gap-3
+                    rounded-xl px-3 py-2.5 text-right
+                    transition-all duration-200
+                    ${c.hoverItem}
+                  `}
+                  type="button"
+                >
+                  {opt.icon && (
+                    <span
+                      className={`
+                        grid h-8 w-8 shrink-0 place-items-center
+                        rounded-xl border border-[#d8b46a]/25
+                        bg-white shadow-sm
+                        transition-all duration-200
+                        group-hover:scale-105
+                        ${c.iconColor}
+                      `}
+                    >
+                      {opt.icon}
+                    </span>
+                  )}
+
+                  <div className="min-w-0 flex-1">
+                    <div
+                      className="
+                        truncate text-[11px] font-black
+                        text-[#123f59]
+                        group-hover:text-[#0f3448]
+                      "
+                    >
+                      {opt.label}
+                    </div>
+
+                    {opt.description && (
+                      <div
+                        className="
+                          mt-0.5 line-clamp-2 text-[9px]
+                          font-bold leading-relaxed text-[#64748b]
+                        "
+                      >
+                        {opt.description}
+                      </div>
+                    )}
+                  </div>
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

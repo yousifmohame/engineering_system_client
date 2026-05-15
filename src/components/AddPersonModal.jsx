@@ -24,11 +24,17 @@ const COUNTRY_CODES = [
   { code: "+20", label: "مصر 🇪🇬" },
   { code: "+971", label: "الإمارات 🇦🇪" },
   { code: "+965", label: "الكويت 🇰🇼" },
-  { code: "+973", label: "قطر 🇶🇦" },
-  { code: "+974", label: "البحرين 🇧🇭" },
+  { code: "+974", label: "قطر 🇶🇦" },
+  { code: "+973", label: "البحرين 🇧🇭" },
   { code: "+968", label: "عمان 🇴🇲" },
   { code: "+962", label: "الأردن 🇯🇴" },
 ];
+
+const INPUT_CLASS =
+  "h-11 w-full rounded-2xl border border-[#d8b46a]/35 bg-[#fbf8f1]/70 px-4 text-xs font-black text-[#123f59] outline-none transition placeholder:text-[#94a3b8] focus:border-[#c5983c] focus:bg-white focus:ring-4 focus:ring-[#c5983c]/10";
+
+const TEXTAREA_CLASS =
+  "w-full resize-none rounded-2xl border border-[#d8b46a]/35 bg-[#fbf8f1]/70 px-4 py-3 text-xs font-bold leading-relaxed text-[#123f59] outline-none transition placeholder:text-[#94a3b8] focus:border-[#c5983c] focus:bg-white focus:ring-4 focus:ring-[#c5983c]/10";
 
 export function AddPersonModal({
   type = "وسيط",
@@ -37,6 +43,7 @@ export function AddPersonModal({
   onClose,
 }) {
   const queryClient = useQueryClient();
+
   const [formData, setFormData] = useState({
     firstNameAr: "",
     secondNameAr: "",
@@ -62,44 +69,54 @@ export function AddPersonModal({
   });
 
   const typeConfig = {
-    معقب: { title: "إضافة معقب جديد", color: "#2563eb", bg: "bg-blue-600" },
-    وسيط: { title: "إضافة وسيط جديد", color: "#16a34a", bg: "bg-green-600" },
-    شريك: { title: "إضافة شريك جديد", color: "#7c3aed", bg: "bg-violet-600" },
+    معقب: {
+      title: "إضافة معقب جديد",
+      badge: "bg-cyan-50 text-cyan-700 border-cyan-200",
+    },
+    وسيط: {
+      title: "إضافة وسيط جديد",
+      badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    },
+    شريك: {
+      title: "إضافة شريك جديد",
+      badge: "bg-purple-50 text-purple-700 border-purple-200",
+    },
     "صاحب مصلحة": {
       title: "إضافة صاحب مصلحة جديد",
-      color: "#d97706",
-      bg: "bg-amber-600",
+      badge: "bg-amber-50 text-amber-700 border-amber-200",
     },
     "موظف عن بعد": {
       title: "إضافة موظف عن بعد",
-      color: "#db2777",
-      bg: "bg-pink-600",
+      badge: "bg-rose-50 text-rose-700 border-rose-200",
     },
   };
 
   const config = typeConfig[type] || typeConfig["وسيط"];
 
-  // 💡 تعبئة البيانات تلقائياً في حالة التعديل
   useEffect(() => {
     if (mode === "edit" && personData) {
-      let pCode = "+966",
-        pNum = personData.phone || "";
+      let pCode = "+966";
+      let pNum = personData.phone || "";
+
       if (personData.phone && personData.phone.startsWith("+")) {
         const matched = COUNTRY_CODES.find((c) =>
           personData.phone.startsWith(c.code),
         );
+
         if (matched) {
           pCode = matched.code;
           pNum = personData.phone.slice(matched.code.length);
         }
       }
 
-      let wCode = "+966",
-        wNum = personData.whatsapp || "";
+      let wCode = "+966";
+      let wNum = personData.whatsapp || "";
+
       if (personData.whatsapp && personData.whatsapp.startsWith("+")) {
         const matched = COUNTRY_CODES.find((c) =>
           personData.whatsapp.startsWith(c.code),
         );
+
         if (matched) {
           wCode = matched.code;
           wNum = personData.whatsapp.slice(matched.code.length);
@@ -107,17 +124,21 @@ export function AddPersonModal({
       }
 
       let methodsArr = [];
+
       if (personData.transferMethod) {
         try {
           methodsArr = JSON.parse(personData.transferMethod);
-          if (!Array.isArray(methodsArr))
+
+          if (!Array.isArray(methodsArr)) {
             methodsArr = [personData.transferMethod];
+          }
         } catch (e) {
           methodsArr = [personData.transferMethod];
         }
       }
 
       let parsedDetails = {};
+
       if (personData.transferDetails) {
         try {
           parsedDetails =
@@ -155,19 +176,22 @@ export function AddPersonModal({
     }
   }, [mode, personData]);
 
-  // دالة الإضافة
   const addMutation = useMutation({
     mutationFn: async (payload) => {
       const fd = new FormData();
+
       Object.keys(payload).forEach((key) => {
         if (key === "files" && payload.files) {
-          Array.from(payload.files).forEach((f) => fd.append("files", f));
+          Array.from(payload.files).forEach((file) => {
+            fd.append("files", file);
+          });
         } else if (key === "transferDetails") {
           fd.append("transferDetails", JSON.stringify(payload[key] || {}));
         } else {
           fd.append(key, payload[key] || "");
         }
       });
+
       return await api.post("/persons", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -179,17 +203,20 @@ export function AddPersonModal({
       queryClient.invalidateQueries(["partners-directory"]);
       onClose();
     },
-    onError: (err) =>
-      toast.error(err.response?.data?.message || "حدث خطأ أثناء الإضافة"),
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "حدث خطأ أثناء الإضافة");
+    },
   });
 
-  // دالة التعديل
   const updateMutation = useMutation({
     mutationFn: async (payload) => {
       const fd = new FormData();
+
       Object.keys(payload).forEach((key) => {
         if (key === "files" && payload.files) {
-          Array.from(payload.files).forEach((f) => fd.append("files", f));
+          Array.from(payload.files).forEach((file) => {
+            fd.append("files", file);
+          });
         } else if (key === "transferDetails") {
           fd.append("transferDetails", JSON.stringify(payload[key] || {}));
         } else if (
@@ -200,6 +227,7 @@ export function AddPersonModal({
           fd.append(key, payload[key]);
         }
       });
+
       return await api.put(`/persons/${payload.id}`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -211,21 +239,26 @@ export function AddPersonModal({
       queryClient.invalidateQueries(["partners-directory"]);
       onClose();
     },
-    onError: (err) =>
-      toast.error(err.response?.data?.message || "حدث خطأ أثناء التحديث"),
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "حدث خطأ أثناء التحديث");
+    },
   });
 
-  const handleSubmit = () => {
-    const fullName =
-      `${formData.firstNameAr || ""} ${formData.secondNameAr || ""} ${formData.thirdNameAr || ""} ${formData.fourthNameAr || ""}`.trim();
+  const isPending = addMutation.isPending || updateMutation.isPending;
 
-    if (!formData.firstNameAr)
+  const handleSubmit = () => {
+    const fullName = `${formData.firstNameAr || ""} ${
+      formData.secondNameAr || ""
+    } ${formData.thirdNameAr || ""} ${formData.fourthNameAr || ""}`.trim();
+
+    if (!formData.firstNameAr) {
       return toast.error("يرجى إدخال الاسم الأول على الأقل");
+    }
 
     const finalPayload = {
       ...formData,
       name: fullName,
-      role: personData?.role || type, // الحفاظ على الدور الأساسي
+      role: personData?.role || type,
       phone: formData.phoneWithoutCode
         ? `${formData.phoneCode}${formData.phoneWithoutCode}`
         : "",
@@ -238,282 +271,308 @@ export function AddPersonModal({
     if (mode === "add") {
       addMutation.mutate(finalPayload);
     } else {
-      updateMutation.mutate({ ...finalPayload, id: personData.id });
+      updateMutation.mutate({
+        ...finalPayload,
+        id: personData.id,
+      });
     }
   };
 
   const toggleTransferMethod = (method) => {
     setFormData((prev) => {
       const isSelected = prev.transferMethods.includes(method);
+
       const newMethods = isSelected
-        ? prev.transferMethods.filter((m) => m !== method)
+        ? prev.transferMethods.filter((item) => item !== method)
         : [...prev.transferMethods, method];
-      return { ...prev, transferMethods: newMethods };
+
+      return {
+        ...prev,
+        transferMethods: newMethods,
+      };
     });
+  };
+
+  const updateTransferDetail = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      transferDetails: {
+        ...prev.transferDetails,
+        [field]: value,
+      },
+    }));
   };
 
   return (
     <div
-      className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 p-4 animate-in fade-in"
+      className="
+        fixed inset-0 z-[150] flex items-center justify-center
+        bg-slate-950/75 p-3 backdrop-blur-sm
+        animate-in fade-in md:p-5
+      "
       dir="rtl"
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh] overflow-hidden">
+      <div
+        className="
+          flex max-h-[92vh] w-full max-w-5xl flex-col
+          overflow-hidden rounded-[30px]
+          border border-[#d8b46a]/30 bg-white
+          shadow-[0_30px_90px_rgba(15,23,42,0.40)]
+        "
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 shrink-0">
-          <div className="flex items-center gap-2">
-            {mode === "add" ? (
-              <UserPlus className="w-5 h-5" style={{ color: config.color }} />
-            ) : (
-              <Edit3 className="w-5 h-5" style={{ color: config.color }} />
-            )}
-            <span className="text-gray-800 text-[16px] font-black">
-              {mode === "add" ? config.title : `تعديل بيانات ${type}`}
-            </span>
-            <span
-              className="mr-3 px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm"
-              style={{ backgroundColor: config.color }}
-            >
-              {type}
-            </span>
+        <div
+          className="
+            relative shrink-0 overflow-hidden
+            bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59]
+            px-5 py-5 text-white
+          "
+        >
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-[#c5983c]/18 blur-3xl" />
+            <div className="absolute left-[-80px] bottom-[-80px] h-52 w-52 rounded-full bg-cyan-400/12 blur-3xl" />
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-red-500 bg-white border border-gray-300 shadow-sm p-1.5 rounded-md transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+
+          <div className="relative z-10 flex items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-4">
+              <div
+                className="
+                  grid h-14 w-14 shrink-0 place-items-center
+                  rounded-3xl bg-[#e2bf74] text-[#123f59]
+                  shadow-[0_12px_24px_rgba(0,0,0,0.18)]
+                "
+              >
+                {mode === "add" ? (
+                  <UserPlus className="h-7 w-7" />
+                ) : (
+                  <Edit3 className="h-7 w-7" />
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <h2 className="truncate text-lg font-black text-white">
+                  {mode === "add" ? config.title : `تعديل بيانات ${type}`}
+                </h2>
+
+                <p className="mt-1 text-xs font-bold text-white/55">
+                  إدارة بيانات الاسم، التواصل، طرق الاستلام، والمرفقات.
+                </p>
+              </div>
+
+              <span
+                className={`
+                  hidden rounded-2xl border px-3 py-1.5
+                  text-xs font-black shadow-sm sm:inline-flex
+                  ${config.badge}
+                `}
+              >
+                {type}
+              </span>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="
+                grid h-11 w-11 shrink-0 place-items-center
+                rounded-2xl border border-white/15
+                bg-white/10 text-white transition
+                hover:bg-rose-500 hover:text-white
+              "
+              type="button"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Content Area */}
-        <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar-slim flex-1 bg-gray-50/30">
-          {/* الأسماء 4 رباعية */}
-          <div className="bg-white p-5 border border-gray-200 rounded-xl shadow-sm">
-            <label className="block mb-3 text-[14px] font-black text-gray-800 border-b border-gray-100 pb-2">
-              <User className="w-4 h-4 inline-block text-blue-500 ml-1" /> الاسم
-              الرباعي والبيانات الديموغرافية
-            </label>
-            <div className="grid grid-cols-4 gap-3 mb-4">
+        {/* Content */}
+        <div
+          className="
+            custom-scrollbar-slim flex-1 space-y-5 overflow-y-auto
+            bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
+            p-4 md:p-6
+          "
+        >
+          {/* Names */}
+          <SectionCard
+            icon={User}
+            title="الاسم الرباعي والبيانات الديموغرافية"
+            subtitle="الاسم بالعربية والإنجليزية مع بيانات الإقامة والهوية"
+          >
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                "firstNameAr",
-                "secondNameAr",
-                "thirdNameAr",
-                "fourthNameAr",
-              ].map((field, idx) => (
-                <div key={field}>
-                  <label className="text-[10px] font-bold text-gray-500 mb-1 block">
-                    {
-                      [
-                        "الاسم الأول *",
-                        "الاسم الثاني",
-                        "الاسم الثالث",
-                        "الاسم الرابع (العائلة)",
-                      ][idx]
-                    }
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={
-                      [
-                        "الاسم الأول (Ar)",
-                        "الاسم الثاني",
-                        "الاسم الثالث",
-                        "الاسم الرابع",
-                      ][idx]
-                    }
-                    value={formData[field]}
-                    onChange={(e) =>
-                      setFormData({ ...formData, [field]: e.target.value })
-                    }
-                    className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-xs font-bold focus:border-blue-500 focus:bg-white outline-none transition-colors"
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-4 gap-3 mb-4">
-              {[
-                "firstNameEn",
-                "secondNameEn",
-                "thirdNameEn",
-                "fourthNameEn",
-              ].map((field, idx) => (
-                <div key={field}>
-                  <label className="text-[10px] font-bold text-gray-500 mb-1 block text-right">
-                    {
-                      ["First Name", "Second Name", "Third Name", "Last Name"][
-                        idx
-                      ]
-                    }
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={
-                      ["First Name", "Second Name", "Third Name", "Last Name"][
-                        idx
-                      ]
-                    }
-                    value={formData[field]}
-                    onChange={(e) =>
-                      setFormData({ ...formData, [field]: e.target.value })
-                    }
-                    className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-xs font-mono focus:border-blue-500 focus:bg-white outline-none transition-colors"
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-3 gap-5">
-              <div>
-                <label className="block mb-1 text-[11px] font-bold text-gray-700">
-                  دولة الإقامة
-                </label>
-                <div className="relative">
-                  <Globe2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={formData.country}
-                    onChange={(e) =>
-                      setFormData({ ...formData, country: e.target.value })
-                    }
-                    placeholder="مثال: السعودية، مصر..."
-                    className="w-full border border-gray-300 rounded-lg pr-9 pl-3 py-2 text-xs outline-none focus:border-blue-500 bg-gray-50 focus:bg-white transition-colors"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block mb-1 text-[11px] font-bold text-gray-700">
-                  رقم الهوية الوطنية / الإقامة
-                </label>
-                <input
-                  type="text"
-                  value={formData.idNumber}
-                  onChange={(e) =>
-                    setFormData({ ...formData, idNumber: e.target.value })
+                ["firstNameAr", "الاسم الأول *", "الاسم الأول"],
+                ["secondNameAr", "الاسم الثاني", "الاسم الثاني"],
+                ["thirdNameAr", "الاسم الثالث", "الاسم الثالث"],
+                ["fourthNameAr", "الاسم الرابع / العائلة", "الاسم الرابع"],
+              ].map(([field, label, placeholder]) => (
+                <InputField
+                  key={field}
+                  label={label}
+                  value={formData[field]}
+                  placeholder={placeholder}
+                  onChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      [field]: value,
+                    })
                   }
-                  placeholder="رقم الهوية"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-blue-500 bg-gray-50 focus:bg-white transition-colors"
                 />
-              </div>
-              <div>
-                <label className="block mb-1 text-[11px] font-bold text-gray-700">
-                  نوع الاتفاق المالي الافتراضي
-                </label>
+              ))}
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                ["firstNameEn", "First Name", "First Name"],
+                ["secondNameEn", "Second Name", "Second Name"],
+                ["thirdNameEn", "Third Name", "Third Name"],
+                ["fourthNameEn", "Last Name", "Last Name"],
+              ].map(([field, label, placeholder]) => (
+                <InputField
+                  key={field}
+                  label={label}
+                  value={formData[field]}
+                  placeholder={placeholder}
+                  dir="ltr"
+                  mono
+                  onChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      [field]: value,
+                    })
+                  }
+                />
+              ))}
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
+              <InputField
+                label="دولة الإقامة"
+                value={formData.country}
+                placeholder="مثال: السعودية، مصر..."
+                icon={Globe2}
+                onChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    country: value,
+                  })
+                }
+              />
+
+              <InputField
+                label="رقم الهوية الوطنية / الإقامة"
+                value={formData.idNumber}
+                placeholder="رقم الهوية"
+                mono
+                onChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    idNumber: value,
+                  })
+                }
+              />
+
+              <Field label="نوع الاتفاق المالي الافتراضي">
                 <select
                   value={formData.agreementType}
                   onChange={(e) =>
-                    setFormData({ ...formData, agreementType: e.target.value })
+                    setFormData({
+                      ...formData,
+                      agreementType: e.target.value,
+                    })
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs font-bold outline-none focus:border-blue-500 bg-gray-50 focus:bg-white transition-colors"
+                  className={INPUT_CLASS}
                 >
                   <option>نسبة</option>
                   <option>مبلغ ثابت</option>
                   <option>مبلغ شامل</option>
                   <option>— لا يوجد —</option>
                 </select>
-              </div>
+              </Field>
             </div>
-          </div>
+          </SectionCard>
 
-          {/* التواصل */}
-          <div className="bg-white p-5 border border-gray-200 rounded-xl shadow-sm">
-            <h3 className="text-[14px] font-black text-gray-800 border-b border-gray-100 pb-2 mb-4">
-              <Phone className="w-4 h-4 inline-block text-blue-500 ml-1" />{" "}
-              معلومات التواصل
-            </h3>
-            <div className="grid grid-cols-3 gap-5">
-              <div>
-                <label className="block mb-1.5 text-[11px] font-bold text-gray-700">
-                  رقم الجوال الأساسي *
-                </label>
-                <div className="flex" dir="ltr">
-                  <select
-                    value={formData.phoneCode}
-                    onChange={(e) =>
-                      setFormData({ ...formData, phoneCode: e.target.value })
-                    }
-                    className="bg-gray-100 border border-gray-300 border-r-0 rounded-l-lg px-2 text-xs font-mono outline-none focus:border-blue-500 w-24"
+          {/* Contact */}
+          <SectionCard
+            icon={Phone}
+            title="معلومات التواصل"
+            subtitle="رقم الجوال، الواتساب، ومعرّف التليجرام"
+          >
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <PhoneInput
+                label="رقم الجوال الأساسي *"
+                code={formData.phoneCode}
+                number={formData.phoneWithoutCode}
+                onCodeChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    phoneCode: value,
+                  })
+                }
+                onNumberChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    phoneWithoutCode: value,
+                  })
+                }
+              />
+
+              <PhoneInput
+                label="رقم الواتساب"
+                code={formData.whatsappCode}
+                number={formData.whatsappWithoutCode}
+                onCodeChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    whatsappCode: value,
+                  })
+                }
+                onNumberChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    whatsappWithoutCode: value,
+                  })
+                }
+                tone="emerald"
+              />
+
+              <Field label="معرّف التليجرام Telegram">
+                <div className="relative" dir="ltr">
+                  <span
+                    className="
+                      pointer-events-none absolute left-3 top-1/2
+                      -translate-y-1/2 rounded-xl
+                      bg-cyan-50 px-2 py-0.5
+                      font-mono text-xs font-black text-cyan-700
+                    "
                   >
-                    {COUNTRY_CODES.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.code} {c.label.split(" ")[1]}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="text"
-                    value={formData.phoneWithoutCode}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        phoneWithoutCode: e.target.value,
-                      })
-                    }
-                    className="flex-1 bg-white border border-gray-300 rounded-r-lg px-3 py-2 text-xs font-mono font-bold outline-none focus:border-blue-500"
-                    placeholder="5XXXXXXXX"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block mb-1.5 text-[11px] font-bold text-green-700">
-                  رقم الواتساب
-                </label>
-                <div className="flex" dir="ltr">
-                  <select
-                    value={formData.whatsappCode}
-                    onChange={(e) =>
-                      setFormData({ ...formData, whatsappCode: e.target.value })
-                    }
-                    className="bg-green-50 border border-green-300 border-r-0 rounded-l-lg px-2 text-xs font-mono outline-none focus:border-green-500 w-24 text-green-800"
-                  >
-                    {COUNTRY_CODES.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.code} {c.label.split(" ")[1]}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="text"
-                    value={formData.whatsappWithoutCode}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        whatsappWithoutCode: e.target.value,
-                      })
-                    }
-                    className="flex-1 bg-white border border-green-300 rounded-r-lg px-3 py-2 text-xs font-mono font-bold outline-none focus:border-green-500"
-                    placeholder="5XXXXXXXX"
-                  />
-                </div>
-              </div>
-              <div dir="ltr">
-                <label className="block mb-1.5 text-[11px] font-bold text-blue-500 text-right">
-                  معرّف التليجرام (Telegram)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 font-mono text-xs">
                     @
                   </span>
+
                   <input
                     type="text"
                     value={formData.telegram}
                     onChange={(e) =>
-                      setFormData({ ...formData, telegram: e.target.value })
+                      setFormData({
+                        ...formData,
+                        telegram: e.target.value,
+                      })
                     }
-                    className="w-full bg-white border border-blue-300 rounded-lg pl-8 pr-3 py-2 text-xs font-mono font-bold outline-none focus:border-blue-500"
+                    className={`${INPUT_CLASS} pl-12 font-mono`}
                     placeholder="username"
                   />
                 </div>
-              </div>
+              </Field>
             </div>
-          </div>
+          </SectionCard>
 
-          {/* طرق الاستلام */}
-          <div className="bg-white p-5 border border-gray-200 rounded-xl shadow-sm">
-            <div className="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
-              <label className="text-[14px] font-black text-gray-800">
-                <Wallet className="w-4 h-4 inline-block text-blue-500 ml-1" />{" "}
-                تفاصيل استلام الدفعات (اختياري)
-              </label>
-            </div>
-            <div className="flex gap-3 mb-4 flex-wrap">
+          {/* Payment methods */}
+          <SectionCard
+            icon={Wallet}
+            title="تفاصيل استلام الدفعات"
+            subtitle="طرق الدفع المفضلة ومعلومات التحويل"
+          >
+            <div className="mb-4 flex flex-wrap gap-3">
               {[
                 "حساب بنكي محلي/دولي",
                 "ويسترن يونيون",
@@ -522,99 +581,210 @@ export function AddPersonModal({
                 "نقدي",
               ].map((method) => {
                 const isSelected = formData.transferMethods.includes(method);
+
                 return (
                   <button
                     key={method}
                     type="button"
                     onClick={() => toggleTransferMethod(method)}
-                    className={`flex items-center gap-2 px-4 py-2 border-2 rounded-xl cursor-pointer transition-colors ${isSelected ? "border-blue-600 bg-blue-50 shadow-sm" : "border-gray-200 bg-gray-50 hover:bg-gray-100"}`}
+                    className={`
+                      flex items-center gap-2 rounded-2xl border-2
+                      px-4 py-2.5 text-xs font-black
+                      transition-all duration-200
+                      ${
+                        isSelected
+                          ? "border-[#c5983c] bg-[#f8efe0] text-[#123f59] shadow-sm"
+                          : "border-[#d8b46a]/30 bg-white text-[#64748b] hover:border-[#c5983c]/55 hover:bg-[#fbf8f1]"
+                      }
+                    `}
                   >
                     {isSelected ? (
-                      <CheckSquare className="w-4 h-4 text-blue-600" />
+                      <CheckSquare className="h-4 w-4 text-[#c5983c]" />
                     ) : (
-                      <Square className="w-4 h-4 text-gray-400" />
+                      <Square className="h-4 w-4 text-[#94a3b8]" />
                     )}
-                    <span className="text-xs font-bold text-gray-700 flex items-center gap-1">
-                      {method === "نقدي" && (
-                        <Banknote
-                          className={`w-3 h-3 ${isSelected ? "text-blue-600" : "text-gray-400"}`}
-                        />
-                      )}
-                      {method}
-                    </span>
+
+                    {method === "نقدي" && (
+                      <Banknote
+                        className={`h-3.5 w-3.5 ${
+                          isSelected ? "text-[#c5983c]" : "text-[#94a3b8]"
+                        }`}
+                      />
+                    )}
+
+                    {method}
                   </button>
                 );
               })}
             </div>
 
-            {/* تفاصيل بناءً على طرق الدفع (مختصرة للحفاظ على النص) */}
             {formData.transferMethods.length > 0 && (
-              <div className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+              <div
+                className="
+                  space-y-4 rounded-[24px]
+                  border border-[#d8b46a]/30
+                  bg-[#fbf8f1]/70 p-4
+                "
+              >
                 {formData.transferMethods.includes("حساب بنكي محلي/دولي") && (
-                  <div className="grid grid-cols-2 gap-3 border-b border-gray-200 pb-3">
-                    <input
-                      type="text"
-                      placeholder="اسم البنك"
+                  <div className="grid grid-cols-1 gap-3 border-b border-[#e8ddc8] pb-4 md:grid-cols-2">
+                    <InputField
+                      label="اسم البنك"
                       value={formData.transferDetails?.bankName || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          transferDetails: {
-                            ...formData.transferDetails,
-                            bankName: e.target.value,
-                          },
-                        })
+                      placeholder="اسم البنك"
+                      onChange={(value) =>
+                        updateTransferDetail("bankName", value)
                       }
-                      className="w-full border border-gray-300 p-2 rounded-lg text-xs outline-none focus:border-blue-500"
                     />
-                    <input
-                      type="text"
-                      placeholder="IBAN"
+
+                    <InputField
+                      label="IBAN"
                       value={formData.transferDetails?.iban || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          transferDetails: {
-                            ...formData.transferDetails,
-                            iban: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full border border-gray-300 p-2 rounded-lg text-xs font-mono outline-none focus:border-blue-500"
+                      placeholder="SA..."
+                      mono
+                      dir="ltr"
+                      onChange={(value) => updateTransferDetail("iban", value)}
                     />
                   </div>
                 )}
-                {/* يمكنك إضافة باقي التفاصيل هنا (ويسترن، إنستاباي، USDT) بنفس النمط */}
+
+                {formData.transferMethods.includes("ويسترن يونيون") && (
+                  <div className="grid grid-cols-1 gap-3 border-b border-[#e8ddc8] pb-4 md:grid-cols-2">
+                    <InputField
+                      label="اسم المستلم Western Union"
+                      value={formData.transferDetails?.westernName || ""}
+                      placeholder="اسم المستلم كما في الوثيقة"
+                      onChange={(value) =>
+                        updateTransferDetail("westernName", value)
+                      }
+                    />
+
+                    <InputField
+                      label="الدولة / المدينة"
+                      value={formData.transferDetails?.westernLocation || ""}
+                      placeholder="الدولة أو المدينة"
+                      onChange={(value) =>
+                        updateTransferDetail("westernLocation", value)
+                      }
+                    />
+                  </div>
+                )}
+
+                {formData.transferMethods.includes("InstaPay") && (
+                  <div className="grid grid-cols-1 gap-3 border-b border-[#e8ddc8] pb-4 md:grid-cols-2">
+                    <InputField
+                      label="حساب InstaPay"
+                      value={formData.transferDetails?.instapay || ""}
+                      placeholder="username@instapay"
+                      mono
+                      dir="ltr"
+                      onChange={(value) =>
+                        updateTransferDetail("instapay", value)
+                      }
+                    />
+
+                    <InputField
+                      label="رقم الهاتف المرتبط"
+                      value={formData.transferDetails?.instapayPhone || ""}
+                      placeholder="رقم الهاتف"
+                      mono
+                      dir="ltr"
+                      onChange={(value) =>
+                        updateTransferDetail("instapayPhone", value)
+                      }
+                    />
+                  </div>
+                )}
+
+                {formData.transferMethods.includes("محفظة رقمية USDT") && (
+                  <div className="grid grid-cols-1 gap-3 border-b border-[#e8ddc8] pb-4 md:grid-cols-2">
+                    <InputField
+                      label="عنوان محفظة USDT"
+                      value={formData.transferDetails?.usdtWallet || ""}
+                      placeholder="Wallet address"
+                      mono
+                      dir="ltr"
+                      onChange={(value) =>
+                        updateTransferDetail("usdtWallet", value)
+                      }
+                    />
+
+                    <InputField
+                      label="الشبكة"
+                      value={formData.transferDetails?.usdtNetwork || ""}
+                      placeholder="TRC20 / ERC20 / BEP20"
+                      mono
+                      dir="ltr"
+                      onChange={(value) =>
+                        updateTransferDetail("usdtNetwork", value)
+                      }
+                    />
+                  </div>
+                )}
+
+                {formData.transferMethods.includes("نقدي") && (
+                  <InputField
+                    label="ملاحظات الدفع النقدي"
+                    value={formData.transferDetails?.cashNotes || ""}
+                    placeholder="مثال: التسليم في المكتب / عند الاستلام..."
+                    onChange={(value) =>
+                      updateTransferDetail("cashNotes", value)
+                    }
+                  />
+                )}
               </div>
             )}
-          </div>
+          </SectionCard>
 
-          <div className="grid grid-cols-2 gap-4 border-t border-gray-200 pt-4">
-            <div className="bg-white p-5 border border-gray-200 rounded-xl shadow-sm">
-              <label className="block mb-2 text-[13px] font-black text-gray-800">
-                ملاحظات ومهام مخصصة
-              </label>
+          {/* Notes + Files */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <SectionCard
+              icon={Edit3}
+              title="ملاحظات ومهام مخصصة"
+              subtitle="أي تفاصيل إضافية متعلقة بالشخص"
+              compact
+            >
               <textarea
                 value={formData.notes}
                 onChange={(e) =>
-                  setFormData({ ...formData, notes: e.target.value })
+                  setFormData({
+                    ...formData,
+                    notes: e.target.value,
+                  })
                 }
-                className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-xs font-semibold outline-none focus:border-blue-500 h-[110px] resize-none"
+                className={`${TEXTAREA_CLASS} h-[130px]`}
                 placeholder="أي ملاحظات إضافية..."
               />
-            </div>
-            <div className="bg-white p-5 border border-gray-200 rounded-xl shadow-sm">
-              <label className="block mb-2 text-[13px] font-black text-gray-800">
-                <Paperclip className="w-4 h-4 inline text-gray-500" /> المستندات
-                (اختياري)
-              </label>
-              <label className="flex flex-col items-center justify-center gap-2 p-5 border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-blue-50 hover:border-blue-400 rounded-xl text-gray-500 cursor-pointer transition-all h-[110px]">
-                <Upload className="w-6 h-6 text-gray-400" />
-                <span className="text-[11px] font-bold text-gray-600">
+            </SectionCard>
+
+            <SectionCard
+              icon={Paperclip}
+              title="المستندات"
+              subtitle="إرفاق الهوية، الاتفاق، أو أي مستند داعم"
+              compact
+            >
+              <label
+                className="
+                  flex h-[130px] cursor-pointer flex-col items-center
+                  justify-center gap-3 rounded-[24px]
+                  border-2 border-dashed border-[#d8b46a]/40
+                  bg-[#fbf8f1]/70 p-5 text-center
+                  transition hover:border-[#c5983c]
+                  hover:bg-[#f8efe0]
+                "
+              >
+                <Upload className="h-7 w-7 text-[#c5983c]" />
+
+                <span className="text-xs font-black text-[#123f59]">
                   {formData.files.length > 0
                     ? `تم تحديد ${formData.files.length} ملف للرفع`
-                    : "اضغط للرفع"}
+                    : "اضغط لاختيار الملفات"}
                 </span>
+
+                <span className="text-[10px] font-bold text-[#64748b]">
+                  يمكنك رفع أكثر من ملف
+                </span>
+
                 <input
                   type="file"
                   multiple
@@ -622,33 +792,58 @@ export function AddPersonModal({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      files: Array.from(e.target.files),
+                      files: Array.from(e.target.files || []),
                     })
                   }
                 />
               </label>
-            </div>
+            </SectionCard>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-white shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] transition-colors duration-300">
+        <div
+          className="
+            flex shrink-0 flex-col-reverse gap-3
+            border-t border-[#e8ddc8]
+            bg-white px-5 py-4
+            shadow-[0_-10px_30px_rgba(18,63,89,0.06)]
+            sm:flex-row sm:items-center sm:justify-end
+          "
+        >
           <button
             onClick={onClose}
-            className="px-6 py-2.5 rounded-xl bg-gray-100 border border-gray-300 text-gray-700 text-[12px] font-bold hover:bg-gray-200 transition-colors shadow-sm"
+            className="
+              rounded-2xl border border-[#d8b46a]/30
+              bg-[#fbf8f1] px-6 py-3
+              text-xs font-black text-[#123f59]
+              transition hover:bg-[#f8efe0]
+            "
+            type="button"
           >
             إلغاء الأمر
           </button>
+
           <button
             onClick={handleSubmit}
-            disabled={addMutation.isPending || updateMutation.isPending}
-            className="flex items-center gap-2 px-8 py-2.5 rounded-xl text-white text-[13px] font-bold shadow-md transition-opacity hover:opacity-90 disabled:opacity-50 bg-blue-600"
+            disabled={isPending}
+            className="
+              flex items-center justify-center gap-2
+              rounded-2xl bg-[#123f59] px-8 py-3
+              text-sm font-black text-white
+              shadow-[0_12px_30px_rgba(18,63,89,0.24)]
+              transition hover:-translate-y-[1px]
+              hover:bg-[#0f3448]
+              disabled:cursor-not-allowed disabled:opacity-50
+            "
+            type="button"
           >
-            {addMutation.isPending || updateMutation.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+            {isPending ? (
+              <Loader2 className="h-5 w-5 animate-spin text-[#e2bf74]" />
             ) : (
-              <Save className="w-4 h-4" />
+              <Save className="h-5 w-5 text-[#e2bf74]" />
             )}
+
             {mode === "add" ? `حفظ وإضافة ${type}` : "تحديث بيانات الملف"}
           </button>
         </div>
@@ -656,3 +851,150 @@ export function AddPersonModal({
     </div>
   );
 }
+
+const SectionCard = ({ icon: Icon, title, subtitle, children, compact }) => (
+  <section
+    className="
+      overflow-hidden rounded-[28px]
+      border border-[#d8b46a]/30 bg-white
+      shadow-[0_16px_40px_rgba(18,63,89,0.08)]
+    "
+  >
+    <div
+      className="
+        flex items-center gap-3 border-b border-[#e8ddc8]
+        bg-gradient-to-l from-[#f8efe0] via-white to-[#eef7f6]
+        px-5 py-4
+      "
+    >
+      <span
+        className="
+          grid h-10 w-10 shrink-0 place-items-center
+          rounded-2xl bg-[#123f59] text-[#e2bf74]
+        "
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+
+      <div className="min-w-0">
+        <h3 className="truncate text-sm font-black text-[#123f59]">
+          {title}
+        </h3>
+
+        {subtitle && (
+          <p className="mt-0.5 truncate text-[10px] font-bold text-[#64748b]">
+            {subtitle}
+          </p>
+        )}
+      </div>
+    </div>
+
+    <div className={compact ? "p-4" : "p-5"}>{children}</div>
+  </section>
+);
+
+const Field = ({ label, children }) => (
+  <div>
+    <label className="mb-1.5 block text-[11px] font-black text-[#64748b]">
+      {label}
+    </label>
+
+    {children}
+  </div>
+);
+
+const InputField = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  icon: Icon,
+  dir = "rtl",
+  mono = false,
+}) => (
+  <Field label={label}>
+    <div className="relative">
+      {Icon && (
+        <Icon
+          className="
+            absolute right-3 top-1/2 h-4 w-4
+            -translate-y-1/2 text-[#c5983c]
+          "
+        />
+      )}
+
+      <input
+        type="text"
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        dir={dir}
+        className={`${INPUT_CLASS} ${Icon ? "pr-10" : ""} ${
+          mono ? "font-mono" : ""
+        }`}
+      />
+    </div>
+  </Field>
+);
+
+const PhoneInput = ({
+  label,
+  code,
+  number,
+  onCodeChange,
+  onNumberChange,
+  tone = "blue",
+}) => {
+  const isEmerald = tone === "emerald";
+
+  return (
+    <Field label={label}>
+      <div
+        className={`
+          flex overflow-hidden rounded-2xl border bg-white
+          shadow-sm transition
+          focus-within:ring-4
+          ${
+            isEmerald
+              ? "border-emerald-300 focus-within:border-emerald-500 focus-within:ring-emerald-100"
+              : "border-[#d8b46a]/35 focus-within:border-[#c5983c] focus-within:ring-[#c5983c]/10"
+          }
+        `}
+        dir="ltr"
+      >
+        <select
+          value={code}
+          onChange={(e) => onCodeChange(e.target.value)}
+          className={`
+            w-28 shrink-0 border-r px-2 text-xs
+            font-mono font-black outline-none
+            ${
+              isEmerald
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "border-[#e8ddc8] bg-[#fbf8f1] text-[#123f59]"
+            }
+          `}
+        >
+          {COUNTRY_CODES.map((country) => (
+            <option key={country.code} value={country.code}>
+              {country.code} {country.label.split(" ")[1]}
+            </option>
+          ))}
+        </select>
+
+        <input
+          type="text"
+          value={number || ""}
+          onChange={(e) => onNumberChange(e.target.value)}
+          className="
+            h-11 min-w-0 flex-1 bg-white
+            px-3 text-left font-mono text-xs
+            font-black text-[#123f59] outline-none
+            placeholder:text-[#94a3b8]
+          "
+          placeholder="5XXXXXXXX"
+        />
+      </div>
+    </Field>
+  );
+};

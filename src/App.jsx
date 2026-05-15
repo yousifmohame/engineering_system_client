@@ -43,7 +43,7 @@ import OfficeNotepadScreen from "./pages/OfficeNotepad/OfficeNotepadScreen";
 import DetailsOfficeDashboard from "./pages/DetailsOffice/DetailsOfficeDashboard";
 import MeetingsMain from "./pages/MeetingMinute/MeetingsMain";
 import MinuteVerificationPage from "./pages/verify/MinuteVerificationPage";
-import ElectronicDocumentation from "./pages/ElectronicDocumentation/index";
+import DocumentationWrapper from "./pages/ElectronicDocumentation/DocumentationWrapper";
 import ProjectsArchiveScreen from "./pages/Archives_and_records/ProjectsArchive/ProjectsArchiveScreen";
 import AiDashboard from "./pages/AiScreen/AiDashboard";
 import HubScreen from "./pages/Archives_and_records/ArchivesHubWrapper";
@@ -323,7 +323,7 @@ const AppContent = () => {
             <div
               className={activeScreenId === "20" ? "block h-full" : "hidden"}
             >
-              <ElectronicDocumentation />
+              <DocumentationWrapper />
             </div>
             <div
               className={activeScreenId === "11" ? "block h-full" : "hidden"}

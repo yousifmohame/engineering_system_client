@@ -78,7 +78,7 @@ const SmartLinkedField = ({
   return (
     <div className="flex flex-col gap-1 w-full">
       <div className="flex items-center justify-between mb-1">
-        <label className="text-xs font-bold text-gray-700 flex items-center gap-2">
+        <label className="text-xs font-bold text-[#334155] flex items-center gap-2">
           {label}
         </label>
         {value &&
@@ -96,7 +96,7 @@ const SmartLinkedField = ({
                 <button
                   onClick={onQuickAdd}
                   disabled={isAdding}
-                  className="text-[10px] bg-blue-600 text-white hover:bg-blue-700 px-2 py-0.5 rounded font-bold flex items-center gap-1 transition-all shadow-sm disabled:opacity-50"
+                  className="text-[10px] bg-[#123f59] text-white hover:bg-[#0f3448] px-2 py-0.5 rounded font-bold flex items-center gap-1 transition-all shadow-sm disabled:opacity-50"
                   title="إضافة سريعة للنظام"
                 >
                   {isAdding ? (
@@ -119,7 +119,7 @@ const SmartLinkedField = ({
           className={`w-full border rounded-lg px-3 py-2.5 text-sm font-bold outline-none transition-colors ${
             value && isLinked
               ? "border-emerald-300 focus:ring-1 focus:ring-emerald-500 bg-white"
-              : "border-gray-300 focus:ring-1 focus:ring-purple-500 bg-gray-50 focus:bg-white"
+              : "border-[#d8b46a]/35 focus:ring-1 focus:ring-purple-500 bg-[#fbf8f1]/70 focus:bg-white"
           }`}
           placeholder={placeholder}
           list={listId}
@@ -169,26 +169,26 @@ const SearchableSelect = ({
     <div className="relative w-full" ref={wrapperRef}>
       <div
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`w-full border rounded-lg px-3 py-2.5 text-sm font-bold flex items-center justify-between cursor-pointer transition-colors ${disabled ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed" : "bg-gray-50 border-gray-300 focus-within:border-blue-500 focus-within:bg-white"}`}
+        className={`w-full border rounded-lg px-3 py-2.5 text-sm font-bold flex items-center justify-between cursor-pointer transition-colors ${disabled ? "bg-[#f8efe0] border-[#e8ddc8] text-[#94a3b8] cursor-not-allowed" : "bg-[#fbf8f1]/70 border-[#d8b46a]/35 focus-within:border-[#c5983c] focus-within:bg-white"}`}
       >
-        <span className={selectedLabel ? "text-gray-800" : "text-gray-400"}>
+        <span className={selectedLabel ? "text-[#123f59]" : "text-[#94a3b8]"}>
           {selectedLabel || placeholder}
         </span>
-        <ChevronDown className="w-4 h-4 text-gray-400" />
+        <ChevronDown className="w-4 h-4 text-[#94a3b8]" />
       </div>
 
       {isOpen && !disabled && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-hidden flex flex-col">
-          <div className="p-2 border-b border-gray-100 bg-gray-50 sticky top-0">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-[#e8ddc8] rounded-lg shadow-xl max-h-60 overflow-hidden flex flex-col">
+          <div className="p-2 border-b border-gray-100 bg-[#fbf8f1]/70 sticky top-0">
             <div className="relative">
-              <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+              <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#94a3b8]" />
               <input
                 autoFocus
                 type="text"
                 placeholder="اكتب للبحث..."
                 value={search}
                 onChange={(e) => setSearch(toEnglishNumbers(e.target.value))}
-                className="w-full pl-2 pr-7 py-1.5 text-xs font-bold border border-gray-300 rounded outline-none focus:border-blue-500"
+                className="w-full pl-2 pr-7 py-1.5 text-xs font-bold border border-[#d8b46a]/35 rounded outline-none focus:border-[#c5983c]"
               />
             </div>
           </div>
@@ -202,13 +202,13 @@ const SearchableSelect = ({
                     setIsOpen(false);
                     setSearch("");
                   }}
-                  className="px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer border-b border-gray-50 last:border-0 font-bold"
+                  className="px-3 py-2 text-sm text-[#334155] hover:bg-[#eef7f6] hover:text-[#123f59] cursor-pointer border-b border-gray-50 last:border-0 font-bold"
                 >
                   {opt.label}
                 </div>
               ))
             ) : (
-              <div className="p-3 text-center text-xs text-gray-400">
+              <div className="p-3 text-center text-xs text-[#94a3b8]">
                 لا توجد نتائج مطابقة
               </div>
             )}
@@ -230,7 +230,7 @@ const TripleCurrencyInput = ({ valueSar, onChangeSar, rates }) => {
   return (
     <div className="flex gap-2 w-full">
       <div className="flex-1 relative">
-        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">
+        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#94a3b8]">
           SAR
         </span>
         <input
@@ -239,11 +239,11 @@ const TripleCurrencyInput = ({ valueSar, onChangeSar, rates }) => {
           // 💡 إجبار التحويل للأرقام الإنجليزية
           onChange={(e) => onChangeSar(toEnglishNumbers(e.target.value))}
           onFocus={handleFocus}
-          className="w-full bg-white border border-gray-300 rounded-md py-1.5 pl-8 pr-2 text-xs font-mono font-bold focus:border-blue-500 outline-none"
+          className="w-full bg-white border border-[#d8b46a]/35 rounded-md py-1.5 pl-8 pr-2 text-xs font-mono font-bold focus:border-[#c5983c] outline-none"
         />
       </div>
       <div className="flex-1 relative">
-        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">
+        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#94a3b8]">
           EGP
         </span>
         <input
@@ -257,11 +257,11 @@ const TripleCurrencyInput = ({ valueSar, onChangeSar, rates }) => {
             )
           }
           onFocus={handleFocus}
-          className="w-full bg-slate-50 border border-gray-200 rounded-md py-1.5 pl-8 pr-2 text-xs font-mono focus:border-blue-500 outline-none"
+          className="w-full bg-slate-50 border border-[#e8ddc8] rounded-md py-1.5 pl-8 pr-2 text-xs font-mono focus:border-[#c5983c] outline-none"
         />
       </div>
       <div className="flex-1 relative">
-        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">
+        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#94a3b8]">
           USD
         </span>
         <input
@@ -275,7 +275,7 @@ const TripleCurrencyInput = ({ valueSar, onChangeSar, rates }) => {
             )
           }
           onFocus={handleFocus}
-          className="w-full bg-slate-50 border border-gray-200 rounded-md py-1.5 pl-8 pr-2 text-xs font-mono focus:border-blue-500 outline-none"
+          className="w-full bg-slate-50 border border-[#e8ddc8] rounded-md py-1.5 pl-8 pr-2 text-xs font-mono focus:border-[#c5983c] outline-none"
         />
       </div>
     </div>
@@ -703,47 +703,55 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 animate-in fade-in"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/75 p-3 backdrop-blur-sm animate-in fade-in md:p-5"
       dir="rtl"
     >
-      <div className="bg-gray-50 rounded-2xl shadow-2xl flex flex-col w-full max-w-5xl h-[90vh] overflow-hidden">
+      <div className="flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-[30px] border border-[#d8b46a]/30 bg-white shadow-[0_30px_90px_rgba(15,23,42,0.40)]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-600 p-2.5 rounded-xl shadow-sm">
-              <Plus className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-black text-gray-800 tracking-tight">
-                فتح وتسجيل معاملة جديدة
-              </h2>
-              <p className="text-xs font-bold text-gray-500 mt-0.5">
-                قم بتعبئة البيانات الأساسية، الأطراف المرتبطة، والمستندات
-                المستلمة.
-              </p>
-            </div>
+        <div className="relative shrink-0 overflow-hidden bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59] px-6 py-5 text-white">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-[#c5983c]/18 blur-3xl" />
+            <div className="absolute left-[-80px] bottom-[-80px] h-52 w-52 rounded-full bg-cyan-400/12 blur-3xl" />
           </div>
-          <button
-            onClick={handleClose}
-            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 border border-gray-200 bg-white rounded-lg transition-colors shadow-sm"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="relative z-10 flex items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#e2bf74] text-[#123f59] shadow-[0_12px_24px_rgba(0,0,0,0.18)]">
+                <Plus className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-white tracking-tight">
+                  فتح وتسجيل معاملة جديدة
+                </h2>
+                <p className="text-xs font-bold text-white/55 mt-0.5">
+                  قم بتعبئة البيانات الأساسية، الأطراف المرتبطة، والمستندات
+                  المستلمة.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleClose}
+              className="grid h-10 w-10 place-items-center rounded-2xl border border-white/15 bg-white/10 text-white transition hover:bg-rose-500 hover:text-white"
+              type="button"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar-slim">
+        <div className="custom-scrollbar-slim flex-1 space-y-6 overflow-y-auto bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white p-4 md:p-6">
           {/* 1. الاسم المتداول */}
-          <section className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-1 h-full bg-blue-500"></div>
+          <section className="relative overflow-hidden rounded-[28px] border border-[#d8b46a]/30 bg-white p-5 shadow-[0_16px_40px_rgba(18,63,89,0.08)]">
+            <div className="absolute top-0 right-0 w-1 h-full bg-[#c5983c]"></div>
             <div className="flex items-center justify-between mb-3">
-              <label className="text-sm font-black text-gray-800 flex items-center gap-2">
+              <label className="text-sm font-black text-[#123f59] flex items-center gap-2">
                 الاسم المتداول للمعامله (داخلي للمكتب)
               </label>
-              <label className="flex items-center gap-2 cursor-pointer px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors">
+              <label className="flex items-center gap-2 cursor-pointer px-3 py-1.5 bg-[#fbf8f1]/70 hover:bg-[#f8efe0] rounded-lg border border-[#e8ddc8] transition-colors">
                 <input
                   type="checkbox"
-                  className="accent-blue-600 w-4 h-4"
+                  className="accent-[#123f59] w-4 h-4"
                   checked={formData.isInternalNameHidden}
                   onChange={(e) =>
                     setFormData({
@@ -752,7 +760,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                     })
                   }
                 />
-                <span className="text-xs font-bold text-gray-600 flex items-center gap-1">
+                <span className="text-xs font-bold text-[#64748b] flex items-center gap-1">
                   <EyeOff className="w-3.5 h-3.5" /> إخفاء عن العميل/التقارير
                 </span>
               </label>
@@ -763,21 +771,21 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
               onChange={(e) =>
                 setFormData({ ...formData, internalName: e.target.value })
               }
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-bold focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+              className="w-full border border-[#d8b46a]/35 rounded-lg px-4 py-2.5 text-sm font-bold focus:border-[#c5983c] focus:ring-2 focus:ring-[#c5983c]/10 outline-none transition-all"
               placeholder="مثال: فيلا الياسمين - مشروع أبو محمد..."
             />
           </section>
 
           {/* قسم التعليقات المبدئية */}
-          <section className="bg-orange-50/50 p-5 rounded-xl border border-orange-200 shadow-sm">
-            <div className="flex items-center justify-between mb-4 border-b border-orange-100 pb-3">
-              <h3 className="text-sm font-black text-orange-800 flex items-center gap-2">
+          <section className="rounded-[28px] border border-amber-200 bg-amber-50/60 p-5 shadow-[0_16px_40px_rgba(18,63,89,0.08)]">
+            <div className="flex items-center justify-between mb-4 border-b border-amber-100 pb-3">
+              <h3 className="text-sm font-black text-amber-800 flex items-center gap-2">
                 <MessageCircle className="w-4 h-4" /> تعليقات وتوجيهات على
                 المعاملة (فري تكست)
               </h3>
               <button
                 onClick={addCommentRow}
-                className="bg-white text-orange-600 border border-orange-200 hover:bg-orange-100 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                className="bg-white text-amber-700 border border-amber-200 hover:bg-amber-100 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
               >
                 <Plus size={14} /> إضافة تعليق آخر
               </button>
@@ -790,7 +798,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                     value={comment}
                     onChange={(e) => updateComment(idx, e.target.value)}
                     placeholder={`اكتب التعليق أو التوجيه رقم ${idx + 1} هنا...`}
-                    className="flex-1 border border-orange-200 rounded-lg px-3 py-2.5 text-sm font-bold focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none bg-white min-h-[60px] resize-none"
+                    className="flex-1 border border-amber-200 rounded-lg px-3 py-2.5 text-sm font-bold focus:border-[#c5983c] focus:ring-2 focus:ring-[#c5983c]/10 outline-none bg-white min-h-[60px] resize-none"
                   />
                   {formData.comments.length > 1 && (
                     <button
@@ -804,21 +812,21 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                 </div>
               ))}
             </div>
-            <p className="text-[10px] text-orange-600 font-bold mt-2">
+            <p className="text-[10px] text-amber-700 font-bold mt-2">
               ملاحظة: ستظهر هذه التعليقات في تبويب "التعليقات" داخل ملف
               المعاملة.
             </p>
           </section>
 
           {/* 2. بيانات المُلّاك */}
-          <section className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
-              <h3 className="text-sm font-black text-blue-800 flex items-center gap-2">
+          <section className="rounded-[28px] border border-[#d8b46a]/30 bg-white p-5 shadow-[0_16px_40px_rgba(18,63,89,0.08)]">
+            <div className="flex items-center justify-between mb-4 border-b border-[#e8ddc8] pb-3">
+              <h3 className="text-sm font-black text-[#123f59] flex items-center gap-2">
                 <User className="w-4 h-4" /> بيانات المُلاّك / العملاء
               </h3>
               <button
                 onClick={addOwner}
-                className="bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                className="bg-[#eef7f6] text-[#123f59] hover:bg-[#f8efe0] px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
               >
                 <Plus size={14} /> إضافة شريك آخر
               </button>
@@ -828,7 +836,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
               {formData.owners.map((owner, index) => (
                 <div
                   key={index}
-                  className={`p-4 bg-gray-50 border rounded-xl relative ${index === 0 ? "border-blue-200" : "border-gray-200"}`}
+                  className={`p-4 bg-[#fbf8f1]/70 border rounded-xl relative ${index === 0 ? "border-[#d8b46a]/35" : "border-[#e8ddc8]"}`}
                 >
                   {index > 0 && (
                     <button
@@ -842,28 +850,28 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                   {index === 0 ? (
                     <div className="flex gap-4 mb-4">
                       <label
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-colors ${!owner.isNewClient ? "border-blue-600 bg-blue-50" : "border-gray-200 bg-white hover:bg-gray-50"}`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-colors ${!owner.isNewClient ? "border-blue-600 bg-[#eef7f6]" : "border-[#e8ddc8] bg-white hover:bg-[#fbf8f1]/70"}`}
                       >
                         <input
                           type="radio"
                           name={`clientMode-${index}`}
-                          className="accent-blue-600"
+                          className="accent-[#123f59]"
                           checked={!owner.isNewClient}
                           onChange={() =>
                             updateOwner(index, "isNewClient", false)
                           }
                         />
-                        <span className="text-xs font-bold text-gray-800">
+                        <span className="text-xs font-bold text-[#123f59]">
                           اختيار مالك مسجل مسبقاً
                         </span>
                       </label>
                       <label
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-colors ${owner.isNewClient ? "border-green-600 bg-green-50" : "border-gray-200 bg-white hover:bg-gray-50"}`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-colors ${owner.isNewClient ? "border-emerald-600 bg-emerald-50" : "border-[#e8ddc8] bg-white hover:bg-[#fbf8f1]/70"}`}
                       >
                         <input
                           type="radio"
                           name={`clientMode-${index}`}
-                          className="accent-green-600"
+                          className="accent-emerald-600"
                           checked={owner.isNewClient}
                           onChange={() => {
                             updateOwner(index, "isNewClient", true);
@@ -871,7 +879,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                             updateOwner(index, "ownerName", "");
                           }}
                         />
-                        <span className="text-xs font-bold text-gray-800">
+                        <span className="text-xs font-bold text-[#123f59]">
                           إنشاء مالك جديد (سريع)
                         </span>
                       </label>
@@ -886,7 +894,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
 
                   {!owner.isNewClient || index > 0 ? (
                     <div className="w-full md:w-1/2">
-                      <label className="block text-xs font-bold text-gray-600 mb-1.5">
+                      <label className="block text-xs font-bold text-[#64748b] mb-1.5">
                         ابحث عن المالك {index === 0 ? "الرئيسي" : "الإضافي"} *
                       </label>
                       <SearchableSelect
@@ -900,9 +908,9 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                       />
                     </div>
                   ) : (
-                    <div className="bg-white p-4 rounded-xl border border-green-200 shadow-sm space-y-4">
+                    <div className="bg-white p-4 rounded-xl border border-emerald-200 shadow-sm space-y-4">
                       <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-2">
+                        <label className="block text-xs font-bold text-[#334155] mb-2">
                           نوع العميل *
                         </label>
                         <div className="flex gap-2 flex-wrap">
@@ -918,7 +926,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                               onClick={() =>
                                 updateNewClientObj(index, "type", type)
                               }
-                              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${owner.newClient.type === type ? "bg-green-600 text-white border-green-600" : "bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100"}`}
+                              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${owner.newClient.type === type ? "bg-emerald-600 text-white border-emerald-600" : "bg-[#fbf8f1]/70 text-[#64748b] border-[#d8b46a]/35 hover:bg-[#f8efe0]"}`}
                             >
                               {type}
                             </button>
@@ -931,7 +939,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                         owner.newClient.type.includes("جهة") ? (
                           <>
                             <div className="col-span-2">
-                              <label className="text-[10px] font-bold text-gray-500 mb-1 block">
+                              <label className="text-[10px] font-bold text-[#64748b] mb-1 block">
                                 اسم الشركة / الجهة *
                               </label>
                               <input
@@ -944,12 +952,12 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                                     e.target.value,
                                   )
                                 }
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs font-bold focus:border-green-500 outline-none bg-gray-50 focus:bg-white"
+                                className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2 text-xs font-bold focus:border-[#c5983c] outline-none bg-[#fbf8f1]/70 focus:bg-white"
                                 placeholder="اسم الشركة..."
                               />
                             </div>
                             <div className="col-span-2">
-                              <label className="text-[10px] font-bold text-gray-500 mb-1 block">
+                              <label className="text-[10px] font-bold text-[#64748b] mb-1 block">
                                 رقم السجل / الموحد
                               </label>
                               <input
@@ -962,7 +970,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                                     toEnglishNumbers(e.target.value),
                                   )
                                 }
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs font-mono focus:border-green-500 outline-none bg-gray-50 focus:bg-white"
+                                className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2 text-xs font-mono focus:border-[#c5983c] outline-none bg-[#fbf8f1]/70 focus:bg-white"
                                 placeholder="1010XXXXXX"
                               />
                             </div>
@@ -970,7 +978,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                         ) : (
                           <>
                             <div>
-                              <label className="text-[10px] font-bold text-gray-500 mb-1 block">
+                              <label className="text-[10px] font-bold text-[#64748b] mb-1 block">
                                 الاسم الأول *
                               </label>
                               <input
@@ -983,12 +991,12 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                                     e.target.value,
                                   )
                                 }
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs font-bold focus:border-green-500 outline-none bg-gray-50 focus:bg-white"
+                                className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2 text-xs font-bold focus:border-[#c5983c] outline-none bg-[#fbf8f1]/70 focus:bg-white"
                                 placeholder="الأول"
                               />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-gray-500 mb-1 block">
+                              <label className="text-[10px] font-bold text-[#64748b] mb-1 block">
                                 الاسم الأخير
                               </label>
                               <input
@@ -1001,12 +1009,12 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                                     e.target.value,
                                   )
                                 }
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs font-bold focus:border-green-500 outline-none bg-gray-50 focus:bg-white"
+                                className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2 text-xs font-bold focus:border-[#c5983c] outline-none bg-[#fbf8f1]/70 focus:bg-white"
                                 placeholder="العائلة"
                               />
                             </div>
                             <div className="col-span-2">
-                              <label className="text-[10px] font-bold text-gray-500 mb-1 block">
+                              <label className="text-[10px] font-bold text-[#64748b] mb-1 block">
                                 رقم الهوية / الإقامة
                               </label>
                               <input
@@ -1019,7 +1027,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                                     toEnglishNumbers(e.target.value),
                                   )
                                 }
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs font-mono focus:border-green-500 outline-none bg-gray-50 focus:bg-white"
+                                className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2 text-xs font-mono focus:border-[#c5983c] outline-none bg-[#fbf8f1]/70 focus:bg-white"
                                 placeholder="10XXXXXXXX"
                               />
                             </div>
@@ -1034,14 +1042,14 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
           </section>
 
           {/* 3. الموقع والعقار والتفاصيل المفصلة */}
-          <section className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="text-sm font-black text-purple-800 mb-4 flex items-center gap-2 border-b border-gray-100 pb-3">
+          <section className="rounded-[28px] border border-[#d8b46a]/30 bg-white p-5 shadow-[0_16px_40px_rgba(18,63,89,0.08)]">
+            <h3 className="text-sm font-black text-[#123f59] mb-4 flex items-center gap-2 border-b border-[#e8ddc8] pb-3">
               <MapPin className="w-4 h-4" /> الموقع، المخطط، وتفاصيل الطلب
             </h3>
 
             <div className="grid grid-cols-4 gap-5 mb-5">
               <div className="col-span-2 md:col-span-1">
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-bold text-[#334155] mb-1.5">
                   نوع المعاملة *
                 </label>
                 <input
@@ -1055,7 +1063,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                     })
                   }
                   placeholder="اختر أو اكتب..."
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-bold focus:border-purple-500 outline-none bg-gray-50 focus:bg-white transition-colors"
+                  className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2.5 text-sm font-bold focus:border-[#c5983c] outline-none bg-[#fbf8f1]/70 focus:bg-white transition-colors"
                 />
                 <datalist id="transaction-types-options">
                   <option value="اصدار" />
@@ -1068,7 +1076,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
               </div>
 
               <div className="col-span-2 md:col-span-1">
-                <label className="block mb-1.5 text-gray-700 text-xs font-bold">
+                <label className="block mb-1.5 text-[#334155] text-xs font-bold">
                   نوع الرفع
                 </label>
                 <div className="flex gap-2">
@@ -1078,7 +1086,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                       onClick={() =>
                         setFormData({ ...formData, surveyType: type })
                       }
-                      className={`flex-1 py-2.5 rounded-lg transition-colors text-xs font-bold border ${formData.surveyType === type ? "bg-purple-600 border-purple-600 text-white" : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"}`}
+                      className={`flex-1 py-2.5 rounded-lg transition-colors text-xs font-bold border ${formData.surveyType === type ? "bg-[#123f59] border-[#123f59] text-white" : "bg-[#fbf8f1]/70 border-[#e8ddc8] text-[#64748b] hover:bg-[#f8efe0]"}`}
                     >
                       {type}
                     </button>
@@ -1115,14 +1123,14 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5">
+                  <label className="block text-xs font-bold text-[#64748b] mb-1.5">
                     الجهة / القطاع (تلقائي)
                   </label>
                   <input
                     type="text"
                     value={formData.sector}
                     readOnly
-                    className="w-full bg-gray-100 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-bold text-gray-600 outline-none cursor-not-allowed"
+                    className="w-full bg-[#f8efe0] border border-[#e8ddc8] rounded-lg px-3 py-2.5 text-sm font-bold text-[#64748b] outline-none cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -1130,14 +1138,14 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
 
             <div className="grid grid-cols-3 gap-5 mb-5">
               {/* القطع */}
-              <div className="col-span-3 md:col-span-1 border border-gray-200 rounded-xl p-3 bg-gray-50">
+              <div className="col-span-3 md:col-span-1 border border-[#e8ddc8] rounded-xl p-3 bg-[#fbf8f1]/70">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold text-gray-800">
+                  <label className="text-xs font-bold text-[#123f59]">
                     أرقام القطع
                   </label>
                   <button
                     onClick={addPlotRow}
-                    className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-1 rounded hover:bg-blue-200"
+                    className="text-[10px] bg-[#f8efe0] text-[#123f59] font-bold px-2 py-1 rounded hover:bg-blue-200"
                   >
                     <Plus className="w-3 h-3 inline" /> إضافة قطعة
                   </button>
@@ -1152,7 +1160,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                           updatePlot(idx, toEnglishNumbers(e.target.value))
                         }
                         placeholder={`رقم القطعة ${idx + 1}`}
-                        className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-xs font-mono focus:border-purple-500 outline-none bg-white"
+                        className="flex-1 border border-[#d8b46a]/35 rounded-lg px-2 py-1.5 text-xs font-mono focus:border-[#c5983c] outline-none bg-white"
                       />
                       {formData.plots.length > 1 && (
                         <button
@@ -1169,7 +1177,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
 
               <div className="col-span-3 md:col-span-2 grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  <label className="block text-xs font-bold text-[#334155] mb-1.5">
                     رقم المخطط (إدخال أو اختيار)
                   </label>
                   <input
@@ -1182,7 +1190,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                         plan: toEnglishNumbers(e.target.value),
                       })
                     }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-mono focus:border-purple-500 outline-none bg-gray-50 focus:bg-white"
+                    className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2.5 text-sm font-mono focus:border-[#c5983c] outline-none bg-[#fbf8f1]/70 focus:bg-white"
                     placeholder="أدخل أو اختر المخطط"
                   />
                   <datalist id="plans-list">
@@ -1192,7 +1200,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                   </datalist>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  <label className="block text-xs font-bold text-[#334155] mb-1.5">
                     رقم الصك القديم
                   </label>
                   <input
@@ -1204,12 +1212,12 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                         oldDeed: toEnglishNumbers(e.target.value),
                       })
                     }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-mono focus:border-purple-500 outline-none bg-gray-50 focus:bg-white"
+                    className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2.5 text-sm font-mono focus:border-[#c5983c] outline-none bg-[#fbf8f1]/70 focus:bg-white"
                     placeholder="أدخل الصك"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  <label className="block text-xs font-bold text-[#334155] mb-1.5">
                     مساحة الأرض (م²)
                   </label>
                   <input
@@ -1221,7 +1229,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                         landArea: toEnglishNumbers(e.target.value),
                       })
                     }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-mono focus:border-purple-500 outline-none bg-gray-50 focus:bg-white"
+                    className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2.5 text-sm font-mono focus:border-[#c5983c] outline-none bg-[#fbf8f1]/70 focus:bg-white"
                     placeholder="المساحة"
                   />
                 </div>
@@ -1231,8 +1239,8 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
             {/* 💡 الحقول الجديدة المفصلة للأرقام والتواريخ */}
             <div className="col-span-4 mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-gray-100 pt-5">
               {/* بيانات الخدمة */}
-              <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex flex-col gap-3">
-                <label className="text-[11px] font-black text-blue-800 flex items-center gap-1.5">
+              <div className="bg-[#eef7f6]/50 p-4 rounded-xl border border-[#d8b46a]/25 flex flex-col gap-3">
+                <label className="text-[11px] font-black text-[#123f59] flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5" /> بيانات الخدمة
                   (بلدي/إحكام)
                 </label>
@@ -1246,7 +1254,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                       serviceNumber: toEnglishNumbers(e.target.value),
                     })
                   }
-                  className="w-full border border-blue-200 rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-blue-500 bg-white"
+                  className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-[#c5983c] bg-white"
                 />
                 <input
                   type="text"
@@ -1258,7 +1266,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                       serviceYear: toEnglishNumbers(e.target.value),
                     })
                   }
-                  className="w-full border border-blue-200 rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-blue-500 bg-white"
+                  className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-[#c5983c] bg-white"
                 />
                 <input
                   type="date"
@@ -1266,7 +1274,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                   onChange={(e) =>
                     setFormData({ ...formData, serviceDate: e.target.value })
                   }
-                  className="w-full border border-blue-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-blue-500 bg-white text-gray-700 cursor-pointer"
+                  className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#c5983c] bg-white text-[#334155] cursor-pointer"
                   title="تاريخ الخدمة"
                 />
               </div>
@@ -1306,14 +1314,14 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                   onChange={(e) =>
                     setFormData({ ...formData, requestDate: e.target.value })
                   }
-                  className="w-full border border-emerald-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-emerald-500 bg-white text-gray-700 cursor-pointer"
+                  className="w-full border border-emerald-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-emerald-500 bg-white text-[#334155] cursor-pointer"
                   title="تاريخ الطلب"
                 />
               </div>
 
               {/* بيانات الرخصة */}
-              <div className="bg-purple-50/50 p-4 rounded-xl border border-purple-100 flex flex-col gap-3">
-                <label className="text-[11px] font-black text-purple-800 flex items-center gap-1.5">
+              <div className="bg-[#fbf8f1]/50 p-4 rounded-xl border border-[#d8b46a]/25 flex flex-col gap-3">
+                <label className="text-[11px] font-black text-[#123f59] flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5" /> بيانات الرخصة الإلكترونية
                 </label>
                 <input
@@ -1326,7 +1334,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                       electronicLicenseNumber: toEnglishNumbers(e.target.value),
                     })
                   }
-                  className="w-full border border-purple-200 rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-purple-500 bg-white"
+                  className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-[#c5983c] bg-white"
                 />
                 <input
                   type="text"
@@ -1340,7 +1348,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                       ),
                     })
                   }
-                  className="w-full border border-purple-200 rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-purple-500 bg-white"
+                  className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-[#c5983c] bg-white"
                 />
                 <input
                   type="date"
@@ -1351,7 +1359,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                       electronicLicenseDate: e.target.value,
                     })
                   }
-                  className="w-full border border-purple-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-purple-500 bg-white text-gray-700 cursor-pointer"
+                  className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#c5983c] bg-white text-[#334155] cursor-pointer"
                   title="تاريخ الرخصة"
                 />
               </div>
@@ -1359,7 +1367,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
 
             <div className="mt-5 border-t border-gray-100 pt-5 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block mb-2 text-gray-700 text-xs font-bold">
+                <label className="block mb-2 text-[#334155] text-xs font-bold">
                   الجهات المرتبطة بالمعاملة
                 </label>
                 <div className="flex flex-wrap gap-4">
@@ -1367,15 +1375,15 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                     (entity) => (
                       <label
                         key={entity}
-                        className="flex items-center gap-1.5 cursor-pointer bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200"
+                        className="flex items-center gap-1.5 cursor-pointer bg-[#fbf8f1]/70 px-3 py-1.5 rounded-lg border border-[#e8ddc8]"
                       >
                         <input
                           type="checkbox"
                           checked={formData.entities.includes(entity)}
                           onChange={() => toggleArrayItem("entities", entity)}
-                          className="accent-purple-600 w-4 h-4"
+                          className="accent-[#123f59] w-4 h-4"
                         />
-                        <span className="text-gray-700 text-xs font-bold">
+                        <span className="text-[#334155] text-xs font-bold">
                           {entity}
                         </span>
                       </label>
@@ -1413,7 +1421,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                <label className="block text-[11px] font-bold text-[#334155] mb-1.5">
                   المكتب المصمم
                 </label>
                 <select
@@ -1421,7 +1429,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                   onChange={(e) =>
                     setFormData({ ...formData, designerOffice: e.target.value })
                   }
-                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2.5 text-xs focus:border-blue-500 outline-none"
+                  className="w-full bg-[#fbf8f1]/70 border border-[#d8b46a]/35 rounded-lg px-3 py-2.5 text-xs focus:border-[#c5983c] outline-none"
                 >
                   <option value="">-- بدون / غير محدد --</option>
                   {offices.map((off) => (
@@ -1433,7 +1441,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                <label className="block text-[11px] font-bold text-[#334155] mb-1.5">
                   المكتب المشرف
                 </label>
                 <select
@@ -1444,7 +1452,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                       supervisorOffice: e.target.value,
                     })
                   }
-                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2.5 text-xs focus:border-blue-500 outline-none"
+                  className="w-full bg-[#fbf8f1]/70 border border-[#d8b46a]/35 rounded-lg px-3 py-2.5 text-xs focus:border-[#c5983c] outline-none"
                 >
                   <option value="">-- بدون / غير محدد --</option>
                   {offices.map((off) => (
@@ -1478,9 +1486,9 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
           </section>
 
           {/* 4. الماليات والأطراف */}
-          <section className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
-              <h3 className="text-sm font-black text-green-700 flex items-center gap-2">
+          <section className="rounded-[28px] border border-[#d8b46a]/30 bg-white p-5 shadow-[0_16px_40px_rgba(18,63,89,0.08)]">
+            <div className="flex items-center justify-between mb-4 border-b border-[#e8ddc8] pb-3">
+              <h3 className="text-sm font-black text-emerald-700 flex items-center gap-2">
                 <Calculator className="w-4 h-4" /> الماليات والأطراف
               </h3>
               <label className="flex items-center gap-2 cursor-pointer px-3 py-1.5 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 transition-colors">
@@ -1505,19 +1513,19 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
 
             <div className="grid grid-cols-3 gap-6">
               <div
-                className={`space-y-4 rounded-xl border p-4 transition-all ${formData.isFeeDelayed ? "bg-gray-50 border-gray-200 opacity-60 pointer-events-none" : "bg-green-50/50 border-green-200"}`}
+                className={`space-y-4 rounded-xl border p-4 transition-all ${formData.isFeeDelayed ? "bg-[#fbf8f1]/70 border-[#e8ddc8] opacity-60 pointer-events-none" : "bg-emerald-50/50 border-emerald-200"}`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-black text-gray-800">
+                    <label className="text-xs font-black text-[#123f59]">
                       الأتعاب الإجمالية للمكتب *
                     </label>
-                    <div className="flex bg-white rounded border border-gray-200 overflow-hidden">
+                    <div className="flex bg-white rounded border border-[#e8ddc8] overflow-hidden">
                       <button
                         onClick={() =>
                           setFormData({ ...formData, feeType: "مبدئي" })
                         }
-                        className={`px-2 py-1 text-[10px] font-bold ${formData.feeType === "مبدئي" ? "bg-amber-100 text-amber-800" : "text-gray-500"}`}
+                        className={`px-2 py-1 text-[10px] font-bold ${formData.feeType === "مبدئي" ? "bg-amber-100 text-amber-800" : "text-[#64748b]"}`}
                       >
                         مبدئي
                       </button>
@@ -1525,7 +1533,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                         onClick={() =>
                           setFormData({ ...formData, feeType: "نهائي" })
                         }
-                        className={`px-2 py-1 text-[10px] font-bold border-r border-gray-200 ${formData.feeType === "نهائي" ? "bg-green-100 text-green-800" : "text-gray-500"}`}
+                        className={`px-2 py-1 text-[10px] font-bold border-r border-[#e8ddc8] ${formData.feeType === "نهائي" ? "bg-green-100 text-emerald-800" : "text-[#64748b]"}`}
                       >
                         نهائي
                       </button>
@@ -1543,10 +1551,10 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                           totalFees: toEnglishNumbers(e.target.value),
                         })
                       }
-                      className="w-full border border-green-400 rounded-lg px-3 py-2.5 text-lg font-black font-mono text-green-700 focus:border-green-600 focus:ring-2 focus:ring-green-100 outline-none transition-all disabled:bg-gray-100"
+                      className="w-full border border-emerald-400 rounded-lg px-3 py-2.5 text-lg font-black font-mono text-emerald-700 focus:border-[#c5983c] focus:ring-2 focus:ring-[#c5983c]/10 outline-none transition-all disabled:bg-[#f8efe0]"
                       placeholder="0"
                     />
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-green-600 font-bold">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-emerald-600 font-bold">
                       ر.س
                     </span>
                   </div>
@@ -1557,7 +1565,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                       setFormData({ ...formData, taxType: e.target.value })
                     }
                     disabled={formData.isFeeDelayed}
-                    className="w-full border border-green-200 bg-white rounded-lg px-2 py-2 text-[11px] font-bold text-gray-700 outline-none mb-2 focus:border-green-500 cursor-pointer"
+                    className="w-full border border-emerald-200 bg-white rounded-lg px-2 py-2 text-[11px] font-bold text-[#334155] outline-none mb-2 focus:border-[#c5983c] cursor-pointer"
                   >
                     <option value="بدون احتساب ضريبة">
                       بدون احتساب ضريبة (صافي)
@@ -1573,10 +1581,10 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                   {!formData.isFeeDelayed &&
                     parseNumber(formData.totalFees) > 0 &&
                     formData.taxType !== "بدون احتساب ضريبة" && (
-                      <div className="bg-white border border-green-100 p-2 rounded-md text-[10px] font-mono leading-relaxed shadow-sm">
-                        <div className="flex justify-between text-gray-600">
+                      <div className="bg-white border border-emerald-100 p-2 rounded-md text-[10px] font-mono leading-relaxed shadow-sm">
+                        <div className="flex justify-between text-[#64748b]">
                           <span>المبلغ الصافي:</span>
-                          <span className="font-bold text-gray-800">
+                          <span className="font-bold text-[#123f59]">
                             {netAmount.toLocaleString(undefined, {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
@@ -1599,7 +1607,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  <label className="block text-xs font-bold text-[#334155] mb-1.5">
                     الدفعة الأولى (مُحصّل الآن)
                   </label>
                   <input
@@ -1612,14 +1620,14 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                         firstPayment: toEnglishNumbers(e.target.value),
                       })
                     }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-mono font-bold focus:border-green-500 outline-none disabled:bg-gray-100"
+                    className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2.5 text-sm font-mono font-bold focus:border-[#c5983c] outline-none disabled:bg-[#f8efe0]"
                     placeholder="0"
                   />
                 </div>
               </div>
 
               <div className="col-span-2 grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <div className="bg-[#fbf8f1]/70 p-4 rounded-xl border border-[#e8ddc8]">
                   <SmartLinkedField
                     label="الوسيط / المسوق"
                     value={formData.brokerName}
@@ -1644,7 +1652,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                     }
                   />
                   <div className="mt-3">
-                    <label className="block text-[10px] font-bold text-gray-500 mb-1">
+                    <label className="block text-[10px] font-bold text-[#64748b] mb-1">
                       أتعاب الوسيط
                     </label>
                     <input
@@ -1656,14 +1664,14 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                           mediatorFees: toEnglishNumbers(e.target.value),
                         })
                       }
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs font-mono font-bold text-red-600 focus:border-blue-500 outline-none bg-white"
+                      className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2 text-xs font-mono font-bold text-red-600 focus:border-[#c5983c] outline-none bg-white"
                       placeholder="0"
                     />
                   </div>
                 </div>
 
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                  <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                <div className="bg-[#fbf8f1]/70 p-4 rounded-xl border border-[#e8ddc8]">
+                  <label className="block text-[11px] font-bold text-[#334155] mb-1.5">
                     المعقب / المراجع
                   </label>
                   <select
@@ -1674,7 +1682,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                         followUpAgentId: e.target.value,
                       })
                     }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs focus:border-blue-500 outline-none mb-3 bg-white"
+                    className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2 text-xs focus:border-[#c5983c] outline-none mb-3 bg-white"
                   >
                     <option value="">بدون معقب</option>
                     {agents.map((emp) => (
@@ -1683,7 +1691,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                       </option>
                     ))}
                   </select>
-                  <label className="block text-[10px] font-bold text-gray-500 mb-1">
+                  <label className="block text-[10px] font-bold text-[#64748b] mb-1">
                     أتعاب المعقب
                   </label>
                   <input
@@ -1695,13 +1703,13 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                         agentFees: toEnglishNumbers(e.target.value),
                       })
                     }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs font-mono font-bold text-red-600 focus:border-blue-500 outline-none bg-white"
+                    className="w-full border border-[#d8b46a]/35 rounded-lg px-3 py-2 text-xs font-mono font-bold text-red-600 focus:border-[#c5983c] outline-none bg-white"
                     placeholder="0"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                  <label className="block text-[11px] font-bold text-[#334155] mb-1.5">
                     صاحب المصلحة
                   </label>
                   <select
@@ -1712,7 +1720,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                         stakeholderId: e.target.value,
                       })
                     }
-                    className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2.5 text-xs focus:border-blue-500 outline-none"
+                    className="w-full bg-[#fbf8f1]/70 border border-[#d8b46a]/35 rounded-lg px-3 py-2.5 text-xs focus:border-[#c5983c] outline-none"
                   >
                     <option value="">-- اختياري --</option>
                     {stakeholders.map((emp) => (
@@ -1723,7 +1731,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                  <label className="block text-[11px] font-bold text-[#334155] mb-1.5">
                     المستلم (موظف الاستلام)
                   </label>
                   <select
@@ -1731,7 +1739,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                     onChange={(e) =>
                       setFormData({ ...formData, receiverId: e.target.value })
                     }
-                    className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2.5 text-xs focus:border-blue-500 outline-none"
+                    className="w-full bg-[#fbf8f1]/70 border border-[#d8b46a]/35 rounded-lg px-3 py-2.5 text-xs focus:border-[#c5983c] outline-none"
                   >
                     <option value="">-- اختياري --</option>
                     {receivers.map((emp) => (
@@ -1742,7 +1750,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                   </select>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                  <label className="block text-[11px] font-bold text-[#334155] mb-1.5">
                     وسيط المكتب الهندسي
                   </label>
                   <select
@@ -1753,7 +1761,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                         engOfficeBrokerId: e.target.value,
                       })
                     }
-                    className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2.5 text-xs focus:border-blue-500 outline-none"
+                    className="w-full bg-[#fbf8f1]/70 border border-[#d8b46a]/35 rounded-lg px-3 py-2.5 text-xs focus:border-[#c5983c] outline-none"
                   >
                     <option value="">-- اختياري --</option>
                     {engBrokers.map((emp) => (
@@ -1774,7 +1782,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                       onChange={(e) =>
                         setFormData({ ...formData, sourceType: e.target.value })
                       }
-                      className="w-full border border-amber-200 rounded-lg px-3 py-2.5 text-xs focus:border-amber-500 outline-none bg-white"
+                      className="w-full border border-amber-200 rounded-lg px-3 py-2.5 text-xs focus:border-[#c5983c] outline-none bg-white"
                     >
                       <option value="شريك بالمكتب">شريك بالمكتب</option>
                       <option value="مكتب وسيط">مكتب وسيط</option>
@@ -1791,7 +1799,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                       onChange={(e) =>
                         setFormData({ ...formData, sourceName: e.target.value })
                       }
-                      className="w-full border border-amber-200 rounded-lg px-3 py-2.5 text-xs focus:border-amber-500 outline-none bg-white"
+                      className="w-full border border-amber-200 rounded-lg px-3 py-2.5 text-xs focus:border-[#c5983c] outline-none bg-white"
                       disabled={formData.sourceType === "عميل مباشر"}
                     >
                       <option value="">اختر...</option>
@@ -1815,7 +1823,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                           sourcePercent: toEnglishNumbers(e.target.value),
                         })
                       }
-                      className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm font-mono font-bold focus:border-amber-500 outline-none bg-white"
+                      className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm font-mono font-bold focus:border-[#c5983c] outline-none bg-white"
                       placeholder="0"
                       disabled={formData.sourceType === "عميل مباشر"}
                     />
@@ -1826,13 +1834,13 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
           </section>
 
           {/* 5. المرفقات المستلمة */}
-          <section className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="text-sm font-black text-gray-800 mb-4 flex items-center gap-2 border-b border-gray-100 pb-3">
+          <section className="rounded-[28px] border border-[#d8b46a]/30 bg-white p-5 shadow-[0_16px_40px_rgba(18,63,89,0.08)]">
+            <h3 className="text-sm font-black text-[#123f59] mb-4 flex items-center gap-2 border-b border-[#e8ddc8] pb-3">
               <Paperclip className="w-4 h-4 text-blue-500" /> المرفقات
               والمستندات المستلمة من العميل
             </h3>
 
-            <div className="p-5 rounded-xl border border-blue-100 bg-blue-50/50">
+            <div className="p-5 rounded-xl border border-[#d8b46a]/25 bg-[#eef7f6]/50">
               <label className="block mb-3 text-slate-600 text-xs font-bold">
                 المرفقات الأساسية المتوقعة
               </label>
@@ -1850,7 +1858,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                 ].map((doc) => (
                   <label
                     key={doc}
-                    className="flex items-center gap-2 cursor-pointer bg-white px-4 py-2 rounded-lg border border-blue-100 hover:border-blue-300 hover:shadow-sm transition-all"
+                    className="flex items-center gap-2 cursor-pointer bg-white px-4 py-2 rounded-lg border border-[#d8b46a]/25 hover:border-[#c5983c]/55 hover:shadow-sm transition-all"
                   >
                     <input
                       type="checkbox"
@@ -1858,7 +1866,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                       onChange={() =>
                         toggleArrayItem("receivedAttachments", doc)
                       }
-                      className="accent-blue-600 w-4 h-4"
+                      className="accent-[#123f59] w-4 h-4"
                     />
                     <span className="text-slate-700 text-xs font-bold">
                       {doc}
@@ -1867,14 +1875,14 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                 ))}
               </div>
 
-              <div className="mt-6 border-t border-blue-200/60 pt-5">
+              <div className="mt-6 border-t border-[#d8b46a]/35/60 pt-5">
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-slate-600 text-xs font-bold">
                     مرفقات أخرى مخصصة (نص حر)
                   </label>
                   <button
                     onClick={addCustomAttachment}
-                    className="flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-100 px-3 py-1.5 rounded-lg hover:bg-blue-200 transition-colors"
+                    className="flex items-center gap-1 text-[11px] font-bold text-[#123f59] bg-[#f8efe0] px-3 py-1.5 rounded-lg hover:bg-blue-200 transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" /> إضافة مرفق آخر
                   </button>
@@ -1889,7 +1897,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                           updateCustomAttachment(idx, e.target.value)
                         }
                         placeholder={`اسم المرفق المخصص ${idx + 1}...`}
-                        className="flex-1 px-3 py-2.5 text-xs font-bold border border-gray-300 rounded-lg outline-none focus:border-blue-500 bg-white"
+                        className="flex-1 px-3 py-2.5 text-xs font-bold border border-[#d8b46a]/35 rounded-lg outline-none focus:border-[#c5983c] bg-white"
                       />
                       <button
                         onClick={() => removeCustomAttachment(idx)}
@@ -1900,7 +1908,7 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
                     </div>
                   ))}
                   {formData.customAttachments.length === 0 && (
-                    <div className="text-xs text-gray-400 font-semibold italic bg-white border border-dashed border-gray-200 p-3 rounded-lg text-center">
+                    <div className="text-xs text-[#94a3b8] font-semibold italic bg-white border border-dashed border-[#e8ddc8] p-3 rounded-lg text-center">
                       لا توجد مرفقات مخصصة مضافة.
                     </div>
                   )}
@@ -1911,22 +1919,22 @@ export const CreateTransactionModal = ({ isOpen, onClose, refetchTable }) => {
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50 shrink-0">
-          <div className="text-[11px] text-gray-500 font-bold flex items-center gap-2">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-[#e8ddc8] bg-[#fbf8f1]/70 shrink-0">
+          <div className="text-[11px] text-[#64748b] font-bold flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-green-500" /> سيتم توليد
             وتكويد رقم مرجعي تلقائياً للحفاظ على التسلسل.
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={handleClose}
-              className="px-6 py-2.5 rounded-xl text-sm font-bold text-gray-600 bg-white border border-gray-300 hover:bg-gray-100 transition-colors shadow-sm"
+              className="px-6 py-2.5 rounded-xl text-sm font-bold text-[#64748b] bg-white border border-[#d8b46a]/35 hover:bg-[#f8efe0] transition-colors shadow-sm"
             >
               إلغاء التغييرات
             </button>
             <button
               onClick={handleSubmit}
               disabled={createMutation.isPending}
-              className="px-8 py-2.5 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-md disabled:opacity-50"
+              className="flex items-center gap-2 rounded-2xl bg-[#123f59] px-8 py-3 text-sm font-black text-white shadow-[0_12px_30px_rgba(18,63,89,0.22)] transition hover:-translate-y-[1px] hover:bg-[#0f3448] disabled:opacity-50"
             >
               {createMutation.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

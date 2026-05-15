@@ -6,12 +6,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { usePermissionBuilder } from "../../../context/PermissionBuilderContext";
 import { DEFAULT_MENU_CATEGORIES } from "../../../constants/menuConstants";
 
-import {
-  Search,
-  Star,
-  ShieldCheck,
-  Layers,
-} from "lucide-react";
+import { Search, Star, ShieldCheck, Layers } from "lucide-react";
 
 const formatScreenId = (id) => {
   const value = String(id || "");
@@ -124,10 +119,8 @@ const Sidebar = () => {
       {/* Background premium */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-[#101d2b] via-[#111827] to-[#08111c]" />
-
         <div className="absolute right-[-90px] top-[-90px] h-56 w-56 rounded-full bg-[#123f59]/55 blur-3xl" />
         <div className="absolute left-[-90px] bottom-[-90px] h-56 w-56 rounded-full bg-[#c5983c]/18 blur-3xl" />
-
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-l from-transparent via-[#c5983c]/80 to-transparent" />
         <div className="absolute inset-y-0 left-0 w-px bg-gradient-to-b from-transparent via-[#c5983c]/35 to-transparent" />
       </div>
@@ -173,7 +166,7 @@ const Sidebar = () => {
       {/* Navigation always open */}
       <nav className="sidebar-scrollbar relative z-10 min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-2">
         {filteredCategories.length === 0 ? (
-          <div className="mx-2 mt-6 rounded-2xl border border-[#c5983c]/20 bg-white/[0.05] p-4 text-center">
+          <div className="mx-2 mt-6 rounded-2xl border border-[#c5983c]/20 bg-[#101d2b]/80 p-4 text-center">
             <p className="text-xs font-bold text-slate-300">
               لا توجد شاشات مطابقة للبحث
             </p>
@@ -184,8 +177,8 @@ const Sidebar = () => {
 
             if (category.isMain) {
               return (
-                <div key={category.id} className="mb-3">
-                  <div className="mb-2 flex items-center justify-between px-3">
+                <div key={category.id} className="mb-4">
+                  <div className="mb-2 flex items-center justify-between px-2">
                     <span className="text-[10px] font-black text-slate-400">
                       الشاشة الحالية
                     </span>
@@ -216,7 +209,7 @@ const Sidebar = () => {
                               `,
                               isActive
                                 ? "border border-[#c5983c]/40 bg-gradient-to-l from-[#123f59] via-[#0f3448] to-[#08111c] text-white shadow-[0_14px_32px_rgba(18,63,89,0.45)]"
-                                : "border border-white/[0.04] bg-white/[0.045] text-slate-300 hover:border-[#c5983c]/25 hover:bg-white/[0.08] hover:text-white",
+                                : "border border-[#243346] bg-[#101d2b]/70 text-slate-300 hover:border-[#c5983c]/25 hover:bg-[#172536] hover:text-white",
                             )}
                           >
                             {isActive && (
@@ -235,7 +228,7 @@ const Sidebar = () => {
                                 "relative z-10 shrink-0 rounded-lg border px-2 py-1 text-[10px] font-black font-mono",
                                 isActive
                                   ? "border-white/15 bg-white/15 text-[#e2bf74]"
-                                  : "border-white/5 bg-[#08111c]/80 text-slate-400",
+                                  : "border-[#243346] bg-[#08111c]/80 text-slate-400",
                               )}
                             >
                               {formatScreenId(item.id)}
@@ -250,51 +243,43 @@ const Sidebar = () => {
             }
 
             return (
-              <div
-                key={category.id}
-                className="
-                  mb-2 rounded-[20px] border border-[#c5983c]/16
-                  bg-white/[0.035] p-1
-                  shadow-[0_10px_24px_rgba(0,0,0,0.14)]
-                "
-              >
-                {/* Category header - always open, no toggle */}
-                <div
-                  className="
-                    flex w-full items-center justify-between rounded-2xl
-                    bg-[#1c2735] px-3 py-2.5 text-right text-white
-                  "
-                >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span
-                      className="
-                        grid h-9 w-9 shrink-0 place-items-center rounded-2xl
-                        border border-[#c5983c]/45 bg-[#c5983c]/14 text-[#e2bf74]
-                      "
-                    >
-                      <CategoryIcon size={17} />
-                    </span>
+              <section key={category.id} className="mb-5">
+                {/* Category title as section, no big square */}
+                <div className="mb-2 flex items-center gap-2 px-1">
+                  <span
+                    className="
+                      grid h-9 w-9 shrink-0 place-items-center rounded-2xl
+                      border border-[#c5983c]/35 bg-[#c5983c]/10 text-[#e2bf74]
+                    "
+                  >
+                    <CategoryIcon size={17} />
+                  </span>
 
-                    <span className="min-w-0 truncate text-[13px] font-black">
-                      {category.title}
-                    </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="h-px flex-1 bg-gradient-to-l from-[#c5983c]/35 via-[#c5983c]/18 to-transparent" />
+
+                      <h3 className="shrink-0 text-[13px] font-black text-white">
+                        {category.title}
+                      </h3>
+
+                      <span className="h-px flex-1 bg-gradient-to-r from-[#c5983c]/35 via-[#c5983c]/18 to-transparent" />
+                    </div>
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span
-                      className="
-                        rounded-lg border border-[#c5983c]/25
-                        bg-[#c5983c]/14 px-2 py-0.5
-                        text-[10px] font-black text-[#e2bf74]
-                      "
-                    >
-                      {category.items.length}
-                    </span>
-                  </div>
+                  <span
+                    className="
+                      shrink-0 rounded-xl border border-[#c5983c]/25
+                      bg-[#c5983c]/10 px-2 py-1
+                      text-[10px] font-black text-[#e2bf74]
+                    "
+                  >
+                    {category.items.length}
+                  </span>
                 </div>
 
                 {/* Items always visible */}
-                <div className="space-y-1 px-1 pb-1 pt-1.5">
+                <div className="space-y-1.5 pr-2">
                   {category.items.map((item) => {
                     const isActive = activeScreenId === item.id;
 
@@ -315,7 +300,7 @@ const Sidebar = () => {
                             `,
                             isActive
                               ? "border border-[#c5983c]/35 bg-gradient-to-l from-[#123f59] via-[#0f3448] to-[#08111c] text-white shadow-[0_10px_24px_rgba(18,63,89,0.38)]"
-                              : "border border-transparent text-slate-300 hover:border-[#c5983c]/18 hover:bg-white/[0.07] hover:text-white",
+                              : "border border-[#243346]/60 bg-[#101d2b]/55 text-slate-300 hover:border-[#c5983c]/25 hover:bg-[#1c2d3f]/70 hover:text-white",
                           )}
                         >
                           {isActive && (
@@ -366,7 +351,7 @@ const Sidebar = () => {
                               "relative z-10 shrink-0 rounded-lg border px-1.5 py-0.5 text-[9px] font-black font-mono",
                               isActive
                                 ? "border-white/15 bg-white/15 text-[#e2bf74]"
-                                : "border-white/5 bg-[#08111c]/75 text-slate-400",
+                                : "border-[#243346] bg-[#08111c]/75 text-slate-400",
                             )}
                           >
                             {formatScreenId(item.id)}
@@ -376,7 +361,7 @@ const Sidebar = () => {
                     );
                   })}
                 </div>
-              </div>
+              </section>
             );
           })
         )}
@@ -395,7 +380,7 @@ const Sidebar = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 rounded-xl border border-[#c5983c]/20 bg-white/[0.05] px-2 py-1.5">
+          <div className="flex items-center gap-2 rounded-xl border border-[#c5983c]/20 bg-[#101d2b]/80 px-2 py-1.5">
             <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
             <ShieldCheck size={14} className="text-[#c5983c]" />
           </div>
