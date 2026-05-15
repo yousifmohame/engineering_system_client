@@ -19,10 +19,10 @@ import { STAMP_TEMPLATE } from "../../../components/Stamp/stampTemplate";
 import { STAMP_TEMPLATE_QR } from "../../../components/Stamp/stampTemplateـqrcode";
 
 // 💡 استخدمنا مسار الـ legacy ليقوم بتوليد ملف .js عادي يقبله أي سيرفر
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/legacy/build/pdf.worker.min.js', 
-  import.meta.url,
-).toString();
+import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.js?url';
+
+// 💡 2. نقوم بتعيين الرابط
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
   const [file, setFile] = useState(null);
