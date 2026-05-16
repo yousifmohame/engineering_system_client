@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import api from "../../api/axios";
 import { useMutation } from "@tanstack/react-query";
-import { FileSignature, X } from "lucide-react";
+import { FileSignature, X, ShieldCheck, Info } from "lucide-react";
 
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
@@ -83,7 +83,9 @@ export default function InboxCenter() {
       body: "",
       attachments: [],
       signature: DEFAULT_SIGNATURE,
-      footer: DEFAULT_FOOTER_TEXT,
+      footerText: DEFAULT_FOOTER_TEXT,
+      footerColor: "#64748b",
+      footerSize: "11px",
     };
 
     if (mode === "reply" && message) {
@@ -507,9 +509,17 @@ export default function InboxCenter() {
 
   return (
     <div
-      className="flex h-full w-full bg-gray-50 font-[Tajawal] overflow-hidden"
+      className="
+        relative flex h-full w-full overflow-hidden
+        bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
+        font-[Tajawal]
+      "
       dir="rtl"
     >
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute right-[-140px] top-[-140px] h-80 w-80 rounded-full bg-[#123f59]/10 blur-3xl" />
+        <div className="absolute left-[-140px] bottom-[-140px] h-80 w-80 rounded-full bg-[#c5983c]/16 blur-3xl" />
+      </div>
       <datalist id="contactsList">
         {contacts.map((c, i) => (
           <option key={i} value={c.email}>
@@ -528,7 +538,12 @@ export default function InboxCenter() {
         handleCompose={handleCompose}
       />
 
-      <main className="flex-1 flex flex-col min-w-0 bg-white relative overflow-hidden">
+      <main
+        className="
+          relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden
+          border-r border-[#d8b46a]/20 bg-white/75 backdrop-blur-xl
+        "
+      >
         {!selectedMessage && (
           <Header
             searchQuery={searchQuery}
@@ -589,22 +604,124 @@ export default function InboxCenter() {
       )}
 
       {showSignatureSettings && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
-              <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                <FileSignature className="w-5 h-5 text-blue-600" />
-                إعدادات التوقيع
-              </h3>
+        <div
+          className="
+            fixed inset-0 z-[60] flex items-center justify-center
+            bg-[#06111d]/70 p-4 backdrop-blur-md
+          "
+          dir="rtl"
+        >
+          <div
+            className="
+              w-full max-w-md overflow-hidden rounded-[28px]
+              border border-[#d8b46a]/35 bg-white
+              shadow-[0_30px_90px_rgba(0,0,0,0.35)]
+            "
+          >
+            <div
+              className="
+                relative overflow-hidden border-b border-[#d8b46a]/25
+                bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490]
+                px-5 py-4 text-white
+              "
+            >
+              <div className="pointer-events-none absolute inset-0">
+                <div className="absolute right-[-55px] top-[-55px] h-32 w-32 rounded-full bg-[#e2bf74]/18 blur-3xl" />
+                <div className="absolute left-[-55px] bottom-[-55px] h-32 w-32 rounded-full bg-emerald-400/14 blur-3xl" />
+              </div>
+
+              <div className="relative z-10 flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span
+                    className="
+                      grid h-11 w-11 shrink-0 place-items-center
+                      rounded-2xl border border-[#e2bf74]/35
+                      bg-white/12 text-[#e2bf74]
+                    "
+                  >
+                    <FileSignature className="h-5 w-5" />
+                  </span>
+
+                  <div className="min-w-0">
+                    <h3 className="truncate text-base font-black">
+                      إعدادات التوقيع
+                    </h3>
+
+                    <p className="mt-0.5 truncate text-[11px] font-bold text-white/60">
+                      Signature configuration
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowSignatureSettings(false)}
+                  className="
+                    flex min-w-[54px] flex-col items-center justify-center gap-0.5
+                    rounded-xl border border-white/15 bg-white/10
+                    px-2 py-1 text-[8px] font-black leading-none text-white
+                    transition hover:bg-red-500/30
+                  "
+                  type="button"
+                >
+                  <X className="h-4 w-4" />
+                  <span>إغلاق</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4 p-6">
+              <div
+                className="
+                  flex items-start gap-3 rounded-2xl
+                  border border-cyan-700/20 bg-cyan-50/80
+                  p-4 text-cyan-900
+                "
+              >
+                <span
+                  className="
+                    grid h-10 w-10 shrink-0 place-items-center
+                    rounded-2xl bg-white text-cyan-800 shadow-sm
+                  "
+                >
+                  <Info className="h-5 w-5" />
+                </span>
+
+                <div>
+                  <p className="text-xs font-black">معلومة</p>
+                  <p className="mt-1 text-xs font-bold leading-6 text-cyan-900/80">
+                    تم برمجة التوقيع الرسمي للشركة برمجياً في الباك إند، ويتم
+                    إضافته تلقائياً عند إنشاء الرسائل.
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="
+                  flex items-center gap-3 rounded-2xl
+                  border border-emerald-200 bg-emerald-50
+                  p-4 text-emerald-800
+                "
+              >
+                <ShieldCheck className="h-5 w-5 shrink-0" />
+                <span className="text-xs font-black">
+                  التوقيع الرسمي مفعل ومحمي.
+                </span>
+              </div>
+
               <button
                 onClick={() => setShowSignatureSettings(false)}
-                className="p-1 hover:bg-gray-200 rounded-lg"
+                className="
+                  flex h-11 w-full items-center justify-center gap-2
+                  rounded-2xl bg-gradient-to-l from-[#123f59] via-[#15536f] to-[#0e7490]
+                  text-sm font-black text-white
+                  shadow-[0_14px_30px_rgba(18,63,89,0.22)]
+                  transition hover:-translate-y-[1px]
+                "
+                type="button"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                تم الفهم
+                <ShieldCheck className="h-4 w-4 text-[#e2bf74]" />
               </button>
-            </div>
-            <div className="p-6 text-center text-sm font-semibold text-gray-600">
-              تم برمجة التوقيع الرسمي للشركة برمجياً في الباك إند.
             </div>
           </div>
         </div>

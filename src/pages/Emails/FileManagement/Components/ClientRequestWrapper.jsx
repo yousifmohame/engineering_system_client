@@ -1,49 +1,168 @@
-import React from 'react';
-import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import api from '../../../../api/axios'; // 💡 تأكد من مسار axios
-import ExternalUploadPage from './ExternalUploadPage';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import React from "react";
+import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import api from "../../../../api/axios";
+import ExternalUploadPage from "./ExternalUploadPage";
+import {
+  Loader2,
+  AlertTriangle,
+  UploadCloud,
+  ShieldCheck,
+  FileX,
+} from "lucide-react";
 
 export default function ClientRequestWrapper() {
-  const { shortLink } = useParams(); // قراءة الكود من الرابط
+  const { shortLink } = useParams();
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['verify-req-link', shortLink],
+    queryKey: ["verify-req-link", shortLink],
     queryFn: async () => {
-      // 💡 استدعاء الـ API الذي بنيناه سابقاً للتحقق من الرابط الخارجي
       const res = await api.get(`/transfer-center/verify/req/${shortLink}`);
       return res.data;
     },
-    retry: false // لا داعي للمحاولة إذا كان الرابط خاطئاً
+    retry: false,
   });
 
   if (isLoading) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-50">
-        <Loader2 className="w-12 h-12 animate-spin text-indigo-600 mb-4" />
-        <p className="text-slate-500 font-bold">جاري تجهيز بيئة الرفع الآمنة...</p>
-      </div>
+      <PageShell>
+        <StatusCard
+          tone="blue"
+          icon={Loader2}
+          iconClassName="animate-spin"
+          title="جاري تجهيز بيئة الرفع..."
+          message="يتم الآن التحقق من الرابط وتجهيز صفحة رفع الملفات الآمنة."
+          badge="رفع آمن"
+        />
+      </PageShell>
     );
   }
 
-  // إذا الرابط خاطئ أو محذوف أو السيرفر أرجع خطأ
   if (isError || !data?.success) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-50" dir="rtl">
-        <AlertTriangle className="w-20 h-20 text-rose-500 mb-4" />
-        <h1 className="text-2xl font-black text-slate-800 mb-2">رابط غير صالح</h1>
-        <p className="text-sm font-bold text-slate-500">عذراً، هذا الرابط غير صحيح أو انتهت صلاحيته.</p>
-      </div>
+      <PageShell>
+        <StatusCard
+          tone="rose"
+          icon={AlertTriangle}
+          title="رابط غير صالح"
+          message="عذراً، هذا الرابط غير صحيح أو انتهت صلاحيته."
+          badge="غير متاح"
+        />
+      </PageShell>
     );
   }
 
-  // 🚀 دمج بيانات الرابط من الداتابيز مع إعدادات الألوان والفوتر
   const combinedConfig = {
-    ...data.config, // الإعدادات (companyName, brandColor, footerText...)
-    ...data.data,   // بيانات الرابط (title, maxFiles, status, pinCode...)
-    isPreview: false // هذا عميل حقيقي، وليس معاينة
+    ...data.config,
+    ...data.data,
+    isPreview: false,
   };
 
   return <ExternalUploadPage config={combinedConfig} />;
 }
+
+const PageShell = ({ children }) => (
+  <div
+    className="
+      relative flex min-h-screen w-full items-center justify-center
+      overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
+      p-4 font-[Tajawal]
+    "
+    dir="rtl"
+  >
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute right-[-140px] top-[-140px] h-96 w-96 rounded-full bg-[#123f59]/10 blur-3xl" />
+      <div className="absolute left-[-140px] bottom-[-140px] h-96 w-96 rounded-full bg-[#c5983c]/16 blur-3xl" />
+      <div className="absolute left-[22%] top-[18%] h-52 w-52 rounded-full bg-cyan-400/10 blur-3xl" />
+    </div>
+
+    {children}
+  </div>
+);
+
+const StatusCard = ({
+  icon: Icon,
+  title,
+  message,
+  badge,
+  tone = "blue",
+  iconClassName = "",
+}) => {
+  const tones = {
+    blue: {
+      cardBorder: "border-cyan-200",
+      iconBg: "from-[#123f59] to-[#0e7490]",
+      iconText: "text-[#e2bf74]",
+      badge: "border-cyan-200 bg-cyan-50 text-cyan-800",
+      accent: "bg-cyan-400",
+      smallIcon: UploadCloud,
+    },
+    rose: {
+      cardBorder: "border-rose-200",
+      iconBg: "from-rose-600 to-rose-500",
+      iconText: "text-white",
+      badge: "border-rose-200 bg-rose-50 text-rose-700",
+      accent: "bg-rose-400",
+      smallIcon: FileX,
+    },
+  };
+
+  const t = tones[tone] || tones.blue;
+  const SmallIcon = t.smallIcon;
+
+  return (
+    <div
+      className={`
+        relative z-10 w-full max-w-md overflow-hidden rounded-[32px]
+        border ${t.cardBorder}
+        bg-white/88 p-8 text-center
+        shadow-[0_30px_90px_rgba(18,63,89,0.18)]
+        backdrop-blur-xl
+      `}
+    >
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#fbf8f1]/70 via-white/45 to-[#eef7f6]/70" />
+        <div className="absolute right-[-60px] top-[-60px] h-40 w-40 rounded-full bg-[#123f59]/10 blur-3xl" />
+        <div className="absolute left-[-60px] bottom-[-60px] h-40 w-40 rounded-full bg-[#c5983c]/18 blur-3xl" />
+      </div>
+
+      <div className="relative z-10">
+        <div
+          className={`
+            mx-auto mb-5 grid h-20 w-20 place-items-center
+            rounded-[28px] bg-gradient-to-br ${t.iconBg}
+            shadow-[0_16px_34px_rgba(18,63,89,0.22)]
+          `}
+        >
+          <Icon className={`h-10 w-10 ${t.iconText} ${iconClassName}`} />
+        </div>
+
+        <div
+          className={`
+            mx-auto mb-4 inline-flex items-center gap-1.5
+            rounded-2xl border px-3 py-1.5 text-[10px] font-black
+            ${t.badge}
+          `}
+        >
+          <SmallIcon className="h-3.5 w-3.5" />
+          {badge}
+        </div>
+
+        <h1 className="mb-2 text-2xl font-black text-[#123f59]">
+          {title}
+        </h1>
+
+        <p className="mx-auto max-w-sm text-sm font-bold leading-7 text-[#64748b]">
+          {message}
+        </p>
+
+        <div className="mt-6 flex items-center justify-center gap-2 text-[10px] font-black text-[#94a3b8]">
+          <ShieldCheck className="h-4 w-4 text-[#c5983c]" />
+          نظام رفع ملفات آمن
+        </div>
+      </div>
+
+      <div className={`absolute bottom-0 left-0 right-0 h-1.5 ${t.accent}`} />
+    </div>
+  );
+};

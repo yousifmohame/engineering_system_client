@@ -135,29 +135,23 @@ export default function MessageList({
 
                   <div className="relative z-10 flex min-w-0 max-w-full items-center gap-3 overflow-hidden px-3 py-3 sm:gap-4 sm:px-5 sm:py-4">
                     <div className="flex shrink-0 flex-col items-center gap-2">
-                      <button
+                      <MailActionButton
+                        label={msg.isStarred ? "مميزة" : "تمييز"}
+                        title="تمييز الرسالة"
+                        tone={msg.isStarred ? "gold" : isUnread ? "rose" : "emerald"}
                         onClick={(e) => {
                           e.stopPropagation();
                           updateMessageInDB(msg, {
                             isStarred: !msg.isStarred,
                           });
                         }}
-                        className={`grid h-10 w-10 place-items-center rounded-2xl border transition-all duration-300 ${
-                          msg.isStarred
-                            ? "border-[#c5983c]/60 bg-[#f8efe0] text-[#c5983c] shadow-[0_8px_18px_rgba(197,152,60,0.14)]"
-                            : isUnread
-                              ? "border-rose-200 bg-white/85 text-rose-500 hover:bg-rose-50 hover:text-rose-600"
-                              : "border-emerald-200 bg-white/85 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
-                        }`}
-                        title="تمييز الرسالة"
-                        type="button"
                       >
                         <Star
                           className={`h-4 w-4 ${
                             msg.isStarred ? "fill-[#c5983c]" : ""
                           }`}
                         />
-                      </button>
+                      </MailActionButton>
 
                       {isUnread ? (
                         <div className="relative h-3.5 w-3.5 rounded-full bg-rose-500 shadow-[0_0_0_5px_rgba(190,18,60,0.13)]">
@@ -235,7 +229,7 @@ export default function MessageList({
                     </div>
 
                     <div
-                      className={`hidden shrink-0 items-center gap-1 rounded-2xl border p-1 shadow-[0_10px_24px_rgba(18,63,89,0.08)] backdrop-blur-md transition-all duration-300 md:flex ${
+                      className={`hidden shrink-0 items-center gap-1.5 rounded-2xl border p-1 shadow-[0_10px_24px_rgba(18,63,89,0.08)] backdrop-blur-md transition-all duration-300 md:flex ${
                         isUnread
                           ? "border-rose-200 bg-white/85 opacity-100"
                           : "border-emerald-200 bg-white/85 opacity-0 group-hover:opacity-100"
@@ -243,55 +237,59 @@ export default function MessageList({
                     >
                       {currentView === "trash" ? (
                         <>
-                          <button
+                          <MailActionButton
+                            label="استعادة"
+                            title="استعادة"
+                            tone="emerald"
+                            compact
                             onClick={(e) => {
                               e.stopPropagation();
                               updateMessageInDB(msg, { isDeleted: false });
                             }}
-                            className="grid h-8 w-8 place-items-center rounded-xl text-emerald-700 transition hover:bg-emerald-50 hover:text-emerald-800"
-                            title="استعادة"
-                            type="button"
                           >
                             <Archive className="h-4 w-4" />
-                          </button>
+                          </MailActionButton>
 
-                          <button
+                          <MailActionButton
+                            label="حذف نهائي"
+                            title="حذف نهائي"
+                            tone="rose"
+                            compact
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDelete(msg);
                             }}
-                            className="grid h-8 w-8 place-items-center rounded-xl text-rose-500 transition hover:bg-rose-50 hover:text-rose-700"
-                            title="حذف نهائي"
-                            type="button"
                           >
                             <Trash2 className="h-4 w-4" />
-                          </button>
+                          </MailActionButton>
                         </>
                       ) : (
                         <>
-                          <button
+                          <MailActionButton
+                            label="أرشفة"
+                            title="أرشفة"
+                            tone="emerald"
+                            compact
                             onClick={(e) => {
                               e.stopPropagation();
                               updateMessageInDB(msg, { isArchived: true });
                             }}
-                            className="grid h-8 w-8 place-items-center rounded-xl text-emerald-700 transition hover:bg-emerald-50 hover:text-emerald-800"
-                            title="أرشفة"
-                            type="button"
                           >
                             <Archive className="h-4 w-4" />
-                          </button>
+                          </MailActionButton>
 
-                          <button
+                          <MailActionButton
+                            label="حذف"
+                            title="حذف"
+                            tone="rose"
+                            compact
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDelete(msg);
                             }}
-                            className="grid h-8 w-8 place-items-center rounded-xl text-rose-500 transition hover:bg-rose-50 hover:text-rose-700"
-                            title="حذف"
-                            type="button"
                           >
                             <Trash2 className="h-4 w-4" />
-                          </button>
+                          </MailActionButton>
                         </>
                       )}
                     </div>
@@ -316,3 +314,41 @@ export default function MessageList({
     </div>
   );
 }
+
+
+const MailActionButton = ({
+  label,
+  title,
+  tone = "emerald",
+  onClick,
+  children,
+  compact = false,
+}) => {
+  const tones = {
+    emerald:
+      "border-emerald-200 bg-white/90 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800",
+    rose:
+      "border-rose-200 bg-white/90 text-rose-600 hover:bg-rose-50 hover:text-rose-700",
+    gold:
+      "border-[#c5983c]/60 bg-[#f8efe0] text-[#c5983c] hover:bg-[#f4e3bf]",
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`
+        flex flex-col items-center justify-center gap-0.5 rounded-xl border
+        transition-all duration-200 hover:-translate-y-[1px]
+        ${compact ? "min-w-[50px] px-1.5 py-1" : "min-w-[50px] px-1.5 py-1.5"}
+        ${tones[tone] || tones.emerald}
+      `}
+      type="button"
+    >
+      {children}
+      <span className="whitespace-nowrap text-[8px] font-black leading-none">
+        {label}
+      </span>
+    </button>
+  );
+};

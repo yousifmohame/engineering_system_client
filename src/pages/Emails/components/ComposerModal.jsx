@@ -358,10 +358,17 @@ export default function ComposerModal({
 
               <button
                 onClick={() => setIsComposerOpen(false)}
-                className="grid h-9 w-9 place-items-center rounded-xl border border-white/15 bg-white/10 text-white transition hover:bg-red-500/30"
+                className="
+                  flex min-w-[54px] flex-col items-center justify-center gap-0.5
+                  rounded-xl border border-white/15 bg-white/10
+                  px-2 py-1 text-[8px] font-black leading-none text-white
+                  transition hover:bg-red-500/30
+                "
+                title="إغلاق"
                 type="button"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
+                <span>إغلاق</span>
               </button>
             </div>
           </div>
@@ -391,11 +398,17 @@ export default function ComposerModal({
               <div className="relative shrink-0">
                 <button
                   onClick={() => setShowSystemSelect(!showSystemSelect)}
-                  className="flex h-8 items-center gap-1.5 rounded-xl border border-[#d8b46a]/25 bg-[#f8efe0]/70 px-3 text-[11px] font-bold text-[#123f59] transition hover:bg-[#f8efe0]"
+                  className="
+                    flex h-8 items-center gap-1.5 rounded-xl
+                    border border-[#d8b46a]/25 bg-[#f8efe0]/70
+                    px-3 text-[11px] font-bold text-[#123f59]
+                    transition hover:bg-[#f8efe0]
+                  "
+                  title="اختيار من النظام"
                   type="button"
                 >
                   <Users className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">من النظام</span>
+                  <span>النظام</span>
                 </button>
 
                 {showSystemSelect && (
@@ -491,7 +504,13 @@ export default function ComposerModal({
               <button
                 onClick={handleGenerateSubject}
                 disabled={isGeneratingSubject}
-                className="flex h-8 shrink-0 items-center gap-1.5 rounded-xl border border-[#d8b46a]/25 bg-white px-3 text-[11px] font-black text-[#123f59] transition hover:bg-[#f8efe0] disabled:opacity-50"
+                className="
+                  flex h-8 shrink-0 items-center gap-1.5 rounded-xl
+                  border border-[#d8b46a]/25 bg-white px-3
+                  text-[11px] font-black text-[#123f59]
+                  transition hover:bg-[#f8efe0] disabled:opacity-50
+                "
+                title="توليد موضوع بالذكاء الاصطناعي"
                 type="button"
               >
                 {isGeneratingSubject ? (
@@ -499,7 +518,7 @@ export default function ComposerModal({
                 ) : (
                   <Sparkles className="h-3.5 w-3.5 text-[#c5983c]" />
                 )}
-                <span className="hidden sm:inline">AI</span>
+                <span>عنوان AI</span>
               </button>
             </div>
           </div>
@@ -547,12 +566,12 @@ export default function ComposerModal({
 
             <div className="flex min-w-0 items-center gap-1 overflow-x-auto custom-scrollbar-slim">
               {[
-                { icon: Bold, command: "bold" },
-                { icon: Italic, command: "italic" },
-                { icon: Underline, command: "underline" },
-                { icon: AlignRight, command: "justifyRight" },
-                { icon: AlignCenter, command: "justifyCenter" },
-                { icon: AlignLeft, command: "justifyLeft" },
+                { icon: Bold, command: "bold", label: "عريض" },
+                { icon: Italic, command: "italic", label: "مائل" },
+                { icon: Underline, command: "underline", label: "تحته" },
+                { icon: AlignRight, command: "justifyRight", label: "يمين" },
+                { icon: AlignCenter, command: "justifyCenter", label: "وسط" },
+                { icon: AlignLeft, command: "justifyLeft", label: "يسار" },
               ].map((item, index) => {
                 const Icon = item.icon;
 
@@ -563,10 +582,20 @@ export default function ComposerModal({
                       e.preventDefault();
                       execFormat(item.command);
                     }}
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[#e8ddc8] bg-white text-[#123f59] transition hover:bg-[#f8efe0] hover:text-[#c5983c]"
+                    className="
+                      flex min-w-[48px] shrink-0 flex-col items-center justify-center
+                      gap-0.5 rounded-xl border border-[#e8ddc8]
+                      bg-white px-1.5 py-1
+                      text-[#123f59] transition
+                      hover:bg-[#f8efe0] hover:text-[#c5983c]
+                    "
+                    title={item.label}
                     type="button"
                   >
                     <Icon className="h-4 w-4" />
+                    <span className="text-[8px] font-black leading-none">
+                      {item.label}
+                    </span>
                   </button>
                 );
               })}
@@ -663,10 +692,18 @@ export default function ComposerModal({
                                 ),
                               })
                             }
-                            className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-red-400 transition hover:bg-red-50 hover:text-red-600"
+                            className="
+                              flex min-w-[42px] shrink-0 flex-col items-center justify-center
+                              gap-0.5 rounded-lg px-1 py-1
+                              text-red-400 transition hover:bg-red-50 hover:text-red-600
+                            "
+                            title="حذف المرفق"
                             type="button"
                           >
                             <X className="h-3.5 w-3.5" />
+                            <span className="text-[8px] font-black leading-none">
+                              حذف
+                            </span>
                           </button>
                         </div>
                       ))}

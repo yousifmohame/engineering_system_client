@@ -54,46 +54,85 @@ export default function Header({
 
         {/* Actions */}
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <button
+          <HeaderActionButton
             onClick={handleRefresh}
-            className="group grid h-10 w-10 place-items-center rounded-2xl border border-[#d8b46a]/25 bg-white/65 text-[#123f59] shadow-[0_8px_20px_rgba(18,63,89,0.07)] backdrop-blur-md transition-all duration-300 hover:-translate-y-[1px] hover:border-[#c5983c]/55 hover:bg-[#f8efe0]/80 hover:text-[#c5983c] hover:shadow-[0_12px_26px_rgba(18,63,89,0.12)] sm:h-11 sm:w-11 lg:h-12 lg:w-12"
             title="تحديث"
-            type="button"
+            label="تحديث"
+            tone="light"
           >
             <RefreshCw className="h-4 w-4 transition-transform duration-500 group-hover:rotate-180 sm:h-5 sm:w-5" />
-          </button>
+          </HeaderActionButton>
 
-          {/* 💡 التعديل هنا: زر البحث بالذكاء الاصطناعي */}
-          <button
+          {/* 💡 زر البحث بالذكاء الاصطناعي */}
+          <HeaderActionButton
             onClick={handleAISearch}
             disabled={isAILoading}
-            className={`group grid h-10 w-10 place-items-center rounded-2xl border border-[#d8b46a]/35 shadow-[0_10px_24px_rgba(18,63,89,0.20)] backdrop-blur-md transition-all duration-300 sm:h-11 sm:w-11 lg:h-12 lg:w-12
-              ${
-                isAILoading
-                  ? "bg-[#f8efe0] text-[#c5983c] cursor-not-allowed border-[#c5983c]/50 opacity-80"
-                  : "bg-gradient-to-br from-[#123f59] to-[#1a5874] text-[#e2bf74] hover:-translate-y-[1px] hover:shadow-[0_14px_30px_rgba(18,63,89,0.28)]"
-              }
-            `}
             title="البحث الذكي بالذكاء الاصطناعي"
-            type="button"
+            label={isAILoading ? "يفكر..." : "بحث ذكي"}
+            tone="primary"
+            loading={isAILoading}
           >
             {isAILoading ? (
               <Loader2 className="h-4 w-4 animate-spin sm:h-5 sm:w-5" />
             ) : (
               <Sparkles className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 sm:h-5 sm:w-5" />
             )}
-          </button>
+          </HeaderActionButton>
 
-          <button
+          <HeaderActionButton
             onClick={() => setShowSignatureSettings(true)}
-            className="group grid h-10 w-10 place-items-center rounded-2xl border border-[#d8b46a]/25 bg-white/65 text-[#123f59] shadow-[0_8px_20px_rgba(18,63,89,0.07)] backdrop-blur-md transition-all duration-300 hover:-translate-y-[1px] hover:border-[#c5983c]/55 hover:bg-[#f8efe0]/80 hover:text-[#c5983c] hover:shadow-[0_12px_26px_rgba(18,63,89,0.12)] sm:h-11 sm:w-11 lg:h-12 lg:w-12"
             title="إعدادات التوقيع"
-            type="button"
+            label="التوقيع"
+            tone="light"
           >
             <FileSignature className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 sm:h-5 sm:w-5" />
-          </button>
+          </HeaderActionButton>
         </div>
       </div>
     </header>
   );
 }
+
+
+const HeaderActionButton = ({
+  children,
+  onClick,
+  title,
+  label,
+  tone = "light",
+  disabled = false,
+  loading = false,
+}) => {
+  const tones = {
+    light:
+      "border-[#d8b46a]/25 bg-white/70 text-[#123f59] hover:border-[#c5983c]/55 hover:bg-[#f8efe0]/85 hover:text-[#c5983c]",
+    primary:
+      "border-[#d8b46a]/40 bg-gradient-to-br from-[#123f59] to-[#1a5874] text-[#e2bf74] hover:shadow-[0_14px_30px_rgba(18,63,89,0.28)]",
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`
+        group flex min-w-[54px] flex-col items-center justify-center
+        gap-0.5 rounded-2xl border px-1.5 py-1.5
+        text-[8px] font-black leading-none
+        shadow-[0_8px_20px_rgba(18,63,89,0.07)]
+        backdrop-blur-md transition-all duration-300
+        hover:-translate-y-[1px]
+        disabled:cursor-not-allowed disabled:opacity-80
+        sm:min-w-[60px] lg:min-w-[66px]
+        ${loading ? "border-[#c5983c]/50 bg-[#f8efe0] text-[#c5983c]" : tones[tone] || tones.light}
+      `}
+      title={title}
+      type="button"
+    >
+      {children}
+
+      <span className="whitespace-nowrap">
+        {label}
+      </span>
+    </button>
+  );
+};

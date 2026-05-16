@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronRight,
+  Search,
   ExternalLink,
   Plus,
   Settings,
@@ -71,6 +72,76 @@ const getImportanceBadge = (imp) => {
   return "bg-cyan-50 text-cyan-700 border-cyan-200";
 };
 
+const MiniStatCard = ({ icon: Icon, label, value, tone }) => {
+  const tones = {
+    blue: "border-cyan-300/35 bg-cyan-400/[0.18] text-cyan-50",
+    gold: "border-[#e2bf74]/45 bg-[#e2bf74]/20 text-[#fff4cc]",
+    red: "border-rose-300/35 bg-rose-400/[0.18] text-rose-50",
+  };
+
+  return (
+    <div
+      className={`
+        flex min-w-[58px] items-center gap-1.5 rounded-xl
+        border px-2 py-1.5 backdrop-blur-md
+        ${tones[tone] || tones.blue}
+      `}
+    >
+      <Icon className="h-3.5 w-3.5" />
+
+      <div>
+        <div className="font-mono text-[11px] font-black text-white">
+          {value}
+        </div>
+
+        <div className="text-[7px] font-bold text-white/65">
+          {label}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ActionToolButton = ({
+  label,
+  title,
+  tone = "slate",
+  onClick,
+  children,
+}) => {
+  const tones = {
+    slate:
+      "border-slate-200 bg-white text-slate-500 hover:border-[#d8b46a]/50 hover:bg-[#f8efe0] hover:text-[#123f59]",
+    gold:
+      "border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100",
+    cyan:
+      "border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100",
+    rose:
+      "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100",
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`
+        flex min-w-[54px] flex-col items-center justify-center
+        gap-0.5 rounded-xl border px-1.5 py-1
+        transition-all duration-200
+        hover:-translate-y-[1px]
+        ${tones[tone] || tones.slate}
+      `}
+      type="button"
+    >
+      <span className="text-[8px] font-black leading-none">
+        {label}
+      </span>
+
+      {children}
+    </button>
+  );
+};
+
 export default function QuickLinksScreen() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -83,6 +154,7 @@ export default function QuickLinksScreen() {
   const [revealedPasswords, setRevealedPasswords] = useState({});
   const [editingLink, setEditingLink] = useState(null);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const initialForm = {
     title: "",
@@ -177,7 +249,21 @@ export default function QuickLinksScreen() {
   });
 
   const groupedLinks = useMemo(() => {
-    const sorted = [...links];
+    const q = searchQuery.trim().toLowerCase();
+
+    const filtered = !q
+      ? links
+      : links.filter((link) => {
+          return (
+            link.title?.toLowerCase().includes(q) ||
+            link.url?.toLowerCase().includes(q) ||
+            link.description?.toLowerCase().includes(q) ||
+            link.category?.name?.toLowerCase().includes(q) ||
+            link.accessLevel?.toLowerCase().includes(q)
+          );
+        });
+
+    const sorted = [...filtered];
 
     if (sortBy === "usage") {
       sorted.sort((a, b) => {
@@ -210,7 +296,11 @@ export default function QuickLinksScreen() {
     });
 
     return groups;
-  }, [links, sortBy]);
+  }, [links, sortBy, searchQuery]);
+
+  const totalLinks = links.length;
+  const pinnedLinks = links.filter((link) => link.isPinned).length;
+  const protectedLinks = links.filter((link) => link.requiresLogin).length;
 
   const handleOpenLink = (link) => {
     incrementUsageMutation.mutate(link.id);
@@ -281,121 +371,155 @@ export default function QuickLinksScreen() {
   return (
     <div
       className="
-        min-h-screen space-y-5 overflow-hidden
+        flex min-h-screen flex-col gap-2 overflow-hidden
         bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
-        p-4 font-sans md:p-6
+        p-2 font-sans md:p-3 2xl:p-4
       "
       dir="rtl"
     >
-      {/* Header */}
+      {/* Single strip header */}
       <div
         className="
-          relative overflow-hidden rounded-[26px]
-          border border-[#c5983c]/25
-          bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59]
-          p-4 shadow-[0_20px_55px_rgba(18,63,89,0.22)]
+          relative shrink-0 overflow-hidden
+          rounded-[14px] 2xl:rounded-[18px]
+          border border-[#e2bf74]/35
+          bg-gradient-to-l from-[#06111d] via-[#0b3f55] to-[#005f73]
+          px-2.5 py-1.5 2xl:px-3 2xl:py-2
+          shadow-[0_8px_20px_rgba(6,17,29,0.22)]
         "
       >
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-[#c5983c]/18 blur-3xl" />
-          <div className="absolute left-[-80px] bottom-[-80px] h-52 w-52 rounded-full bg-cyan-400/12 blur-3xl" />
+          <div className="absolute right-[-45px] top-[-45px] h-24 w-24 rounded-full bg-[#e2bf74]/18 blur-2xl" />
+          <div className="absolute left-[-50px] bottom-[-50px] h-28 w-28 rounded-full bg-emerald-400/12 blur-2xl" />
         </div>
 
-        <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-3">
+        <div className="relative z-10 flex items-center gap-2">
+          {/* Title */}
+          <div className="flex min-w-[190px] shrink-0 items-center gap-2">
             <button
               className="
-                grid h-11 w-11 place-items-center rounded-2xl
-                border border-white/15 bg-white/10 text-[#e2bf74]
+                grid h-8 w-8 shrink-0 place-items-center rounded-xl
+                border border-white/20 bg-white/10 text-[#e2bf74]
                 transition hover:bg-white/15
               "
               type="button"
             >
-              <ChevronRight className="h-5 w-5" />
+              <ChevronRight className="h-4 w-4" />
             </button>
 
-            <div>
-              <div className="flex items-center gap-2">
-                <span
-                  className="
-                    grid h-9 w-9 place-items-center rounded-2xl
-                    bg-[#e2bf74] text-[#123f59] shadow-sm
-                  "
-                >
-                  <Link2 className="h-4 w-4" />
-                </span>
+            <span
+              className="
+                grid h-8 w-8 shrink-0 place-items-center rounded-xl
+                bg-[#e2bf74] text-[#082032] shadow-sm
+              "
+            >
+              <Link2 className="h-4 w-4" />
+            </span>
 
-                <h3 className="text-xl font-black text-white">
-                  الروابط السريعة
-                </h3>
-              </div>
+            <div className="min-w-0">
+              <h3 className="truncate text-[12px] font-black text-white">
+                الروابط السريعة
+              </h3>
 
-              <p className="mt-1 text-xs font-bold text-white/55">
-                إدارة روابط الأنظمة والمنصات المهمة مع الصلاحيات وبيانات الدخول.
+              <p className="truncate text-[8px] font-bold text-white/55">
+                {links.length} رابط · {Object.keys(groupedLinks).length} تصنيف
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setSortBy("usage")}
-              className={`rounded-2xl border px-4 py-2 text-xs font-black transition-all ${
-                sortBy === "usage"
-                  ? "border-[#e2bf74]/45 bg-[#e2bf74] text-[#123f59] shadow-[0_10px_24px_rgba(226,191,116,0.20)]"
-                  : "border-white/15 bg-white/10 text-white hover:bg-white/15"
-              }`}
-              type="button"
-            >
-              الأكثر استخداماً
-            </button>
-
-            <button
-              onClick={() => setSortBy("date")}
-              className={`rounded-2xl border px-4 py-2 text-xs font-black transition-all ${
-                sortBy === "date"
-                  ? "border-[#e2bf74]/45 bg-[#e2bf74] text-[#123f59] shadow-[0_10px_24px_rgba(226,191,116,0.20)]"
-                  : "border-white/15 bg-white/10 text-white hover:bg-white/15"
-              }`}
-              type="button"
-            >
-              الأحدث
-            </button>
-
-            <button
-              onClick={() => openLinkModal()}
-              className="
-                flex items-center gap-2 rounded-2xl
-                bg-white px-4 py-2 text-xs font-black text-[#123f59]
-                shadow-[0_12px_30px_rgba(255,255,255,0.16)]
-                transition hover:-translate-y-[1px] hover:bg-[#fbf8f1]
-              "
-              type="button"
-            >
-              <Plus className="h-4 w-4 text-[#c5983c]" />
-              رابط جديد
-            </button>
-
-            <button
-              onClick={() => setIsCategoryModalOpen(true)}
-              className="
-                grid h-10 w-10 place-items-center rounded-2xl
-                border border-white/15 bg-white/10 text-[#e2bf74]
-                transition hover:bg-white/15
-              "
-              type="button"
-              title="إدارة التصنيفات"
-            >
-              <Settings className="h-4 w-4" />
-            </button>
+          {/* Stats */}
+          <div className="hidden shrink-0 items-center gap-1.5 md:flex">
+            <MiniStatCard icon={Link2} label="الروابط" value={totalLinks} tone="blue" />
+            <MiniStatCard icon={Pin} label="مثبتة" value={pinnedLinks} tone="gold" />
+            <MiniStatCard icon={Lock} label="محمية" value={protectedLinks} tone="red" />
           </div>
+
+          {/* Search */}
+          <div className="relative min-w-[190px] flex-1">
+            <Search className="absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#d8a93d]" />
+
+            <input
+              placeholder="بحث في الروابط..."
+              className="
+                h-8 w-full rounded-xl border border-white/20
+                bg-white pr-9 pl-3
+                text-[10px] font-bold text-[#082032]
+                shadow-sm outline-none transition-all
+                placeholder:text-[#6b7c8f]
+                focus:border-[#e2bf74]
+                focus:ring-2 focus:ring-[#e2bf74]/25
+              "
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Sort buttons */}
+          <button
+            onClick={() => setSortBy("usage")}
+            className={`h-8 shrink-0 rounded-xl border px-3 text-[10px] font-black transition-all ${
+              sortBy === "usage"
+                ? "border-[#e2bf74]/45 bg-[#e2bf74] text-[#082032]"
+                : "border-white/20 bg-white/10 text-white hover:bg-white/15"
+            }`}
+            type="button"
+          >
+            الأكثر استخداماً
+          </button>
+
+          <button
+            onClick={() => setSortBy("date")}
+            className={`h-8 shrink-0 rounded-xl border px-3 text-[10px] font-black transition-all ${
+              sortBy === "date"
+                ? "border-[#e2bf74]/45 bg-[#e2bf74] text-[#082032]"
+                : "border-white/20 bg-white/10 text-white hover:bg-white/15"
+            }`}
+            type="button"
+          >
+            الأحدث
+          </button>
+
+          {/* Actions */}
+          <button
+            onClick={() => openLinkModal()}
+            className="
+              flex h-8 shrink-0 items-center justify-center gap-1.5
+              rounded-xl bg-[#e2bf74] px-3
+              text-[10px] font-black text-[#082032]
+              shadow-[0_8px_18px_rgba(226,191,116,0.22)]
+              transition-all duration-300
+              hover:-translate-y-[1px]
+              hover:bg-[#f5d99b]
+            "
+            type="button"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            رابط جديد
+          </button>
+
+          <button
+            onClick={() => setIsCategoryModalOpen(true)}
+            className="
+              grid h-8 w-8 shrink-0 place-items-center rounded-xl
+              border border-white/20 bg-white/10
+              text-[#e2bf74] transition hover:bg-white/15
+            "
+            type="button"
+            title="إدارة التصنيفات"
+          >
+            <Settings className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
       {/* Tables Grouped by Category */}
       <div
         className="
-          overflow-hidden rounded-[26px] border border-[#d8b46a]/30
-          bg-white shadow-[0_18px_45px_rgba(18,63,89,0.10)]
+          min-h-0 flex-1 overflow-auto rounded-[20px]
+          border border-[#d8b46a]/30 bg-white
+          shadow-[0_14px_34px_rgba(18,63,89,0.10)]
+          2xl:rounded-[26px]
         "
       >
         {Object.entries(groupedLinks).map(
@@ -409,16 +533,16 @@ export default function QuickLinksScreen() {
                   flex items-center justify-between gap-3
                   border-b border-[#e8ddc8]
                   bg-gradient-to-l from-[#f8efe0] via-white to-[#eef7f6]
-                  px-4 py-3
+                  px-4 py-2
                 "
               >
                 <div className="flex items-center gap-2">
                   <span className="h-6 w-1.5 rounded-full bg-[#c5983c]" />
                   <div>
-                    <div className="text-sm font-black text-[#123f59]">
+                    <div className="text-xs font-black text-[#123f59]">
                       {categoryName}
                     </div>
-                    <div className="text-[10px] font-bold text-[#64748b]">
+                    <div className="text-[9px] font-bold text-[#64748b]">
                       {catLinks.length} رابط داخل هذا التصنيف
                     </div>
                   </div>
@@ -454,7 +578,7 @@ export default function QuickLinksScreen() {
                         مستوى الوصول
                       </th>
                       <th className="border-l border-white/10 px-3 py-3">
-                        الدخول/الباسوورد
+                        بيانات الدخول
                       </th>
                       <th className="border-l border-white/10 px-3 py-3">
                         الصلاحية
@@ -468,7 +592,7 @@ export default function QuickLinksScreen() {
                       <th className="border-l border-white/10 px-3 py-3 text-center">
                         استخدام
                       </th>
-                      <th className="px-3 py-3 text-center">إجراءات</th>
+                      <th className="w-[240px] px-3 py-3 text-center">إجراءات</th>
                     </tr>
                   </thead>
 
@@ -614,81 +738,63 @@ export default function QuickLinksScreen() {
                           </td>
 
                           <td className="px-3 py-2.5 text-center">
-                            <div className="flex items-center justify-center gap-1">
+                            <div className="flex items-center justify-center gap-1.5">
                               {link.isPinned && sortBy === "usage" && (
-                                <div className="ml-1 mr-2 flex flex-col gap-0.5">
-                                  <button
+                                <div className="ml-1 mr-2 flex items-center gap-1">
+                                  <ActionToolButton
+                                    label="رفع"
+                                    title="رفع ترتيب الرابط"
+                                    tone="slate"
                                     onClick={() =>
                                       handleMovePinned(catLinks, index, "up")
                                     }
-                                    className="
-                                      rounded-lg bg-[#f8efe0] p-0.5
-                                      text-[#64748b] transition
-                                      hover:text-[#123f59]
-                                    "
-                                    type="button"
                                   >
-                                    <ArrowUp className="h-3 w-3" />
-                                  </button>
+                                    <ArrowUp className="h-3.5 w-3.5" />
+                                  </ActionToolButton>
 
-                                  <button
+                                  <ActionToolButton
+                                    label="خفض"
+                                    title="خفض ترتيب الرابط"
+                                    tone="slate"
                                     onClick={() =>
                                       handleMovePinned(catLinks, index, "down")
                                     }
-                                    className="
-                                      rounded-lg bg-[#f8efe0] p-0.5
-                                      text-[#64748b] transition
-                                      hover:text-[#123f59]
-                                    "
-                                    type="button"
                                   >
-                                    <ArrowDown className="h-3 w-3" />
-                                  </button>
+                                    <ArrowDown className="h-3.5 w-3.5" />
+                                  </ActionToolButton>
                                 </div>
                               )}
 
-                              <button
+                              <ActionToolButton
+                                label="تثبيت/إلغاء"
+                                title="تثبيت الرابط في الأعلى أو إلغاء تثبيته"
+                                tone={link.isPinned ? "gold" : "slate"}
                                 onClick={() => handlePinToggle(link)}
-                                className={`rounded-xl p-1.5 transition-colors ${
-                                  link.isPinned
-                                    ? "bg-amber-50 text-amber-600"
-                                    : "text-slate-400 hover:bg-[#f8efe0] hover:text-[#c5983c]"
-                                }`}
-                                title={
-                                  link.isPinned
-                                    ? "إلغاء التثبيت"
-                                    : "تثبيت في الأعلى"
-                                }
-                                type="button"
                               >
                                 <Pin className="h-3.5 w-3.5" />
-                              </button>
+                              </ActionToolButton>
 
-                              <button
+                              <ActionToolButton
+                                label="تعديل"
+                                title="تعديل الرابط"
+                                tone="cyan"
                                 onClick={() => openLinkModal(link)}
-                                className="
-                                  rounded-xl p-1.5 text-slate-400
-                                  transition-colors hover:bg-cyan-50 hover:text-cyan-700
-                                "
-                                type="button"
                               >
                                 <Pen className="h-3.5 w-3.5" />
-                              </button>
+                              </ActionToolButton>
 
-                              <button
+                              <ActionToolButton
+                                label="حذف"
+                                title="حذف الرابط"
+                                tone="rose"
                                 onClick={() => {
                                   if (window.confirm("حذف؟")) {
                                     deleteLinkMutation.mutate(link.id);
                                   }
                                 }}
-                                className="
-                                  rounded-xl p-1.5 text-slate-400
-                                  transition-colors hover:bg-rose-50 hover:text-rose-600
-                                "
-                                type="button"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
-                              </button>
+                              </ActionToolButton>
                             </div>
                           </td>
                         </tr>

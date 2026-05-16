@@ -247,7 +247,7 @@ export default function EmailViewer({
       {/* HEADER */}
       <div className="relative z-10 shrink-0 border-b border-[#c5983c]/40 bg-white/90 px-2 py-2 shadow-[0_10px_30px_rgba(18,63,89,0.16)] backdrop-blur-xl">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-1.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
             <button
               onClick={() => setSelectedMessage(null)}
               className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-[#c5983c]/50 bg-white px-3 text-xs font-black text-[#0f3448] shadow-[0_6px_16px_rgba(18,63,89,0.12)] transition hover:bg-[#f8efe0] hover:text-[#c5983c]"
@@ -257,72 +257,72 @@ export default function EmailViewer({
               <span>العودة</span>
             </button>
 
-            <button
+            <HeaderActionButton
+              label="أرشفة"
+              title="أرشفة"
+              tone="cyan"
               onClick={() =>
                 updateMessageInDB(selectedMessage, { isArchived: true }).then(
                   () => setSelectedMessage(null),
                 )
               }
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-cyan-700/25 bg-cyan-50 text-cyan-800 shadow-sm transition hover:bg-cyan-100"
-              title="أرشفة"
-              type="button"
             >
               <Archive className="h-4 w-4" />
-            </button>
+            </HeaderActionButton>
 
-            <button
+            <HeaderActionButton
+              label="حذف"
+              title="حذف"
+              tone="rose"
               onClick={() =>
                 updateMessageInDB(selectedMessage, { isDeleted: true }).then(
                   () => setSelectedMessage(null),
                 )
               }
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-rose-300 bg-rose-50 text-rose-600 shadow-sm transition hover:bg-rose-100 hover:text-rose-700"
-              title="حذف"
-              type="button"
             >
               <Trash2 className="h-4 w-4" />
-            </button>
+            </HeaderActionButton>
 
-            <button
+            <HeaderActionButton
+              label="غير مقروء"
+              title="تعليم كغير مقروء"
+              tone="emerald"
               onClick={() => {
                 updateMessageInDB(selectedMessage, { isRead: false });
                 setSelectedMessage(null);
               }}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-emerald-500/25 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100"
-              title="تعليم كغير مقروء"
-              type="button"
             >
               <CircleDot className="h-4 w-4" />
-            </button>
+            </HeaderActionButton>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5">
-            <button
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+            <HeaderActionButton
+              label="رد"
+              title="رد"
+              tone="gold"
               onClick={() => handleCompose("reply", selectedMessage)}
-              className="flex h-9 items-center gap-1.5 rounded-xl border border-[#c5983c]/35 bg-white px-2.5 text-xs font-black text-[#0f3448] shadow-sm transition hover:bg-[#f8efe0] hover:text-[#c5983c] md:px-3"
-              type="button"
             >
-              <Reply className="h-3.5 w-3.5" />
-              <span className="hidden md:inline">رد</span>
-            </button>
+              <Reply className="h-4 w-4" />
+            </HeaderActionButton>
 
-            <button
+            <HeaderActionButton
+              label="للجميع"
+              title="رد للجميع"
+              tone="gold"
               onClick={() => handleCompose("replyall", selectedMessage)}
-              className="flex h-9 items-center gap-1.5 rounded-xl border border-[#c5983c]/35 bg-white px-2.5 text-xs font-black text-[#0f3448] shadow-sm transition hover:bg-[#f8efe0] hover:text-[#c5983c] md:px-3"
-              type="button"
             >
-              <ReplyAll className="h-3.5 w-3.5" />
-              <span className="hidden md:inline">للجميع</span>
-            </button>
+              <ReplyAll className="h-4 w-4" />
+            </HeaderActionButton>
 
-            <button
+            <HeaderActionButton
+              label="تحويل"
+              title="تحويل"
+              tone="primary"
               onClick={() => handleCompose("forward", selectedMessage)}
-              className="flex h-9 items-center gap-1.5 rounded-xl border border-[#c5983c]/45 bg-gradient-to-l from-[#0f3448] via-[#15536f] to-[#0e7490] px-2.5 text-xs font-black text-white shadow-[0_10px_22px_rgba(18,63,89,0.28)] transition hover:-translate-y-[1px] md:px-3"
-              type="button"
             >
-              <Forward className="h-3.5 w-3.5 text-[#e2bf74]" />
-              <span className="hidden md:inline">تحويل</span>
-            </button>
+              <Forward className="h-4 w-4" />
+            </HeaderActionButton>
           </div>
         </div>
       </div>
@@ -746,3 +746,44 @@ export default function EmailViewer({
     </div>
   );
 }
+
+const HeaderActionButton = ({
+  label,
+  title,
+  tone = "gold",
+  onClick,
+  children,
+}) => {
+  const tones = {
+    gold:
+      "border-[#c5983c]/35 bg-white text-[#0f3448] hover:bg-[#f8efe0] hover:text-[#c5983c]",
+    cyan:
+      "border-cyan-700/25 bg-cyan-50 text-cyan-800 hover:bg-cyan-100",
+    rose:
+      "border-rose-300 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700",
+    emerald:
+      "border-emerald-500/25 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
+    primary:
+      "border-[#c5983c]/45 bg-gradient-to-l from-[#0f3448] via-[#15536f] to-[#0e7490] text-white hover:-translate-y-[1px]",
+  };
+
+  const iconColor = tone === "primary" ? "text-[#e2bf74]" : "";
+
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`
+        flex min-w-[56px] flex-col items-center justify-center
+        gap-0.5 rounded-xl border px-2 py-1.5
+        text-[8px] font-black leading-none
+        shadow-sm transition-all duration-200
+        ${tones[tone] || tones.gold}
+      `}
+      type="button"
+    >
+      <span className={iconColor}>{children}</span>
+      <span className="whitespace-nowrap">{label}</span>
+    </button>
+  );
+};
