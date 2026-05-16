@@ -36,8 +36,6 @@ export default function InboxCenter() {
   const [showAISmartSearch, setShowAISmartSearch] = useState(false);
   const [isAISearching, setIsAISearching] = useState(false);
 
-  
-
   // 💡 تصميم التوقيع الافتراضي (مطابق تماماً للصورة المرفقة)
   // 💡 التوقيع فقط (بدون الفوتر)
   const DEFAULT_SIGNATURE = `
@@ -304,27 +302,39 @@ export default function InboxCenter() {
     }
   };
 
-  const handleSelectMessage = (msg) => {
+  // 💡 التعديل الهام هنا للتحميل الكسول للمسودات
+  const handleSelectMessage = async (msg) => {
     if (msg.isDraft) {
-      setComposeData({
-        id: msg.id,
-        to: msg.to || "",
-        cc: msg.cc || "",
-        bcc: msg.bcc || "",
-        subject: msg.subject || "",
-        body: msg.body || "",
-        attachments: msg.attachments || [],
-        // 💡 استرجاع التوقيع والفوتر المحفوظ، أو استخدام الافتراضي
-        signature: msg.signature || DEFAULT_SIGNATURE,
-        footerText: msg.footerText || DEFAULT_FOOTER_TEXT,
-        footerColor: msg.footerColor || "#64748b",
-        footerSize: msg.footerSize || "11px",
-      });
-      setComposerMode("draft");
-      setIsComposerOpen(true);
+      const toastId = toast.loading("جاري تحميل المسودة...");
+      try {
+        // 💡 جلب التفاصيل الكاملة للمسودة من الباك إند
+        const res = await api.get(
+          `/email/messages/${msg.id || msg.messageId || msg.uid}`,
+        );
+        const fullDraft = res.data.data;
+
+        setComposeData({
+          id: fullDraft.id,
+          to: fullDraft.to || "",
+          cc: fullDraft.cc || "",
+          bcc: fullDraft.bcc || "",
+          subject: fullDraft.subject || "",
+          body: fullDraft.body || "",
+          attachments: fullDraft.attachments || [],
+          signature: fullDraft.signature || DEFAULT_SIGNATURE,
+          footerText: fullDraft.footerText || DEFAULT_FOOTER_TEXT,
+          footerColor: fullDraft.footerColor || "#64748b",
+          footerSize: fullDraft.footerSize || "11px",
+        });
+        setComposerMode("draft");
+        setIsComposerOpen(true);
+      } catch (error) {
+        toast.error("حدث خطأ أثناء فتح المسودة");
+      } finally {
+        toast.dismiss(toastId);
+      }
     } else {
       setSelectedMessage(msg);
-      if (!msg.isRead) updateMessageInDB(msg, { isRead: true });
     }
   };
 
@@ -479,16 +489,20 @@ export default function InboxCenter() {
 
   const handleScroll = (e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.target;
-    
+
     // استخدمنا 300 بكسل بدلاً من 100 لضمان تحميل الرسائل قبل وصول المستخدم لنهاية الشاشة بقليل
     if (scrollHeight - scrollTop <= clientHeight + 300) {
-      
       // أ) إذا كان لدينا رسائل محملة في الذاكرة ولم تُعرض بعد، نعرض 20 رسالة إضافية
       if (visibleCount < sortedMessages.length) {
         setVisibleCount((prev) => prev + 20);
       }
       // ب) إذا انتهينا من عرض كل ما في الذاكرة، نطلب رسائل قديمة من السيرفر (IMAP)
-      else if (hasMore && !isFetchingMore && !isLoading && currentView === "inbox") {
+      else if (
+        hasMore &&
+        !isFetchingMore &&
+        !isLoading &&
+        currentView === "inbox"
+      ) {
         fetchEmails(page + 1);
       }
     }

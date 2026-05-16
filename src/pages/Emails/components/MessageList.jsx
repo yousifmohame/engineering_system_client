@@ -49,12 +49,18 @@ export default function MessageList({
   // أضف هذه الدالة داخل مكون MessageList
   const getEmptyMessageTitle = () => {
     switch (currentView) {
-      case "sent": return "صندوق الصادر فارغ";
-      case "starred": return "لا توجد رسائل مميزة";
-      case "archived": return "الأرشيف فارغ";
-      case "drafts": return "لا توجد مسودات";
-      case "trash": return "سلة المهملات فارغة";
-      default: return "صندوق الوارد فارغ";
+      case "sent":
+        return "صندوق الصادر فارغ";
+      case "starred":
+        return "لا توجد رسائل مميزة";
+      case "archived":
+        return "الأرشيف فارغ";
+      case "drafts":
+        return "لا توجد مسودات";
+      case "trash":
+        return "سلة المهملات فارغة";
+      default:
+        return "صندوق الوارد فارغ";
     }
   };
 
@@ -65,7 +71,6 @@ export default function MessageList({
           <Mail className="h-10 w-10" />
         </div>
 
-        {/* 💡 التعديل هنا: استخدام الدالة بدلاً من النص الثابت */}
         <h3 className="mb-2 text-xl font-black text-[#123f59]">
           {getEmptyMessageTitle()}
         </h3>
@@ -105,7 +110,10 @@ export default function MessageList({
               const sender =
                 msg.from?.split("<")[0].replace(/"/g, "").trim() || "بدون مرسل";
 
-              const bodyPreview = cleanText(msg.body).substring(0, 105);
+              // 💡 التعديل الهام هنا للتحميل الكسول
+              const bodyPreview = cleanText(
+                msg.snippet || msg.body || "",
+              ).substring(0, 105);
 
               return (
                 <div
@@ -138,7 +146,9 @@ export default function MessageList({
                       <MailActionButton
                         label={msg.isStarred ? "مميزة" : "تمييز"}
                         title="تمييز الرسالة"
-                        tone={msg.isStarred ? "gold" : isUnread ? "rose" : "emerald"}
+                        tone={
+                          msg.isStarred ? "gold" : isUnread ? "rose" : "emerald"
+                        }
                         onClick={(e) => {
                           e.stopPropagation();
                           updateMessageInDB(msg, {
@@ -315,7 +325,6 @@ export default function MessageList({
   );
 }
 
-
 const MailActionButton = ({
   label,
   title,
@@ -327,10 +336,8 @@ const MailActionButton = ({
   const tones = {
     emerald:
       "border-emerald-200 bg-white/90 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800",
-    rose:
-      "border-rose-200 bg-white/90 text-rose-600 hover:bg-rose-50 hover:text-rose-700",
-    gold:
-      "border-[#c5983c]/60 bg-[#f8efe0] text-[#c5983c] hover:bg-[#f4e3bf]",
+    rose: "border-rose-200 bg-white/90 text-rose-600 hover:bg-rose-50 hover:text-rose-700",
+    gold: "border-[#c5983c]/60 bg-[#f8efe0] text-[#c5983c] hover:bg-[#f4e3bf]",
   };
 
   return (
