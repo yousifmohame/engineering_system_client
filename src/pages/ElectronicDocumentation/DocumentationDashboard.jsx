@@ -7,19 +7,23 @@ import {
   Fingerprint,
   Stamp,
   Database,
+  UserCheck,
 } from "lucide-react";
 
 // استيراد المودالات (النوافذ المنبثقة)
 import RegistryModal from "./Screens/RegistryModal";
 import VerificationModal from "./Screens/VerificationModal";
-import DocSettingsModal from "./Screens/DocSettingsModal";
+
+import LogsModal from "./Screens/LogsModal";
+import SupervisorModal from "./Screens/SupervisorModal";
 
 export default function DocumentationDashboard({ onNavigate }) {
   // حالة فتح النوافذ المنبثقة
   const [modalOpen, setModalOpen] = useState({
     registry: false,
     verify: false,
-    settings: false,
+    supervisor: false,
+    logs: false,
   });
 
   const DOC_MODULES = useMemo(
@@ -47,27 +51,18 @@ export default function DocumentationDashboard({ onNavigate }) {
       {
         id: 3,
         type: "modal",
-        target: "settings",
-        title: "إعدادات التوثيق",
-        desc: "تخصيص أختام التوثيق وصلاحيات الوصول",
-        stat: "تكوين النظام",
+        target: "supervisor",
+        title: "مشرف العمليات",
+        desc: "إدارة واعتماد المستندات المعلقة من قبل الموظفين",
+        stat: "الاعتماد النهائي",
         gradient: "from-purple-600 to-pink-600",
-        icon: Settings2,
+        icon: UserCheck, // 👈 أيقونة تعبر عن المشرف
       },
+      // داخل مصفوفة DOC_MODULES
       {
         id: 4,
-        type: "tab",
-        targetId: "DOC_TEMPLATES",
-        title: "قوالب الأختام",
-        desc: "إدارة وتصميم أشكال الأختام والعلامات المائية",
-        stat: "الهوية الرسمية",
-        gradient: "from-amber-500 to-orange-600",
-        icon: Stamp,
-      },
-      {
-        id: 5,
-        type: "tab",
-        targetId: "DOC_LOGS",
+        type: "modal",
+        target: "logs",
         title: "سجل العمليات",
         desc: "تتبع من قام بالتوثيق ومتى تم الوصول للملفات",
         stat: "رقابة أمنية",
@@ -75,7 +70,7 @@ export default function DocumentationDashboard({ onNavigate }) {
         icon: Fingerprint,
       },
       {
-        id: 6,
+        id: 5,
         type: "tab",
         targetId: "DOC_STORAGE",
         title: "إدارة التخزين",
@@ -91,7 +86,6 @@ export default function DocumentationDashboard({ onNavigate }) {
   return (
     <div className="p-6 md:p-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="max-w-7xl mx-auto">
-        
         {/* قسم الترحيب والإحصائيات السريعة */}
         <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
@@ -100,18 +94,27 @@ export default function DocumentationDashboard({ onNavigate }) {
               مركز إدارة التوثيق الرقمي
             </h2>
             <p className="text-sm font-bold text-slate-500 mt-2">
-              مرحباً بك في وحدة التحكم الأمنية، يمكنك إدارة وفحص كافة الوثائق الرسمية.
+              مرحباً بك في وحدة التحكم الأمنية، يمكنك إدارة وفحص كافة الوثائق
+              الرسمية.
             </p>
           </div>
 
           <div className="flex gap-4">
             <div className="bg-blue-50 border border-blue-100 rounded-2xl px-6 py-3 text-center">
-              <span className="block text-xs font-black text-blue-400 uppercase font-tajawal">الموثقة اليوم</span>
-              <span className="text-xl font-black text-blue-700 font-mono">24</span>
+              <span className="block text-xs font-black text-blue-400 uppercase font-tajawal">
+                الموثقة اليوم
+              </span>
+              <span className="text-xl font-black text-blue-700 font-mono">
+                24
+              </span>
             </div>
             <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-6 py-3 text-center">
-              <span className="block text-xs font-black text-emerald-400 uppercase font-tajawal">ملفات سليمة</span>
-              <span className="text-xl font-black text-emerald-700 font-mono">100%</span>
+              <span className="block text-xs font-black text-emerald-400 uppercase font-tajawal">
+                ملفات سليمة
+              </span>
+              <span className="text-xl font-black text-emerald-700 font-mono">
+                100%
+              </span>
             </div>
           </div>
         </div>
@@ -123,14 +126,16 @@ export default function DocumentationDashboard({ onNavigate }) {
               key={module.id}
               onClick={() => {
                 if (module.type === "modal") {
-                  setModalOpen(prev => ({ ...prev, [module.target]: true }));
+                  setModalOpen((prev) => ({ ...prev, [module.target]: true }));
                 } else {
                   onNavigate && onNavigate(module.targetId, module.title);
                 }
               }}
               className="relative flex items-start gap-5 p-6 bg-white border border-slate-200 rounded-[2rem] shadow-sm hover:shadow-xl hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 group text-right"
             >
-              <div className={`shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center bg-gradient-to-br ${module.gradient} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+              <div
+                className={`shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center bg-gradient-to-br ${module.gradient} shadow-lg group-hover:scale-110 transition-transform duration-300`}
+              >
                 <module.icon className="text-white w-8 h-8" />
               </div>
 
@@ -153,15 +158,20 @@ export default function DocumentationDashboard({ onNavigate }) {
       {/* استدعاء المودالات (Popups) */}
       <RegistryModal
         isOpen={modalOpen.registry}
-        onClose={() => setModalOpen(prev => ({ ...prev, registry: false }))}
+        onClose={() => setModalOpen((prev) => ({ ...prev, registry: false }))}
       />
       <VerificationModal
         isOpen={modalOpen.verify}
-        onClose={() => setModalOpen(prev => ({ ...prev, verify: false }))}
+        onClose={() => setModalOpen((prev) => ({ ...prev, verify: false }))}
       />
-      <DocSettingsModal
-        isOpen={modalOpen.settings}
-        onClose={() => setModalOpen(prev => ({ ...prev, settings: false }))}
+      <LogsModal
+        isOpen={modalOpen.logs}
+        onClose={() => setModalOpen((prev) => ({ ...prev, logs: false }))}
+        onSuccess={() => console.log("تم تحديث السجلات")}
+      />
+      <SupervisorModal
+        isOpen={modalOpen.supervisor}
+        onClose={() => setModalOpen((prev) => ({ ...prev, supervisor: false }))}
       />
     </div>
   );

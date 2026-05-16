@@ -12,19 +12,25 @@ import {
   CheckCircle2,
   AlertCircle,
   ShieldCheck,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Database,
+  Plus,
+  Trash2,
+  Copy,
+  Layers,
 } from "lucide-react";
 import api from "../../../api/axios";
 import { toast } from "sonner";
 import { STAMP_TEMPLATE } from "../../../components/Stamp/stampTemplate";
 import { STAMP_TEMPLATE_QR } from "../../../components/Stamp/stampTemplateـqrcode";
-
-// 💡 استخدمنا مسار الـ legacy ليقوم بتوليد ملف .js عادي يقبله أي سيرفر
+import { useAuth } from "../../../context/AuthContext";
 import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?worker";
 
-// 💡 نمرر الـ Worker هنا كـ workerPort بدلاً من workerSrc
 pdfjs.GlobalWorkerOptions.workerPort = new PdfWorker();
 
 export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
+  const { user } = useAuth();
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -33,15 +39,42 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
   const [recordId, setRecordId] = useState(null);
   const [step, setStep] = useState(1);
 
+  // إحداثيات الأختام
   const [stampScale, setStampScale] = useState(1);
   const [stampRotation, setStampRotation] = useState(0);
   const [qrScale, setQrScale] = useState(1);
   const [qrRotation, setQrRotation] = useState(0);
 
+  // 💡 إعدادات الختم المتعدد والصفحات
+  const [customStampsList, setCustomStampsList] = useState([{ id: "stamp-1" }]);
+  const [applyToAllPages, setApplyToAllPages] = useState(false);
+
+  // إعدادات ختم الـ PNG المخصص
+  const [useCustomStamp, setUseCustomStamp] = useState(false);
+  const [customStampBase64, setCustomStampBase64] = useState(null);
+  const customStampInputRef = useRef(null);
+
+  // 💡 إعدادات الأمان
+  const [securitySettings, setSecuritySettings] = useState({
+    isVerifiable: true,
+    requireOTP: false, // 👈 خيار الـ OTP الجديد
+    clientPhone: "",
+    maxViews: "",
+    expiryDate: "",
+    transactionId: "",
+    clientId: "",
+  });
+
+  // 💡 البيانات الوصفية المرنة (Metadata)
+  const [metadata, setMetadata] = useState([
+    { id: 1, key: "اسم المالك", value: "" },
+    { id: 2, key: "اسم المستند", value: "" },
+  ]);
+
   const renderWidth = 800;
 
   const constraintsRef = useRef(null);
-  const mainStampRef = useRef(null);
+  const mainStampRefs = useRef({}); // لتخزين مراجع متعددة للأختام المكررة
   const qrStampRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -57,6 +90,22 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
       setStampRotation(0);
       setQrScale(1);
       setQrRotation(0);
+      setUseCustomStamp(false);
+      setCustomStampBase64(null);
+      setCustomStampsList([{ id: "stamp-1" }]);
+      setApplyToAllPages(false);
+      setSecuritySettings({
+        isVerifiable: true,
+        requireOTP: false,
+        maxViews: "",
+        expiryDate: "",
+        transactionId: "",
+        clientId: "",
+      });
+      setMetadata([
+        { id: 1, key: "اسم المالك", value: "" },
+        { id: 2, key: "اسم المستند", value: "" },
+      ]);
     }
   }, [isOpen, previewUrl]);
 
@@ -69,14 +118,43 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
+  const handleCustomStampUpload = (e) => {
+    const selectedImage = e.target.files[0];
+    if (selectedImage) {
+      const reader = new FileReader();
+      reader.onloadend = () => setCustomStampBase64(reader.result);
+      reader.readAsDataURL(selectedImage);
+    }
+  };
+
+  // 💡 دوال الميتا داتا
+  const addMetadataField = () =>
+    setMetadata([...metadata, { id: Date.now(), key: "", value: "" }]);
+  const updateMetadata = (id, field, val) =>
+    setMetadata(
+      metadata.map((m) => (m.id === id ? { ...m, [field]: val } : m)),
+    );
+  const removeMetadata = (id) =>
+    setMetadata(metadata.filter((m) => m.id !== id));
+
+  // 💡 دالة تكرار الختم
+  const duplicateStamp = () => {
+    setCustomStampsList([...customStampsList, { id: `stamp-${Date.now()}` }]);
+  };
+
   const generateStamp = async () => {
     setIsProcessing(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("docType", "EXTERNAL");
-      formData.append("fileName", file.name);
+      formData.append(
+        "fileName",
+        metadata.find((m) => m.key === "اسم المستند")?.value || file.name,
+      ); // أخذ الاسم من الميتا داتا إن وجد
       formData.append("signatureType", "DIGITAL_SEAL");
+
+      if (user && user.id) formData.append("employeeId", user.id);
 
       const res = await api.post(`/documentation`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -115,36 +193,30 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
       .replace(/{{TOKEN}}/g, stampData.token);
   };
 
-  // 💡 الحل الرياضي الدقيق لحساب الـ Pivot Point (Bottom-Left)
   const getCoordinates = (elementRef, scale, rotation) => {
-    if (!elementRef.current || !constraintsRef.current) return null;
+    if (!elementRef || !elementRef.current || !constraintsRef.current)
+      return null;
 
     const container = constraintsRef.current.getBoundingClientRect();
     const rect = elementRef.current.getBoundingClientRect();
 
-    // 1. الأبعاد الحقيقية بدون دوران
     const actualWidth = elementRef.current.offsetWidth * scale;
     const actualHeight = elementRef.current.offsetHeight * scale;
 
-    // 2. المركز الفعلي للختم على الشاشة
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
 
-    // 3. تحويل المركز لنسب مئوية (الـ Y تُحسب من الأسفل ليتطابق مع PDF)
     const centerXPercent = (centerX - container.left) / container.width;
     const centerYPercent = (container.bottom - centerY) / container.height;
 
     const widthPercent = actualWidth / container.width;
     const heightPercent = actualHeight / container.height;
-
     const angleRad = (rotation * Math.PI) / 180;
 
-    // 4. معادلة حساب النقطة السفلية اليسرى (Pivot) بدلالة المركز وزاوية الدوران
     const xPercent =
       centerXPercent -
       (widthPercent / 2) * Math.cos(angleRad) -
       (heightPercent / 2) * Math.sin(angleRad);
-    // 💡 التعديل الجذري هنا: المعادلة أصبحت تحسب من الأسفل بشكل صحيح
     const yPercent =
       centerYPercent +
       (widthPercent / 2) * Math.sin(angleRad) -
@@ -155,7 +227,7 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
       yPercent,
       widthPercent,
       heightPercent,
-      rotation: -rotation, // نعكس الزاوية للـ pdf-lib
+      rotation: -rotation,
     };
   };
 
@@ -164,20 +236,30 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
     setIsApproving(true);
 
     try {
-      const mainCoords = getCoordinates(
-        mainStampRef,
-        stampScale,
-        stampRotation,
-      );
-      const qrCoords = getCoordinates(qrStampRef, qrScale, qrRotation);
-
       const stampsToBurn = [];
-      if (mainCoords) {
-        stampsToBurn.push({
-          ...mainCoords,
-          svgString: ensureXmlns(renderMainStampPreview()),
-        });
-      }
+
+      // 💡 معالجة كافة الأختام المكررة
+      customStampsList.forEach((stamp) => {
+        const domRef = { current: mainStampRefs.current[stamp.id] }; // تغليف المرجع ليتوافق مع دالة getCoordinates
+        const mainCoords = getCoordinates(domRef, stampScale, stampRotation);
+
+        if (mainCoords) {
+          let finalSvgData = "";
+          if (useCustomStamp && customStampBase64) {
+            finalSvgData = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500"><image href="${customStampBase64}" width="500" height="500" preserveAspectRatio="xMidYMid meet" /></svg>`;
+          } else {
+            finalSvgData = ensureXmlns(renderMainStampPreview());
+          }
+          stampsToBurn.push({
+            ...mainCoords,
+            svgString: finalSvgData,
+            isCustomImage: useCustomStamp,
+          });
+        }
+      });
+
+      // ختم الـ QR الثابت
+      const qrCoords = getCoordinates(qrStampRef, qrScale, qrRotation);
       if (qrCoords) {
         stampsToBurn.push({
           ...qrCoords,
@@ -185,16 +267,34 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
         });
       }
 
+      // 💡 تصفية الداتا الإضافية لحذف الحقول الفارغة
+      const validMetadata = metadata.filter(
+        (m) => m.key.trim() !== "" && m.value.trim() !== "",
+      );
+
+      // إرسال البيانات المكتملة
       await api.put(`/documentation/${recordId}/approve`, {
         stamps: stampsToBurn,
+        transactionId: securitySettings.transactionId,
+        clientId: securitySettings.clientId,
+        isVerifiable: securitySettings.isVerifiable,
+        requireOTP: securitySettings.requireOTP, // 👈 إرسال حالة الـ OTP
+        maxViews: securitySettings.maxViews
+          ? parseInt(securitySettings.maxViews)
+          : null,
+        expiryDate: securitySettings.expiryDate
+          ? new Date(securitySettings.expiryDate).toISOString()
+          : null,
+        applyToAllPages: applyToAllPages, // 👈 إرسال طلب الختم على كل الصفحات للباك إند
+        customMetadata: validMetadata, // 👈 إرسال الميتا داتا الديناميكية للباك إند ليحفظها كـ JSON
       });
 
       toast.success(
         <div className="flex flex-col gap-1">
           <span className="font-black text-emerald-600">
-            تم حرق الأختام واعتماد الوثيقة! ✅
+            تم إرسال المستند للمشرف للاعتماد! ✅
           </span>
-          <span className="text-xs">التطابق 100% مع مكان المعاينة.</span>
+          <span className="text-xs">تم دمج الأختام وتطبيق إعدادات الأمان.</span>
         </div>,
         { duration: 5000 },
       );
@@ -278,7 +378,9 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
               </div>
             ) : (
               <div className="h-full flex flex-col lg:flex-row bg-slate-200/50">
-                <div className="w-full lg:w-[400px] bg-white/90 backdrop-blur-xl border-l border-slate-200 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar z-20 shadow-[4px_0_24px_rgba(0,0,0,0.05)] shrink-0">
+                {/* 🎛️ Sidebar */}
+                <div className="w-full lg:w-[420px] bg-white/90 backdrop-blur-xl border-l border-slate-200 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar z-20 shadow-[4px_0_24px_rgba(0,0,0,0.05)] shrink-0">
+                  {/* Actions & Approvals */}
                   <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                     <h3 className="font-black text-slate-800 mb-4 flex items-center gap-2">
                       <FileText className="w-4 h-4 text-blue-600" /> تفاصيل
@@ -308,7 +410,7 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                         ) : (
                           <CheckCircle2 className="w-5 h-5" />
                         )}{" "}
-                        اعتماد وحفظ الوثيقة
+                        إرسال للمشرف للاعتماد
                       </button>
                     )}
                   </div>
@@ -319,51 +421,279 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                       animate={{ opacity: 1, y: 0 }}
                       className="flex flex-col gap-4"
                     >
+                      {/* 🛡️ إعدادات الأمان والـ OTP */}
                       <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-                        <h4 className="font-black text-slate-800 flex items-center gap-2 border-b border-slate-50 pb-3 mb-4">
-                          <Settings2 className="w-4 h-4 text-slate-400" /> الختم
-                          الرئيسي
-                        </h4>
+                        <h3 className="font-black text-slate-800 mb-4 flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-emerald-600" />{" "}
+                          إعدادات الأمان والربط
+                        </h3>
+
+                        <div className="space-y-4">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={securitySettings.isVerifiable}
+                              onChange={(e) =>
+                                setSecuritySettings({
+                                  ...securitySettings,
+                                  isVerifiable: e.target.checked,
+                                })
+                              }
+                              className="w-4 h-4 accent-emerald-600 rounded"
+                            />
+                            <span className="text-xs font-bold text-slate-700">
+                              السماح بالتحقق الإلكتروني للعامة (عبر QR)
+                            </span>
+                          </label>
+
+                          {/* 💡 خيار الـ OTP مع الحقل الذي يظهر عند التفعيل */}
+                          <div className="bg-rose-50/50 p-3 rounded-xl border border-rose-100">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={securitySettings.requireOTP}
+                                onChange={(e) =>
+                                  setSecuritySettings({
+                                    ...securitySettings,
+                                    requireOTP: e.target.checked,
+                                  })
+                                }
+                                className="w-4 h-4 accent-rose-600 rounded"
+                              />
+                              <span className="text-xs font-bold text-rose-700">
+                                تأمين المستند برمز تحقق (OTP) عند الفتح
+                              </span>
+                            </label>
+
+                            {/* حقل الإدخال يظهر فقط إذا تم تفعيل הـ OTP */}
+                            <AnimatePresence>
+                              {securitySettings.requireOTP && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  className="mt-3 overflow-hidden"
+                                >
+                                  <label className="text-[10px] font-bold text-rose-600 block mb-1">
+                                    رقم جوال العميل (سيتم إرسال  OTP إليه)
+                                  </label>
+                                  <input
+                                    type="text"
+                                    placeholder="مثال: 05XXXXXXXX"
+                                    value={securitySettings.clientPhone}
+                                    onChange={(e) =>
+                                      setSecuritySettings({
+                                        ...securitySettings,
+                                        clientPhone: e.target.value,
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 text-xs bg-white border border-rose-200 rounded-lg outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all shadow-sm"
+                                  />
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {securitySettings.isVerifiable && (
+                            <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                              <div>
+                                <label className="text-[10px] font-bold text-slate-500 block mb-1">
+                                  الحد الأقصى للفتح
+                                </label>
+                                <input
+                                  type="number"
+                                  placeholder="غير محدود"
+                                  value={securitySettings.maxViews}
+                                  onChange={(e) =>
+                                    setSecuritySettings({
+                                      ...securitySettings,
+                                      maxViews: e.target.value,
+                                    })
+                                  }
+                                  className="w-full px-2 py-1.5 text-xs bg-white border border-slate-200 rounded-lg outline-none focus:border-emerald-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-bold text-slate-500 block mb-1">
+                                  تاريخ الصلاحية
+                                </label>
+                                <input
+                                  type="date"
+                                  value={securitySettings.expiryDate}
+                                  onChange={(e) =>
+                                    setSecuritySettings({
+                                      ...securitySettings,
+                                      expiryDate: e.target.value,
+                                    })
+                                  }
+                                  className="w-full px-2 py-1.5 text-[10px] bg-white border border-slate-200 rounded-lg outline-none focus:border-emerald-500"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 📋 البيانات الإضافية (Metadata) المرنة */}
+                      <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                        <h3 className="font-black text-slate-800 mb-4 flex items-center gap-2">
+                          <Database className="w-4 h-4 text-indigo-600" />{" "}
+                          البيانات الوصفية (Metadata)
+                        </h3>
+                        <p className="text-[10px] font-bold text-slate-400 mb-3">
+                          أضف بيانات مرنة ستظهر للعميل في شاشة التحقق.
+                        </p>
+
+                        <div className="space-y-2">
+                          {metadata.map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center gap-2"
+                            >
+                              <input
+                                value={item.key}
+                                onChange={(e) =>
+                                  updateMetadata(item.id, "key", e.target.value)
+                                }
+                                placeholder="اسم الحقل (مثال: العقار)"
+                                className="w-1/3 text-[10px] px-2 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500"
+                              />
+                              <input
+                                value={item.value}
+                                onChange={(e) =>
+                                  updateMetadata(
+                                    item.id,
+                                    "value",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="القيمة..."
+                                className="flex-1 text-[10px] px-2 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500"
+                              />
+                              <button
+                                onClick={() => removeMetadata(item.id)}
+                                className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            onClick={addMetadataField}
+                            className="w-full mt-2 py-2 border border-dashed border-indigo-200 text-indigo-600 rounded-lg text-[10px] font-black flex justify-center items-center gap-1 hover:bg-indigo-50 transition-colors"
+                          >
+                            <Plus className="w-3 h-3" /> إضافة حقل جديد
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 🎚️ إعدادات الختم الرئيسي والتكرار */}
+                      <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                        <div className="flex justify-between items-center border-b border-slate-50 pb-3 mb-4">
+                          <h4 className="font-black text-slate-800 flex items-center gap-2">
+                            <Settings2 className="w-4 h-4 text-slate-400" />{" "}
+                            إعدادات الختم الرئيسي
+                          </h4>
+                          <div className="flex bg-slate-100 rounded-lg p-1">
+                            <button
+                              onClick={() => setUseCustomStamp(false)}
+                              className={`text-[10px] font-bold px-2 py-1 rounded-md transition-all ${!useCustomStamp ? "bg-white shadow-sm text-blue-600" : "text-slate-500"}`}
+                            >
+                              القالب الذكي
+                            </button>
+                            <button
+                              onClick={() => setUseCustomStamp(true)}
+                              className={`text-[10px] font-bold px-2 py-1 rounded-md transition-all ${useCustomStamp ? "bg-white shadow-sm text-blue-600" : "text-slate-500"}`}
+                            >
+                              صورة PNG
+                            </button>
+                          </div>
+                        </div>
+
+                        {useCustomStamp && (
+                          <div className="mb-4">
+                            <input
+                              type="file"
+                              accept="image/png, image/jpeg"
+                              ref={customStampInputRef}
+                              onChange={handleCustomStampUpload}
+                              className="hidden"
+                            />
+                            <div
+                              onClick={() =>
+                                customStampInputRef.current.click()
+                              }
+                              className="w-full border-2 border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-slate-50 hover:border-blue-300 transition-all"
+                            >
+                              {customStampBase64 ? (
+                                <img
+                                  src={customStampBase64}
+                                  alt="Custom"
+                                  className="h-16 object-contain"
+                                />
+                              ) : (
+                                <>
+                                  <ImageIcon className="w-6 h-6 text-slate-400" />
+                                  <span className="text-[10px] font-bold text-slate-500">
+                                    اضغط لرفع صورة الختم
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="space-y-4">
                           <div>
                             <div className="flex justify-between text-[10px] font-black text-slate-500 mb-2">
-                              <span>تكبير/تصغير</span>{" "}
+                              <span>تكبير/تصغير (لكل الأختام)</span>{" "}
                               <span>{Math.round(stampScale * 100)}%</span>
                             </div>
                             <input
                               type="range"
                               min="0.05"
-                              max="2"
+                              max="3"
                               step="0.05"
                               value={stampScale}
                               onChange={(e) =>
                                 setStampScale(parseFloat(e.target.value))
                               }
-                              className="w-full"
+                              className="w-full accent-blue-600"
                             />
                           </div>
-                          <div>
-                            <div className="flex justify-between text-[10px] font-black text-slate-500 mb-2">
-                              <span>دوران</span> <span>{stampRotation}°</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="0"
-                              max="360"
-                              step="1"
-                              value={stampRotation}
-                              onChange={(e) =>
-                                setStampRotation(parseInt(e.target.value))
-                              }
-                              className="w-full"
-                            />
+
+                          {/* 💡 خيارات التكرار والصفحات المتعددة */}
+                          <div className="pt-3 border-t border-slate-100 flex flex-col gap-3">
+                            <button
+                              onClick={duplicateStamp}
+                              className="w-full py-2 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black flex items-center justify-center gap-1.5 hover:bg-blue-100 transition-colors"
+                            >
+                              <Copy className="w-3.5 h-3.5" /> إضافة نسخة أخرى
+                              من الختم في نفس الصفحة
+                            </button>
+
+                            <label className="flex items-center gap-2 cursor-pointer mt-1 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                              <input
+                                type="checkbox"
+                                checked={applyToAllPages}
+                                onChange={(e) =>
+                                  setApplyToAllPages(e.target.checked)
+                                }
+                                className="w-4 h-4 accent-blue-600 rounded"
+                              />
+                              <Layers className="w-4 h-4 text-slate-400" />
+                              <span className="text-[10px] font-black text-slate-700">
+                                تطبيق الأختام الحالية على كافة صفحات الـ PDF
+                              </span>
+                            </label>
                           </div>
                         </div>
                       </div>
 
+                      
                       <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                         <h4 className="font-black text-slate-800 flex items-center gap-2 border-b border-slate-50 pb-3 mb-4">
-                          <QrCode className="w-4 h-4 text-slate-400" /> ختم الـ
+                          <QrCode className="w-4 h-4 text-slate-400" /> ختم 
                           QR المصغر
                         </h4>
                         <div className="space-y-4">
@@ -381,23 +711,7 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                               onChange={(e) =>
                                 setQrScale(parseFloat(e.target.value))
                               }
-                              className="w-full"
-                            />
-                          </div>
-                          <div>
-                            <div className="flex justify-between text-[10px] font-black text-slate-500 mb-2">
-                              <span>دوران</span> <span>{qrRotation}°</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="0"
-                              max="360"
-                              step="1"
-                              value={qrRotation}
-                              onChange={(e) =>
-                                setQrRotation(parseInt(e.target.value))
-                              }
-                              className="w-full"
+                              className="w-full accent-purple-600"
                             />
                           </div>
                         </div>
@@ -406,7 +720,15 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                   )}
                 </div>
 
-                <div className="flex-1 flex justify-center items-start overflow-y-auto p-4 sm:p-8 custom-scrollbar bg-slate-300/30">
+                {/* 📄 Workspace (منطقة العمل) */}
+                <div className="flex-1 flex justify-center items-start overflow-y-auto p-4 sm:p-8 custom-scrollbar bg-slate-300/30 relative">
+                  {applyToAllPages && file?.type === "application/pdf" && (
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg z-50 flex items-center gap-2 animate-bounce">
+                      <Layers className="w-3 h-3" /> سيتم حرق هذه الأختام على
+                      كافة الصفحات
+                    </div>
+                  )}
+
                   <div
                     ref={constraintsRef}
                     className="relative shadow-2xl bg-white flex flex-col mx-auto"
@@ -430,36 +752,53 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                       </Document>
                     ) : null}
 
-                    {stampData && (
-                      <motion.div
-                        ref={mainStampRef}
-                        drag
-                        dragConstraints={constraintsRef}
-                        dragMomentum={false}
-                        initial={{ opacity: 0, x: 0, y: 0 }}
-                        animate={{
-                          scale: stampScale,
-                          rotate: stampRotation,
-                          opacity: 1,
-                        }}
-                        // 💡 تم مسح كلاسات الـ translate واستبدالها بتموضع CSS بسيط للسلاسة
-                        style={{
-                          originX: 0.5,
-                          originY: 0.5,
-                          top: "20%",
-                          left: "30%",
-                        }}
-                        className="absolute w-72 z-50 cursor-grab active:cursor-grabbing drop-shadow-2xl"
-                      >
-                        <div
-                          dangerouslySetInnerHTML={{
-                            __html: renderMainStampPreview(),
+                    {/* 💡 عرض كافة الأختام الرئيسية المكررة */}
+                    {stampData &&
+                      customStampsList.map((stamp, index) => (
+                        <motion.div
+                          key={stamp.id}
+                          ref={(el) => (mainStampRefs.current[stamp.id] = el)}
+                          drag
+                          dragConstraints={constraintsRef}
+                          dragMomentum={false}
+                          initial={{ opacity: 0, x: index * 20, y: index * 20 }}
+                          animate={{
+                            scale: stampScale,
+                            rotate: stampRotation,
+                            opacity: 1,
                           }}
-                          className="pointer-events-none"
-                        />
-                      </motion.div>
-                    )}
+                          style={{
+                            originX: 0.5,
+                            originY: 0.5,
+                            top: "20%",
+                            left: "30%",
+                          }}
+                          className="absolute w-72 z-50 cursor-grab active:cursor-grabbing drop-shadow-2xl"
+                        >
+                          {useCustomStamp && customStampBase64 ? (
+                            <img
+                              src={customStampBase64}
+                              alt="Main Stamp"
+                              className="w-full h-auto pointer-events-none"
+                            />
+                          ) : (
+                            <div
+                              dangerouslySetInnerHTML={{
+                                __html: renderMainStampPreview(),
+                              }}
+                              className="pointer-events-none"
+                            />
+                          )}
+                          {/* إشارة صغيرة إذا كان هناك أكثر من ختم */}
+                          {customStampsList.length > 1 && (
+                            <div className="absolute -top-3 -right-3 bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm">
+                              {index + 1}
+                            </div>
+                          )}
+                        </motion.div>
+                      ))}
 
+                    {/* الـ QR كالمعتاد */}
                     {stampData && (
                       <motion.div
                         ref={qrStampRef}
