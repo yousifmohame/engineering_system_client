@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Calculator,
   Banknote,
@@ -16,80 +16,92 @@ import {
   PieChart,
   Scale,
   TrendingUp,
+  CreditCard,
+  ShieldCheck,
+  AlertCircle,
+  ReceiptText,
+  Coins,
+  DollarSign,
+  Landmark,
+  FileText,
+  Sparkles,
 } from "lucide-react";
 
-import { safeNum, safeText } from "../../utils/transactionUtils";
+import { safeNum } from "../../utils/transactionUtils";
 
 // =========================================================================
-// 💡 مكون فرعي: حقل إدخال ذكي + محول عملات (SAR -> USD -> EGP)
+// حقل إدخال عملة ذكي + تحويل SAR -> USD / EGP
 // =========================================================================
 const FormattedCurrencyInput = ({
   value,
   onChange,
   placeholder = "0",
   rates,
+  compact = false,
 }) => {
-  const displayValue = value ? Number(value).toLocaleString("en-US") : "";
+  const numericValue = safeNum(value);
+  const displayValue = numericValue > 0 ? Number(numericValue).toLocaleString("en-US") : "";
 
   const handleChange = (e) => {
     const rawValue = e.target.value.replace(/[^0-9]/g, "");
     onChange(rawValue ? parseFloat(rawValue) : 0);
   };
 
-  const inputWidth = Math.max(displayValue.length, 1) + 1 + "ch";
+  const inputWidth = `${Math.min(Math.max(displayValue.length + 1, 4), 14)}ch`;
 
-  // استخراج أسعار الصرف (مع توفير قيم افتراضية في حال عدم وجودها)
   const usdRate = rates?.find((r) => r.currency === "USD")?.rate || 0.266;
   const egpRate = rates?.find((r) => r.currency === "EGP")?.rate || 13.2;
 
-  const usdValue = safeNum(value) * usdRate;
-  const egpValue = safeNum(value) * egpRate;
+  const usdValue = numericValue * usdRate;
+  const egpValue = numericValue * egpRate;
 
   return (
-    <div className="flex flex-col gap-1.5 items-end">
-      {/* حقل إدخال الريال السعودي */}
-      <div className="flex items-center gap-1.5 bg-white border border-gray-200 hover:border-blue-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 rounded-lg px-3 py-1.5 transition-all shadow-sm">
+    <div className="flex flex-col items-end gap-1.5">
+      <div
+        className="
+          flex items-center gap-1.5 rounded-2xl
+          border border-[#d8b46a]/25 bg-white
+          px-3 py-2 shadow-sm transition-all
+          hover:border-[#c5983c]/55
+          focus-within:border-[#c5983c]/80
+          focus-within:ring-4 focus-within:ring-[#c5983c]/10
+        "
+      >
         <input
           type="text"
           value={displayValue}
           onChange={handleChange}
           placeholder={placeholder}
-          style={{ width: inputWidth, minWidth: "40px", maxWidth: "150px" }}
-          className="bg-transparent outline-none font-mono font-black text-lg text-gray-800 text-center transition-all"
+          style={{
+            width: inputWidth,
+            minWidth: compact ? "48px" : "64px",
+            maxWidth: compact ? "130px" : "170px",
+          }}
+          className="
+            bg-transparent text-center font-mono text-lg
+            font-black text-[#123f59] outline-none
+            placeholder:text-[#94a3b8]
+          "
           dir="ltr"
         />
-        <span className="text-[11px] font-bold text-gray-400 select-none">
+
+        <span className="select-none text-[10px] font-black text-[#94a3b8]">
           ر.س
         </span>
       </div>
 
-      {/* عرض العملات الأخرى */}
-      <div className="flex gap-2">
-        {usdValue > 0 && (
-          <div className="flex items-center gap-1 text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 font-bold">
-            <span className="text-[9px] opacity-70">USD</span>
-            <span className="text-[10px] font-mono">
-              $
-              {usdValue.toLocaleString(undefined, { maximumFractionDigits: 1 })}
-            </span>
-          </div>
-        )}
-        {egpValue > 0 && (
-          <div className="flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 font-bold">
-            <span className="text-[9px] opacity-70">EGP</span>
-            <span className="text-[10px] font-mono">
-              £
-              {egpValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-            </span>
-          </div>
-        )}
-      </div>
+      {!compact && numericValue > 0 && (
+        <div className="flex flex-wrap justify-end gap-1.5">
+          <CurrencyChip label="USD" value={`$${usdValue.toLocaleString(undefined, { maximumFractionDigits: 1 })}`} tone="blue" />
+          <CurrencyChip label="EGP" value={`£${egpValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} tone="emerald" />
+        </div>
+      )}
     </div>
   );
 };
 
 // =========================================================================
-// 💡 المكون الرئيسي: التبويب المالي
+// المكون الرئيسي: التبويب المالي
 // =========================================================================
 export const FinancialTab = ({
   tx,
@@ -123,72 +135,149 @@ export const FinancialTab = ({
   sourcePercent,
   sourceShare,
 }) => {
-  // حالة ذكية لتتبع التغييرات وإظهار زر الحفظ
   const [isDirty, setIsDirty] = useState(false);
 
-  // دالة لتحديث البيانات وتفعيل زر الحفظ
   const handleFinancialChange = (field, value) => {
-    setEditFormData((prev) => ({ ...prev, [field]: value }));
+    setEditFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+
     setIsDirty(true);
   };
 
   const handleTaxTypeChange = (e) => {
-    setEditFormData((prev) => ({ ...prev, taxType: e.target.value }));
+    setEditFormData((prev) => ({
+      ...prev,
+      taxType: e.target.value,
+    }));
+
     setIsDirty(true);
   };
 
-  // دالة الحفظ
   const handleSave = () => {
     updateTxMutation.mutate(editFormData, {
       onSuccess: () => {
-        setIsDirty(false); // إخفاء الزر بعد نجاح الحفظ
+        setIsDirty(false);
       },
     });
   };
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-300 pb-24 relative">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-          <Calculator className="w-5 h-5" />
+    <div
+      className="
+        relative min-h-full space-y-5 p-4 pb-28 md:p-5
+        bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
+        font-[Tajawal] animate-in fade-in duration-300
+      "
+      dir="rtl"
+    >
+      {/* Header */}
+      <div
+        className="
+          relative overflow-hidden rounded-[30px]
+          border border-[#d8b46a]/30
+          bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490]
+          p-5 text-white
+          shadow-[0_20px_55px_rgba(18,63,89,0.18)]
+        "
+      >
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-[#e2bf74]/18 blur-3xl" />
+          <div className="absolute left-[-80px] bottom-[-80px] h-52 w-52 rounded-full bg-cyan-400/12 blur-3xl" />
         </div>
-        <div>
-          <h3 className="font-black text-gray-800 text-lg">المحرك المالي</h3>
-          <p className="text-[11px] text-gray-500 font-bold">
-            اضغط على أي رقم لتعديله مباشرة، سيتم حساب الصافي والأرباح تلقائياً
-          </p>
-        </div>
-      </div>
 
-      {/* 🟢 قسم الإيرادات (Revenue) */}
-      <div className="bg-gradient-to-br from-emerald-50/50 to-white rounded-2xl border border-emerald-100 overflow-hidden shadow-sm hover:shadow-md transition-all">
-        <div className="flex flex-col md:flex-row md:items-center justify-between p-5 gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shadow-inner">
-              <TrendingUp className="w-5 h-5" />
+        <div className="relative z-10 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <div
+              className="
+                grid h-14 w-14 shrink-0 place-items-center
+                rounded-3xl border border-[#e2bf74]/35
+                bg-white/12 text-[#e2bf74]
+                shadow-[0_14px_30px_rgba(0,0,0,0.20)]
+              "
+            >
+              <Calculator className="h-7 w-7" />
             </div>
-            <div>
-              <h4 className="font-black text-emerald-800 text-sm">
-                الإيرادات (قيمة التعاقد)
-              </h4>
-              <p className="text-[10px] text-emerald-600/70 font-bold">
-                إجمالي المبلغ المتفق عليه مع العميل
+
+            <div className="min-w-0">
+              <h2 className="truncate text-lg font-black md:text-xl">
+                المحرك المالي
+              </h2>
+
+              <p className="mt-1 text-xs font-bold text-white/65">
+                تعديل مباشر للأرقام مع حساب الصافي، التكاليف، الأرباح، التسويات، وحصص الشركاء.
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-start md:items-center gap-4">
+          <div
+            className="
+              flex w-fit items-center gap-2 rounded-2xl
+              border border-[#e2bf74]/25 bg-[#e2bf74]/15
+              px-4 py-2 text-xs font-black text-[#f8efe0]
+            "
+          >
+            <Sparkles className="h-4 w-4 text-[#e2bf74]" />
+            يتم الحفظ بعد الضغط على زر حفظ التعديلات المالية
+          </div>
+        </div>
+      </div>
+
+      {/* Revenue */}
+      <section
+        className="
+          overflow-hidden rounded-[30px]
+          border border-emerald-200 bg-white/90
+          shadow-[0_18px_45px_rgba(18,63,89,0.10)]
+          backdrop-blur-xl
+        "
+      >
+        <div
+          className="
+            flex flex-col gap-5 border-b border-emerald-100
+            bg-gradient-to-l from-emerald-50 via-white to-[#fbf8f1]
+            p-5 lg:flex-row lg:items-center lg:justify-between
+          "
+        >
+          <div className="flex items-center gap-3">
+            <span
+              className="
+                grid h-12 w-12 shrink-0 place-items-center
+                rounded-2xl border border-emerald-200
+                bg-emerald-50 text-emerald-700
+              "
+            >
+              <TrendingUp className="h-6 w-6" />
+            </span>
+
+            <div>
+              <h3 className="text-sm font-black text-[#123f59]">
+                الإيرادات وقيمة التعاقد
+              </h3>
+
+              <p className="mt-0.5 text-[11px] font-bold text-[#64748b]">
+                إجمالي المبلغ المتفق عليه مع العميل مع طريقة احتساب الضريبة.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
             <select
               value={editFormData.taxType || "بدون احتساب ضريبة"}
               onChange={handleTaxTypeChange}
-              className="bg-white border border-emerald-200 text-emerald-800 text-xs font-bold rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-200 cursor-pointer shadow-sm mt-1"
+              className="
+                h-11 rounded-2xl border border-emerald-200
+                bg-white px-4 text-xs font-black text-emerald-800
+                shadow-sm outline-none transition-all
+                focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10
+              "
             >
-              <option value="بدون احتساب ضريبة">بدون ضريبة (صافي)</option>
-              <option value="شامل الضريبة">شامل الضريبة (15%)</option>
-              <option value="غير شامل الضريبة">غير شامل (تضاف 15%)</option>
+              <option value="بدون احتساب ضريبة">بدون ضريبة / صافي</option>
+              <option value="شامل الضريبة">شامل الضريبة 15%</option>
+              <option value="غير شامل الضريبة">غير شامل / تضاف 15%</option>
             </select>
 
-            {/* החقل الذكي المتمدد مع العملات */}
             <FormattedCurrencyInput
               value={editFormData.totalFees}
               onChange={(val) => handleFinancialChange("totalFees", val)}
@@ -197,620 +286,452 @@ export const FinancialTab = ({
           </div>
         </div>
 
-        {/* تفاصيل الضريبة تظهر فقط إذا كان هناك ضريبة */}
         {editFormData.taxType !== "بدون احتساب ضريبة" && (
-          <div className="bg-white/80 px-5 py-3 flex justify-between items-center text-xs font-mono border-t border-emerald-100">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500 font-bold">المبلغ الصافي:</span>
-              <span className="font-black text-emerald-700 text-sm bg-emerald-50 px-2 py-0.5 rounded">
-                {editNetAmount.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500 font-bold">الضريبة المضافة:</span>
-              <span className="font-black text-red-600 text-sm bg-red-50 px-2 py-0.5 rounded">
-                {editTaxAmount.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </span>
-            </div>
+          <div className="grid grid-cols-1 gap-3 p-5 md:grid-cols-2">
+            <MiniFinancialCard
+              icon={Landmark}
+              label="المبلغ الصافي"
+              value={`${editNetAmount.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })} ر.س`}
+              tone="emerald"
+            />
+
+            <MiniFinancialCard
+              icon={ReceiptText}
+              label="ضريبة القيمة المضافة"
+              value={`${editTaxAmount.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })} ر.س`}
+              tone="rose"
+            />
           </div>
         )}
-      </div>
+      </section>
 
-      {/* 🔴 قسم التكاليف (الوسطاء، المعقبين، العمل عن بعد، مصاريف أخرى) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* أتعاب الوسطاء */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden group hover:border-indigo-200 transition-colors">
-          <div
-            className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50/50 group-hover:bg-indigo-50/30 transition-colors"
-            onClick={() => toggleSection("brokers")}
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
-                <Handshake className="w-4 h-4" />
-              </div>
-              <span className="font-black text-slate-800 text-sm">
-                أتعاب الوسطاء
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div onClick={(e) => e.stopPropagation()}>
-                <FormattedCurrencyInput
-                  value={editFormData.mediatorFees || 0}
-                  onChange={(val) => handleFinancialChange("mediatorFees", val)}
-                  rates={exchangeRates}
-                />
-              </div>
-              {openSections.brokers ? (
-                <ChevronUp className="w-5 h-5 text-slate-400 mt-2" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-slate-400 mt-2" />
-              )}
-            </div>
-          </div>
+      {/* Costs sections */}
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        {/* Brokers */}
+        <CostSection
+          id="brokers"
+          title="أتعاب الوسطاء"
+          subtitle="إدارة الوسطاء، الأتعاب، المدفوع، والمتبقي."
+          icon={Handshake}
+          tone="indigo"
+          isOpen={openSections.brokers}
+          onToggle={() => toggleSection("brokers")}
+          headerValue={
+            <FormattedCurrencyInput
+              value={editFormData.mediatorFees || 0}
+              onChange={(val) => handleFinancialChange("mediatorFees", val)}
+              rates={exchangeRates}
+              compact
+            />
+          }
+        >
+          <PersonCostList
+            emptyText="لا يوجد وسطاء"
+            items={tx.brokers || []}
+            getCost={(item) => safeNum(item.fees)}
+            getPaid={(item) =>
+              tx.settlements
+                ?.filter(
+                  (settlement) =>
+                    settlement.targetId === item.personId &&
+                    settlement.status === "DELIVERED",
+                )
+                .reduce((sum, settlement) => sum + settlement.amount, 0) || 0
+            }
+            getName={(item) => item.name}
+            getSubText={() => "أتعاب وساطة"}
+            onPay={(item, remaining) =>
+              setPayPersonData({
+                targetType: "وسيط",
+                targetId: item.personId,
+                workerName: item.name,
+                taskName: "أتعاب وساطة",
+                totalCost: remaining,
+                paymentType: "full",
+                amountSar: remaining,
+                paymentDate: new Date().toISOString().split("T")[0],
+              })
+            }
+            onDelete={(item) => deleteBrokerMutation.mutate(item.id)}
+            deletePending={deleteBrokerMutation.isPending}
+            payButtonLabel="سداد"
+          />
 
-          {openSections.brokers && (
-            <div className="p-4 border-t border-gray-100">
-              {tx.brokers?.length > 0 ? (
-                <div className="space-y-3 mb-4">
-                  {tx.brokers.map((b, i) => {
-                    const cost = safeNum(b.fees);
-                    const paid =
-                      tx.settlements
-                        ?.filter(
-                          (s) =>
-                            s.targetId === b.personId &&
-                            s.status === "DELIVERED",
-                        )
-                        .reduce((sum, s) => sum + s.amount, 0) || 0;
-                    const remaining = Math.max(0, cost - paid);
+          <DashedAddButton
+            label="ربط وسيط جديد"
+            tone="indigo"
+            onClick={() => setIsAddBrokerModalOpen(true)}
+          />
+        </CostSection>
 
-                    return (
-                      <div
-                        key={i}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border border-gray-100 bg-white shadow-sm gap-2"
-                      >
-                        <span className="font-black text-gray-700 text-xs">
-                          {b.name}
-                        </span>
-                        <div className="flex items-center gap-4 text-[10px] font-mono font-bold">
-                          <span className="text-gray-500">
-                            تكلفة:{" "}
-                            <span className="text-gray-800">
-                              {cost.toLocaleString()}
-                            </span>
-                          </span>
-                          <span className="text-gray-500">
-                            مدفوع:{" "}
-                            <span className="text-emerald-600">
-                              {paid.toLocaleString()}
-                            </span>
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {remaining > 0 ? (
-                            <button
-                              onClick={() => {
-                                setPayPersonData({
-                                  targetType: "وسيط",
-                                  targetId: b.personId,
-                                  workerName: b.name,
-                                  taskName: "أتعاب وساطة",
-                                  totalCost: remaining,
-                                  paymentType: "full",
-                                  amountSar: remaining,
-                                  paymentDate: new Date()
-                                    .toISOString()
-                                    .split("T")[0],
-                                });
-                              }}
-                              className="px-3 py-1.5 bg-amber-100 text-amber-700 hover:bg-amber-500 hover:text-white rounded-md text-[10px] font-bold transition-colors"
-                            >
-                              سداد ({remaining.toLocaleString()})
-                            </button>
-                          ) : (
-                            <span className="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-md text-[10px] font-bold flex items-center gap-1">
-                              <Check className="w-3 h-3" /> مسدد
-                            </span>
-                          )}
-                          <button
-                            onClick={() => deleteBrokerMutation.mutate(b.id)}
-                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-4 text-xs text-gray-400 font-bold">
-                  لا يوجد وسطاء
-                </div>
-              )}
-              <button
-                onClick={() => setIsAddBrokerModalOpen(true)}
-                className="w-full py-2.5 border border-dashed border-indigo-300 text-indigo-600 rounded-xl hover:bg-indigo-50 text-xs font-bold flex items-center justify-center gap-2 transition-colors"
-              >
-                <Plus className="w-4 h-4" /> ربط وسيط جديد
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Agents */}
+        <CostSection
+          id="agents"
+          title="أتعاب المعقبين"
+          subtitle="متابعة أتعاب التعقيب والمدفوعات لكل معقب."
+          icon={User}
+          tone="cyan"
+          isOpen={openSections.agents}
+          onToggle={() => toggleSection("agents")}
+          headerValue={
+            <FormattedCurrencyInput
+              value={editFormData.agentCost || 0}
+              onChange={(val) => handleFinancialChange("agentCost", val)}
+              rates={exchangeRates}
+              compact
+            />
+          }
+        >
+          <PersonCostList
+            emptyText="لا يوجد معقبين"
+            items={tx.agents || []}
+            getCost={(item) => safeNum(item.fees)}
+            getPaid={(item) =>
+              tx.settlements
+                ?.filter(
+                  (settlement) =>
+                    settlement.targetId === item.id &&
+                    settlement.status === "DELIVERED",
+                )
+                .reduce((sum, settlement) => sum + settlement.amount, 0) || 0
+            }
+            getName={(item) => item.name}
+            getSubText={(item) => item.role || "أتعاب تعقيب"}
+            onPay={(item, remaining) =>
+              setPayPersonData({
+                targetType: "معقب",
+                targetId: item.id,
+                workerName: item.name,
+                taskName: item.role || "أتعاب تعقيب",
+                totalCost: remaining,
+                paymentType: "full",
+                amountSar: remaining,
+                paymentDate: new Date().toISOString().split("T")[0],
+              })
+            }
+            onDelete={(item) => deleteAgentMutation.mutate(item.id)}
+            deletePending={deleteAgentMutation.isPending}
+            payButtonLabel="سداد"
+          />
 
-        {/* أتعاب المعقبين */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden group hover:border-cyan-200 transition-colors">
-          <div
-            className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50/50 group-hover:bg-cyan-50/30 transition-colors"
-            onClick={() => toggleSection("agents")}
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-cyan-100 text-cyan-700 rounded-lg">
-                <User className="w-4 h-4" />
-              </div>
-              <span className="font-black text-slate-800 text-sm">
-                أتعاب المعقبين
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div onClick={(e) => e.stopPropagation()}>
-                <FormattedCurrencyInput
-                  value={editFormData.agentCost || 0}
-                  onChange={(val) => handleFinancialChange("agentCost", val)}
-                  rates={exchangeRates}
-                />
-              </div>
-              {openSections.agents ? (
-                <ChevronUp className="w-5 h-5 text-slate-400 mt-2" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-slate-400 mt-2" />
-              )}
-            </div>
-          </div>
+          <DashedAddButton
+            label="ربط معقب جديد"
+            tone="cyan"
+            onClick={() => setIsAddAgentOpen(true)}
+          />
+        </CostSection>
 
-          {openSections.agents && (
-            <div className="p-4 border-t border-gray-100">
-              {tx.agents?.length > 0 ? (
-                <div className="space-y-3 mb-4">
-                  {tx.agents.map((ag, i) => {
-                    const cost = safeNum(ag.fees);
-                    const paid =
-                      tx.settlements
-                        ?.filter(
-                          (s) =>
-                            s.targetId === ag.id && s.status === "DELIVERED",
-                        )
-                        .reduce((sum, s) => sum + s.amount, 0) || 0;
-                    const remaining = Math.max(0, cost - paid);
+        {/* Remote tasks */}
+        <CostSection
+          id="remote"
+          title="مهام العمل عن بعد"
+          subtitle="تكاليف المهام الخارجية أو الأعمال المسندة عن بعد."
+          icon={Monitor}
+          tone="purple"
+          isOpen={openSections.remote}
+          onToggle={() => toggleSection("remote")}
+          headerValue={
+            <StaticMoneyValue value={safeNum(tx.remoteCost)} />
+          }
+        >
+          {tx.remoteTasks?.length > 0 ? (
+            <div className="mb-4 space-y-3">
+              {tx.remoteTasks.map((task, index) => {
+                const taskCost = safeNum(task.cost);
+                const taskPaid = task.isPaid ? taskCost : safeNum(task.paidAmount);
+                const taskRemaining = Math.max(0, taskCost - taskPaid);
 
-                    return (
-                      <div
-                        key={i}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border border-gray-100 bg-white shadow-sm gap-2"
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-black text-gray-700 text-xs">
-                            {ag.name}
-                          </span>
-                          <span className="text-[9px] text-gray-400 font-bold">
-                            {ag.role}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-4 text-[10px] font-mono font-bold">
-                          <span className="text-gray-500">
-                            تكلفة:{" "}
-                            <span className="text-gray-800">
-                              {cost.toLocaleString()}
-                            </span>
-                          </span>
-                          <span className="text-gray-500">
-                            مدفوع:{" "}
-                            <span className="text-emerald-600">
-                              {paid.toLocaleString()}
-                            </span>
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {remaining > 0 ? (
-                            <button
-                              onClick={() => {
-                                setPayPersonData({
-                                  targetType: "معقب",
-                                  targetId: ag.id,
-                                  workerName: ag.name,
-                                  taskName: ag.role || "أتعاب تعقيب",
-                                  totalCost: remaining,
-                                  paymentType: "full",
-                                  amountSar: remaining,
-                                  paymentDate: new Date()
-                                    .toISOString()
-                                    .split("T")[0],
-                                });
-                              }}
-                              className="px-3 py-1.5 bg-amber-100 text-amber-700 hover:bg-amber-500 hover:text-white rounded-md text-[10px] font-bold transition-colors"
-                            >
-                              سداد ({remaining.toLocaleString()})
-                            </button>
-                          ) : (
-                            <span className="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-md text-[10px] font-bold flex items-center gap-1">
-                              <Check className="w-3 h-3" /> مسدد
-                            </span>
-                          )}
-                          <button
-                            onClick={() => deleteAgentMutation.mutate(ag.id)}
-                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-4 text-xs text-gray-400 font-bold">
-                  لا يوجد معقبين
-                </div>
-              )}
-              <button
-                onClick={() => setIsAddAgentOpen(true)}
-                className="w-full py-2.5 border border-dashed border-cyan-300 text-cyan-700 rounded-xl hover:bg-cyan-50 text-xs font-bold flex items-center justify-center gap-2 transition-colors"
-              >
-                <Plus className="w-4 h-4" /> ربط معقب جديد
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* مهام العمل عن بعد */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden group hover:border-purple-200 transition-colors">
-          <div
-            className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50/50 group-hover:bg-purple-50/30 transition-colors"
-            onClick={() => toggleSection("remote")}
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
-                <Monitor className="w-4 h-4" />
-              </div>
-              <span className="font-black text-slate-800 text-sm">
-                مهام العمل عن بعد
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex flex-col gap-1.5 items-end">
-                <div className="font-mono font-black text-gray-800 bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm">
-                  {safeNum(tx.remoteCost).toLocaleString()}{" "}
-                  <span className="text-[11px] text-gray-400">ر.س</span>
-                </div>
-              </div>
-              {openSections.remote ? (
-                <ChevronUp className="w-5 h-5 text-slate-400 mt-2" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-slate-400 mt-2" />
-              )}
-            </div>
-          </div>
-
-          {openSections.remote && (
-            <div className="p-4 border-t border-gray-100">
-              {tx.remoteTasks?.length > 0 ? (
-                <div className="space-y-3 mb-4">
-                  {tx.remoteTasks.map((rt, i) => {
-                    const taskCost = safeNum(rt.cost);
-                    const taskPaid = rt.isPaid
-                      ? taskCost
-                      : safeNum(rt.paidAmount);
-                    const taskRemaining = Math.max(0, taskCost - taskPaid);
-
-                    return (
-                      <div
-                        key={i}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border border-gray-100 bg-white shadow-sm gap-2"
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-black text-gray-700 text-xs truncate max-w-[150px]">
-                            {rt.taskName}
-                          </span>
-                          <span className="text-[9px] text-purple-600 font-bold">
-                            {rt.workerName}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-4 text-[10px] font-mono font-bold">
-                          <span className="text-gray-500">
-                            تكلفة:{" "}
-                            <span className="text-gray-800">
-                              {taskCost.toLocaleString()}
-                            </span>
-                          </span>
-                          <span className="text-gray-500">
-                            متبقي:{" "}
-                            <span className="text-red-600">
-                              {taskRemaining.toLocaleString()}
-                            </span>
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {taskRemaining > 0 ? (
-                            <button
-                              onClick={() => {
-                                setPayTaskData({
-                                  taskId: rt.id,
-                                  workerName: rt.workerName,
-                                  taskName: rt.taskName,
-                                  totalCost: taskRemaining,
-                                  paymentType: "full",
-                                  amountSar: taskRemaining,
-                                  paymentDate: new Date()
-                                    .toISOString()
-                                    .split("T")[0],
-                                });
-                              }}
-                              className="px-3 py-1.5 bg-purple-100 text-purple-700 hover:bg-purple-600 hover:text-white rounded-md text-[10px] font-bold transition-colors"
-                            >
-                              تسوية
-                            </button>
-                          ) : (
-                            <span className="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-md text-[10px] font-bold flex items-center gap-1">
-                              <Check className="w-3 h-3" /> مسدد
-                            </span>
-                          )}
-                          <button
-                            onClick={() =>
-                              deleteRemoteTaskMutation.mutate(rt.id)
-                            }
-                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-4 text-xs text-gray-400 font-bold">
-                  لا يوجد مهام عمل عن بعد
-                </div>
-              )}
-              <button
-                onClick={() => setIsAddRemoteTaskOpen(true)}
-                className="w-full py-2.5 border border-dashed border-purple-300 text-purple-600 rounded-xl hover:bg-purple-50 text-xs font-bold flex items-center justify-center gap-2 transition-colors"
-              >
-                <Plus className="w-4 h-4" /> إسناد مهمة جديدة
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* مصاريف وتشغيل */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden group hover:border-rose-200 transition-colors">
-          <div
-            className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50/50 group-hover:bg-rose-50/30 transition-colors"
-            onClick={() => toggleSection("expenses")}
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-rose-100 text-rose-600 rounded-lg">
-                <Wallet className="w-4 h-4" />
-              </div>
-              <span className="font-black text-slate-800 text-sm">
-                مصاريف وتشغيل
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="font-mono font-black text-gray-800 bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm">
-                {actualExpenses.toLocaleString()}{" "}
-                <span className="text-[11px] text-gray-400">ر.س</span>
-              </div>
-              {openSections.expenses ? (
-                <ChevronUp className="w-5 h-5 text-slate-400" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-slate-400" />
-              )}
-            </div>
-          </div>
-
-          {openSections.expenses && (
-            <div className="p-4 border-t border-gray-100">
-              <div className="mb-4 p-3 bg-rose-50/50 border border-rose-100 rounded-xl flex flex-col gap-2">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={expenseForm.description}
-                    onChange={(e) =>
-                      setExpenseForm({
-                        ...expenseForm,
-                        description: e.target.value,
+                return (
+                  <CostRow
+                    key={task.id || index}
+                    title={task.taskName}
+                    subtitle={task.workerName}
+                    cost={taskCost}
+                    paid={taskPaid}
+                    remaining={taskRemaining}
+                    payLabel="تسوية"
+                    tone="purple"
+                    onPay={() =>
+                      setPayTaskData({
+                        taskId: task.id,
+                        workerName: task.workerName,
+                        taskName: task.taskName,
+                        totalCost: taskRemaining,
+                        paymentType: "full",
+                        amountSar: taskRemaining,
+                        paymentDate: new Date().toISOString().split("T")[0],
                       })
                     }
-                    placeholder="وصف المصروف..."
-                    className="flex-1 border border-gray-200 p-2 rounded-lg text-xs font-bold outline-none focus:border-rose-400"
+                    onDelete={() => deleteRemoteTaskMutation.mutate(task.id)}
+                    deletePending={deleteRemoteTaskMutation.isPending}
                   />
-                  <input
-                    type="number"
-                    value={expenseForm.amount}
-                    onChange={(e) =>
-                      setExpenseForm({
-                        ...expenseForm,
-                        amount: e.target.value,
-                      })
-                    }
-                    placeholder="المبلغ"
-                    className="w-24 border border-gray-200 p-2 rounded-lg text-xs font-mono font-bold outline-none focus:border-rose-400 text-center"
-                  />
-                </div>
-                <div className="flex justify-between items-center">
-                  <input
-                    type="date"
-                    value={expenseForm.date}
-                    onChange={(e) =>
-                      setExpenseForm({ ...expenseForm, date: e.target.value })
-                    }
-                    className="border border-gray-200 p-1.5 rounded-lg text-xs outline-none text-gray-500 bg-white"
-                  />
-                  <button
-                    onClick={() => {
-                      addExpenseMutation.mutate(expenseForm);
-                      setIsDirty(true);
-                    }}
-                    disabled={
-                      addExpenseMutation.isPending ||
-                      !expenseForm.amount ||
-                      !expenseForm.description
-                    }
-                    className="bg-rose-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-rose-700 transition-colors disabled:opacity-50"
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyInline text="لا توجد مهام عمل عن بعد" />
+          )}
+
+          <DashedAddButton
+            label="إسناد مهمة جديدة"
+            tone="purple"
+            onClick={() => setIsAddRemoteTaskOpen(true)}
+          />
+        </CostSection>
+
+        {/* Expenses */}
+        <CostSection
+          id="expenses"
+          title="مصاريف وتشغيل"
+          subtitle="المصاريف التشغيلية والمبالغ الإضافية المصروفة على المعاملة."
+          icon={Wallet}
+          tone="rose"
+          isOpen={openSections.expenses}
+          onToggle={() => toggleSection("expenses")}
+          headerValue={<StaticMoneyValue value={safeNum(actualExpenses)} />}
+        >
+          <div
+            className="
+              mb-4 rounded-[24px] border border-rose-200
+              bg-rose-50/65 p-4
+            "
+          >
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-12">
+              <input
+                type="text"
+                value={expenseForm.description}
+                onChange={(e) =>
+                  setExpenseForm({
+                    ...expenseForm,
+                    description: e.target.value,
+                  })
+                }
+                placeholder="وصف المصروف..."
+                className="sm:col-span-6 input-premium"
+              />
+
+              <input
+                type="number"
+                value={expenseForm.amount}
+                onChange={(e) =>
+                  setExpenseForm({
+                    ...expenseForm,
+                    amount: e.target.value,
+                  })
+                }
+                placeholder="المبلغ"
+                className="sm:col-span-3 input-premium text-center font-mono"
+              />
+
+              <input
+                type="date"
+                value={expenseForm.date}
+                onChange={(e) =>
+                  setExpenseForm({
+                    ...expenseForm,
+                    date: e.target.value,
+                  })
+                }
+                className="sm:col-span-3 input-premium"
+              />
+            </div>
+
+            <button
+              onClick={() => {
+                addExpenseMutation.mutate(expenseForm);
+                setIsDirty(true);
+              }}
+              disabled={
+                addExpenseMutation.isPending ||
+                !expenseForm.amount ||
+                !expenseForm.description
+              }
+              className="
+                mt-3 flex h-10 w-full items-center justify-center gap-2
+                rounded-2xl bg-rose-600 px-4
+                text-xs font-black text-white
+                transition hover:bg-rose-700
+                disabled:cursor-not-allowed disabled:opacity-50
+              "
+              type="button"
+            >
+              {addExpenseMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
+              إضافة المصروف
+            </button>
+          </div>
+
+          {tx.expenses?.length > 0 ? (
+            <div className="max-h-[230px] space-y-2 overflow-y-auto pr-1 custom-scrollbar-slim">
+              {tx.expenses.map((expense, index) => (
+                <div
+                  key={expense.id || index}
+                  className="
+                    flex items-center justify-between gap-3
+                    rounded-2xl border border-[#e8ddc8]
+                    bg-white p-3 shadow-sm
+                  "
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-black text-[#123f59]">
+                      {expense.description || expense.notes || expense.item}
+                    </p>
+
+                    <p className="mt-1 font-mono text-[10px] font-bold text-[#94a3b8]">
+                      {new Date(expense.date || expense.createdAt).toLocaleDateString("en-GB")}
+                    </p>
+                  </div>
+
+                  <span
+                    className="
+                      rounded-xl border border-rose-200
+                      bg-rose-50 px-3 py-1.5
+                      font-mono text-xs font-black text-rose-600
+                    "
                   >
-                    إضافة
-                  </button>
+                    {safeNum(expense.amount).toLocaleString()} ر.س
+                  </span>
                 </div>
-              </div>
-
-              {tx.expenses?.length > 0 ? (
-                <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar-slim pr-1">
-                  {tx.expenses.map((exp, i) => (
-                    <div
-                      key={i}
-                      className="flex justify-between items-center p-2.5 rounded-lg border border-gray-100 bg-white shadow-sm"
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-bold text-gray-800 text-xs">
-                          {exp.description || exp.notes || exp.item}
-                        </span>
-                        <span className="text-[9px] text-gray-400 font-mono">
-                          {new Date(
-                            exp.date || exp.createdAt,
-                          ).toLocaleDateString("en-GB")}
-                        </span>
-                      </div>
-                      <span className="font-mono font-black text-rose-600 text-sm bg-rose-50 px-2 py-0.5 rounded">
-                        {safeNum(exp.amount).toLocaleString()}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-2 text-xs text-gray-400 font-bold">
-                  لا توجد مصاريف
-                </div>
-              )}
+              ))}
             </div>
+          ) : (
+            <EmptyInline text="لا توجد مصاريف" />
           )}
-        </div>
+        </CostSection>
       </div>
 
-      {/* 📊 ملخص النتائج والأرباح (Dashboard Style) */}
-      <div className="bg-slate-900 rounded-3xl p-6 mt-8 shadow-xl relative overflow-hidden">
-        {/* تأثيرات بصرية للخلفية */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500 rounded-full blur-[80px] opacity-20 -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500 rounded-full blur-[80px] opacity-20 translate-y-1/3 -translate-x-1/4 pointer-events-none"></div>
+      {/* Profit dashboard */}
+      <section
+        className="
+          relative overflow-hidden rounded-[32px]
+          border border-[#d8b46a]/25
+          bg-[#06111d] p-6 text-white
+          shadow-[0_24px_70px_rgba(6,17,29,0.28)]
+        "
+      >
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute right-[-90px] top-[-90px] h-72 w-72 rounded-full bg-[#e2bf74]/14 blur-[80px]" />
+          <div className="absolute left-[-100px] bottom-[-100px] h-72 w-72 rounded-full bg-emerald-500/14 blur-[80px]" />
+          <div className="absolute left-[40%] top-[20%] h-56 w-56 rounded-full bg-cyan-500/10 blur-[80px]" />
+        </div>
 
         <div className="relative z-10">
-          <div className="flex items-center gap-2 text-white mb-6">
-            <PieChart className="w-5 h-5 text-blue-400" />
-            <h3 className="font-black text-lg">
-              الخلاصة المالية وتوزيع الأرباح
-            </h3>
-          </div>
+          <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <span
+                className="
+                  grid h-12 w-12 place-items-center rounded-2xl
+                  border border-[#e2bf74]/30
+                  bg-white/10 text-[#e2bf74]
+                "
+              >
+                <PieChart className="h-6 w-6" />
+              </span>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 p-4 rounded-2xl">
-              <div className="text-slate-400 text-[10px] font-bold mb-1">
-                إجمالي التكاليف
-              </div>
-              <div className="font-mono text-xl font-black text-rose-400">
-                {totalCosts.toLocaleString()}{" "}
-                <span className="text-[10px] text-slate-500">ر.س</span>
+              <div>
+                <h3 className="text-lg font-black">
+                  الخلاصة المالية وتوزيع الأرباح
+                </h3>
+
+                <p className="mt-0.5 text-xs font-bold text-white/55">
+                  ملخص الربحية، الاحتياطي، حصة المصدر، وصافي التوزيع.
+                </p>
               </div>
             </div>
 
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 p-4 rounded-2xl">
-              <div className="text-slate-400 text-[10px] font-bold mb-1">
-                الربح التقديري
-              </div>
-              <div className="font-mono text-xl font-black text-emerald-400">
-                {estimatedProfit.toLocaleString()}{" "}
-                <span className="text-[10px] text-slate-500">ر.س</span>
-              </div>
-            </div>
-
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 p-4 rounded-2xl">
-              <div className="text-slate-400 text-[10px] font-bold mb-1">
-                خصم الاحتياطي (10%)
-              </div>
-              <div className="font-mono text-xl font-black text-blue-400">
-                {reserveDeduction.toLocaleString()}{" "}
-                <span className="text-[10px] text-slate-500">ر.س</span>
-              </div>
-            </div>
-
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 p-4 rounded-2xl">
-              <div className="text-slate-400 text-[10px] font-bold mb-1">
-                حصة المُصدر ({sourcePercent}%)
-              </div>
-              <div className="font-mono text-xl font-black text-purple-400">
-                {sourceShare.toLocaleString()}{" "}
-                <span className="text-[10px] text-slate-500">ر.س</span>
-              </div>
+            <div
+              className="
+                flex w-fit items-center gap-2 rounded-2xl
+                border border-white/15 bg-white/10
+                px-4 py-2 text-[11px] font-black text-white/75
+              "
+            >
+              <ShieldCheck className="h-4 w-4 text-[#e2bf74]" />
+              حسابات تقديرية حسب البيانات الحالية
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gradient-to-l from-emerald-900/40 to-slate-800/50 border border-emerald-500/30 p-5 rounded-2xl flex items-center justify-between">
-              <div>
-                <div className="text-emerald-400 text-[11px] font-bold mb-1">
-                  الصافي القابل للتسوية
-                </div>
-                <div className="font-mono text-3xl font-black text-white">
-                  {distributableProfit.toLocaleString()}{" "}
-                  <span className="text-[12px] text-slate-400">ر.س</span>
-                </div>
-              </div>
-              <button
-                onClick={() => setActiveTab("settlement")}
-                className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black text-sm rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all flex items-center gap-2"
-              >
-                <Scale className="w-4 h-4" /> إجراء تسوية
-              </button>
-            </div>
+          <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <DarkMetricCard
+              label="إجمالي التكاليف"
+              value={totalCosts}
+              tone="rose"
+              icon={ReceiptText}
+            />
 
-            <div className="bg-gradient-to-l from-amber-900/40 to-slate-800/50 border border-amber-500/30 p-5 rounded-2xl flex items-center justify-between">
-              <div>
-                <div className="text-amber-400 text-[11px] font-bold mb-1">
-                  أرباح الشركاء (للتوزيع)
-                </div>
-                <div className="font-mono text-3xl font-black text-white">
-                  {availableForPartners.toLocaleString()}{" "}
-                  <span className="text-[12px] text-slate-400">ر.س</span>
-                </div>
-              </div>
-              <button
-                onClick={() => setActiveTab("profits")}
-                className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-slate-900 font-black text-sm rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all flex items-center gap-2"
-              >
-                <PieChart className="w-4 h-4" /> عرض التوزيع
-              </button>
-            </div>
+            <DarkMetricCard
+              label="الربح التقديري"
+              value={estimatedProfit}
+              tone="emerald"
+              icon={TrendingUp}
+            />
+
+            <DarkMetricCard
+              label="خصم الاحتياطي 10%"
+              value={reserveDeduction}
+              tone="cyan"
+              icon={ShieldCheck}
+            />
+
+            <DarkMetricCard
+              label={`حصة المُصدر ${sourcePercent || 0}%`}
+              value={sourceShare}
+              tone="purple"
+              icon={Coins}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <ProfitActionCard
+              label="الصافي القابل للتسوية"
+              value={distributableProfit}
+              icon={Scale}
+              buttonLabel="إجراء تسوية"
+              tone="emerald"
+              onClick={() => setActiveTab("settlement")}
+            />
+
+            <ProfitActionCard
+              label="أرباح الشركاء للتوزيع"
+              value={availableForPartners}
+              icon={PieChart}
+              buttonLabel="عرض التوزيع"
+              tone="amber"
+              onClick={() => setActiveTab("profits")}
+            />
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* 🚀 الزر العائم يظهر فقط عند وجود تغييرات (isDirty === true) */}
+      {/* Floating save */}
       {isDirty && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-5">
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 animate-in slide-in-from-bottom-5">
           <button
             onClick={handleSave}
             disabled={updateTxMutation.isPending}
-            className="px-8 py-3.5 bg-blue-600 text-white rounded-full text-base font-black shadow-[0_8px_30px_rgb(37,99,235,0.4)] hover:bg-blue-700 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 transition-all flex items-center gap-3"
+            className="
+              flex items-center gap-3 rounded-full
+              bg-gradient-to-l from-[#123f59] via-[#15536f] to-[#0e7490]
+              px-8 py-3.5 text-base font-black text-white
+              shadow-[0_18px_45px_rgba(18,63,89,0.30)]
+              transition hover:-translate-y-[2px]
+              disabled:cursor-not-allowed disabled:opacity-50
+            "
+            type="button"
           >
             {updateTxMutation.isPending ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin text-[#e2bf74]" />
             ) : (
-              <Save className="w-5 h-5" />
+              <Save className="h-5 w-5 text-[#e2bf74]" />
             )}
             حفظ التعديلات المالية
           </button>
@@ -818,4 +739,477 @@ export const FinancialTab = ({
       )}
     </div>
   );
+};
+
+// =========================================================================
+// Components
+// =========================================================================
+
+const CostSection = ({
+  title,
+  subtitle,
+  icon: Icon,
+  tone,
+  isOpen,
+  onToggle,
+  headerValue,
+  children,
+}) => {
+  const toneClass = getToneClass(tone);
+
+  return (
+    <section
+      className="
+        overflow-hidden rounded-[28px]
+        border border-[#d8b46a]/30 bg-white/90
+        shadow-[0_18px_45px_rgba(18,63,89,0.10)]
+        backdrop-blur-xl
+      "
+    >
+      <button
+        onClick={onToggle}
+        className="
+          flex w-full flex-col gap-4
+          border-b border-[#e8ddc8]
+          bg-gradient-to-l from-[#fbf8f1] via-white to-[#eef7f6]
+          p-4 text-right transition hover:bg-[#fbf8f1]
+          sm:flex-row sm:items-center sm:justify-between
+        "
+        type="button"
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            className={`
+              grid h-11 w-11 shrink-0 place-items-center
+              rounded-2xl border ${toneClass.icon}
+            `}
+          >
+            <Icon className="h-5 w-5" />
+          </span>
+
+          <div className="min-w-0">
+            <h3 className="truncate text-sm font-black text-[#123f59]">
+              {title}
+            </h3>
+
+            <p className="mt-0.5 text-[11px] font-bold text-[#64748b]">
+              {subtitle}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 sm:justify-end">
+          <div onClick={(e) => e.stopPropagation()}>
+            {headerValue}
+          </div>
+
+          <span
+            className="
+              grid h-9 w-9 shrink-0 place-items-center
+              rounded-xl border border-[#e8ddc8]
+              bg-white text-[#64748b]
+            "
+          >
+            {isOpen ? (
+              <ChevronUp className="h-5 w-5" />
+            ) : (
+              <ChevronDown className="h-5 w-5" />
+            )}
+          </span>
+        </div>
+      </button>
+
+      {isOpen && (
+        <div className="p-4 animate-in slide-in-from-top-2">
+          {children}
+        </div>
+      )}
+    </section>
+  );
+};
+
+const PersonCostList = ({
+  items,
+  emptyText,
+  getCost,
+  getPaid,
+  getName,
+  getSubText,
+  onPay,
+  onDelete,
+  deletePending,
+  payButtonLabel,
+}) => {
+  if (!items?.length) {
+    return <EmptyInline text={emptyText} />;
+  }
+
+  return (
+    <div className="mb-4 space-y-3">
+      {items.map((item, index) => {
+        const cost = safeNum(getCost(item));
+        const paid = safeNum(getPaid(item));
+        const remaining = Math.max(0, cost - paid);
+
+        return (
+          <CostRow
+            key={item.id || item.personId || index}
+            title={getName(item)}
+            subtitle={getSubText(item)}
+            cost={cost}
+            paid={paid}
+            remaining={remaining}
+            payLabel={payButtonLabel}
+            tone="amber"
+            onPay={() => onPay(item, remaining)}
+            onDelete={() => onDelete(item)}
+            deletePending={deletePending}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
+const CostRow = ({
+  title,
+  subtitle,
+  cost,
+  paid,
+  remaining,
+  payLabel,
+  tone = "amber",
+  onPay,
+  onDelete,
+  deletePending,
+}) => (
+  <div
+    className="
+      rounded-[22px] border border-[#e8ddc8]
+      bg-white p-3 shadow-sm
+    "
+  >
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <h4 className="truncate text-xs font-black text-[#123f59]">
+          {title}
+        </h4>
+
+        {subtitle && (
+          <p className="mt-1 truncate text-[10px] font-bold text-[#64748b]">
+            {subtitle}
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <MoneyBadge label="تكلفة" value={cost} tone="slate" />
+        <MoneyBadge label="مدفوع" value={paid} tone="emerald" />
+        <MoneyBadge label="متبقي" value={remaining} tone={remaining > 0 ? "rose" : "emerald"} />
+      </div>
+
+      <div className="flex shrink-0 items-center gap-2">
+        {remaining > 0 ? (
+          <button
+            onClick={onPay}
+            className={`
+              rounded-xl px-3 py-2 text-[10px] font-black
+              transition hover:-translate-y-[1px]
+              ${getPayButtonClass(tone)}
+            `}
+            type="button"
+          >
+            {payLabel} ({remaining.toLocaleString()})
+          </button>
+        ) : (
+          <span
+            className="
+              inline-flex items-center gap-1 rounded-xl
+              border border-emerald-200 bg-emerald-50
+              px-3 py-2 text-[10px] font-black text-emerald-700
+            "
+          >
+            <Check className="h-3.5 w-3.5" />
+            مسدد
+          </span>
+        )}
+
+        <button
+          onClick={onDelete}
+          disabled={deletePending}
+          className="
+            grid h-9 w-9 place-items-center rounded-xl
+            border border-rose-200 bg-rose-50
+            text-rose-600 transition hover:bg-rose-100
+            disabled:cursor-not-allowed disabled:opacity-50
+          "
+          type="button"
+        >
+          {deletePending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Trash2 className="h-4 w-4" />
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+const StaticMoneyValue = ({ value }) => (
+  <div
+    className="
+      rounded-2xl border border-[#d8b46a]/25
+      bg-white px-4 py-2
+      font-mono text-lg font-black text-[#123f59]
+      shadow-sm
+    "
+    dir="ltr"
+  >
+    {safeNum(value).toLocaleString()}
+    <span className="mr-1 text-[10px] font-black text-[#94a3b8]">
+      ر.س
+    </span>
+  </div>
+);
+
+const MiniFinancialCard = ({ icon: Icon, label, value, tone }) => {
+  const toneClass = getToneClass(tone);
+
+  return (
+    <div
+      className="
+        rounded-[24px] border border-[#d8b46a]/25
+        bg-white p-4 shadow-sm
+      "
+    >
+      <div className="flex items-center gap-3">
+        <span
+          className={`
+            grid h-11 w-11 place-items-center rounded-2xl border
+            ${toneClass.icon}
+          `}
+        >
+          <Icon className="h-5 w-5" />
+        </span>
+
+        <div>
+          <p className="text-[11px] font-black text-[#64748b]">
+            {label}
+          </p>
+
+          <p className="mt-1 font-mono text-lg font-black text-[#123f59]">
+            {value}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MoneyBadge = ({ label, value, tone }) => {
+  const tones = {
+    slate: "border-slate-200 bg-slate-50 text-slate-700",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    rose: "border-rose-200 bg-rose-50 text-rose-700",
+  };
+
+  return (
+    <span
+      className={`
+        inline-flex items-center gap-1 rounded-xl border
+        px-2.5 py-1 text-[9px] font-black
+        ${tones[tone] || tones.slate}
+      `}
+    >
+      <span className="opacity-75">{label}:</span>
+      <span className="font-mono">{safeNum(value).toLocaleString()}</span>
+    </span>
+  );
+};
+
+const CurrencyChip = ({ label, value, tone }) => {
+  const tones = {
+    blue: "border-blue-200 bg-blue-50 text-blue-700",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  };
+
+  return (
+    <span
+      className={`
+        inline-flex items-center gap-1 rounded-xl border
+        px-2 py-0.5 text-[9px] font-black
+        ${tones[tone] || tones.blue}
+      `}
+    >
+      <span className="opacity-70">{label}</span>
+      <span className="font-mono">{value}</span>
+    </span>
+  );
+};
+
+const DashedAddButton = ({ label, tone, onClick }) => {
+  const toneClass = getToneClass(tone);
+
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        flex h-11 w-full items-center justify-center gap-2
+        rounded-2xl border border-dashed text-xs font-black
+        transition hover:-translate-y-[1px]
+        ${toneClass.add}
+      `}
+      type="button"
+    >
+      <Plus className="h-4 w-4" />
+      {label}
+    </button>
+  );
+};
+
+const EmptyInline = ({ text }) => (
+  <div
+    className="
+      mb-4 flex min-h-[88px] flex-col items-center justify-center
+      rounded-[22px] border border-dashed border-[#d8b46a]/35
+      bg-[#fbf8f1]/70 px-4 py-5 text-center
+    "
+  >
+    <AlertCircle className="mb-2 h-6 w-6 text-[#c5983c]" />
+    <p className="text-xs font-black text-[#94a3b8]">
+      {text}
+    </p>
+  </div>
+);
+
+const DarkMetricCard = ({ icon: Icon, label, value, tone }) => {
+  const tones = {
+    rose: "text-rose-400 border-rose-400/20 bg-rose-400/8",
+    emerald: "text-emerald-400 border-emerald-400/20 bg-emerald-400/8",
+    cyan: "text-cyan-400 border-cyan-400/20 bg-cyan-400/8",
+    purple: "text-purple-400 border-purple-400/20 bg-purple-400/8",
+  };
+
+  return (
+    <div
+      className={`
+        rounded-[24px] border p-4 backdrop-blur-xl
+        ${tones[tone] || tones.cyan}
+      `}
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[10px] font-black text-white/50">
+          {label}
+        </span>
+
+        <Icon className="h-4 w-4" />
+      </div>
+
+      <div className="font-mono text-xl font-black text-white">
+        {safeNum(value).toLocaleString()}
+        <span className="mr-1 text-[10px] font-bold text-white/40">
+          ر.س
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const ProfitActionCard = ({
+  label,
+  value,
+  icon: Icon,
+  buttonLabel,
+  tone,
+  onClick,
+}) => {
+  const tones = {
+    emerald: {
+      card: "border-emerald-500/30 from-emerald-900/40 to-white/5",
+      text: "text-emerald-300",
+      button: "bg-emerald-500 hover:bg-emerald-400 text-[#06111d]",
+    },
+    amber: {
+      card: "border-amber-500/30 from-amber-900/40 to-white/5",
+      text: "text-amber-300",
+      button: "bg-amber-500 hover:bg-amber-400 text-[#06111d]",
+    },
+  };
+
+  const toneClass = tones[tone] || tones.emerald;
+
+  return (
+    <div
+      className={`
+        flex flex-col gap-4 rounded-[26px] border
+        bg-gradient-to-l p-5 sm:flex-row sm:items-center sm:justify-between
+        ${toneClass.card}
+      `}
+    >
+      <div>
+        <p className={`mb-1 text-[11px] font-black ${toneClass.text}`}>
+          {label}
+        </p>
+
+        <div className="font-mono text-3xl font-black text-white">
+          {safeNum(value).toLocaleString()}
+          <span className="mr-1 text-[12px] font-bold text-white/45">
+            ر.س
+          </span>
+        </div>
+      </div>
+
+      <button
+        onClick={onClick}
+        className={`
+          flex h-12 items-center justify-center gap-2
+          rounded-2xl px-5 text-sm font-black
+          shadow-[0_14px_30px_rgba(0,0,0,0.18)]
+          transition hover:-translate-y-[1px]
+          ${toneClass.button}
+        `}
+        type="button"
+      >
+        <Icon className="h-4 w-4" />
+        {buttonLabel}
+      </button>
+    </div>
+  );
+};
+
+const getToneClass = (tone) => {
+  const tones = {
+    indigo: {
+      icon: "border-indigo-200 bg-indigo-50 text-indigo-700",
+      add: "border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100",
+    },
+    cyan: {
+      icon: "border-cyan-200 bg-cyan-50 text-cyan-800",
+      add: "border-cyan-300 bg-cyan-50 text-cyan-800 hover:bg-cyan-100",
+    },
+    purple: {
+      icon: "border-purple-200 bg-purple-50 text-purple-700",
+      add: "border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100",
+    },
+    rose: {
+      icon: "border-rose-200 bg-rose-50 text-rose-700",
+      add: "border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100",
+    },
+    emerald: {
+      icon: "border-emerald-200 bg-emerald-50 text-emerald-700",
+      add: "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
+    },
+  };
+
+  return tones[tone] || tones.cyan;
+};
+
+const getPayButtonClass = (tone) => {
+  const tones = {
+    amber: "border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100",
+    purple: "border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100",
+  };
+
+  return tones[tone] || tones.amber;
 };

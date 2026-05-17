@@ -17,10 +17,43 @@ import {
   Briefcase,
   Activity,
   AlertTriangle,
+  UserCheck,
+  Timer,
+  CheckCircle2,
+  Sparkles,
+  FileText,
+  Send,
+  ListChecks,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../../../api/axios";
 import { useAuth } from "../../../../context/AuthContext";
+
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => (
+  <span
+    className={`
+      inline-flex items-center justify-center gap-1
+      ${vertical ? "flex-col" : "flex-row"}
+      ${className}
+    `}
+  >
+    {Icon && <Icon className={iconClassName || "h-4 w-4"} />}
+
+    {text && (
+      <span className={textClassName || "text-[9px] font-black leading-none"}>
+        {text}
+      </span>
+    )}
+  </span>
+);
 
 // عداد تنازلي
 const CountdownTimer = ({ targetDate }) => {
@@ -35,8 +68,15 @@ const CountdownTimer = ({ targetDate }) => {
     }
 
     const updateTimer = () => {
-      const now = new Date().getTime();
       const target = new Date(targetDate).getTime();
+
+      if (Number.isNaN(target)) {
+        setTimeLeft("موعد غير صالح");
+        setIsUrgent(true);
+        return;
+      }
+
+      const now = new Date().getTime();
       const distance = target - now;
 
       if (distance < 0) {
@@ -65,7 +105,7 @@ const CountdownTimer = ({ targetDate }) => {
   return (
     <span
       className={`
-        flex w-max items-center gap-1.5 rounded-xl border
+        inline-flex w-fit items-center gap-1.5 rounded-xl border
         px-3 py-1.5 font-mono text-[10px] font-black
         ${
           isUrgent
@@ -90,7 +130,7 @@ const getSafeEmployees = (empData) => {
     try {
       const parsed = JSON.parse(empData);
       return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
+    } catch {
       return [];
     }
   }
@@ -108,7 +148,7 @@ const getSafeComments = (comments) => {
     try {
       const parsed = JSON.parse(comments);
       return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
+    } catch {
       return [];
     }
   }
@@ -116,11 +156,7 @@ const getSafeComments = (comments) => {
   return [];
 };
 
-export const TasksTab = ({
-  tx,
-  isSuperAdmin,
-  persons = [],
-}) => {
+export const TasksTab = ({ tx, isSuperAdmin, persons = [] }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -132,43 +168,46 @@ export const TasksTab = ({
       const res = await api.get("/office-tasks");
       const allTasks = res.data?.data || [];
 
-      return allTasks.filter((t) => t.transactionId === tx.id);
+      return allTasks.filter((task) => task.transactionId === tx.id);
     },
     enabled: !!tx.id,
   });
 
   const visibleTasks = useMemo(() => {
-    return rawTasks.filter((t) => {
-      if (t.isDeleted || t.status === "deleted") return false;
+    return rawTasks.filter((task) => {
+      if (task.isDeleted || task.status === "deleted") return false;
 
-      const safeEmps = getSafeEmployees(t.assignedEmployees);
+      const safeEmps = getSafeEmployees(task.assignedEmployees);
 
-      const isMyTask = safeEmps.some(
-        (e) => (e.name || e) === user?.name,
-      );
+      const isMyTask = safeEmps.some((employee) => {
+        const employeeName = employee.name || employee;
+        const employeeId = employee.id || employee.personId;
+
+        return employeeName === user?.name || employeeId === user?.id;
+      });
 
       return isSuperAdmin || isMyTask;
     });
-  }, [rawTasks, isSuperAdmin, user?.name]);
+  }, [rawTasks, isSuperAdmin, user?.name, user?.id]);
 
   const employees = useMemo(
-    () => persons.filter((p) => p.role !== "عميل"),
+    () => persons.filter((person) => person.role !== "عميل"),
     [persons],
   );
 
   const completedCount = visibleTasks.filter(
-    (t) => t.status === "completed",
+    (task) => task.status === "completed",
   ).length;
 
   const urgentCount = visibleTasks.filter(
-    (t) => t.priority === "high" && t.status !== "completed",
+    (task) => task.priority === "high" && task.status !== "completed",
   ).length;
 
   const pendingCount = visibleTasks.filter(
-    (t) =>
-      t.status !== "completed" &&
-      t.status !== "frozen" &&
-      t.status !== "cancelled",
+    (task) =>
+      task.status !== "completed" &&
+      task.status !== "frozen" &&
+      task.status !== "cancelled",
   ).length;
 
   const [taskForm, setTaskForm] = useState({
@@ -179,6 +218,16 @@ export const TasksTab = ({
     assignedEmployees: [],
   });
 
+  const resetTaskForm = () => {
+    setTaskForm({
+      title: `مهمة جديدة - ${tx.transactionCode || "معاملة"}`,
+      description: "",
+      dueDate: "",
+      priority: "medium",
+      assignedEmployees: [],
+    });
+  };
+
   const saveTaskMutation = useMutation({
     mutationFn: async () => {
       const fd = new FormData();
@@ -188,51 +237,62 @@ export const TasksTab = ({
       fd.append("dueDate", taskForm.dueDate);
       fd.append("priority", taskForm.priority);
       fd.append("transactionId", tx.id);
-      fd.append(
-        "assignedEmployees",
-        JSON.stringify(taskForm.assignedEmployees),
-      );
+      fd.append("assignedEmployees", JSON.stringify(taskForm.assignedEmployees));
       fd.append("creatorName", user?.name || "مدير النظام");
 
       return api.post("/office-tasks", fd);
     },
+
     onSuccess: () => {
       toast.success("تم إسناد المهمة بنجاح");
 
-      queryClient.invalidateQueries(["transaction-office-tasks", tx.id]);
-      queryClient.invalidateQueries(["office-tasks"]);
+      queryClient.invalidateQueries({
+        queryKey: ["transaction-office-tasks", tx.id],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["office-tasks"],
+      });
 
       setIsAdding(false);
-
-      setTaskForm({
-        title: `مهمة جديدة - ${tx.transactionCode || "معاملة"}`,
-        description: "",
-        dueDate: "",
-        priority: "medium",
-        assignedEmployees: [],
-      });
+      resetTaskForm();
     },
+
     onError: () => toast.error("حدث خطأ أثناء حفظ المهمة"),
   });
 
   const deleteTaskMutation = useMutation({
     mutationFn: async (taskId) => api.delete(`/office-tasks/${taskId}`),
+
     onSuccess: () => {
       toast.success("تم حذف المهمة");
 
-      queryClient.invalidateQueries(["transaction-office-tasks", tx.id]);
-      queryClient.invalidateQueries(["office-tasks"]);
+      queryClient.invalidateQueries({
+        queryKey: ["transaction-office-tasks", tx.id],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["office-tasks"],
+      });
     },
   });
 
   const completeTaskMutation = useMutation({
     mutationFn: async (taskId) =>
-      api.put(`/office-tasks/${taskId}/status`, { status: "completed" }),
+      api.put(`/office-tasks/${taskId}/status`, {
+        status: "completed",
+      }),
+
     onSuccess: () => {
       toast.success("تم إتمام المهمة");
 
-      queryClient.invalidateQueries(["transaction-office-tasks", tx.id]);
-      queryClient.invalidateQueries(["office-tasks"]);
+      queryClient.invalidateQueries({
+        queryKey: ["transaction-office-tasks", tx.id],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["office-tasks"],
+      });
     },
   });
 
@@ -241,44 +301,68 @@ export const TasksTab = ({
       className="
         min-h-full space-y-5 p-4 pb-10 md:p-5
         bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
-        animate-in fade-in
+        animate-in fade-in duration-300 font-[Tajawal]
       "
       dir="rtl"
     >
       {/* Header */}
       <div
         className="
-          relative overflow-hidden rounded-[28px]
+          relative overflow-hidden rounded-[30px]
           border border-[#d8b46a]/30
-          bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59]
-          p-5 shadow-[0_20px_55px_rgba(18,63,89,0.20)]
+          bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490]
+          p-5 text-white
+          shadow-[0_20px_55px_rgba(18,63,89,0.18)]
         "
       >
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-[#c5983c]/18 blur-3xl" />
+          <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-[#e2bf74]/18 blur-3xl" />
           <div className="absolute left-[-80px] bottom-[-80px] h-52 w-52 rounded-full bg-cyan-400/12 blur-3xl" />
         </div>
 
-        <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-4">
+        <div className="relative z-10 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
             <div
               className="
-                grid h-14 w-14 place-items-center rounded-3xl
-                bg-[#e2bf74] text-[#123f59]
-                shadow-[0_12px_24px_rgba(0,0,0,0.18)]
+                grid h-14 w-14 shrink-0 place-items-center rounded-3xl
+                border border-[#e2bf74]/35 bg-white/12
+                text-[#e2bf74]
+                shadow-[0_14px_30px_rgba(0,0,0,0.20)]
               "
             >
-              <ClipboardList className="h-7 w-7" />
+              <IconWithText
+                icon={ClipboardList}
+                text="مهام"
+                vertical
+                iconClassName="h-6 w-6"
+                textClassName="text-[8px] font-black leading-none"
+              />
             </div>
 
-            <div>
-              <h2 className="text-lg font-black text-white">
+            <div className="min-w-0">
+              <h2 className="truncate text-lg font-black md:text-xl">
                 مهام المعاملة
               </h2>
 
-              <p className="mt-1 text-xs font-bold text-white/55">
+              <p className="mt-1 text-xs font-bold text-white/65">
                 إسناد المهام للموظفين، متابعة المواعيد، واعتماد الإنجاز.
               </p>
+
+              <div
+                className="
+                  mt-3 inline-flex items-center gap-1.5 rounded-xl
+                  border border-white/15 bg-white/10
+                  px-3 py-1.5 text-[10px]
+                  font-black text-white/85
+                "
+              >
+                <IconWithText
+                  icon={Sparkles}
+                  text="متابعة تنفيذ المهام حسب الموظف والصلاحية"
+                  iconClassName="h-3.5 w-3.5 text-[#e2bf74]"
+                  textClassName="text-[10px] font-black text-white/85"
+                />
+              </div>
             </div>
           </div>
 
@@ -286,25 +370,33 @@ export const TasksTab = ({
             <button
               onClick={() => setIsAdding(!isAdding)}
               className={`
-                flex h-12 items-center justify-center gap-2
+                flex h-11 items-center justify-center gap-2
                 rounded-2xl px-5 text-xs font-black
-                shadow-[0_12px_30px_rgba(255,255,255,0.12)]
-                transition-all duration-300
-                hover:-translate-y-[1px]
+                shadow-[0_12px_30px_rgba(226,191,116,0.16)]
+                transition-all duration-300 hover:-translate-y-[1px]
                 ${
                   isAdding
-                    ? "border border-rose-300/30 bg-rose-500/15 text-rose-100 hover:bg-rose-500 hover:text-white"
-                    : "bg-white text-[#123f59] hover:bg-[#fbf8f1]"
+                    ? "border border-rose-300/25 bg-rose-500/15 text-rose-100 hover:bg-rose-500 hover:text-white"
+                    : "bg-[#e2bf74] text-[#082032] hover:bg-[#f5d99b]"
                 }
               `}
               type="button"
             >
               {isAdding ? (
-                <X className="h-4 w-4" />
+                <IconWithText
+                  icon={X}
+                  text="إلغاء"
+                  iconClassName="h-4 w-4"
+                  textClassName="text-xs font-black"
+                />
               ) : (
-                <Plus className="h-4 w-4 text-[#c5983c]" />
+                <IconWithText
+                  icon={Plus}
+                  text="إسناد مهمة جديدة"
+                  iconClassName="h-4 w-4"
+                  textClassName="text-xs font-black"
+                />
               )}
-              {isAdding ? "إلغاء الأمر" : "إسناد مهمة جديدة"}
             </button>
           )}
         </div>
@@ -316,6 +408,7 @@ export const TasksTab = ({
           label="إجمالي المهام"
           value={visibleTasks.length}
           icon={CalendarDays}
+          iconText="كل"
           tone="blue"
         />
 
@@ -323,6 +416,7 @@ export const TasksTab = ({
           label="قيد التنفيذ"
           value={pendingCount}
           icon={Activity}
+          iconText="نشط"
           tone="cyan"
         />
 
@@ -330,6 +424,7 @@ export const TasksTab = ({
           label="المهام العاجلة"
           value={urgentCount}
           icon={Flag}
+          iconText="عاجل"
           tone="rose"
         />
 
@@ -337,239 +432,58 @@ export const TasksTab = ({
           label="المهام المكتملة"
           value={completedCount}
           icon={Check}
+          iconText="تم"
           tone="emerald"
         />
       </div>
 
       {/* Add Task Form */}
       {isAdding && isSuperAdmin && (
-        <div
-          className="
-            overflow-hidden rounded-[28px]
-            border border-[#d8b46a]/30 bg-white
-            shadow-[0_18px_45px_rgba(18,63,89,0.10)]
-            animate-in slide-in-from-top-2
-          "
-        >
-          <div
-            className="
-              flex items-center justify-between
-              border-b border-[#e8ddc8]
-              bg-gradient-to-l from-[#f8efe0] via-white to-[#eef7f6]
-              px-5 py-4
-            "
-          >
-            <h3 className="flex items-center gap-2 text-sm font-black text-[#123f59]">
-              <span
-                className="
-                  grid h-9 w-9 place-items-center rounded-2xl
-                  bg-[#123f59] text-[#e2bf74]
-                "
-              >
-                <Briefcase className="h-4 w-4" />
-              </span>
-              إسناد مهمة جديدة
-            </h3>
-
-            <span
-              className="
-                rounded-2xl border border-[#d8b46a]/25
-                bg-white px-3 py-1.5
-                text-[10px] font-black text-[#64748b]
-              "
-            >
-              مهمة داخلية
-            </span>
-          </div>
-
-          <div className="space-y-5 p-5">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <Field label="عنوان المهمة">
-                <input
-                  type="text"
-                  value={taskForm.title}
-                  onChange={(e) =>
-                    setTaskForm({ ...taskForm, title: e.target.value })
-                  }
-                  className="
-                    h-12 w-full rounded-2xl border border-[#d8b46a]/35
-                    bg-[#fbf8f1]/70 px-4 text-sm font-black text-[#123f59]
-                    outline-none transition
-                    focus:border-[#c5983c] focus:bg-white
-                    focus:ring-4 focus:ring-[#c5983c]/10
-                  "
-                />
-              </Field>
-
-              <Field label="اختر الموظف المستهدف">
-                <select
-                  value={
-                    taskForm.assignedEmployees.length > 0
-                      ? taskForm.assignedEmployees[0].name
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const empName = e.target.value;
-                    const emp = employees.find((p) => p.name === empName);
-
-                    setTaskForm({
-                      ...taskForm,
-                      assignedEmployees: emp
-                        ? [{ id: emp.id || "auto", name: emp.name }]
-                        : [],
-                    });
-                  }}
-                  className="
-                    h-12 w-full rounded-2xl border border-[#d8b46a]/35
-                    bg-[#fbf8f1]/70 px-4 text-sm font-black text-[#123f59]
-                    outline-none transition
-                    focus:border-[#c5983c] focus:bg-white
-                    focus:ring-4 focus:ring-[#c5983c]/10
-                  "
-                >
-                  <option value="">-- اختر موظف --</option>
-
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.name}>
-                      {emp.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-
-              <Field label="تاريخ التسليم النهائي">
-                <input
-                  type="date"
-                  value={taskForm.dueDate}
-                  onChange={(e) =>
-                    setTaskForm({ ...taskForm, dueDate: e.target.value })
-                  }
-                  className="
-                    h-12 w-full rounded-2xl border border-[#d8b46a]/35
-                    bg-[#fbf8f1]/70 px-4 font-mono text-sm font-black
-                    text-[#123f59] outline-none transition
-                    focus:border-[#c5983c] focus:bg-white
-                    focus:ring-4 focus:ring-[#c5983c]/10
-                  "
-                  dir="ltr"
-                />
-              </Field>
-
-              <Field label="الأولوية">
-                <select
-                  value={taskForm.priority}
-                  onChange={(e) =>
-                    setTaskForm({ ...taskForm, priority: e.target.value })
-                  }
-                  className="
-                    h-12 w-full rounded-2xl border border-[#d8b46a]/35
-                    bg-[#fbf8f1]/70 px-4 text-sm font-black text-[#123f59]
-                    outline-none transition
-                    focus:border-[#c5983c] focus:bg-white
-                    focus:ring-4 focus:ring-[#c5983c]/10
-                  "
-                >
-                  <option value="low">عادية</option>
-                  <option value="medium">متوسطة</option>
-                  <option value="high">عاجلة جداً 🔥</option>
-                </select>
-              </Field>
-
-              <div className="md:col-span-2">
-                <Field label="وصف المهمة بدقة">
-                  <textarea
-                    value={taskForm.description}
-                    onChange={(e) =>
-                      setTaskForm({
-                        ...taskForm,
-                        description: e.target.value,
-                      })
-                    }
-                    className="
-                      min-h-[95px] w-full resize-none rounded-2xl
-                      border border-[#d8b46a]/35
-                      bg-[#fbf8f1]/70 p-4
-                      text-sm font-bold leading-relaxed text-[#123f59]
-                      outline-none transition
-                      placeholder:text-[#94a3b8]
-                      focus:border-[#c5983c] focus:bg-white
-                      focus:ring-4 focus:ring-[#c5983c]/10
-                    "
-                    placeholder="اكتب التوجيهات والمطلوب من الموظف إنجازه..."
-                  />
-                </Field>
-              </div>
-            </div>
-
-            <div className="flex justify-end border-t border-[#e8ddc8] pt-4">
-              <button
-                onClick={() => {
-                  if (
-                    !taskForm.title ||
-                    taskForm.assignedEmployees.length === 0 ||
-                    !taskForm.description
-                  ) {
-                    return toast.error(
-                      "يرجى إكمال عنوان ووصف المهمة واختيار الموظف",
-                    );
-                  }
-
-                  saveTaskMutation.mutate();
-                }}
-                disabled={saveTaskMutation.isPending}
-                className="
-                  flex items-center gap-2 rounded-2xl
-                  bg-[#123f59] px-7 py-3
-                  text-sm font-black text-white
-                  shadow-[0_12px_30px_rgba(18,63,89,0.22)]
-                  transition hover:-translate-y-[1px] hover:bg-[#0f3448]
-                  disabled:opacity-50
-                "
-                type="button"
-              >
-                {saveTaskMutation.isPending ? (
-                  <Loader2 className="h-5 w-5 animate-spin text-[#e2bf74]" />
-                ) : (
-                  <Save className="h-5 w-5 text-[#e2bf74]" />
-                )}
-                حفظ وإرسال المهمة
-              </button>
-            </div>
-          </div>
-        </div>
+        <AddTaskCard
+          taskForm={taskForm}
+          setTaskForm={setTaskForm}
+          employees={employees}
+          saveTaskMutation={saveTaskMutation}
+        />
       )}
 
       {/* Tasks List */}
       <div
         className="
-          overflow-hidden rounded-[28px]
-          border border-[#d8b46a]/30 bg-white
+          overflow-hidden rounded-[30px]
+          border border-[#d8b46a]/30 bg-white/90
           shadow-[0_18px_45px_rgba(18,63,89,0.10)]
+          backdrop-blur-xl
         "
       >
         <div
           className="
-            flex items-center justify-between
-            border-b border-[#e8ddc8]
-            bg-gradient-to-l from-[#f8efe0] via-white to-[#eef7f6]
-            px-5 py-4
+            flex flex-col gap-3 border-b border-[#e8ddc8]
+            bg-gradient-to-l from-[#fbf8f1] via-white to-[#eef7f6]
+            px-5 py-4 sm:flex-row sm:items-center sm:justify-between
           "
         >
-          <h3 className="flex items-center gap-2 text-xs font-black text-[#123f59]">
+          <h3 className="flex items-center gap-3 text-xs font-black text-[#123f59]">
             <span
               className="
-                grid h-9 w-9 place-items-center rounded-2xl
+                grid h-10 w-10 place-items-center rounded-2xl
                 bg-[#123f59] text-[#e2bf74]
               "
             >
-              <CalendarDays className="h-4 w-4" />
+              <IconWithText
+                icon={ListChecks}
+                text="قائمة"
+                vertical
+                iconClassName="h-4 w-4"
+                textClassName="text-[7px] font-black leading-none"
+              />
             </span>
             قائمة المهام المرتبطة بالمعاملة
           </h3>
 
           <span
             className="
-              rounded-2xl border border-[#d8b46a]/25
+              w-fit rounded-2xl border border-[#d8b46a]/25
               bg-white px-3 py-1.5 text-[10px]
               font-black text-[#123f59]
             "
@@ -580,35 +494,36 @@ export const TasksTab = ({
 
         <div
           className="
-            custom-scrollbar-slim max-h-[680px] space-y-4 overflow-y-auto
+            custom-scrollbar-slim max-h-[720px] space-y-4 overflow-y-auto
             bg-gradient-to-br from-[#eef7f6]/60 via-[#fbf8f1]/60 to-white
             p-5
           "
         >
           {isTasksLoading ? (
-            <div className="flex justify-center py-14">
-              <Loader2 className="h-9 w-9 animate-spin text-[#c5983c]" />
-            </div>
+            <LoadingState />
           ) : visibleTasks.length > 0 ? (
-            visibleTasks.map((t) => {
-              const safeEmps = getSafeEmployees(t.assignedEmployees);
-              const safeComments = getSafeComments(t.comments);
+            visibleTasks.map((task) => {
+              const safeEmps = getSafeEmployees(task.assignedEmployees);
+              const safeComments = getSafeComments(task.comments);
 
-              const empNames = safeEmps.map((e) => e.name || e).join("، ");
+              const empNames = safeEmps.map((employee) => employee.name || employee).join("، ");
 
-              const isMyTask = safeEmps.some(
-                (e) => (e.name || e) === user?.name,
-              );
+              const isMyTask = safeEmps.some((employee) => {
+                const employeeName = employee.name || employee;
+                const employeeId = employee.id || employee.personId;
 
-              const isCompleted = t.status === "completed";
-              const isFrozen = t.status === "frozen";
-              const isCancelled = t.status === "cancelled";
-              const isHighPriority = t.priority === "high";
+                return employeeName === user?.name || employeeId === user?.id;
+              });
+
+              const isCompleted = task.status === "completed";
+              const isFrozen = task.status === "frozen";
+              const isCancelled = task.status === "cancelled";
+              const isHighPriority = task.priority === "high";
 
               return (
                 <TaskCard
-                  key={t.id}
-                  task={t}
+                  key={task.id}
+                  task={task}
                   empNames={empNames}
                   isCompleted={isCompleted}
                   isFrozen={isFrozen}
@@ -625,6 +540,203 @@ export const TasksTab = ({
           ) : (
             <EmptyTasks />
           )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AddTaskCard = ({
+  taskForm,
+  setTaskForm,
+  employees,
+  saveTaskMutation,
+}) => {
+  const selectedEmployeeName =
+    taskForm.assignedEmployees.length > 0
+      ? taskForm.assignedEmployees[0].name
+      : "";
+
+  const handleSubmit = () => {
+    if (!taskForm.title || taskForm.assignedEmployees.length === 0 || !taskForm.description) {
+      return toast.error("يرجى إكمال عنوان ووصف المهمة واختيار الموظف");
+    }
+
+    saveTaskMutation.mutate();
+  };
+
+  return (
+    <div
+      className="
+        overflow-hidden rounded-[30px]
+        border border-[#d8b46a]/30 bg-white/90
+        shadow-[0_18px_45px_rgba(18,63,89,0.10)]
+        backdrop-blur-xl animate-in slide-in-from-top-2
+      "
+    >
+      <div
+        className="
+          flex flex-col gap-3 border-b border-[#e8ddc8]
+          bg-gradient-to-l from-[#fbf8f1] via-white to-[#eef7f6]
+          px-5 py-4 sm:flex-row sm:items-center sm:justify-between
+        "
+      >
+        <h3 className="flex items-center gap-3 text-sm font-black text-[#123f59]">
+          <span
+            className="
+              grid h-10 w-10 place-items-center rounded-2xl
+              bg-[#123f59] text-[#e2bf74]
+            "
+          >
+            <IconWithText
+              icon={Briefcase}
+              text="جديد"
+              vertical
+              iconClassName="h-4 w-4"
+              textClassName="text-[7px] font-black leading-none"
+            />
+          </span>
+          إسناد مهمة جديدة
+        </h3>
+
+        <span
+          className="
+            w-fit rounded-2xl border border-[#d8b46a]/25
+            bg-white px-3 py-1.5
+            text-[10px] font-black text-[#64748b]
+          "
+        >
+          مهمة داخلية
+        </span>
+      </div>
+
+      <div className="space-y-5 p-5">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Field label="عنوان المهمة" icon={FileText}>
+            <input
+              type="text"
+              value={taskForm.title}
+              onChange={(event) =>
+                setTaskForm({
+                  ...taskForm,
+                  title: event.target.value,
+                })
+              }
+              className={INPUT_CLASS}
+              placeholder="مثال: مراجعة المخططات..."
+            />
+          </Field>
+
+          <Field label="اختر الموظف المستهدف" icon={Users}>
+            <select
+              value={selectedEmployeeName}
+              onChange={(event) => {
+                const empName = event.target.value;
+                const emp = employees.find((person) => person.name === empName);
+
+                setTaskForm({
+                  ...taskForm,
+                  assignedEmployees: emp
+                    ? [
+                        {
+                          id: emp.id || "auto",
+                          name: emp.name,
+                        },
+                      ]
+                    : [],
+                });
+              }}
+              className={INPUT_CLASS}
+            >
+              <option value="">-- اختر موظف --</option>
+
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.name}>
+                  {emp.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="تاريخ التسليم النهائي" icon={Timer}>
+            <input
+              type="date"
+              value={taskForm.dueDate}
+              onChange={(event) =>
+                setTaskForm({
+                  ...taskForm,
+                  dueDate: event.target.value,
+                })
+              }
+              className={`${INPUT_CLASS} font-mono`}
+              dir="ltr"
+            />
+          </Field>
+
+          <Field label="الأولوية" icon={Flag}>
+            <select
+              value={taskForm.priority}
+              onChange={(event) =>
+                setTaskForm({
+                  ...taskForm,
+                  priority: event.target.value,
+                })
+              }
+              className={INPUT_CLASS}
+            >
+              <option value="low">عادية</option>
+              <option value="medium">متوسطة</option>
+              <option value="high">عاجلة جداً 🔥</option>
+            </select>
+          </Field>
+
+          <div className="md:col-span-2">
+            <Field label="وصف المهمة بدقة" icon={ClipboardList}>
+              <textarea
+                value={taskForm.description}
+                onChange={(event) =>
+                  setTaskForm({
+                    ...taskForm,
+                    description: event.target.value,
+                  })
+                }
+                className={`${INPUT_CLASS} min-h-[105px] resize-none py-3 leading-8`}
+                placeholder="اكتب التوجيهات والمطلوب من الموظف إنجازه..."
+              />
+            </Field>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 border-t border-[#e8ddc8] pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-[10px] font-bold text-[#64748b]">
+            <ShieldCheck className="h-4 w-4 text-[#c5983c]" />
+            سيتم حفظ المهمة وربطها مباشرة بهذه المعاملة.
+          </div>
+
+          <button
+            onClick={handleSubmit}
+            disabled={saveTaskMutation.isPending}
+            className="
+              flex h-11 items-center justify-center gap-2
+              rounded-2xl bg-gradient-to-l from-[#123f59] via-[#15536f] to-[#0e7490]
+              px-7 text-sm font-black text-white
+              shadow-[0_12px_30px_rgba(18,63,89,0.22)]
+              transition hover:-translate-y-[1px]
+              disabled:cursor-not-allowed disabled:opacity-50
+            "
+            type="button"
+          >
+            {saveTaskMutation.isPending ? (
+              <Loader2 className="h-5 w-5 animate-spin text-[#e2bf74]" />
+            ) : (
+              <IconWithText
+                icon={Send}
+                text="حفظ وإرسال المهمة"
+                iconClassName="h-5 w-5 text-[#e2bf74]"
+                textClassName="text-sm font-black text-white"
+              />
+            )}
+          </button>
         </div>
       </div>
     </div>
@@ -658,7 +770,7 @@ const TaskCard = ({
     <div
       className={`
         group overflow-hidden rounded-[26px] border bg-white
-        shadow-sm transition-all
+        shadow-sm transition-all hover:-translate-y-[1px]
         hover:shadow-[0_14px_34px_rgba(18,63,89,0.12)]
         ${
           isCompleted
@@ -696,11 +808,29 @@ const TaskCard = ({
             `}
           >
             {isCompleted ? (
-              <Check className="h-5 w-5" />
+              <IconWithText
+                icon={Check}
+                text="تم"
+                vertical
+                iconClassName="h-5 w-5"
+                textClassName="text-[7px] font-black leading-none"
+              />
             ) : isHighPriority ? (
-              <Flag className="h-5 w-5" />
+              <IconWithText
+                icon={Flag}
+                text="عاجل"
+                vertical
+                iconClassName="h-5 w-5"
+                textClassName="text-[7px] font-black leading-none"
+              />
             ) : (
-              <User className="h-5 w-5" />
+              <IconWithText
+                icon={User}
+                text="مهمة"
+                vertical
+                iconClassName="h-5 w-5"
+                textClassName="text-[7px] font-black leading-none"
+              />
             )}
           </span>
 
@@ -720,38 +850,13 @@ const TaskCard = ({
             </div>
 
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span
-                className="
-                  rounded-xl border border-cyan-200
-                  bg-cyan-50 px-2.5 py-1
-                  text-[10px] font-black text-cyan-700
-                "
-              >
-                المُنفذ: {empNames || "غير محدد"}
-              </span>
-
-              <span
-                className="
-                  rounded-xl border border-[#d8b46a]/25
-                  bg-white px-2.5 py-1
-                  text-[10px] font-black text-[#64748b]
-                "
-              >
-                بواسطة: {task.creatorName || "النظام"}
-              </span>
+              <Badge tone="cyan">المُنفذ: {empNames || "غير محدد"}</Badge>
+              <Badge tone="slate">بواسطة: {task.creatorName || "النظام"}</Badge>
 
               {isHighPriority && !isCompleted && (
-                <span
-                  className="
-                    flex items-center gap-1 rounded-xl
-                    border border-rose-200 bg-rose-50
-                    px-2.5 py-1
-                    text-[10px] font-black text-rose-700
-                  "
-                >
-                  <AlertTriangle className="h-3.5 w-3.5" />
+                <Badge tone="rose" icon={AlertTriangle}>
                   عاجلة جداً
-                </span>
+                </Badge>
               )}
             </div>
 
@@ -774,9 +879,9 @@ const TaskCard = ({
               disabled={deleteTaskMutation.isPending}
               className="
                 grid h-10 w-10 place-items-center rounded-xl
-                bg-rose-50 text-rose-500
+                border border-rose-200 bg-rose-50 text-rose-500
                 transition hover:bg-rose-500 hover:text-white
-                disabled:opacity-50
+                disabled:cursor-not-allowed disabled:opacity-50
               "
               title="حذف المهمة"
               type="button"
@@ -802,12 +907,12 @@ const TaskCard = ({
                   }}
                   disabled={completeTaskMutation.isPending}
                   className="
-                    flex items-center gap-1.5 rounded-xl
-                    border border-emerald-200 bg-emerald-50
-                    px-3 py-2 text-[10px]
+                    flex h-10 items-center justify-center gap-1.5
+                    rounded-xl border border-emerald-200 bg-emerald-50
+                    px-3 text-[10px]
                     font-black text-emerald-700
                     transition hover:bg-emerald-600 hover:text-white
-                    disabled:opacity-50
+                    disabled:cursor-not-allowed disabled:opacity-50
                   "
                   type="button"
                 >
@@ -852,9 +957,9 @@ const TaskCard = ({
             </h5>
 
             <div className="space-y-2">
-              {safeComments.map((c) => (
+              {safeComments.map((comment, index) => (
                 <div
-                  key={c.id}
+                  key={comment.id || index}
                   className="
                     rounded-xl border border-[#e8ddc8]
                     bg-[#fbf8f1] p-3
@@ -862,9 +967,9 @@ const TaskCard = ({
                   "
                 >
                   <span className="font-black text-[#123f59]">
-                    {c.authorName || "مستخدم"}:
+                    {comment.authorName || "مستخدم"}:
                   </span>{" "}
-                  {c.text}
+                  {comment.text}
                 </div>
               ))}
             </div>
@@ -875,7 +980,7 @@ const TaskCard = ({
   );
 };
 
-const SummaryCard = ({ label, value, icon: Icon, tone = "blue" }) => {
+const SummaryCard = ({ label, value, icon: Icon, iconText, tone = "blue" }) => {
   const tones = {
     blue: {
       card: "border-[#d8b46a]/30 bg-white",
@@ -903,34 +1008,48 @@ const SummaryCard = ({ label, value, icon: Icon, tone = "blue" }) => {
     },
   };
 
-  const t = tones[tone] || tones.blue;
+  const selectedTone = tones[tone] || tones.blue;
 
   return (
     <div
       className={`
         rounded-[24px] border p-4
         shadow-[0_14px_34px_rgba(18,63,89,0.08)]
-        ${t.card}
+        ${selectedTone.card}
       `}
     >
       <div className="mb-3 flex items-center justify-between gap-3">
-        <div className={`text-[11px] font-black ${t.label}`}>{label}</div>
+        <div className={`text-[11px] font-black ${selectedTone.label}`}>
+          {label}
+        </div>
 
-        <span className={`grid h-10 w-10 place-items-center rounded-2xl ${t.icon}`}>
-          <Icon className="h-5 w-5" />
+        <span
+          className={`
+            grid h-11 w-11 place-items-center rounded-2xl
+            ${selectedTone.icon}
+          `}
+        >
+          <IconWithText
+            icon={Icon}
+            text={iconText}
+            vertical
+            iconClassName="h-5 w-5"
+            textClassName="text-[7px] font-black leading-none"
+          />
         </span>
       </div>
 
-      <div className={`font-mono text-2xl font-black ${t.value}`}>
+      <div className={`font-mono text-2xl font-black ${selectedTone.value}`}>
         {Number(value || 0).toLocaleString()}
       </div>
     </div>
   );
 };
 
-const Field = ({ label, children }) => (
+const Field = ({ label, icon: Icon, children }) => (
   <div>
-    <label className="mb-1.5 block text-xs font-black text-[#64748b]">
+    <label className="mb-1.5 flex items-center gap-1.5 text-xs font-black text-[#64748b]">
+      {Icon && <Icon className="h-3.5 w-3.5 text-[#c5983c]" />}
       {label}
     </label>
 
@@ -938,10 +1057,41 @@ const Field = ({ label, children }) => (
   </div>
 );
 
+const Badge = ({ children, tone = "slate", icon: Icon }) => {
+  const tones = {
+    cyan: "border-cyan-200 bg-cyan-50 text-cyan-700",
+    slate: "border-[#d8b46a]/25 bg-white text-[#64748b]",
+    rose: "border-rose-200 bg-rose-50 text-rose-700",
+  };
+
+  return (
+    <span
+      className={`
+        inline-flex items-center gap-1 rounded-xl border
+        px-2.5 py-1 text-[10px] font-black
+        ${tones[tone] || tones.slate}
+      `}
+    >
+      {Icon && <Icon className="h-3.5 w-3.5" />}
+      {children}
+    </span>
+  );
+};
+
+const LoadingState = () => (
+  <div className="flex min-h-[260px] flex-col items-center justify-center">
+    <Loader2 className="mb-3 h-9 w-9 animate-spin text-[#c5983c]" />
+
+    <p className="text-xs font-black text-[#64748b]">
+      جاري جلب المهام المرتبطة بالمعاملة...
+    </p>
+  </div>
+);
+
 const EmptyTasks = () => (
   <div
     className="
-      flex flex-col items-center justify-center
+      flex min-h-[280px] flex-col items-center justify-center
       rounded-[26px] border border-dashed
       border-[#d8b46a]/45 bg-white/70
       p-12 text-center
@@ -950,11 +1100,18 @@ const EmptyTasks = () => (
     <div
       className="
         mb-4 grid h-20 w-20 place-items-center
-        rounded-[28px] bg-[#f8efe0]
-        text-[#c5983c]
+        rounded-[28px] bg-gradient-to-br from-[#123f59] to-[#0e7490]
+        text-[#e2bf74]
+        shadow-[0_16px_34px_rgba(18,63,89,0.22)]
       "
     >
-      <ShieldCheck className="h-10 w-10" />
+      <IconWithText
+        icon={ShieldCheck}
+        text="فارغ"
+        vertical
+        iconClassName="h-10 w-10"
+        textClassName="text-[9px] font-black leading-none"
+      />
     </div>
 
     <p className="text-sm font-black text-[#123f59]">
@@ -966,3 +1123,12 @@ const EmptyTasks = () => (
     </p>
   </div>
 );
+
+const INPUT_CLASS = `
+  h-12 w-full rounded-2xl border border-[#d8b46a]/35
+  bg-[#fbf8f1]/70 px-4 text-sm font-black text-[#123f59]
+  shadow-sm outline-none transition
+  placeholder:text-[#94a3b8]
+  focus:border-[#c5983c] focus:bg-white
+  focus:ring-4 focus:ring-[#c5983c]/10
+`;

@@ -28,11 +28,14 @@ import {
   Users,
   Layers,
   CheckCircle,
+  ShieldCheck,
+  Map,
+  Landmark,
+  Ruler,
 } from "lucide-react";
 import { SearchableSelect } from "../TransactionSharedUI";
 import AccessControl from "../../../../components/AccessControl";
 
-// Helper: لتحويل الأرقام العربية إلى إنجليزية
 const toEnglishNumbers = (str) => {
   if (str === null || str === undefined) return "";
   return String(str).replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
@@ -57,7 +60,6 @@ export const BasicTab = ({
 }) => {
   const queryClient = useQueryClient();
 
-  // 🚀 1. جلب قائمة المخططات من الباك إند
   const { data: plansData = [] } = useQuery({
     queryKey: ["riyadh-plans"],
     queryFn: async () => (await api.get("/riyadh-streets/plans")).data,
@@ -69,7 +71,6 @@ export const BasicTab = ({
     id: p.id,
   }));
 
-  // 🚀 2. حالة المودال الصغير للإضافة السريعة للمخطط
   const [isQuickAddPlanOpen, setIsQuickAddPlanOpen] = useState(false);
   const [newPlanName, setNewPlanName] = useState("");
 
@@ -83,8 +84,16 @@ export const BasicTab = ({
     },
     onSuccess: (res) => {
       toast.success("تم تسجيل المخطط الجديد بنجاح");
-      queryClient.invalidateQueries(["riyadh-plans"]);
-      setEditFormData((prev) => ({ ...prev, plan: res.data.planNumber }));
+
+      queryClient.invalidateQueries({
+        queryKey: ["riyadh-plans"],
+      });
+
+      setEditFormData((prev) => ({
+        ...prev,
+        plan: res.data.planNumber,
+      }));
+
       setNewPlanName("");
       setIsQuickAddPlanOpen(false);
     },
@@ -98,6 +107,7 @@ export const BasicTab = ({
   const daysSinceCreation = Math.floor(
     (today - createdDate) / (1000 * 60 * 60 * 24),
   );
+
   const daysSinceUpdate = Math.floor(
     (today - updatedDate) / (1000 * 60 * 60 * 24),
   );
@@ -109,12 +119,12 @@ export const BasicTab = ({
         ? "تحتاج متابعة"
         : "منتظمة";
 
-  const delayColor =
+  const delayTone =
     delayStatus === "متأخرة"
-      ? "text-red-600 bg-red-50 border-red-200"
+      ? "rose"
       : delayStatus === "تحتاج متابعة"
-        ? "text-amber-600 bg-amber-50 border-amber-200"
-        : "text-emerald-600 bg-emerald-50 border-emerald-200";
+        ? "amber"
+        : "emerald";
 
   const [siteImagePreview, setSiteImagePreview] = useState(
     tx.notes?.refs?.siteImage
@@ -125,18 +135,27 @@ export const BasicTab = ({
   const [isSiteImageModalOpen, setIsSiteImageModalOpen] = useState(false);
 
   const handleEditChange = (field, value) => {
-    setEditFormData((prev) => ({ ...prev, [field]: toEnglishNumbers(value) }));
+    setEditFormData((prev) => ({
+      ...prev,
+      [field]: toEnglishNumbers(value),
+    }));
   };
 
   const handleTextChange = (field, value) => {
-    setEditFormData((prev) => ({ ...prev, [field]: value }));
+    setEditFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   const handleSiteImageChange = (e) => {
     const file = e.target.files[0];
 
     if (file) {
-      setEditFormData((prev) => ({ ...prev, newSiteImage: file }));
+      setEditFormData((prev) => ({
+        ...prev,
+        newSiteImage: file,
+      }));
 
       const reader = new FileReader();
 
@@ -162,7 +181,10 @@ export const BasicTab = ({
 
       newOwners.splice(index, 1);
 
-      return { ...prev, additionalOwners: newOwners };
+      return {
+        ...prev,
+        additionalOwners: newOwners,
+      };
     });
   };
 
@@ -170,9 +192,15 @@ export const BasicTab = ({
     setEditFormData((prev) => {
       const newOwners = [...prev.additionalOwners];
 
-      newOwners[index] = { clientId: val, ownerName: opt.label };
+      newOwners[index] = {
+        clientId: val,
+        ownerName: opt.label,
+      };
 
-      return { ...prev, additionalOwners: newOwners };
+      return {
+        ...prev,
+        additionalOwners: newOwners,
+      };
     });
   };
 
@@ -197,204 +225,255 @@ export const BasicTab = ({
     ? tx.ownerNames.split(" و ")
     : [tx.client || tx.owner];
 
+  const handleSaveAll = () => {
+    let finalNames = [editFormData.clientName];
+
+    let detailedOwners = [
+      {
+        clientId: editFormData.clientId,
+        ownerName: editFormData.clientName,
+        isPrimary: true,
+      },
+    ];
+
+    if (
+      editFormData.additionalOwners &&
+      editFormData.additionalOwners.length > 0
+    ) {
+      const additionalValid = editFormData.additionalOwners.filter(
+        (o) => o.ownerName && o.ownerName.trim() !== "",
+      );
+
+      finalNames = [...finalNames, ...additionalValid.map((o) => o.ownerName)];
+
+      additionalValid.forEach((o) => {
+        detailedOwners.push({
+          clientId: o.clientId,
+          ownerName: o.ownerName,
+          isPrimary: false,
+        });
+      });
+    }
+
+    const finalOwnerNamesString = finalNames.join(" و ");
+
+    const updatedData = {
+      ...editFormData,
+      ownerNames: finalOwnerNamesString,
+      notes: {
+        ...editFormData.notes,
+        detailedOwnersList: detailedOwners,
+      },
+      updatedBy: currentUser?.name || "مدير النظام",
+    };
+
+    setEditFormData(updatedData);
+    saveBasicEdits(updatedData);
+  };
+
   return (
-    <div className="space-y-6 animate-in fade-in pb-20 relative min-h-screen">
-      {/* 💡 رأس التبويب وأزرار التحكم */}
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="font-bold text-gray-800 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-blue-600" /> البيانات الرئيسية
-        </h3>
-
-        <AccessControl
-          code="EDIT_TRANSACTION"
-          permissionNumber={42}
-          name="تعديل البيانات الأساسية للمعاملة"
-          moduleName="تفاصيل المعاملة"
-          tabName="البيانات الأساسية"
-        >
-          <button
-            onClick={() => {
-              if (!isEditingBasic) {
-                const existingNames = tx.ownerNames
-                  ? tx.ownerNames.split(" و ")
-                  : [];
-
-                if (existingNames.length > 1) {
-                  const additional = existingNames.slice(1).map((name) => ({
-                    clientId: "",
-                    ownerName: name.trim(),
-                  }));
-
-                  setEditFormData((prev) => ({
-                    ...prev,
-                    additionalOwners: additional,
-                  }));
-                } else {
-                  setEditFormData((prev) => ({
-                    ...prev,
-                    additionalOwners: [],
-                  }));
-                }
-              }
-
-              setIsEditingBasic(!isEditingBasic);
-            }}
-            className={`flex items-center gap-1.5 px-4 py-2 border rounded-lg text-xs font-bold shadow-sm transition-colors ${
-              isEditingBasic
-                ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
-                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-            }`}
-            type="button"
-          >
-            {isEditingBasic ? (
-              <X className="w-3.5 h-3.5" />
-            ) : (
-              <Edit3 className="w-3.5 h-3.5" />
-            )}
-
-            {isEditingBasic ? "إلغاء التعديل" : "تعديل البيانات"}
-          </button>
-        </AccessControl>
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="flex-1 bg-gradient-to-l from-blue-50/80 to-white border border-blue-100 p-4 rounded-2xl flex flex-wrap items-center gap-6 shadow-sm">
-          <div className="flex items-center gap-3 pr-6 border-l border-blue-100">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 shadow-inner">
-              <User className="w-6 h-6" />
-            </div>
-
-            <div>
-              <div className="text-[10px] font-bold text-blue-600 mb-0.5">
-                مُنشئ المعاملة
-              </div>
-
-              <div className="text-sm font-black text-gray-800">
-                {tx.createdBy || tx.notes?.createdBy || "مدير النظام"}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 pr-6 border-l border-blue-100">
-            <CalendarDays className="w-8 h-8 text-blue-400 opacity-50" />
-
-            <div>
-              <div className="text-[10px] font-bold text-gray-500 mb-0.5">
-                تاريخ الإنشاء
-              </div>
-
-              <div
-                className="text-sm font-black text-blue-900 font-mono"
-                dir="ltr"
-              >
-                {createdDate.getDate().toString().padStart(2, "0")}{" "}
-                <span className="text-lg text-blue-700">
-                  {createdDate.toLocaleString("ar-SA", { month: "short" })}
-                </span>{" "}
-                {createdDate.getFullYear()}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <div>
-              <div className="text-[10px] font-bold text-gray-500 mb-1 flex items-center gap-1">
-                <Clock className="w-3 h-3 text-slate-400" /> أيام منذ الإنشاء
-              </div>
-
-              <div className="text-lg font-black font-mono text-slate-700">
-                {daysSinceCreation}{" "}
-                <span className="text-xs font-bold text-slate-400">يوم</span>
-              </div>
-            </div>
-
-            <div>
-              <div className="text-[10px] font-bold text-gray-500 mb-1 flex items-center gap-1">
-                <Edit3 className="w-3 h-3 text-slate-400" /> منذ آخر تعديل
-              </div>
-
-              <div className="text-lg font-black font-mono text-slate-700">
-                {daysSinceUpdate}{" "}
-                <span className="text-xs font-bold text-slate-400">يوم</span>
-              </div>
-            </div>
-          </div>
+    <div
+      className="
+        relative h-full min-h-0 space-y-5 overflow-y-auto overflow-x-hidden
+        bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
+        p-4 pb-20 font-[Tajawal] animate-in fade-in
+        custom-scrollbar-slim
+      "
+      dir="rtl"
+    >
+      {/* Header */}
+      <div
+        className="
+          relative overflow-hidden rounded-[30px]
+          border border-[#d8b46a]/30
+          bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490]
+          p-5 text-white
+          shadow-[0_18px_45px_rgba(18,63,89,0.16)]
+        "
+      >
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-[#e2bf74]/18 blur-3xl" />
+          <div className="absolute left-[-80px] bottom-[-80px] h-48 w-48 rounded-full bg-cyan-400/14 blur-3xl" />
         </div>
 
-        <div
-          className={`shrink-0 w-full lg:w-48 p-4 rounded-2xl border flex flex-col items-center justify-center text-center shadow-sm ${delayColor}`}
-        >
-          <AlertTriangle
-            className={`w-6 h-6 mb-2 ${
-              delayStatus === "متأخرة" ? "animate-pulse" : ""
-            }`}
-          />
+        <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <div
+              className="
+                grid h-12 w-12 shrink-0 place-items-center
+                rounded-2xl border border-[#e2bf74]/35
+                bg-white/12 text-[#e2bf74]
+                shadow-[0_14px_30px_rgba(0,0,0,0.20)]
+              "
+            >
+              <FileText className="h-6 w-6" />
+            </div>
 
-          <div className="text-[10px] font-bold opacity-70 mb-0.5">
-            حالة مسار المعاملة
+            <div className="min-w-0">
+              <h3 className="truncate text-lg font-black md:text-xl">
+                البيانات الرئيسية
+              </h3>
+
+              <p className="mt-1 text-xs font-bold text-white/65">
+                عرض وتعديل معلومات العميل، الموقع، المخطط، المكاتب، والملاحظات.
+              </p>
+            </div>
           </div>
 
-          <div className="text-sm font-black">{delayStatus}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusPill tone={delayTone} label={delayStatus} />
+
+            <AccessControl
+              code="EDIT_TRANSACTION"
+              permissionNumber={42}
+              name="تعديل البيانات الأساسية للمعاملة"
+              moduleName="تفاصيل المعاملة"
+              tabName="البيانات الأساسية"
+            >
+              <button
+                onClick={() => {
+                  if (!isEditingBasic) {
+                    const existingNames = tx.ownerNames
+                      ? tx.ownerNames.split(" و ")
+                      : [];
+
+                    if (existingNames.length > 1) {
+                      const additional = existingNames.slice(1).map((name) => ({
+                        clientId: "",
+                        ownerName: name.trim(),
+                      }));
+
+                      setEditFormData((prev) => ({
+                        ...prev,
+                        additionalOwners: additional,
+                      }));
+                    } else {
+                      setEditFormData((prev) => ({
+                        ...prev,
+                        additionalOwners: [],
+                      }));
+                    }
+                  }
+
+                  setIsEditingBasic(!isEditingBasic);
+                }}
+                className={`
+                  flex h-11 items-center justify-center gap-2 rounded-2xl
+                  px-5 text-xs font-black transition-all hover:-translate-y-[1px]
+                  ${
+                    isEditingBasic
+                      ? "border border-rose-300/30 bg-rose-500/20 text-rose-50 hover:bg-rose-500/35"
+                      : "bg-[#e2bf74] text-[#082032] shadow-[0_12px_28px_rgba(226,191,116,0.25)] hover:bg-[#f5d99b]"
+                  }
+                `}
+                type="button"
+              >
+                {isEditingBasic ? (
+                  <X className="h-4 w-4" />
+                ) : (
+                  <Edit3 className="h-4 w-4" />
+                )}
+
+                {isEditingBasic ? "إلغاء التعديل" : "تعديل البيانات"}
+              </button>
+            </AccessControl>
+          </div>
         </div>
       </div>
 
-      {/* 💡 معلومات العميل الأساسية */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm col-span-1 md:col-span-2 flex flex-col">
-          <div className="text-blue-800 text-[12px] font-black mb-4 flex items-center justify-between border-b border-gray-100 pb-2">
-            <span className="flex items-center gap-2">
-              <Users className="w-4 h-4" /> المُلّاك / أصحاب المعاملة
-            </span>
+      {/* Meta cards */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+        <MetaCard
+          icon={User}
+          label="منشئ المعاملة"
+          value={tx.createdBy || tx.notes?.createdBy || "مدير النظام"}
+          tone="blue"
+        />
 
-            {!isEditingBasic && tx.clientObj && (
-              <span
-                className={`px-2 py-0.5 text-[9px] rounded font-bold ${
-                  tx.clientObj.type?.includes("شرك")
-                    ? "bg-purple-100 text-purple-700"
-                    : "bg-emerald-100 text-emerald-700"
-                }`}
-              >
-                {tx.clientObj.type || "فرد"}
-              </span>
-            )}
-          </div>
+        <MetaCard
+          icon={CalendarDays}
+          label="تاريخ الإنشاء"
+          value={`${createdDate.getDate().toString().padStart(2, "0")} ${createdDate.toLocaleString("ar-SA", { month: "short" })} ${createdDate.getFullYear()}`}
+          tone="cyan"
+        />
 
+        <MetaCard
+          icon={Clock}
+          label="أيام منذ الإنشاء"
+          value={`${daysSinceCreation} يوم`}
+          tone="slate"
+        />
+
+        <MetaCard
+          icon={Edit3}
+          label="منذ آخر تعديل"
+          value={`${daysSinceUpdate} يوم`}
+          tone={delayTone}
+        />
+      </div>
+
+      {/* Owners + transaction identifiers */}
+      <div className="relative z-[60] grid grid-cols-1 gap-5 xl:grid-cols-4">
+        <SectionCard
+          className="xl:col-span-2"
+          icon={Users}
+          title="المُلّاك / أصحاب المعاملة"
+          subtitle="المالك الرئيسي والشركاء الإضافيون المرتبطون بالمعاملة."
+        >
           {isEditingBasic ? (
             <div className="space-y-4">
-              <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl relative">
-                <span className="absolute -top-2.5 right-3 bg-blue-100 text-blue-800 text-[9px] font-black px-2 py-0.5 rounded border border-blue-200">
-                  المالك الرئيسي *
-                </span>
-
-                <SearchableSelect
-                  options={clientsOptions}
-                  value={editFormData.clientId}
-                  placeholder={
-                    editFormData.clientName ||
-                    displayOwners[0] ||
-                    "ابحث بالاسم..."
-                  }
-                  onChange={(val, opt) =>
-                    setEditFormData({
-                      ...editFormData,
-                      clientId: val,
-                      clientName: opt.label,
-                      client: opt.label,
-                    })
-                  }
-                />
-              </div>
+              <OwnerEditorBlock label="المالك الرئيسي *" tone="blue">
+                <DropdownLayer>
+                  <SearchableSelect
+                    options={clientsOptions}
+                    value={editFormData.clientId}
+                    placeholder={
+                      editFormData.clientName ||
+                      displayOwners[0] ||
+                      "ابحث بالاسم..."
+                    }
+                    onChange={(val, opt) =>
+                      setEditFormData({
+                        ...editFormData,
+                        clientId: val,
+                        clientName: opt.label,
+                        client: opt.label,
+                      })
+                    }
+                  />
+                </DropdownLayer>
+              </OwnerEditorBlock>
 
               {(editFormData.additionalOwners || []).map((owner, idx) => (
-                <div
+                <OwnerEditorBlock
                   key={idx}
-                  className="bg-slate-50 border border-slate-200 p-3 rounded-xl relative animate-in slide-in-from-top-2 flex gap-2 items-center"
+                  label="شريك إضافي"
+                  tone="slate"
+                  action={
+                    <AccessControl
+                      code="BASIC_TAB_REMOVE_OWNER"
+                      permissionNumber={43}
+                      name="إزالة مالك إضافي من المعاملة"
+                      moduleName="تفاصيل المعاملة"
+                      tabName="البيانات الأساسية"
+                    >
+                      <button
+                        onClick={() => removeOwnerRow(idx)}
+                        className="
+                          grid h-10 w-10 shrink-0 place-items-center
+                          rounded-xl border border-rose-200
+                          bg-rose-50 text-rose-600
+                          transition hover:bg-rose-100
+                        "
+                        title="إزالة الشريك"
+                        type="button"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </AccessControl>
+                  }
                 >
-                  <span className="absolute -top-2.5 right-3 bg-slate-200 text-slate-700 text-[9px] font-black px-2 py-0.5 rounded border border-slate-300">
-                    شريك إضافي
-                  </span>
-
-                  <div className="flex-1">
+                  <DropdownLayer>
                     <SearchableSelect
                       options={clientsOptions}
                       value={owner.clientId}
@@ -403,25 +482,8 @@ export const BasicTab = ({
                         updateAdditionalOwner(idx, val, opt)
                       }
                     />
-                  </div>
-
-                  <AccessControl
-                    code="BASIC_TAB_REMOVE_OWNER"
-                    permissionNumber={43}
-                    name="إزالة مالك إضافي من المعاملة"
-                    moduleName="تفاصيل المعاملة"
-                    tabName="البيانات الأساسية"
-                  >
-                    <button
-                      onClick={() => removeOwnerRow(idx)}
-                      className="p-2.5 text-red-500 bg-red-50 hover:bg-red-100 hover:text-red-700 rounded-lg transition-colors border border-red-100 mt-1"
-                      title="إزالة الشريك"
-                      type="button"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </AccessControl>
-                </div>
+                  </DropdownLayer>
+                </OwnerEditorBlock>
               ))}
 
               <AccessControl
@@ -433,88 +495,104 @@ export const BasicTab = ({
               >
                 <button
                   onClick={addOwnerRow}
-                  className="w-full py-2 bg-white border border-dashed border-blue-300 text-blue-600 rounded-xl hover:bg-blue-50 text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+                  className="
+                    flex h-11 w-full items-center justify-center gap-2
+                    rounded-2xl border border-dashed border-[#d8b46a]/45
+                    bg-[#fbf8f1] text-xs font-black text-[#123f59]
+                    transition hover:bg-[#f8efe0]
+                  "
                   type="button"
                 >
-                  <Plus className="w-4 h-4" /> إضافة شريك / مالك آخر
+                  <Plus className="h-4 w-4 text-[#c5983c]" />
+                  إضافة شريك / مالك آخر
                 </button>
               </AccessControl>
             </div>
           ) : (
-            <div className="space-y-2 mb-3">
-              {displayOwners.map((ownerName, idx) => (
-                <div
-                  key={idx}
-                  className="text-base font-black text-gray-800 flex items-center gap-2"
-                >
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      idx === 0 ? "bg-blue-500" : "bg-slate-300"
-                    }`}
+            <div className="space-y-3">
+              <div className="space-y-2">
+                {displayOwners.map((ownerName, idx) => (
+                  <div
+                    key={idx}
+                    className="
+                      flex items-center justify-between gap-3
+                      rounded-2xl border border-[#e8ddc8]
+                      bg-[#fbf8f1]/65 px-4 py-3
+                    "
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span
+                        className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                          idx === 0 ? "bg-[#123f59]" : "bg-[#c5983c]"
+                        }`}
+                      />
+
+                      <span className="truncate text-sm font-black text-[#123f59]">
+                        {safeText(ownerName)}
+                      </span>
+                    </div>
+
+                    {idx === 0 && displayOwners.length > 1 && (
+                      <span
+                        className="
+                          shrink-0 rounded-xl border border-blue-200
+                          bg-blue-50 px-2.5 py-1
+                          text-[9px] font-black text-blue-700
+                        "
+                      >
+                        رئيسي
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {tx.clientObj && (
+                <div className="grid grid-cols-1 gap-2 border-t border-[#e8ddc8] pt-3 sm:grid-cols-3">
+                  <MiniInfo
+                    icon={CreditCard}
+                    label="الهوية"
+                    value={
+                      tx.clientObj.idNumber ||
+                      tx.clientObj.identification?.idNumber ||
+                      "—"
+                    }
+                    dir="ltr"
                   />
 
-                  {safeText(ownerName)}
+                  <MiniInfo
+                    icon={ShieldCheck}
+                    label="فئة التصنيف"
+                    value={
+                      tx.clientObj.grade
+                        ? `الفئة ${tx.clientObj.grade}`
+                        : "غير مصنف"
+                    }
+                  />
 
-                  {idx === 0 && displayOwners.length > 1 && (
-                    <span className="text-[9px] text-blue-600 bg-blue-50 px-1.5 rounded">
-                      رئيسي
-                    </span>
-                  )}
+                  <MiniInfo
+                    icon={FileText}
+                    label="معاملات العميل"
+                    value={tx.clientObj._count?.transactions || 1}
+                    dir="ltr"
+                  />
                 </div>
-              ))}
+              )}
             </div>
           )}
+        </SectionCard>
 
-          {!isEditingBasic && tx.clientObj && (
-            <div className="mt-auto grid grid-cols-3 gap-2 border-t border-gray-100 pt-3">
-              <div>
-                <div className="text-[9px] text-gray-400 font-bold mb-1 flex items-center gap-1">
-                  <CreditCard className="w-3 h-3" /> الهوية
-                </div>
-
-                <div className="text-[11px] font-mono font-bold text-slate-700 truncate">
-                  {tx.clientObj.idNumber ||
-                    tx.clientObj.identification?.idNumber ||
-                    "—"}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-[9px] text-gray-400 font-bold mb-1">
-                  فئة التصنيف
-                </div>
-
-                <div className="text-xs font-black text-amber-600">
-                  {tx.clientObj.grade
-                    ? `الفئة ${tx.clientObj.grade}`
-                    : "غير مصنف"}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-[9px] text-gray-400 font-bold mb-1">
-                  معاملات العميل
-                </div>
-
-                <div className="text-xs font-mono font-black text-blue-600">
-                  {tx.clientObj._count?.transactions || 1}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-center">
-          <div className="text-gray-500 text-[11px] font-bold mb-2">
-            رقم المعاملة (النظام)
-          </div>
-
+        <SectionCard
+          icon={Landmark}
+          title="رقم المعاملة"
+          subtitle="الرقم الداخلي في النظام."
+        >
           {isEditingBasic ? (
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <select
                 value={editFormData.year}
                 onChange={(e) => handleTextChange("year", e.target.value)}
-                className="border p-2 rounded-lg text-sm w-1/2 outline-none focus:border-blue-500 font-mono font-bold"
+                className={INPUT_CLASS}
               >
                 {[2023, 2024, 2025, 2026, 2027].map((y) => (
                   <option key={y} value={y}>
@@ -526,7 +604,7 @@ export const BasicTab = ({
               <select
                 value={editFormData.month}
                 onChange={(e) => handleTextChange("month", e.target.value)}
-                className="border p-2 rounded-lg text-sm w-1/2 outline-none focus:border-blue-500 font-mono font-bold"
+                className={INPUT_CLASS}
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
                   <option key={m} value={String(m).padStart(2, "0")}>
@@ -536,50 +614,59 @@ export const BasicTab = ({
               </select>
             </div>
           ) : (
-            <div className="font-mono text-2xl font-black text-blue-700 tracking-wider">
+            <div
+              className="font-mono text-3xl font-black text-[#123f59]"
+              dir="ltr"
+            >
               {tx.ref || tx.id.slice(-6)}
             </div>
           )}
-        </div>
+        </SectionCard>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-center">
-          <div className="text-gray-500 text-[11px] font-bold mb-2">
-            نوع المعاملة
-          </div>
-
+        <SectionCard
+          icon={Layers}
+          title="نوع المعاملة"
+          subtitle="تصنيف العملية الحالية."
+        >
           {isEditingBasic ? (
             <select
               value={editFormData.type}
               onChange={(e) => handleTextChange("type", e.target.value)}
-              className="w-full border p-2.5 rounded-lg text-sm font-bold outline-none focus:border-blue-500 bg-gray-50"
+              className={INPUT_CLASS}
             >
               <option>اصدار</option>
               <option>تجديد وتعديل</option>
               <option>تصحيح وضع مبني قائم</option>
             </select>
           ) : (
-            <div className="text-lg font-black text-gray-800">
+            <div className="text-lg font-black text-[#123f59]">
               {safeText(tx.type || tx.category)}
             </div>
           )}
-        </div>
+        </SectionCard>
       </div>
 
-      {/* 💡 الاسم المتداول والملاحظات */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden flex flex-col">
-          <div className="absolute top-0 right-0 w-1.5 h-full bg-blue-500" />
-
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-[11px] font-bold text-gray-500 flex items-center gap-2">
-              الاسم المتداول للمعامله (مرجع داخلي)
-            </label>
-
+      {/* Internal name + general notes */}
+      <div className="relative z-[20] grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <SectionCard
+          icon={EyeOff}
+          title="الاسم المتداول للمعاملة"
+          subtitle="مرجع داخلي لتسهيل التعرف على المعاملة."
+        >
+          <div className="space-y-3">
             {isEditingBasic && (
-              <label className="flex items-center gap-2 cursor-pointer px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors">
+              <label
+                className="
+                  flex w-fit cursor-pointer items-center gap-2
+                  rounded-2xl border border-[#d8b46a]/25
+                  bg-[#fbf8f1] px-3 py-2
+                  text-[10px] font-black text-[#64748b]
+                  transition hover:bg-[#f8efe0]
+                "
+              >
                 <input
                   type="checkbox"
-                  className="accent-blue-600 w-3.5 h-3.5"
+                  className="h-4 w-4 accent-[#123f59]"
                   checked={editFormData.isInternalNameHidden}
                   onChange={(e) =>
                     setEditFormData({
@@ -589,71 +676,72 @@ export const BasicTab = ({
                   }
                 />
 
-                <span className="text-[10px] font-bold text-gray-600 flex items-center gap-1">
-                  <EyeOff className="w-3 h-3" /> إخفاء من التقارير
-                </span>
+                <EyeOff className="h-3.5 w-3.5 text-[#c5983c]" />
+                إخفاء من التقارير
               </label>
             )}
-          </div>
 
-          {isEditingBasic ? (
-            <input
-              type="text"
-              value={editFormData.internalName}
-              onChange={(e) => handleTextChange("internalName", e.target.value)}
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm font-bold focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-gray-50"
-              placeholder="مثال: فيلا الياسمين..."
-            />
-          ) : (
-            <div className="flex items-center gap-3 mt-2">
-              <span className="text-xl font-black text-gray-800 leading-tight">
-                {tx.internalName || tx.notes?.internalName || "—"}
-              </span>
-
-              {tx.notes?.isInternalNameHidden && (
-                <span className="px-2 py-1 bg-gray-100 text-gray-500 text-[9px] font-bold rounded-md flex items-center gap-1 border border-gray-200">
-                  <EyeOff className="w-3 h-3" /> سري / داخلي
+            {isEditingBasic ? (
+              <input
+                type="text"
+                value={editFormData.internalName}
+                onChange={(e) =>
+                  handleTextChange("internalName", e.target.value)
+                }
+                className={INPUT_CLASS}
+                placeholder="مثال: فيلا الياسمين..."
+              />
+            ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-xl font-black leading-tight text-[#123f59]">
+                  {tx.internalName || tx.notes?.internalName || "—"}
                 </span>
-              )}
-            </div>
-          )}
-        </div>
 
-        <div className="bg-amber-50/30 p-5 rounded-2xl border border-amber-200 shadow-sm flex flex-col">
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-[11px] font-bold text-amber-800 flex items-center gap-2">
-              <MessageSquareText className="w-4 h-4" /> ملاحظات عامة وإرشادات
-            </label>
-
-            {tx.notes?.generalNotes && !isEditingBasic && (
-              <div
-                className="text-[9px] font-bold text-amber-600/70 text-left"
-                dir="ltr"
-              >
-                آخر تعديل: {tx.notes?.generalNotesUpdatedBy || "موظف"} |{" "}
-                {tx.notes?.generalNotesUpdatedAt
-                  ? new Date(tx.notes.generalNotesUpdatedAt).toLocaleDateString(
-                      "en-GB",
-                    )
-                  : ""}
+                {tx.notes?.isInternalNameHidden && (
+                  <span
+                    className="
+                      inline-flex items-center gap-1 rounded-xl
+                      border border-slate-200 bg-slate-100
+                      px-2.5 py-1 text-[9px]
+                      font-black text-slate-600
+                    "
+                  >
+                    <EyeOff className="h-3 w-3" />
+                    سري / داخلي
+                  </span>
+                )}
               </div>
             )}
           </div>
+        </SectionCard>
 
+        <SectionCard
+          icon={MessageSquareText}
+          title="ملاحظات عامة وإرشادات"
+          subtitle={
+            tx.notes?.generalNotes && !isEditingBasic
+              ? `آخر تعديل: ${tx.notes?.generalNotesUpdatedBy || "موظف"}`
+              : "ملاحظات تشغيلية مرتبطة بالمعاملة."
+          }
+        >
           {isEditingBasic ? (
-            <div className="flex flex-col gap-2 h-full">
+            <div className="space-y-3">
               <textarea
-                value={
-                  editFormData.generalNotes || tx.notes?.generalNotes || ""
-                }
+                value={editFormData.generalNotes || tx.notes?.generalNotes || ""}
                 onChange={(e) =>
                   handleTextChange("generalNotes", e.target.value)
                 }
                 placeholder="اكتب الملاحظات..."
-                className="w-full flex-1 min-h-[80px] border border-amber-300 rounded-xl p-3 text-sm font-bold outline-none focus:border-amber-500 bg-white resize-none"
+                className={`${INPUT_CLASS} min-h-[110px] resize-none leading-7`}
               />
 
-              <div className="flex justify-between items-center bg-white p-2 rounded-lg border border-amber-200">
+              <div
+                className="
+                  flex flex-col gap-2 rounded-2xl
+                  border border-amber-200 bg-amber-50/65
+                  p-3 sm:flex-row sm:items-center sm:justify-between
+                "
+              >
                 <AccessControl
                   code="BASIC_TAB_UPLOAD_GENERAL_NOTES_FILE"
                   permissionNumber={45}
@@ -661,8 +749,18 @@ export const BasicTab = ({
                   moduleName="تفاصيل المعاملة"
                   tabName="البيانات الأساسية"
                 >
-                  <label className="flex items-center gap-2 text-[10px] font-bold text-amber-700 cursor-pointer hover:text-amber-900 transition-colors px-2">
-                    <Paperclip className="w-4 h-4" /> إرفاق مستند للتوضيح
+                  <label
+                    className="
+                      flex cursor-pointer items-center gap-2
+                      rounded-xl border border-amber-200 bg-white
+                      px-3 py-2 text-[10px]
+                      font-black text-amber-700
+                      transition hover:bg-amber-100
+                    "
+                  >
+                    <Paperclip className="h-4 w-4" />
+                    إرفاق مستند للتوضيح
+
                     <input
                       type="file"
                       className="hidden"
@@ -677,22 +775,36 @@ export const BasicTab = ({
                 </AccessControl>
 
                 {editFormData.generalNotesFile && (
-                  <span className="text-[10px] font-mono truncate max-w-[150px]">
+                  <span
+                    className="
+                      max-w-[220px] truncate rounded-xl
+                      border border-amber-200 bg-white
+                      px-3 py-1.5 font-mono text-[10px]
+                      font-black text-[#123f59]
+                    "
+                  >
                     {editFormData.generalNotesFile.name}
                   </span>
                 )}
               </div>
             </div>
           ) : (
-            <div className="flex-1 bg-white border border-amber-100 rounded-xl p-4 text-sm font-bold text-gray-700 whitespace-pre-wrap leading-relaxed">
+            <div
+              className="
+                rounded-[22px] border border-amber-200
+                bg-amber-50/55 p-4
+                text-sm font-bold leading-8 text-[#475569]
+                whitespace-pre-wrap
+              "
+            >
               {tx.notes?.generalNotes || (
-                <span className="text-gray-400 italic font-normal text-xs">
+                <span className="text-xs font-normal italic text-[#94a3b8]">
                   لا توجد ملاحظات عامة مسجلة.
                 </span>
               )}
 
               {tx.notes?.generalNotesFileUrl && (
-                <div className="mt-4 pt-3 border-t border-amber-100">
+                <div className="mt-4 border-t border-amber-200 pt-3">
                   <AccessControl
                     code="BASIC_TAB_OPEN_GENERAL_NOTES_ATTACHMENT"
                     permissionNumber={46}
@@ -707,634 +819,560 @@ export const BasicTab = ({
                           "_blank",
                         )
                       }
-                      className="flex items-center gap-1.5 text-[10px] font-black text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors w-max"
+                      className="
+                        inline-flex items-center gap-1.5 rounded-2xl
+                        border border-blue-200 bg-blue-50
+                        px-3 py-2 text-[10px]
+                        font-black text-blue-700
+                        transition hover:bg-blue-100
+                      "
                       type="button"
                     >
-                      <Paperclip className="w-3.5 h-3.5" /> عرض المرفق التوضيحي
+                      <Paperclip className="h-3.5 w-3.5" />
+                      عرض المرفق التوضيحي
                     </button>
                   </AccessControl>
                 </div>
               )}
             </div>
           )}
-        </div>
+        </SectionCard>
       </div>
 
-      {/* 💡 بيانات الموقع / الأرض والمساحة */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="bg-emerald-50/50 px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-          <MapPinned className="w-5 h-5 text-emerald-600" />
+      {/* Location */}
+      <div className="relative z-[10]">
+        <SectionCard
+          icon={MapPinned}
+          title="تفاصيل الموقع والمساحة والتخطيط"
+          subtitle="بيانات الأرض، الحي، المخطط، القطع، الخرائط، والصورة الجوية."
+        >
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+            <div className="space-y-6 xl:col-span-8">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <FieldBlock label="رقم المخطط">
+                  {isEditingBasic ? (
+                    <div className="flex gap-2">
+                      <div className="min-w-0 flex-1">
+                        <DropdownLayer>
+                          <SearchableSelect
+                            options={plansOptions}
+                            value={editFormData.plan}
+                            placeholder={editFormData.plan || "اختر المخطط..."}
+                            onChange={(val) =>
+                              setEditFormData((p) => ({
+                                ...p,
+                                plan: val,
+                              }))
+                            }
+                          />
+                        </DropdownLayer>
+                      </div>
 
-          <h4 className="text-sm font-black text-gray-800">
-            تفاصيل الموقع والمساحة والتخطيط
-          </h4>
-        </div>
+                      <AccessControl
+                        code="BASIC_TAB_OPEN_QUICK_ADD_PLAN"
+                        permissionNumber={47}
+                        name="فتح نافذة إضافة مخطط جديد"
+                        moduleName="تفاصيل المعاملة"
+                        tabName="البيانات الأساسية"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setIsQuickAddPlanOpen(true)}
+                          className="
+                            grid h-11 w-11 shrink-0 place-items-center
+                            rounded-2xl border border-blue-200
+                            bg-blue-50 text-blue-700
+                            transition hover:bg-blue-600 hover:text-white
+                          "
+                        >
+                          <Plus className="h-5 w-5" />
+                        </button>
+                      </AccessControl>
+                    </div>
+                  ) : (
+                    <ReadValue
+                      icon={Layers}
+                      value={
+                        tx.plan ||
+                        tx.planNumber ||
+                        tx.notes?.refs?.plan ||
+                        "—"
+                      }
+                      dir="ltr"
+                    />
+                  )}
+                </FieldBlock>
 
-        <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="col-span-1 lg:col-span-8 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-gray-500 text-[10px] font-bold block">
-                  رقم المخطط
-                </label>
-
-                {isEditingBasic ? (
-                  <div className="flex gap-1.5">
-                    <div className="flex-1">
+                <FieldBlock label="الحي والقطاع">
+                  {isEditingBasic ? (
+                    <DropdownLayer>
                       <SearchableSelect
-                        options={plansOptions}
-                        value={editFormData.plan}
-                        placeholder={editFormData.plan || "اختر المخطط..."}
-                        onChange={(val) =>
-                          setEditFormData((p) => ({ ...p, plan: val }))
+                        options={districtsOptions}
+                        value={editFormData.districtId}
+                        placeholder={
+                          editFormData.district ||
+                          tx.districtNode?.name ||
+                          tx.districtName ||
+                          "تعديل الحي..."
+                        }
+                        onChange={(val, opt) =>
+                          setEditFormData({
+                            ...editFormData,
+                            districtId: val,
+                            district: opt.label.split(" (")[0],
+                            districtName: opt.label.split(" (")[0],
+                            sector: opt.sectorName,
+                          })
                         }
                       />
-                    </div>
+                    </DropdownLayer>
+                  ) : (
+                    <ReadValue
+                      icon={Map}
+                      value={`${safeText(
+                        tx.districtNode?.name ||
+                          tx.districtName ||
+                          tx.district ||
+                          tx.notes?.refs?.districtName,
+                      )} | ${safeText(
+                        tx.districtNode?.sector?.name ||
+                          tx.sector ||
+                          tx.notes?.refs?.sector,
+                      )}`}
+                    />
+                  )}
+                </FieldBlock>
 
-                    <AccessControl
-                      code="BASIC_TAB_OPEN_QUICK_ADD_PLAN"
-                      permissionNumber={47}
-                      name="فتح نافذة إضافة مخطط جديد"
-                      moduleName="تفاصيل المعاملة"
-                      tabName="البيانات الأساسية"
+                <FieldBlock label="موقع استراتيجي">
+                  {isEditingBasic ? (
+                    <select
+                      value={
+                        editFormData.isOnAxis !== undefined
+                          ? editFormData.isOnAxis
+                          : tx.isOnAxis || tx.notes?.refs?.isOnAxis || "لا"
+                      }
+                      onChange={(e) =>
+                        handleTextChange("isOnAxis", e.target.value)
+                      }
+                      className={INPUT_CLASS}
                     >
-                      <button
-                        type="button"
-                        onClick={() => setIsQuickAddPlanOpen(true)}
-                        className="p-2.5 bg-blue-50 text-blue-600 rounded-lg border border-blue-100 hover:bg-blue-600 hover:text-white transition-all"
+                      <option value="لا">لا يقع على المحاور</option>
+                      <option value="نعم">نعم (يقع على المحاور)</option>
+                    </select>
+                  ) : (
+                    <ReadValue
+                      icon={Globe}
+                      tone={
+                        (tx.isOnAxis || tx.notes?.refs?.isOnAxis) === "نعم"
+                          ? "amber"
+                          : "slate"
+                      }
+                      value={
+                        (tx.isOnAxis || tx.notes?.refs?.isOnAxis) === "نعم"
+                          ? "يقع على المحاور التجارية"
+                          : "طبيعي (داخل الحي)"
+                      }
+                    />
+                  )}
+                </FieldBlock>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FieldBlock label="المساحة الإجمالية">
+                  {isEditingBasic ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        value={editFormData.area}
+                        onChange={(e) =>
+                          handleEditChange("area", e.target.value)
+                        }
+                        className={`${INPUT_CLASS} font-mono text-lg`}
+                        placeholder="0"
+                      />
+
+                      <span
+                        className="
+                          flex h-12 items-center justify-center
+                          rounded-2xl border border-[#d8b46a]/25
+                          bg-[#fbf8f1] px-4
+                          text-xs font-black text-[#64748b]
+                        "
                       >
-                        <Plus size={18} />
-                      </button>
-                    </AccessControl>
+                        م²
+                      </span>
+                    </div>
+                  ) : (
+                    <ReadValue
+                      icon={Ruler}
+                      tone="blue"
+                      dir="ltr"
+                      value={
+                        tx.landArea ||
+                        tx.notes?.refs?.landArea ||
+                        tx.notes?.refs?.area
+                          ? `${parseFloat(
+                              tx.landArea ||
+                                tx.notes?.refs?.landArea ||
+                                tx.notes?.refs?.area,
+                            ).toLocaleString()} م²`
+                          : "—"
+                      }
+                    />
+                  )}
+                </FieldBlock>
+
+                <FieldBlock label="اسم الشارع المطل عليه وعرضه">
+                  {isEditingBasic ? (
+                    <input
+                      type="text"
+                      value={editFormData.streetName}
+                      onChange={(e) =>
+                        handleTextChange("streetName", e.target.value)
+                      }
+                      className={INPUT_CLASS}
+                      placeholder="مثال: شارع العليا (عرض 36م)"
+                    />
+                  ) : (
+                    <ReadValue
+                      icon={Globe}
+                      value={
+                        tx.streetName ||
+                        tx.notes?.refs?.streetName ||
+                        "غير مسجل"
+                      }
+                    />
+                  )}
+                </FieldBlock>
+              </div>
+
+              <div className="border-t border-[#e8ddc8] pt-5">
+                <h5 className="mb-3 text-xs font-black text-[#123f59]">
+                  خرائط وروابط الموقع
+                </h5>
+
+                {isEditingBasic ? (
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      dir="ltr"
+                      value={editFormData.mapsLink}
+                      onChange={(e) =>
+                        handleTextChange("mapsLink", e.target.value)
+                      }
+                      className={`${INPUT_CLASS} font-mono text-xs`}
+                      placeholder="رابط Google Maps"
+                    />
+
+                    <input
+                      type="text"
+                      dir="ltr"
+                      value={editFormData.officialMapLink}
+                      onChange={(e) =>
+                        handleTextChange("officialMapLink", e.target.value)
+                      }
+                      className={`${INPUT_CLASS} font-mono text-xs`}
+                      placeholder="رابط الخريطة الرسمية / الأمانة"
+                    />
                   </div>
                 ) : (
-                  <div className="font-bold text-gray-800 font-mono text-base bg-gray-50 p-2.5 rounded-lg border border-gray-100 flex items-center gap-2">
-                    <Layers size={14} className="text-blue-500" />
+                  <div className="flex flex-wrap gap-3">
+                    {tx.notes?.refs?.mapsLink ? (
+                      <MapLinkCard
+                        icon={MapPinned}
+                        title="خرائط جوجل"
+                        subtitle="Google Maps"
+                        onOpen={() =>
+                          window.open(tx.notes.refs.mapsLink, "_blank")
+                        }
+                        permission={{
+                          code: "BASIC_TAB_OPEN_GOOGLE_MAPS",
+                          permissionNumber: 48,
+                          name: "فتح رابط Google Maps",
+                        }}
+                      />
+                    ) : (
+                      <EmptyInline text="لم يتم إدراج رابط Google Maps" />
+                    )}
 
-                    {tx.plan || tx.planNumber || tx.notes?.refs?.plan || "—"}
+                    {(tx.officialMapLink ||
+                      tx.notes?.refs?.officialMapLink) && (
+                      <MapLinkCard
+                        icon={Globe}
+                        title="مستكشف الرياض / الأمانة"
+                        subtitle="الخريطة الرسمية"
+                        onOpen={() =>
+                          window.open(
+                            tx.officialMapLink ||
+                              tx.notes.refs.officialMapLink,
+                            "_blank",
+                          )
+                        }
+                        permission={{
+                          code: "BASIC_TAB_OPEN_OFFICIAL_MAP",
+                          permissionNumber: 49,
+                          name: "فتح رابط الخريطة الرسمية",
+                        }}
+                      />
+                    )}
                   </div>
                 )}
               </div>
+            </div>
 
-              {/* 💡 التعديل الجوهري للحي هنا 👈 */}
-              <div className="space-y-1.5">
-                <label className="text-gray-500 text-[10px] font-bold block">
-                  الحي والقطاع
-                </label>
+            <div className="space-y-4 xl:col-span-4">
+              <div
+                className="
+                  rounded-[24px] border border-[#d8b46a]/30
+                  bg-[#fbf8f1]/75 p-4
+                "
+              >
+                <div className="mb-3 flex items-center justify-between gap-2 border-b border-[#e8ddc8] pb-3">
+                  <h5 className="text-xs font-black text-[#123f59]">
+                    أرقام القطع
+                  </h5>
+
+                  <span
+                    className="
+                      rounded-xl border border-blue-200
+                      bg-blue-50 px-2.5 py-1
+                      text-[10px] font-black text-blue-700
+                    "
+                  >
+                    العدد: {plotsArray.length}
+                  </span>
+                </div>
 
                 {isEditingBasic ? (
-                  <SearchableSelect
-                    options={districtsOptions}
-                    value={editFormData.districtId}
-                    placeholder={
-                      editFormData.district ||
-                      tx.districtNode?.name ||
-                      tx.districtName ||
-                      "تعديل الحي..."
-                    }
-                    onChange={(val, opt) =>
-                      setEditFormData({
-                        ...editFormData,
-                        districtId: val,
-                        district: opt.label.split(" (")[0],
-                        districtName: opt.label.split(" (")[0],
-                        sector: opt.sectorName,
-                      })
-                    }
-                  />
+                  <div className="space-y-2">
+                    <textarea
+                      value={
+                        Array.isArray(editFormData.plots)
+                          ? editFormData.plots.join(", ")
+                          : editFormData.plots || ""
+                      }
+                      onChange={(e) =>
+                        handleEditChange("plots", e.target.value)
+                      }
+                      className={`${INPUT_CLASS} min-h-[110px] resize-none font-mono text-xs`}
+                      placeholder="أدخل أرقام القطع مفصولة بفاصلة (12, 13, 14)..."
+                    />
+
+                    <p className="text-[9px] font-bold text-[#94a3b8]">
+                      افصل بين كل رقم بفاصلة (,)
+                    </p>
+                  </div>
                 ) : (
-                  <div className="font-bold text-gray-800 text-sm bg-gray-50 p-2.5 rounded-lg border border-gray-100">
-                    {safeText(
-                      tx.districtNode?.name ||
-                        tx.districtName ||
-                        tx.district ||
-                        tx.notes?.refs?.districtName,
-                    )}{" "}
-                    <span className="text-gray-400 font-normal">|</span>{" "}
-                    {safeText(
-                      tx.districtNode?.sector?.name ||
-                        tx.sector ||
-                        tx.notes?.refs?.sector,
+                  <div className="max-h-[150px] space-y-2 overflow-y-auto pr-1 custom-scrollbar-slim">
+                    {plotsArray.length > 0 ? (
+                      plotsArray.map((plot, i) => (
+                        <div
+                          key={i}
+                          className="
+                            rounded-xl border border-[#e8ddc8]
+                            bg-white px-3 py-2
+                            text-center font-mono text-sm
+                            font-black text-[#123f59] shadow-sm
+                          "
+                        >
+                          {plot}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-6 text-center text-xs font-bold text-[#94a3b8]">
+                        لا توجد قطع
+                      </div>
                     )}
                   </div>
                 )}
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-gray-500 text-[10px] font-bold block">
-                  موقع استراتيجي (على المحاور؟)
-                </label>
-
-                {isEditingBasic ? (
-                  <select
-                    value={
-                      editFormData.isOnAxis !== undefined
-                        ? editFormData.isOnAxis
-                        : tx.isOnAxis || tx.notes?.refs?.isOnAxis || "لا"
-                    }
-                    onChange={(e) =>
-                      handleTextChange("isOnAxis", e.target.value)
-                    }
-                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-emerald-500 bg-gray-50"
-                  >
-                    <option value="لا">لا يقع على المحاور</option>
-                    <option value="نعم">نعم (يقع على المحاور)</option>
-                  </select>
-                ) : (
-                  <div
-                    className={`font-bold text-sm p-2.5 rounded-lg border ${
-                      (tx.isOnAxis || tx.notes?.refs?.isOnAxis) === "نعم"
-                        ? "bg-amber-50 text-amber-700 border-amber-200"
-                        : "bg-gray-50 text-gray-700 border-gray-100"
-                    }`}
-                  >
-                    {(tx.isOnAxis || tx.notes?.refs?.isOnAxis) === "نعم"
-                      ? "يقع على المحاور التجارية"
-                      : "طبيعي (داخل الحي)"}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-gray-500 text-[10px] font-bold block">
-                  المساحة الإجمالية
-                </label>
-
-                {isEditingBasic ? (
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      value={editFormData.area}
-                      onChange={(e) => handleEditChange("area", e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg p-2.5 text-lg font-mono font-black outline-none focus:border-emerald-500 text-blue-700"
-                      placeholder="0"
+              <div
+                className="
+                  group relative flex min-h-[170px] flex-col
+                  items-center justify-center overflow-hidden
+                  rounded-[24px] border border-[#123f59]/20
+                  bg-[#06111d] text-center shadow-sm
+                "
+              >
+                {siteImagePreview ? (
+                  <>
+                    <img
+                      src={siteImagePreview}
+                      alt="الموقع"
+                      className="
+                        absolute inset-0 h-full w-full object-cover
+                        opacity-55 transition-opacity group-hover:opacity-35
+                      "
                     />
 
-                    <span className="bg-gray-100 px-4 py-2.5 rounded-lg text-sm font-bold text-gray-500 border border-gray-200">
-                      م²
+                    <div className="relative z-10 flex flex-col items-center gap-2">
+                      <AccessControl
+                        code="BASIC_TAB_PREVIEW_SITE_IMAGE"
+                        permissionNumber={50}
+                        name="معاينة الصورة الجوية للموقع"
+                        moduleName="تفاصيل المعاملة"
+                        tabName="البيانات الأساسية"
+                      >
+                        <button
+                          onClick={() =>
+                            !isEditingBasic && setIsSiteImageModalOpen(true)
+                          }
+                          className="
+                            grid h-12 w-12 place-items-center
+                            rounded-2xl border border-white/20
+                            bg-white/15 text-white
+                            backdrop-blur-md transition hover:bg-white/30
+                          "
+                          type="button"
+                        >
+                          <ImageIcon className="h-6 w-6" />
+                        </button>
+                      </AccessControl>
+
+                      <span className="text-[11px] font-black text-white drop-shadow">
+                        الصورة الجوية للموقع
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 opacity-70">
+                    <ImageIcon className="h-9 w-9 text-white" />
+
+                    <span className="text-[11px] font-black text-white">
+                      لا توجد صورة جوية
                     </span>
                   </div>
-                ) : (
-                  <div className="font-black text-blue-700 font-mono text-xl bg-blue-50/50 p-2.5 rounded-lg border border-blue-100">
-                    {tx.landArea ||
-                    tx.notes?.refs?.landArea ||
-                    tx.notes?.refs?.area
-                      ? `${parseFloat(
-                          tx.landArea ||
-                            tx.notes?.refs?.landArea ||
-                            tx.notes?.refs?.area,
-                        ).toLocaleString()} م²`
-                      : "—"}
-                  </div>
                 )}
-              </div>
 
-              <div className="space-y-1.5">
-                <label className="text-gray-500 text-[10px] font-bold block">
-                  اسم الشارع المطل عليه وعرضه
-                </label>
-
-                {isEditingBasic ? (
-                  <input
-                    type="text"
-                    value={editFormData.streetName}
-                    onChange={(e) =>
-                      handleTextChange("streetName", e.target.value)
-                    }
-                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-emerald-500 bg-gray-50"
-                    placeholder="مثال: شارع العليا (عرض 36م)"
-                  />
-                ) : (
-                  <div className="font-bold text-gray-800 text-sm bg-gray-50 p-2.5 rounded-lg border border-gray-100 flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-gray-400" />{" "}
-                    {tx.streetName || tx.notes?.refs?.streetName || "غير مسجل"}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="border-t border-gray-100 pt-5 mt-2">
-              <label className="text-gray-500 text-[10px] font-bold mb-3 block">
-                خرائط وروابط الموقع
-              </label>
-
-              {isEditingBasic ? (
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    dir="ltr"
-                    value={editFormData.mapsLink}
-                    onChange={(e) =>
-                      handleTextChange("mapsLink", e.target.value)
-                    }
-                    className="w-full border border-gray-300 rounded-lg p-3 text-sm font-mono outline-none focus:border-blue-500 bg-gray-50"
-                    placeholder="رابط Google Maps"
-                  />
-
-                  <input
-                    type="text"
-                    dir="ltr"
-                    value={editFormData.officialMapLink}
-                    onChange={(e) =>
-                      handleTextChange("officialMapLink", e.target.value)
-                    }
-                    className="w-full border border-gray-300 rounded-lg p-3 text-sm font-mono outline-none focus:border-emerald-500 bg-gray-50"
-                    placeholder="رابط الخريطة الرسمية / الأمانة"
-                  />
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-4">
-                  {tx.notes?.refs?.mapsLink ? (
-                    <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm w-max">
-                      <AccessControl
-                        code="BASIC_TAB_OPEN_GOOGLE_MAPS"
-                        permissionNumber={48}
-                        name="فتح رابط Google Maps"
-                        moduleName="تفاصيل المعاملة"
-                        tabName="البيانات الأساسية"
-                      >
-                        <button
-                          onClick={() =>
-                            window.open(tx.notes.refs.mapsLink, "_blank")
-                          }
-                          className="flex items-center justify-center w-10 h-10 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-colors"
-                          title="فتح جوجل ماب"
-                          type="button"
-                        >
-                          <MapPinned className="w-5 h-5" />
-                        </button>
-                      </AccessControl>
-
-                      <div>
-                        <div className="text-[10px] font-bold text-gray-400">
-                          خرائط جوجل
-                        </div>
-
-                        <div className="text-xs font-bold text-slate-700">
-                          Google Maps
-                        </div>
-                      </div>
-
-                      <div className="w-12 h-12 bg-gray-100 ml-2 rounded p-1 flex items-center justify-center border border-gray-200">
-                        <QrCode className="w-full h-full text-gray-500 opacity-50" />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-xs text-gray-400 font-bold bg-gray-50 p-3 rounded-lg border border-dashed border-gray-200">
-                      لم يتم إدراج رابط Google Maps
-                    </div>
-                  )}
-
-                  {(tx.officialMapLink || tx.notes?.refs?.officialMapLink) && (
-                    <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm w-max">
-                      <AccessControl
-                        code="BASIC_TAB_OPEN_OFFICIAL_MAP"
-                        permissionNumber={49}
-                        name="فتح رابط الخريطة الرسمية"
-                        moduleName="تفاصيل المعاملة"
-                        tabName="البيانات الأساسية"
-                      >
-                        <button
-                          onClick={() =>
-                            window.open(
-                              tx.officialMapLink ||
-                                tx.notes.refs.officialMapLink,
-                              "_blank",
-                            )
-                          }
-                          className="flex items-center justify-center w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-600 hover:text-white transition-colors"
-                          title="فتح الخريطة الرسمية"
-                          type="button"
-                        >
-                          <Globe className="w-5 h-5" />
-                        </button>
-                      </AccessControl>
-
-                      <div>
-                        <div className="text-[10px] font-bold text-gray-400">
-                          مستكشف الرياض / الأمانة
-                        </div>
-
-                        <div className="text-xs font-bold text-slate-700">
-                          الخريطة الرسمية
-                        </div>
-                      </div>
-
-                      <div className="w-12 h-12 bg-gray-100 ml-2 rounded p-1 flex items-center justify-center border border-gray-200">
-                        <QrCode className="w-full h-full text-gray-500 opacity-50" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="col-span-1 lg:col-span-4 flex flex-col gap-4">
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex-1">
-              <div className="flex justify-between items-center mb-3 border-b border-gray-200 pb-2">
-                <label className="text-gray-600 text-[11px] font-black">
-                  أرقام القطع
-                </label>
-
-                <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px] font-bold">
-                  العدد: {plotsArray.length}
-                </span>
-              </div>
-
-              {isEditingBasic ? (
-                <div className="space-y-2">
-                  <textarea
-                    value={
-                      Array.isArray(editFormData.plots)
-                        ? editFormData.plots.join(", ")
-                        : editFormData.plots || ""
-                    }
-                    onChange={(e) => handleEditChange("plots", e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg p-2 text-sm font-mono outline-none focus:border-blue-500 bg-white min-h-[100px] resize-none"
-                    placeholder="أدخل أرقام القطع مفصولة بفاصلة (12, 13, 14)..."
-                  />
-
-                  <p className="text-[9px] text-gray-400 font-bold">
-                    افصل بين كل رقم بفاصلة (,)
-                  </p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-1.5 max-h-[120px] overflow-y-auto custom-scrollbar-slim pr-1">
-                  {plotsArray.length > 0 ? (
-                    plotsArray.map((plot, i) => (
-                      <div
-                        key={i}
-                        className="bg-white border border-gray-100 px-3 py-1.5 rounded-lg text-sm font-mono font-bold text-center text-slate-700 shadow-sm"
-                      >
-                        {plot}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-xs text-gray-400 text-center py-4">
-                      لا توجد قطع
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center text-center group relative overflow-hidden min-h-[140px]">
-              {siteImagePreview ? (
-                <>
-                  <img
-                    src={siteImagePreview}
-                    alt="الموقع"
-                    className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-30 transition-opacity"
-                  />
-
-                  <div className="relative z-10 flex flex-col gap-2">
-                    <AccessControl
-                      code="BASIC_TAB_PREVIEW_SITE_IMAGE"
-                      permissionNumber={50}
-                      name="معاينة الصورة الجوية للموقع"
-                      moduleName="تفاصيل المعاملة"
-                      tabName="البيانات الأساسية"
+                {isEditingBasic && (
+                  <AccessControl
+                    code="BASIC_TAB_UPLOAD_SITE_IMAGE"
+                    permissionNumber={51}
+                    name="تغيير الصورة الجوية للموقع"
+                    moduleName="تفاصيل المعاملة"
+                    tabName="البيانات الأساسية"
+                  >
+                    <label
+                      className="
+                        absolute inset-0 z-20 flex cursor-pointer flex-col
+                        items-center justify-center bg-black/55
+                        opacity-0 transition-opacity group-hover:opacity-100
+                      "
                     >
-                      <button
-                        onClick={() =>
-                          !isEditingBasic && setIsSiteImageModalOpen(true)
-                        }
-                        className="bg-white/20 hover:bg-white/40 backdrop-blur-sm text-white p-2 rounded-full transition-colors mx-auto"
-                        type="button"
-                      >
-                        <ImageIcon className="w-6 h-6" />
-                      </button>
-                    </AccessControl>
+                      <Upload className="mb-1 h-7 w-7 text-white" />
 
-                    <span className="text-white text-[10px] font-bold drop-shadow-md">
-                      الصورة الجوية للموقع
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <div className="flex flex-col items-center gap-2 opacity-60">
-                  <ImageIcon className="w-8 h-8 text-white" />
+                      <span className="text-xs font-black text-white">
+                        تغيير الصورة
+                      </span>
 
-                  <span className="text-white text-[10px] font-bold">
-                    لا توجد صورة جوية
-                  </span>
-                </div>
-              )}
-
-              {isEditingBasic && (
-                <AccessControl
-                  code="BASIC_TAB_UPLOAD_SITE_IMAGE"
-                  permissionNumber={51}
-                  name="تغيير الصورة الجوية للموقع"
-                  moduleName="تفاصيل المعاملة"
-                  tabName="البيانات الأساسية"
-                >
-                  <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity z-20">
-                    <Upload className="w-6 h-6 text-white mb-1" />
-
-                    <span className="text-white text-xs font-bold">
-                      تغيير الصورة
-                    </span>
-
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleSiteImageChange}
-                    />
-                  </label>
-                </AccessControl>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 💡 المكاتب المشاركة */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col h-full">
-          <div className="text-gray-800 text-sm font-black mb-4 flex items-center gap-2 border-b border-gray-100 pb-3">
-            <Building2 className="w-4 h-4 text-purple-600" /> المكتب المشرف
-          </div>
-
-          {isEditingBasic ? (
-            <div className="space-y-3 flex-1 flex flex-col justify-center">
-              <select
-                value={
-                  editFormData.supervisingOfficeId ||
-                  tx.supervisorOfficeId ||
-                  tx.requestData?.supervisorOffice ||
-                  ""
-                }
-                onChange={(e) =>
-                  handleTextChange("supervisingOfficeId", e.target.value)
-                }
-                className="w-full border border-gray-300 rounded-lg p-3 text-sm font-bold outline-none focus:border-purple-500 bg-gray-50"
-              >
-                <option value="">-- اختر المكتب المشرف من القائمة --</option>
-
-                {offices.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col justify-center">
-              {tx.supervisorOfficeId || tx.requestData?.supervisorOffice ? (
-                <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-4">
-                  <div className="text-lg font-black text-purple-900 mb-1">
-                    {offices.find(
-                      (o) =>
-                        o.id ===
-                          (tx.supervisorOfficeId ||
-                            tx.requestData?.supervisorOffice) ||
-                        o.name ===
-                          (tx.supervisorOfficeId ||
-                            tx.requestData?.supervisorOffice),
-                    )?.name ||
-                      tx.supervisorOfficeId ||
-                      tx.requestData?.supervisorOffice}
-                  </div>
-
-                  <div className="text-xs text-purple-600 font-bold">
-                    جهة إشرافية معتمدة
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center text-gray-400 font-bold text-xs py-6">
-                  لم يتم تحديد مكتب مشرف لهذه المعاملة
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col h-full">
-          <div className="text-gray-800 text-sm font-black mb-4 flex items-center gap-2 border-b border-gray-100 pb-3">
-            <Building className="w-4 h-4 text-cyan-600" /> المكتب المصمم
-          </div>
-
-          {isEditingBasic ? (
-            <div className="space-y-3 flex-1 flex flex-col justify-center">
-              <select
-                value={
-                  editFormData.designingOfficeId ||
-                  tx.designerOfficeId ||
-                  tx.requestData?.designerOffice ||
-                  ""
-                }
-                onChange={(e) =>
-                  handleTextChange("designingOfficeId", e.target.value)
-                }
-                className="w-full border border-gray-300 rounded-lg p-3 text-sm font-bold outline-none focus:border-cyan-500 bg-gray-50"
-              >
-                <option value="">-- اختر المكتب المصمم من القائمة --</option>
-
-                {offices.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col justify-center">
-              {tx.designerOfficeId || tx.requestData?.designerOffice ? (
-                <div className="bg-cyan-50/50 border border-cyan-100 rounded-xl p-4">
-                  <div className="text-lg font-black text-cyan-900 mb-1">
-                    {offices.find(
-                      (o) =>
-                        o.id ===
-                          (tx.designerOfficeId ||
-                            tx.requestData?.designerOffice) ||
-                        o.name ===
-                          (tx.designerOfficeId ||
-                            tx.requestData?.designerOffice),
-                    )?.name ||
-                      tx.designerOfficeId ||
-                      tx.requestData?.designerOffice}
-                  </div>
-
-                  <div className="text-xs text-cyan-600 font-bold">
-                    الجهة المسؤولة عن التصميم
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center text-gray-400 font-bold text-xs py-6">
-                  هذه المعاملة بتصميم داخلي (مكتب ديتيلز)
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {isQuickAddPlanOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[210] flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6 border border-slate-200 animate-in zoom-in-95">
-            <div className="flex justify-between items-center mb-4">
-              <h4 className="font-black text-slate-800 flex items-center gap-2">
-                <Layers className="text-blue-600" size={20} /> إضافة مخطط جديد
-              </h4>
-
-              <button
-                onClick={() => setIsQuickAddPlanOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
-                type="button"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-[11px] font-black text-slate-500 mb-1.5 block">
-                  رقم المخطط الجديد
-                </label>
-
-                <input
-                  type="text"
-                  value={newPlanName}
-                  onChange={(e) => setNewPlanName(e.target.value)}
-                  className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm font-black focus:border-blue-500 outline-none"
-                  placeholder="مثال: 1234 / أ / 2"
-                  autoFocus
-                />
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleSiteImageChange}
+                      />
+                    </label>
+                  </AccessControl>
+                )}
               </div>
-
-              <AccessControl
-                code="BASIC_TAB_CONFIRM_QUICK_ADD_PLAN"
-                permissionNumber={52}
-                name="تأكيد إضافة مخطط جديد للسجل"
-                moduleName="تفاصيل المعاملة"
-                tabName="البيانات الأساسية"
-              >
-                <button
-                  onClick={() => quickAddPlanMutation.mutate(newPlanName)}
-                  disabled={!newPlanName || quickAddPlanMutation.isPending}
-                  className="w-full py-3 bg-blue-600 text-white rounded-xl font-black flex items-center justify-center gap-2 hover:bg-blue-700 disabled:opacity-50 transition-all"
-                  type="button"
-                >
-                  {quickAddPlanMutation.isPending ? (
-                    <Loader2 className="animate-spin" size={18} />
-                  ) : (
-                    <CheckCircle size={18} />
-                  )}{" "}
-                  تأكيد الإضافة للسجل
-                </button>
-              </AccessControl>
             </div>
           </div>
-        </div>
+        </SectionCard>
+      </div>
+
+      {/* Offices */}
+      <div className="relative z-[5] grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <OfficeCard
+          icon={Building2}
+          title="المكتب المشرف"
+          subtitle="الجهة الإشرافية المعتمدة."
+          tone="purple"
+          isEditing={isEditingBasic}
+          value={
+            editFormData.supervisingOfficeId ||
+            tx.supervisorOfficeId ||
+            tx.requestData?.supervisorOffice ||
+            ""
+          }
+          onChange={(e) =>
+            handleTextChange("supervisingOfficeId", e.target.value)
+          }
+          offices={offices}
+          displayValue={
+            tx.supervisorOfficeId || tx.requestData?.supervisorOffice
+              ? offices.find(
+                  (o) =>
+                    o.id ===
+                      (tx.supervisorOfficeId ||
+                        tx.requestData?.supervisorOffice) ||
+                    o.name ===
+                      (tx.supervisorOfficeId ||
+                        tx.requestData?.supervisorOffice),
+                )?.name ||
+                tx.supervisorOfficeId ||
+                tx.requestData?.supervisorOffice
+              : ""
+          }
+          emptyText="لم يتم تحديد مكتب مشرف لهذه المعاملة"
+        />
+
+        <OfficeCard
+          icon={Building}
+          title="المكتب المصمم"
+          subtitle="الجهة المسؤولة عن التصميم."
+          tone="cyan"
+          isEditing={isEditingBasic}
+          value={
+            editFormData.designingOfficeId ||
+            tx.designerOfficeId ||
+            tx.requestData?.designerOffice ||
+            ""
+          }
+          onChange={(e) =>
+            handleTextChange("designingOfficeId", e.target.value)
+          }
+          offices={offices}
+          displayValue={
+            tx.designerOfficeId || tx.requestData?.designerOffice
+              ? offices.find(
+                  (o) =>
+                    o.id ===
+                      (tx.designerOfficeId || tx.requestData?.designerOffice) ||
+                    o.name ===
+                      (tx.designerOfficeId || tx.requestData?.designerOffice),
+                )?.name ||
+                tx.designerOfficeId ||
+                tx.requestData?.designerOffice
+              : ""
+          }
+          emptyText="هذه المعاملة بتصميم داخلي (مكتب ديتيلز)"
+        />
+      </div>
+
+      {/* Quick add plan modal */}
+      {isQuickAddPlanOpen && (
+        <QuickAddPlanModal
+          newPlanName={newPlanName}
+          setNewPlanName={setNewPlanName}
+          onClose={() => setIsQuickAddPlanOpen(false)}
+          onConfirm={() => quickAddPlanMutation.mutate(newPlanName)}
+          isPending={quickAddPlanMutation.isPending}
+        />
       )}
 
+      {/* Save button */}
       {isEditingBasic && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-5">
+        <div
+          className="
+            relative z-10 mx-auto my-6 flex w-full justify-center
+            rounded-[28px] border border-[#d8b46a]/25
+            bg-white/65 px-4 py-5
+            shadow-[0_12px_30px_rgba(18,63,89,0.06)]
+            backdrop-blur-xl
+            animate-in slide-in-from-bottom-5
+          "
+        >
           <AccessControl
             code="BASIC_TAB_SAVE_COMPREHENSIVE_EDITS"
             permissionNumber={53}
@@ -1343,90 +1381,64 @@ export const BasicTab = ({
             tabName="البيانات الأساسية"
           >
             <button
-              onClick={() => {
-                let finalNames = [editFormData.clientName];
-
-                let detailedOwners = [
-                  {
-                    clientId: editFormData.clientId,
-                    ownerName: editFormData.clientName,
-                    isPrimary: true,
-                  },
-                ];
-
-                if (
-                  editFormData.additionalOwners &&
-                  editFormData.additionalOwners.length > 0
-                ) {
-                  const additionalValid = editFormData.additionalOwners.filter(
-                    (o) => o.ownerName && o.ownerName.trim() !== "",
-                  );
-
-                  finalNames = [
-                    ...finalNames,
-                    ...additionalValid.map((o) => o.ownerName),
-                  ];
-
-                  additionalValid.forEach((o) => {
-                    detailedOwners.push({
-                      clientId: o.clientId,
-                      ownerName: o.ownerName,
-                      isPrimary: false,
-                    });
-                  });
-                }
-
-                const finalOwnerNamesString = finalNames.join(" و ");
-
-                const updatedData = {
-                  ...editFormData,
-                  ownerNames: finalOwnerNamesString,
-                  notes: {
-                    ...editFormData.notes,
-                    detailedOwnersList: detailedOwners,
-                  },
-                  updatedBy: currentUser?.name || "مدير النظام",
-                };
-
-                setEditFormData(updatedData);
-                saveBasicEdits(updatedData);
-              }}
+              onClick={handleSaveAll}
               disabled={updateTxMutation.isPending}
-              className="px-8 py-3.5 bg-blue-600 text-white rounded-full text-base font-black shadow-[0_8px_30px_rgb(37,99,235,0.4)] hover:bg-blue-700 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 transition-all flex items-center gap-3"
+              className="
+                flex max-w-full items-center justify-center gap-3 rounded-full
+                bg-gradient-to-l from-[#123f59] via-[#15536f] to-[#0e7490]
+                px-8 py-3.5 text-sm font-black text-white
+                shadow-[0_18px_45px_rgba(18,63,89,0.22)]
+                transition hover:-translate-y-[2px]
+                disabled:cursor-not-allowed disabled:opacity-50
+              "
               type="button"
             >
               {updateTxMutation.isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin text-[#e2bf74]" />
               ) : (
-                <Save className="w-5 h-5" />
+                <Save className="h-5 w-5 text-[#e2bf74]" />
               )}
+
               حفظ وتطبيق التعديلات الشاملة
             </button>
           </AccessControl>
         </div>
       )}
 
+      {/* Site image modal */}
       {isSiteImageModalOpen && siteImagePreview && (
         <div
-          className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4 animate-in fade-in"
+          className="
+            fixed inset-0 z-[200] flex items-center justify-center
+            bg-black/90 p-4 backdrop-blur-sm animate-in fade-in
+          "
           onClick={() => setIsSiteImageModalOpen(false)}
         >
           <div
-            className="relative max-w-5xl w-full h-[80vh]"
+            className="relative h-[82vh] w-full max-w-6xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setIsSiteImageModalOpen(false)}
-              className="absolute -top-12 right-0 bg-white/10 hover:bg-white/30 p-2 rounded-full text-white transition-colors"
+              className="
+                absolute -top-14 right-0 grid h-11 w-11
+                place-items-center rounded-2xl
+                bg-white/10 text-white
+                transition hover:bg-white/30
+              "
               type="button"
             >
-              <X className="w-6 h-6" />
+              <X className="h-6 w-6" />
             </button>
 
             <img
               src={siteImagePreview}
               alt="الصورة الجوية"
-              className="w-full h-full object-contain rounded-lg"
+              className="
+                h-full w-full rounded-3xl object-contain
+                border border-white/15 bg-black
+                shadow-[0_28px_80px_rgba(0,0,0,0.45)]
+              "
             />
           </div>
         </div>
@@ -1434,3 +1446,424 @@ export const BasicTab = ({
     </div>
   );
 };
+
+const DropdownLayer = ({ children }) => (
+  <div className="relative z-[9999] overflow-visible">{children}</div>
+);
+
+const SectionCard = ({ icon: Icon, title, subtitle, children, className = "" }) => (
+  <section
+    className={`
+      relative overflow-visible rounded-[28px]
+      border border-[#d8b46a]/30 bg-white/90
+      shadow-[0_16px_40px_rgba(18,63,89,0.08)]
+      backdrop-blur-xl
+      ${className}
+    `}
+  >
+    <div
+      className="
+        overflow-hidden rounded-t-[28px]
+        flex items-center gap-3 border-b border-[#e8ddc8]
+        bg-gradient-to-l from-[#fbf8f1] via-white to-[#eef7f6]
+        px-5 py-4
+      "
+    >
+      <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#123f59] text-[#e2bf74]">
+        <Icon className="h-5 w-5" />
+      </span>
+
+      <div className="min-w-0">
+        <h4 className="truncate text-sm font-black text-[#123f59]">
+          {title}
+        </h4>
+
+        <p className="mt-0.5 text-[11px] font-bold text-[#64748b]">
+          {subtitle}
+        </p>
+      </div>
+    </div>
+
+    <div className="relative z-20 overflow-visible p-5">{children}</div>
+  </section>
+);
+
+const MetaCard = ({ icon: Icon, label, value, tone = "blue" }) => {
+  const tones = {
+    blue: "border-blue-200 bg-blue-50 text-blue-700",
+    cyan: "border-cyan-200 bg-cyan-50 text-cyan-800",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    rose: "border-rose-200 bg-rose-50 text-rose-700",
+    slate: "border-slate-200 bg-slate-100 text-slate-700",
+  };
+
+  return (
+    <div
+      className="
+        rounded-[24px] border border-[#d8b46a]/30
+        bg-white/90 p-4
+        shadow-[0_14px_34px_rgba(18,63,89,0.08)]
+        backdrop-blur-xl
+      "
+    >
+      <div className="flex items-center gap-3">
+        <span
+          className={`
+            grid h-11 w-11 shrink-0 place-items-center
+            rounded-2xl border
+            ${tones[tone] || tones.blue}
+          `}
+        >
+          <Icon className="h-5 w-5" />
+        </span>
+
+        <div className="min-w-0">
+          <p className="text-[11px] font-black text-[#64748b]">{label}</p>
+
+          <p className="mt-1 truncate text-sm font-black text-[#123f59]">
+            {value}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const StatusPill = ({ tone, label }) => {
+  const tones = {
+    emerald: "border-emerald-300/25 bg-emerald-400/15 text-emerald-100",
+    amber: "border-amber-300/25 bg-amber-400/15 text-amber-100",
+    rose: "border-rose-300/25 bg-rose-400/15 text-rose-100",
+  };
+
+  return (
+    <div
+      className={`
+        flex h-11 items-center gap-2 rounded-2xl border px-4
+        text-xs font-black
+        ${tones[tone] || tones.emerald}
+      `}
+    >
+      <AlertTriangle
+        className={tone === "rose" ? "h-4 w-4 animate-pulse" : "h-4 w-4"}
+      />
+      {label}
+    </div>
+  );
+};
+
+const OwnerEditorBlock = ({ label, tone = "blue", children, action }) => {
+  const tones = {
+    blue: "border-blue-200 bg-blue-50 text-blue-700",
+    slate: "border-slate-200 bg-slate-100 text-slate-600",
+  };
+
+  return (
+    <div
+      className="
+        relative overflow-visible rounded-[22px]
+        border border-[#e8ddc8]
+        bg-[#fbf8f1]/70 p-3 pt-5
+      "
+    >
+      <span
+        className={`
+          absolute -top-2.5 right-4 rounded-xl border
+          px-2.5 py-0.5 text-[9px] font-black
+          ${tones[tone] || tones.blue}
+        `}
+      >
+        {label}
+      </span>
+
+      <div className="relative z-20 flex items-center gap-2 overflow-visible">
+        <div className="min-w-0 flex-1 overflow-visible">{children}</div>
+        {action}
+      </div>
+    </div>
+  );
+};
+
+const MiniInfo = ({ icon: Icon, label, value, dir = "rtl" }) => (
+  <div
+    className="
+      rounded-2xl border border-[#e8ddc8]
+      bg-[#fbf8f1]/70 p-3
+    "
+  >
+    <p className="mb-1 flex items-center gap-1 text-[9px] font-black text-[#94a3b8]">
+      <Icon className="h-3 w-3 text-[#c5983c]" />
+      {label}
+    </p>
+
+    <p className="truncate text-xs font-black text-[#123f59]" dir={dir}>
+      {value}
+    </p>
+  </div>
+);
+
+const FieldBlock = ({ label, children }) => (
+  <div className="relative z-20 space-y-1.5 overflow-visible">
+    <label className="block text-[10px] font-black text-[#64748b]">
+      {label}
+    </label>
+
+    {children}
+  </div>
+);
+
+const ReadValue = ({ icon: Icon, value, tone = "slate", dir = "rtl" }) => {
+  const tones = {
+    blue: "border-blue-200 bg-blue-50 text-blue-700",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    slate: "border-[#e8ddc8] bg-[#fbf8f1] text-[#123f59]",
+  };
+
+  return (
+    <div
+      className={`
+        flex min-h-[46px] items-center gap-2
+        rounded-2xl border px-3 py-2
+        text-sm font-black
+        ${tones[tone] || tones.slate}
+      `}
+      dir={dir}
+    >
+      <Icon className="h-4 w-4 shrink-0 text-[#c5983c]" />
+      <span className="truncate">{value}</span>
+    </div>
+  );
+};
+
+const MapLinkCard = ({ icon: Icon, title, subtitle, onOpen, permission }) => (
+  <div
+    className="
+      flex items-center gap-3 rounded-[22px]
+      border border-[#d8b46a]/25 bg-white
+      p-3 shadow-sm
+    "
+  >
+    <AccessControl
+      code={permission.code}
+      permissionNumber={permission.permissionNumber}
+      name={permission.name}
+      moduleName="تفاصيل المعاملة"
+      tabName="البيانات الأساسية"
+    >
+      <button
+        onClick={onOpen}
+        className="
+          grid h-11 w-11 place-items-center
+          rounded-2xl bg-[#123f59]
+          text-[#e2bf74]
+          transition hover:bg-[#0f3448]
+        "
+        type="button"
+      >
+        <Icon className="h-5 w-5" />
+      </button>
+    </AccessControl>
+
+    <div>
+      <div className="text-[10px] font-black text-[#94a3b8]">{title}</div>
+
+      <div className="text-xs font-black text-[#123f59]">{subtitle}</div>
+    </div>
+
+    <div
+      className="
+        grid h-12 w-12 place-items-center rounded-2xl
+        border border-[#e8ddc8] bg-[#fbf8f1]
+      "
+    >
+      <QrCode className="h-7 w-7 text-[#64748b]/60" />
+    </div>
+  </div>
+);
+
+const EmptyInline = ({ text }) => (
+  <div
+    className="
+      rounded-2xl border border-dashed border-[#d8b46a]/35
+      bg-[#fbf8f1]/70 px-4 py-3
+      text-xs font-black text-[#94a3b8]
+    "
+  >
+    {text}
+  </div>
+);
+
+const OfficeCard = ({
+  icon: Icon,
+  title,
+  subtitle,
+  isEditing,
+  value,
+  onChange,
+  offices,
+  displayValue,
+  emptyText,
+  tone = "cyan",
+}) => {
+  const tones = {
+    cyan: "border-cyan-200 bg-cyan-50 text-cyan-800",
+    purple: "border-purple-200 bg-purple-50 text-purple-700",
+  };
+
+  return (
+    <SectionCard icon={Icon} title={title} subtitle={subtitle}>
+      {isEditing ? (
+        <select value={value} onChange={onChange} className={INPUT_CLASS}>
+          <option value="">-- اختر من القائمة --</option>
+
+          {offices.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.name}
+            </option>
+          ))}
+        </select>
+      ) : displayValue ? (
+        <div
+          className={`
+            rounded-[22px] border p-4
+            ${tones[tone] || tones.cyan}
+          `}
+        >
+          <div className="mb-1 text-lg font-black">{displayValue}</div>
+
+          <div className="text-xs font-bold opacity-80">{subtitle}</div>
+        </div>
+      ) : (
+        <div
+          className="
+            rounded-[22px] border border-dashed border-[#d8b46a]/35
+            bg-[#fbf8f1]/70 py-8 text-center
+            text-xs font-black text-[#94a3b8]
+          "
+        >
+          {emptyText}
+        </div>
+      )}
+    </SectionCard>
+  );
+};
+
+const QuickAddPlanModal = ({
+  newPlanName,
+  setNewPlanName,
+  onClose,
+  onConfirm,
+  isPending,
+}) => (
+  <div
+    className="
+      fixed inset-0 z-[210] flex items-center justify-center
+      bg-[#06111d]/70 p-4 backdrop-blur-md
+      animate-in fade-in
+    "
+    dir="rtl"
+  >
+    <div
+      className="
+        w-full max-w-sm overflow-hidden rounded-[30px]
+        border border-[#d8b46a]/35 bg-white
+        shadow-[0_30px_90px_rgba(0,0,0,0.35)]
+        animate-in zoom-in-95
+      "
+    >
+      <div
+        className="
+          relative overflow-hidden
+          bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490]
+          px-5 py-4 text-white
+        "
+      >
+        <div className="relative z-10 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span
+              className="
+                grid h-11 w-11 place-items-center rounded-2xl
+                border border-[#e2bf74]/35 bg-white/12
+                text-[#e2bf74]
+              "
+            >
+              <Layers className="h-5 w-5" />
+            </span>
+
+            <div>
+              <h4 className="text-sm font-black">إضافة مخطط جديد</h4>
+              <p className="mt-0.5 text-[11px] font-bold text-white/60">
+                تسجيل المخطط داخل السجل.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="
+              grid h-10 w-10 place-items-center rounded-2xl
+              bg-white/10 text-white transition hover:bg-rose-500/40
+            "
+            type="button"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-4 p-5">
+        <FieldBlock label="رقم المخطط الجديد">
+          <input
+            type="text"
+            value={newPlanName}
+            onChange={(e) => setNewPlanName(e.target.value)}
+            className={INPUT_CLASS}
+            placeholder="مثال: 1234 / أ / 2"
+            autoFocus
+          />
+        </FieldBlock>
+
+        <AccessControl
+          code="BASIC_TAB_CONFIRM_QUICK_ADD_PLAN"
+          permissionNumber={52}
+          name="تأكيد إضافة مخطط جديد للسجل"
+          moduleName="تفاصيل المعاملة"
+          tabName="البيانات الأساسية"
+        >
+          <button
+            onClick={onConfirm}
+            disabled={!newPlanName || isPending}
+            className="
+              flex h-12 w-full items-center justify-center gap-2
+              rounded-2xl bg-gradient-to-l from-[#123f59] via-[#15536f] to-[#0e7490]
+              text-xs font-black text-white
+              shadow-[0_14px_30px_rgba(18,63,89,0.22)]
+              transition hover:-translate-y-[1px]
+              disabled:cursor-not-allowed disabled:opacity-50
+            "
+            type="button"
+          >
+            {isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin text-[#e2bf74]" />
+            ) : (
+              <CheckCircle className="h-4 w-4 text-[#e2bf74]" />
+            )}
+            تأكيد الإضافة للسجل
+          </button>
+        </AccessControl>
+      </div>
+    </div>
+  </div>
+);
+
+const INPUT_CLASS = `
+  h-12 w-full rounded-2xl
+  border border-[#d8b46a]/25 bg-white
+  px-4 text-sm font-bold text-[#123f59]
+  shadow-sm outline-none transition-all
+  placeholder:text-slate-400
+  focus:border-[#c5983c]/70
+  focus:bg-white
+  focus:ring-4 focus:ring-[#c5983c]/10
+`;

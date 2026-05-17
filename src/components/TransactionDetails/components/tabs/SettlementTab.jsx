@@ -16,6 +16,11 @@ import {
   Wallet,
   Activity,
   ArrowLeft,
+  Sparkles,
+  AlertCircle,
+  Coins,
+  CreditCard,
+  FileText,
 } from "lucide-react";
 
 export const SettlementTab = ({
@@ -35,7 +40,10 @@ export const SettlementTab = ({
       ?.filter((s) => s.status === "DELIVERED")
       .reduce((sum, s) => sum + safeNum(s.amount), 0) || 0;
 
-  const remainingToSettle = Math.max(0, safeNum(totalCosts) - deliveredSettlements);
+  const remainingToSettle = Math.max(
+    0,
+    safeNum(totalCosts) - deliveredSettlements,
+  );
 
   const settlementProgress =
     safeNum(totalCosts) > 0
@@ -57,77 +65,100 @@ export const SettlementTab = ({
       ?.filter((t) => t.isPaid)
       .reduce((sum, t) => sum + safeNum(t.cost), 0) || 0;
 
+  const isFullySettled =
+    safeNum(totalCosts) > 0 && deliveredSettlements >= safeNum(totalCosts);
+
   return (
     <div
       className="
         min-h-full space-y-5 p-4 pb-10 md:p-5
         bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
-        animate-in fade-in
+        animate-in fade-in duration-300 font-[Tajawal]
       "
       dir="rtl"
     >
       {/* Header */}
       <div
         className="
-          relative overflow-hidden rounded-[28px]
+          relative overflow-hidden rounded-[30px]
           border border-[#d8b46a]/30
-          bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59]
-          p-5 shadow-[0_20px_55px_rgba(18,63,89,0.20)]
+          bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490]
+          p-5 text-white
+          shadow-[0_20px_55px_rgba(18,63,89,0.18)]
         "
       >
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-[#c5983c]/18 blur-3xl" />
+          <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-[#e2bf74]/18 blur-3xl" />
           <div className="absolute left-[-80px] bottom-[-80px] h-52 w-52 rounded-full bg-emerald-400/12 blur-3xl" />
         </div>
 
-        <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-4">
+        <div className="relative z-10 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
             <div
               className="
-                grid h-14 w-14 place-items-center rounded-3xl
-                bg-[#e2bf74] text-[#123f59]
-                shadow-[0_12px_24px_rgba(0,0,0,0.18)]
+                grid h-14 w-14 shrink-0 place-items-center rounded-3xl
+                border border-[#e2bf74]/35 bg-white/12
+                text-[#e2bf74]
+                shadow-[0_14px_30px_rgba(0,0,0,0.20)]
               "
             >
-              <Scale className="h-7 w-7" />
+              <IconWithText
+                icon={Scale}
+                text="تسوية"
+                vertical
+                iconClassName="h-6 w-6"
+                textClassName="text-[8px] font-black leading-none"
+              />
             </div>
 
-            <div>
-              <h2 className="text-lg font-black text-white">
+            <div className="min-w-0">
+              <h2 className="truncate text-lg font-black md:text-xl">
                 التسوية الشاملة للمعاملة
               </h2>
 
-              <p className="mt-1 text-xs font-bold text-white/55">
+              <p className="mt-1 text-xs font-bold text-white/65">
                 مراجعة التكاليف، المدفوعات، المتبقي، ثم اعتماد التسوية النهائية.
               </p>
+
+              <div
+                className="
+                  mt-3 inline-flex items-center gap-1.5 rounded-xl
+                  border border-white/15 bg-white/10
+                  px-3 py-1.5 text-[10px]
+                  font-black text-white/85
+                "
+              >
+                <IconWithText
+                  icon={Sparkles}
+                  text="لوحة تدقيق نهائي قبل إغلاق المعاملة"
+                  iconClassName="h-3.5 w-3.5 text-[#e2bf74]"
+                  textClassName="text-[10px] font-black text-white/85"
+                />
+              </div>
             </div>
           </div>
 
           <div
             className="
-              flex w-max items-center gap-2 rounded-2xl
-              border border-white/15 bg-white/10
-              px-4 py-3 backdrop-blur-md
+              grid grid-cols-1 gap-2 sm:grid-cols-2
+              xl:min-w-[430px]
             "
           >
-            <span
-              className="
-                grid h-10 w-10 place-items-center rounded-2xl
-                bg-[#e2bf74]/15 text-[#e2bf74]
-              "
-            >
-              <ShieldCheck className="h-5 w-5" />
-            </span>
+            <HeaderMetric
+              icon={ShieldCheck}
+              iconText="حالة"
+              label="حالة التسوية"
+              value={isFullySettled ? "مكتملة" : "قيد المراجعة"}
+              tone={isFullySettled ? "emerald" : "gold"}
+            />
 
-            <div>
-              <div className="text-[10px] font-black text-white/55">
-                المتبقي للتسوية
-              </div>
-
-              <div className="font-mono text-base font-black text-white">
-                {remainingToSettle.toLocaleString()} ر.س
-              </div>
-            </div>
+            <HeaderMetric
+              icon={Wallet}
+              iconText="متبقي"
+              label="المتبقي للتسوية"
+              value={`${remainingToSettle.toLocaleString()} ر.س`}
+              tone={remainingToSettle > 0 ? "rose" : "emerald"}
+            />
           </div>
         </div>
       </div>
@@ -138,6 +169,7 @@ export const SettlementTab = ({
           label="السعر المتفق الإجمالي"
           value={totalFees}
           icon={Banknote}
+          iconText="سعر"
           tone="blue"
         />
 
@@ -145,6 +177,7 @@ export const SettlementTab = ({
           label="إجمالي التكاليف"
           value={totalCosts}
           icon={Receipt}
+          iconText="تكلفة"
           tone="rose"
         />
 
@@ -152,6 +185,7 @@ export const SettlementTab = ({
           label="الربح التقديري"
           value={estimatedProfit}
           icon={TrendingUp}
+          iconText="ربح"
           tone="emerald"
         />
 
@@ -159,6 +193,7 @@ export const SettlementTab = ({
           label="صافي قابل للتسوية"
           value={distributableProfit}
           icon={Wallet}
+          iconText="صافي"
           tone="gold"
         />
       </div>
@@ -166,36 +201,42 @@ export const SettlementTab = ({
       {/* Progress */}
       <div
         className="
-          overflow-hidden rounded-[28px]
-          border border-[#d8b46a]/30 bg-white
+          overflow-hidden rounded-[30px]
+          border border-[#d8b46a]/30 bg-white/90
           shadow-[0_18px_45px_rgba(18,63,89,0.10)]
+          backdrop-blur-xl
         "
       >
         <div
           className="
-            flex items-center justify-between
-            border-b border-[#e8ddc8]
-            bg-gradient-to-l from-[#f8efe0] via-white to-[#eef7f6]
-            px-5 py-4
+            flex flex-col gap-3 border-b border-[#e8ddc8]
+            bg-gradient-to-l from-[#fbf8f1] via-white to-[#eef7f6]
+            px-5 py-4 sm:flex-row sm:items-center sm:justify-between
           "
         >
-          <h3 className="flex items-center gap-2 text-xs font-black text-[#123f59]">
+          <h3 className="flex items-center gap-3 text-sm font-black text-[#123f59]">
             <span
               className="
-                grid h-9 w-9 place-items-center rounded-2xl
+                grid h-11 w-11 place-items-center rounded-2xl
                 bg-[#123f59] text-[#e2bf74]
               "
             >
-              <Activity className="h-4 w-4" />
+              <IconWithText
+                icon={Activity}
+                text="تقدم"
+                vertical
+                iconClassName="h-5 w-5"
+                textClassName="text-[7px] font-black leading-none"
+              />
             </span>
             تقدم التسوية
           </h3>
 
           <span
             className="
-              rounded-2xl border border-[#d8b46a]/25
-              bg-white px-3 py-1.5 text-[10px]
-              font-black text-[#123f59]
+              w-fit rounded-2xl border border-[#d8b46a]/25
+              bg-white px-3 py-1.5
+              font-mono text-xs font-black text-[#123f59]
             "
           >
             {settlementProgress.toFixed(0)}%
@@ -203,8 +244,10 @@ export const SettlementTab = ({
         </div>
 
         <div className="p-5">
-          <div className="mb-3 flex items-center justify-between text-[11px] font-black">
-            <span className="text-[#64748b]">المدفوع من إجمالي التكاليف</span>
+          <div className="mb-3 flex flex-col gap-2 text-[11px] font-black sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-[#64748b]">
+              المدفوع من إجمالي التكاليف
+            </span>
 
             <span className="font-mono text-[#123f59]" dir="ltr">
               {deliveredSettlements.toLocaleString()} /{" "}
@@ -212,7 +255,7 @@ export const SettlementTab = ({
             </span>
           </div>
 
-          <div className="h-3 overflow-hidden rounded-full bg-[#eef7f6]">
+          <div className="h-3 overflow-hidden rounded-full bg-[#e8ddc8]">
             <div
               className="
                 h-full rounded-full bg-gradient-to-l
@@ -235,6 +278,7 @@ export const SettlementTab = ({
         title="تسوية الوسطاء"
         subtitle="مراجعة مستحقات الوسطاء والمدفوع والمتبقي"
         icon={Handshake}
+        iconText="وسيط"
         tone="cyan"
         isOpen={openSections.brokers}
         onToggle={() => toggleSection("brokers")}
@@ -266,6 +310,7 @@ export const SettlementTab = ({
                 name={b.name}
                 typeLabel="وسيط"
                 icon={Handshake}
+                iconText="وسيط"
                 cost={cost}
                 paid={paid}
                 remaining={remaining}
@@ -281,6 +326,7 @@ export const SettlementTab = ({
         title="تسوية المعقبين"
         subtitle="مراجعة مستحقات المعقبين والمدفوع والمتبقي"
         icon={User}
+        iconText="معقب"
         tone="purple"
         isOpen={openSections.agents}
         onToggle={() => toggleSection("agents")}
@@ -296,7 +342,9 @@ export const SettlementTab = ({
 
             const paid =
               tx.settlements
-                ?.filter((s) => s.targetId === ag.id && s.status === "DELIVERED")
+                ?.filter(
+                  (s) => s.targetId === ag.id && s.status === "DELIVERED",
+                )
                 .reduce((sum, s) => sum + safeNum(s.amount), 0) || 0;
 
             const remaining = Math.max(0, cost - paid);
@@ -309,6 +357,7 @@ export const SettlementTab = ({
                 name={ag.name}
                 typeLabel={ag.role || "معقب"}
                 icon={User}
+                iconText="معقب"
                 cost={cost}
                 paid={paid}
                 remaining={remaining}
@@ -324,6 +373,7 @@ export const SettlementTab = ({
         title="تسوية العمل عن بعد"
         subtitle="مراجعة تكاليف منفذي العمل عن بعد وتسوياتهم"
         icon={Monitor}
+        iconText="عن بعد"
         tone="emerald"
         isOpen={openSections.remote}
         onToggle={() => toggleSection("remote")}
@@ -347,6 +397,7 @@ export const SettlementTab = ({
                 name={rt.workerName}
                 typeLabel={rt.taskName || "مهمة عن بعد"}
                 icon={Monitor}
+                iconText="مهمة"
                 cost={cost}
                 paid={paid}
                 remaining={remaining}
@@ -360,15 +411,16 @@ export const SettlementTab = ({
       {/* Footer */}
       <div
         className="
-          relative overflow-hidden rounded-[28px]
+          relative overflow-hidden rounded-[30px]
           border border-emerald-300/35
-          bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59]
-          p-5 shadow-[0_20px_55px_rgba(18,63,89,0.20)]
+          bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490]
+          p-5 text-white
+          shadow-[0_20px_55px_rgba(18,63,89,0.20)]
         "
       >
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-emerald-400/12 blur-3xl" />
-          <div className="absolute left-[-80px] bottom-[-80px] h-52 w-52 rounded-full bg-[#c5983c]/18 blur-3xl" />
+          <div className="absolute left-[-80px] bottom-[-80px] h-52 w-52 rounded-full bg-[#e2bf74]/18 blur-3xl" />
         </div>
 
         <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -390,7 +442,7 @@ export const SettlementTab = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             {setActiveTab && (
               <button
                 onClick={() => setActiveTab("profits")}
@@ -402,8 +454,12 @@ export const SettlementTab = ({
                 "
                 type="button"
               >
-                عرض الأرباح
-                <ArrowLeft className="h-4 w-4 text-[#e2bf74]" />
+                <IconWithText
+                  icon={ArrowLeft}
+                  text="عرض الأرباح"
+                  iconClassName="h-4 w-4 text-[#e2bf74]"
+                  textClassName="text-xs font-black text-white"
+                />
               </button>
             )}
 
@@ -425,16 +481,20 @@ export const SettlementTab = ({
                 shadow-[0_12px_30px_rgba(16,185,129,0.20)]
                 transition hover:-translate-y-[1px]
                 hover:bg-emerald-600
-                disabled:opacity-50
+                disabled:cursor-not-allowed disabled:opacity-50
               "
               type="button"
             >
               {finalizeSettlementMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Check className="h-4 w-4" />
+                <IconWithText
+                  icon={Check}
+                  text="تنفيذ التسوية الشاملة"
+                  iconClassName="h-4 w-4"
+                  textClassName="text-xs font-black"
+                />
               )}
-              تنفيذ التسوية الشاملة
             </button>
           </div>
         </div>
@@ -443,7 +503,77 @@ export const SettlementTab = ({
   );
 };
 
-const SummaryCard = ({ label, value, icon: Icon, tone = "blue" }) => {
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => (
+  <span
+    className={`
+      inline-flex items-center justify-center gap-1
+      ${vertical ? "flex-col" : "flex-row"}
+      ${className}
+    `}
+  >
+    {Icon && <Icon className={iconClassName || "h-4 w-4"} />}
+
+    {text && (
+      <span className={textClassName || "text-[9px] font-black leading-none"}>
+        {text}
+      </span>
+    )}
+  </span>
+);
+
+const HeaderMetric = ({
+  icon: Icon,
+  iconText,
+  label,
+  value,
+  tone = "gold",
+}) => {
+  const tones = {
+    gold: "border-[#e2bf74]/25 bg-[#e2bf74]/15 text-[#e2bf74]",
+    emerald: "border-emerald-300/20 bg-emerald-400/15 text-emerald-100",
+    rose: "border-rose-300/20 bg-rose-400/15 text-rose-100",
+  };
+
+  return (
+    <div
+      className={`
+        rounded-2xl border px-3 py-3 backdrop-blur-md
+        ${tones[tone] || tones.gold}
+      `}
+    >
+      <div className="flex items-center gap-2">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10">
+          <IconWithText
+            icon={Icon}
+            text={iconText}
+            vertical
+            iconClassName="h-4 w-4"
+            textClassName="text-[7px] font-black leading-none"
+          />
+        </span>
+
+        <div className="min-w-0">
+          <div className="truncate text-[9px] font-black text-white/60">
+            {label}
+          </div>
+
+          <div className="truncate font-mono text-xs font-black text-white">
+            {value}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SummaryCard = ({ label, value, icon: Icon, iconText, tone = "blue" }) => {
   const tones = {
     blue: {
       card: "border-[#d8b46a]/30 bg-white",
@@ -465,7 +595,7 @@ const SummaryCard = ({ label, value, icon: Icon, tone = "blue" }) => {
     },
     gold: {
       card: "border-[#d8b46a]/40 bg-[#fbf8f1]",
-      icon: "bg-[#f8efe0] text-[#c5983c]",
+      icon: "bg-[#123f59] text-[#e2bf74]",
       label: "text-[#64748b]",
       value: "text-[#c5983c]",
     },
@@ -484,8 +614,16 @@ const SummaryCard = ({ label, value, icon: Icon, tone = "blue" }) => {
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className={`text-[11px] font-black ${t.label}`}>{label}</div>
 
-        <span className={`grid h-10 w-10 place-items-center rounded-2xl ${t.icon}`}>
-          <Icon className="h-5 w-5" />
+        <span
+          className={`grid h-11 w-11 place-items-center rounded-2xl ${t.icon}`}
+        >
+          <IconWithText
+            icon={Icon}
+            text={iconText}
+            vertical
+            iconClassName="h-5 w-5"
+            textClassName="text-[7px] font-black leading-none"
+          />
         </span>
       </div>
 
@@ -503,6 +641,7 @@ const SettlementSection = ({
   title,
   subtitle,
   icon: Icon,
+  iconText,
   tone = "cyan",
   isOpen,
   onToggle,
@@ -536,26 +675,34 @@ const SettlementSection = ({
   return (
     <div
       className={`
-        overflow-hidden rounded-[28px] border bg-white
+        overflow-hidden rounded-[28px] border bg-white/90
         shadow-[0_18px_45px_rgba(18,63,89,0.10)]
+        backdrop-blur-xl
         ${t.border}
       `}
     >
       <button
         onClick={onToggle}
         className="
-          flex w-full items-center justify-between gap-4
+          flex w-full flex-col gap-4
           border-b border-[#e8ddc8]
-          bg-gradient-to-l from-[#f8efe0] via-white to-[#eef7f6]
+          bg-gradient-to-l from-[#fbf8f1] via-white to-[#eef7f6]
           px-5 py-4 text-right transition hover:bg-[#fbf8f1]
+          lg:flex-row lg:items-center lg:justify-between
         "
         type="button"
       >
         <div className="flex min-w-0 items-center gap-3">
           <span
-            className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl border ${t.icon}`}
+            className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl border ${t.icon}`}
           >
-            <Icon className="h-5 w-5" />
+            <IconWithText
+              icon={Icon}
+              text={iconText}
+              vertical
+              iconClassName="h-5 w-5"
+              textClassName="text-[7px] font-black leading-none"
+            />
           </span>
 
           <div className="min-w-0">
@@ -569,11 +716,11 @@ const SettlementSection = ({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span
             className={`
-              hidden rounded-2xl border px-3 py-1.5
-              text-[10px] font-black md:inline-flex
+              rounded-2xl border px-3 py-1.5
+              text-[10px] font-black
               ${t.badge}
             `}
           >
@@ -582,9 +729,9 @@ const SettlementSection = ({
 
           <span
             className="
-              hidden rounded-2xl border border-rose-200
+              rounded-2xl border border-rose-200
               bg-rose-50 px-3 py-1.5
-              text-[10px] font-black text-rose-700 md:inline-flex
+              text-[10px] font-black text-rose-700
             "
           >
             متبقي: {Number(remaining || 0).toLocaleString()}
@@ -636,18 +783,21 @@ const SettlementTable = ({ columns, rows, emptyText, renderRow }) => {
               safeRows.map(renderRow)
             ) : (
               <tr>
-                <td
-                  colSpan={columns.length}
-                  className="py-12 text-center"
-                >
+                <td colSpan={columns.length} className="py-12 text-center">
                   <div
                     className="
-                      mx-auto mb-3 grid h-14 w-14 place-items-center
+                      mx-auto mb-3 grid h-16 w-16 place-items-center
                       rounded-3xl border border-[#d8b46a]/35
                       bg-[#f8efe0] text-[#c5983c]
                     "
                   >
-                    <ShieldCheck className="h-7 w-7" />
+                    <IconWithText
+                      icon={AlertCircle}
+                      text="فارغ"
+                      vertical
+                      iconClassName="h-7 w-7"
+                      textClassName="text-[8px] font-black leading-none"
+                    />
                   </div>
 
                   <p className="text-sm font-black text-[#123f59]">
@@ -668,6 +818,7 @@ const SettlementRow = ({
   name,
   typeLabel,
   icon: Icon,
+  iconText,
   cost,
   paid,
   remaining,
@@ -684,11 +835,17 @@ const SettlementRow = ({
         <div className="flex items-center gap-3">
           <span
             className="
-              grid h-10 w-10 place-items-center rounded-2xl
+              grid h-11 w-11 place-items-center rounded-2xl
               bg-[#123f59] text-[#e2bf74]
             "
           >
-            <Icon className="h-4 w-4" />
+            <IconWithText
+              icon={Icon}
+              text={iconText}
+              vertical
+              iconClassName="h-4 w-4"
+              textClassName="text-[7px] font-black leading-none"
+            />
           </span>
 
           <div className="min-w-0">
@@ -704,15 +861,19 @@ const SettlementRow = ({
       </td>
 
       <td className="border-l border-[#e8ddc8]/70 px-4 py-4">
-        <Amount value={cost} tone="blue" />
+        <Amount value={cost} tone="blue" icon={Coins} />
       </td>
 
       <td className="border-l border-[#e8ddc8]/70 px-4 py-4">
-        <Amount value={paid} tone="emerald" />
+        <Amount value={paid} tone="emerald" icon={CreditCard} />
       </td>
 
       <td className="border-l border-[#e8ddc8]/70 px-4 py-4">
-        <Amount value={remaining} tone={remaining > 0 ? "rose" : "emerald"} />
+        <Amount
+          value={remaining}
+          tone={remaining > 0 ? "rose" : "emerald"}
+          icon={Wallet}
+        />
       </td>
 
       <td className="border-l border-[#e8ddc8]/70 px-4 py-4">
@@ -728,12 +889,20 @@ const SettlementRow = ({
           `}
         >
           {isFullyPaid ? (
-            <Check className="h-3 w-3" />
+            <IconWithText
+              icon={Check}
+              text="مُسوّى"
+              iconClassName="h-3 w-3"
+              textClassName="text-[10px] font-black"
+            />
           ) : (
-            <Circle className="h-3 w-3" />
+            <IconWithText
+              icon={Circle}
+              text="قيد الانتظار"
+              iconClassName="h-3 w-3"
+              textClassName="text-[10px] font-black"
+            />
           )}
-
-          {isFullyPaid ? "مُسوّى" : "قيد الانتظار"}
         </span>
       </td>
 
@@ -747,14 +916,19 @@ const SettlementRow = ({
           "
           type="button"
         >
-          تفاصيل
+          <IconWithText
+            icon={FileText}
+            text="تفاصيل"
+            iconClassName="h-3.5 w-3.5 text-[#c5983c]"
+            textClassName="text-[10px] font-black"
+          />
         </button>
       </td>
     </tr>
   );
 };
 
-const Amount = ({ value, tone = "blue" }) => {
+const Amount = ({ value, tone = "blue", icon: Icon }) => {
   const colors = {
     blue: "text-[#123f59]",
     emerald: "text-emerald-700",
@@ -762,7 +936,8 @@ const Amount = ({ value, tone = "blue" }) => {
   };
 
   return (
-    <div className={`font-mono text-[13px] font-black ${colors[tone]}`}>
+    <div className={`flex items-center gap-1.5 font-mono text-[13px] font-black ${colors[tone]}`}>
+      {Icon && <Icon className="h-3.5 w-3.5 opacity-70" />}
       {Number(value || 0).toLocaleString()}
       <span className="mr-1 text-[10px] text-[#64748b]">ر.س</span>
     </div>

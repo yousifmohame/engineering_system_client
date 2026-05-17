@@ -29,7 +29,13 @@ import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?worker";
 
 pdfjs.GlobalWorkerOptions.workerPort = new PdfWorker();
 
-export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
+export default function NewDocumentationModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  initialFile = null,
+  initialMetadata = null,
+}) {
   const { user } = useAuth();
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -38,6 +44,8 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
   const [stampData, setStampData] = useState(null);
   const [recordId, setRecordId] = useState(null);
   const [step, setStep] = useState(1);
+
+  const [numPages, setNumPages] = useState(null);
 
   // إحداثيات الأختام
   const [stampScale, setStampScale] = useState(1);
@@ -57,7 +65,7 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
   // 💡 إعدادات الأمان
   const [securitySettings, setSecuritySettings] = useState({
     isVerifiable: true,
-    requireOTP: false, // 👈 خيار الـ OTP الجديد
+    requireOTP: false,
     clientPhone: "",
     maxViews: "",
     expiryDate: "",
@@ -74,40 +82,71 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
   const renderWidth = 800;
 
   const constraintsRef = useRef(null);
-  const mainStampRefs = useRef({}); // لتخزين مراجع متعددة للأختام المكررة
+  const mainStampRefs = useRef({});
   const qrStampRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  // 🚀 مراقبة الملف الابتدائي (Integration مع التقارير)
   useEffect(() => {
-    if (!isOpen) {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setFile(null);
-      setPreviewUrl(null);
-      setStampData(null);
-      setRecordId(null);
-      setStep(1);
-      setStampScale(1);
-      setStampRotation(0);
-      setQrScale(1);
-      setQrRotation(0);
-      setUseCustomStamp(false);
-      setCustomStampBase64(null);
-      setCustomStampsList([{ id: "stamp-1" }]);
-      setApplyToAllPages(false);
-      setSecuritySettings({
-        isVerifiable: true,
-        requireOTP: false,
-        maxViews: "",
-        expiryDate: "",
-        transactionId: "",
-        clientId: "",
-      });
-      setMetadata([
-        { id: 1, key: "اسم المالك", value: "" },
-        { id: 2, key: "اسم المستند", value: "" },
-      ]);
+    if (isOpen) {
+      if (initialFile) {
+        setFile(initialFile);
+        setPreviewUrl(URL.createObjectURL(initialFile));
+        setStep(2); // تخطي خطوة الرفع
+
+        // تعبئة البيانات تلقائياً إن وجدت
+        if (initialMetadata) {
+          setMetadata([
+            {
+              id: 1,
+              key: "اسم المالك / المعني",
+              value: initialMetadata.employeeName || "",
+            },
+            {
+              id: 2,
+              key: "اسم المستند",
+              value: initialMetadata.documentName || "تقرير مستخرج آلياً",
+            },
+          ]);
+        }
+      }
+    } else {
+      resetModalState();
     }
-  }, [isOpen, previewUrl]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, initialFile]);
+
+  // دالة لتنظيف الـ State عند الإغلاق
+  const resetModalState = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setFile(null);
+    setPreviewUrl(null);
+    setStampData(null);
+    setRecordId(null);
+    setStep(1);
+    setStampScale(1);
+    setStampRotation(0);
+    setQrScale(1);
+    setQrRotation(0);
+    setUseCustomStamp(false);
+    setCustomStampBase64(null);
+    setCustomStampsList([{ id: "stamp-1" }]);
+    setApplyToAllPages(false);
+    setSecuritySettings({
+      isVerifiable: true,
+      requireOTP: false,
+      clientPhone: "",
+      maxViews: "",
+      expiryDate: "",
+      transactionId: "",
+      clientId: "",
+    });
+    setMetadata([
+      { id: 1, key: "اسم المالك", value: "" },
+      { id: 2, key: "اسم المستند", value: "" },
+    ]);
+    setNumPages(null);
+  };
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -138,9 +177,8 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
     setMetadata(metadata.filter((m) => m.id !== id));
 
   // 💡 دالة تكرار الختم
-  const duplicateStamp = () => {
+  const duplicateStamp = () =>
     setCustomStampsList([...customStampsList, { id: `stamp-${Date.now()}` }]);
-  };
 
   const generateStamp = async () => {
     setIsProcessing(true);
@@ -151,7 +189,7 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
       formData.append(
         "fileName",
         metadata.find((m) => m.key === "اسم المستند")?.value || file.name,
-      ); // أخذ الاسم من الميتا داتا إن وجد
+      );
       formData.append("signatureType", "DIGITAL_SEAL");
 
       if (user && user.id) formData.append("employeeId", user.id);
@@ -197,7 +235,11 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
     if (!elementRef || !elementRef.current || !constraintsRef.current)
       return null;
 
-    const container = constraintsRef.current.getBoundingClientRect();
+    const firstPageElement =
+      constraintsRef.current.querySelector(".react-pdf__Page");
+    if (!firstPageElement) return null;
+
+    const container = firstPageElement.getBoundingClientRect();
     const rect = elementRef.current.getBoundingClientRect();
 
     const actualWidth = elementRef.current.offsetWidth * scale;
@@ -240,7 +282,7 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
 
       // 💡 معالجة كافة الأختام المكررة
       customStampsList.forEach((stamp) => {
-        const domRef = { current: mainStampRefs.current[stamp.id] }; // تغليف المرجع ليتوافق مع دالة getCoordinates
+        const domRef = { current: mainStampRefs.current[stamp.id] };
         const mainCoords = getCoordinates(domRef, stampScale, stampRotation);
 
         if (mainCoords) {
@@ -267,26 +309,25 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
         });
       }
 
-      // 💡 تصفية الداتا الإضافية لحذف الحقول الفارغة
       const validMetadata = metadata.filter(
         (m) => m.key.trim() !== "" && m.value.trim() !== "",
       );
 
-      // إرسال البيانات المكتملة
       await api.put(`/documentation/${recordId}/approve`, {
         stamps: stampsToBurn,
         transactionId: securitySettings.transactionId,
         clientId: securitySettings.clientId,
         isVerifiable: securitySettings.isVerifiable,
-        requireOTP: securitySettings.requireOTP, // 👈 إرسال حالة الـ OTP
+        requireOTP: securitySettings.requireOTP,
+        clientPhone: securitySettings.clientPhone,
         maxViews: securitySettings.maxViews
           ? parseInt(securitySettings.maxViews)
           : null,
         expiryDate: securitySettings.expiryDate
           ? new Date(securitySettings.expiryDate).toISOString()
           : null,
-        applyToAllPages: applyToAllPages, // 👈 إرسال طلب الختم على كل الصفحات للباك إند
-        customMetadata: validMetadata, // 👈 إرسال الميتا داتا الديناميكية للباك إند ليحفظها كـ JSON
+        applyToAllPages: applyToAllPages,
+        customMetadata: validMetadata,
       });
 
       toast.success(
@@ -306,6 +347,10 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
     } finally {
       setIsApproving(false);
     }
+  };
+
+  const onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPages(numPages);
   };
 
   if (!isOpen) return null;
@@ -380,7 +425,6 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
               <div className="h-full flex flex-col lg:flex-row bg-slate-200/50">
                 {/* 🎛️ Sidebar */}
                 <div className="w-full lg:w-[420px] bg-white/90 backdrop-blur-xl border-l border-slate-200 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar z-20 shadow-[4px_0_24px_rgba(0,0,0,0.05)] shrink-0">
-                  {/* Actions & Approvals */}
                   <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                     <h3 className="font-black text-slate-800 mb-4 flex items-center gap-2">
                       <FileText className="w-4 h-4 text-blue-600" /> تفاصيل
@@ -427,7 +471,6 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                           <ShieldCheck className="w-4 h-4 text-emerald-600" />{" "}
                           إعدادات الأمان والربط
                         </h3>
-
                         <div className="space-y-4">
                           <label className="flex items-center gap-2 cursor-pointer">
                             <input
@@ -446,7 +489,6 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                             </span>
                           </label>
 
-                          {/* 💡 خيار الـ OTP مع الحقل الذي يظهر عند التفعيل */}
                           <div className="bg-rose-50/50 p-3 rounded-xl border border-rose-100">
                             <label className="flex items-center gap-2 cursor-pointer">
                               <input
@@ -464,8 +506,6 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                                 تأمين المستند برمز تحقق (OTP) عند الفتح
                               </span>
                             </label>
-
-                            {/* حقل الإدخال يظهر فقط إذا تم تفعيل הـ OTP */}
                             <AnimatePresence>
                               {securitySettings.requireOTP && (
                                 <motion.div
@@ -475,7 +515,7 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                                   className="mt-3 overflow-hidden"
                                 >
                                   <label className="text-[10px] font-bold text-rose-600 block mb-1">
-                                    رقم جوال العميل (سيتم إرسال  OTP إليه)
+                                    رقم جوال العميل (سيتم إرسال הـ OTP إليه)
                                   </label>
                                   <input
                                     type="text"
@@ -540,10 +580,6 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                           <Database className="w-4 h-4 text-indigo-600" />{" "}
                           البيانات الوصفية (Metadata)
                         </h3>
-                        <p className="text-[10px] font-bold text-slate-400 mb-3">
-                          أضف بيانات مرنة ستظهر للعميل في شاشة التحقق.
-                        </p>
-
                         <div className="space-y-2">
                           {metadata.map((item) => (
                             <div
@@ -555,7 +591,7 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                                 onChange={(e) =>
                                   updateMetadata(item.id, "key", e.target.value)
                                 }
-                                placeholder="اسم الحقل (مثال: العقار)"
+                                placeholder="اسم الحقل"
                                 className="w-1/3 text-[10px] px-2 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500"
                               />
                               <input
@@ -646,7 +682,7 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                         <div className="space-y-4">
                           <div>
                             <div className="flex justify-between text-[10px] font-black text-slate-500 mb-2">
-                              <span>تكبير/تصغير (لكل الأختام)</span>{" "}
+                              <span>تكبير/تصغير</span>{" "}
                               <span>{Math.round(stampScale * 100)}%</span>
                             </div>
                             <input
@@ -661,17 +697,13 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                               className="w-full accent-blue-600"
                             />
                           </div>
-
-                          {/* 💡 خيارات التكرار والصفحات المتعددة */}
                           <div className="pt-3 border-t border-slate-100 flex flex-col gap-3">
                             <button
                               onClick={duplicateStamp}
                               className="w-full py-2 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black flex items-center justify-center gap-1.5 hover:bg-blue-100 transition-colors"
                             >
                               <Copy className="w-3.5 h-3.5" /> إضافة نسخة أخرى
-                              من الختم في نفس الصفحة
                             </button>
-
                             <label className="flex items-center gap-2 cursor-pointer mt-1 bg-slate-50 p-2 rounded-lg border border-slate-100">
                               <input
                                 type="checkbox"
@@ -681,20 +713,18 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                                 }
                                 className="w-4 h-4 accent-blue-600 rounded"
                               />
-                              <Layers className="w-4 h-4 text-slate-400" />
                               <span className="text-[10px] font-black text-slate-700">
-                                تطبيق الأختام الحالية على كافة صفحات الـ PDF
+                                تطبيق الأختام الحالية على كافة صفحات הـ PDF
                               </span>
                             </label>
                           </div>
                         </div>
                       </div>
 
-                      
                       <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                         <h4 className="font-black text-slate-800 flex items-center gap-2 border-b border-slate-50 pb-3 mb-4">
-                          <QrCode className="w-4 h-4 text-slate-400" /> ختم 
-                          QR المصغر
+                          <QrCode className="w-4 h-4 text-slate-400" /> ختم QR
+                          المصغر
                         </h4>
                         <div className="space-y-4">
                           <div>
@@ -723,110 +753,131 @@ export default function NewDocumentationModal({ isOpen, onClose, onSuccess }) {
                 {/* 📄 Workspace (منطقة العمل) */}
                 <div className="flex-1 flex justify-center items-start overflow-y-auto p-4 sm:p-8 custom-scrollbar bg-slate-300/30 relative">
                   {applyToAllPages && file?.type === "application/pdf" && (
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg z-50 flex items-center gap-2 animate-bounce">
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg z-[100] flex items-center gap-2 animate-bounce">
                       <Layers className="w-3 h-3" /> سيتم حرق هذه الأختام على
                       كافة الصفحات
                     </div>
                   )}
 
-                  <div
-                    ref={constraintsRef}
-                    className="relative shadow-2xl bg-white flex flex-col mx-auto"
-                    style={{ width: "max-content" }}
-                  >
-                    {file?.type.startsWith("image/") ? (
-                      <img
-                        src={previewUrl}
-                        alt="Preview"
-                        width={renderWidth}
-                        className="block pointer-events-none"
-                      />
-                    ) : file?.type === "application/pdf" ? (
-                      <Document file={file} className="pointer-events-none">
-                        <Page
-                          pageNumber={1}
+                  <div className="py-8 flex flex-col items-center">
+                    <div
+                      ref={constraintsRef}
+                      className="relative shadow-2xl bg-white flex flex-col mx-auto"
+                      style={{ width: "max-content" }}
+                    >
+                      {file?.type.startsWith("image/") ? (
+                        <img
+                          src={previewUrl}
+                          alt="Preview"
                           width={renderWidth}
-                          renderTextLayer={false}
-                          renderAnnotationLayer={false}
+                          className="block pointer-events-none"
                         />
-                      </Document>
-                    ) : null}
+                      ) : file?.type === "application/pdf" ? (
+                        <Document
+                          file={file}
+                          onLoadSuccess={onDocumentLoadSuccess}
+                          className="pointer-events-none flex flex-col gap-4 bg-slate-200 p-4"
+                        >
+                          {Array.from(new Array(numPages || 1), (el, index) => (
+                            <div
+                              key={`page_${index + 1}`}
+                              className="shadow-lg relative bg-white"
+                            >
+                              <Page
+                                pageNumber={index + 1}
+                                width={renderWidth}
+                                renderTextLayer={false}
+                                renderAnnotationLayer={false}
+                              />
+                              <div className="absolute bottom-2 left-2 bg-slate-900/50 text-white text-[10px] px-2 py-0.5 rounded-md font-bold">
+                                {index + 1}
+                              </div>
+                            </div>
+                          ))}
+                        </Document>
+                      ) : null}
 
-                    {/* 💡 عرض كافة الأختام الرئيسية المكررة */}
-                    {stampData &&
-                      customStampsList.map((stamp, index) => (
+                      {/* 💡 عرض الأختام مع إصلاح التشويه وخصائص Custom Image */}
+                      {stampData &&
+                        customStampsList.map((stamp, index) => (
+                          <motion.div
+                            key={stamp.id}
+                            ref={(el) => (mainStampRefs.current[stamp.id] = el)}
+                            drag
+                            dragConstraints={constraintsRef}
+                            dragMomentum={false}
+                            initial={{
+                              opacity: 0,
+                              x: index * 20,
+                              y: index * 20,
+                            }}
+                            animate={{
+                              scale: stampScale,
+                              rotate: stampRotation,
+                              opacity: 1,
+                            }}
+                            style={{
+                              originX: 0.5,
+                              originY: 0.5,
+                              top: "5%",
+                              left: "30%",
+                            }}
+                            // 🚀 كلاسات منع التشويه
+                            className="absolute w-72 h-max z-50 cursor-grab active:cursor-grabbing drop-shadow-2xl [&>div>svg]:w-full [&>div>svg]:h-auto"
+                          >
+                            {useCustomStamp && customStampBase64 ? (
+                              // 💡 عرض الختم المخصص كصورة بدلاً من SVG
+                              <img
+                                src={customStampBase64}
+                                alt="Custom Stamp"
+                                className="w-full h-auto pointer-events-none object-contain"
+                              />
+                            ) : (
+                              <div
+                                dangerouslySetInnerHTML={{
+                                  __html: renderMainStampPreview(),
+                                }}
+                                className="pointer-events-none w-full"
+                              />
+                            )}
+                            {customStampsList.length > 1 && (
+                              <div className="absolute -top-3 -right-3 bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm z-10">
+                                {index + 1}
+                              </div>
+                            )}
+                          </motion.div>
+                        ))}
+
+                      {/* الـ QR كالمعتاد */}
+                      {stampData && (
                         <motion.div
-                          key={stamp.id}
-                          ref={(el) => (mainStampRefs.current[stamp.id] = el)}
+                          ref={qrStampRef}
                           drag
                           dragConstraints={constraintsRef}
                           dragMomentum={false}
-                          initial={{ opacity: 0, x: index * 20, y: index * 20 }}
+                          initial={{ opacity: 0, x: 0, y: 0 }}
                           animate={{
-                            scale: stampScale,
-                            rotate: stampRotation,
+                            scale: qrScale,
+                            rotate: qrRotation,
                             opacity: 1,
                           }}
                           style={{
                             originX: 0.5,
                             originY: 0.5,
-                            top: "20%",
-                            left: "30%",
+                            top: "5%",
+                            left: "5%",
                           }}
-                          className="absolute w-72 z-50 cursor-grab active:cursor-grabbing drop-shadow-2xl"
+                          className="absolute w-32 h-max z-50 cursor-grab active:cursor-grabbing drop-shadow-xl [&>div>svg]:w-full [&>div>svg]:h-auto"
                         >
-                          {useCustomStamp && customStampBase64 ? (
-                            <img
-                              src={customStampBase64}
-                              alt="Main Stamp"
-                              className="w-full h-auto pointer-events-none"
-                            />
-                          ) : (
-                            <div
-                              dangerouslySetInnerHTML={{
-                                __html: renderMainStampPreview(),
-                              }}
-                              className="pointer-events-none"
-                            />
-                          )}
-                          {/* إشارة صغيرة إذا كان هناك أكثر من ختم */}
-                          {customStampsList.length > 1 && (
-                            <div className="absolute -top-3 -right-3 bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm">
-                              {index + 1}
-                            </div>
-                          )}
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: renderQrStampPreview(),
+                            }}
+                            className="pointer-events-none w-full"
+                          />
                         </motion.div>
-                      ))}
-
-                    {/* الـ QR كالمعتاد */}
-                    {stampData && (
-                      <motion.div
-                        ref={qrStampRef}
-                        drag
-                        dragConstraints={constraintsRef}
-                        dragMomentum={false}
-                        initial={{ opacity: 0, x: 0, y: 0 }}
-                        animate={{
-                          scale: qrScale,
-                          rotate: qrRotation,
-                          opacity: 1,
-                        }}
-                        style={{
-                          originX: 0.5,
-                          originY: 0.5,
-                          bottom: "10%",
-                          left: "10%",
-                        }}
-                        className="absolute w-32 z-50 cursor-grab active:cursor-grabbing drop-shadow-xl"
-                      >
-                        <div
-                          dangerouslySetInnerHTML={{
-                            __html: renderQrStampPreview(),
-                          }}
-                          className="pointer-events-none"
-                        />
-                      </motion.div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

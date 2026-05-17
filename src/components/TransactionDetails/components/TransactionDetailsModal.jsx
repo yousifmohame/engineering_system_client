@@ -95,6 +95,60 @@ import {
 
 import FolderViewerWindow from "../../../pages/Transactions/TransactionFiles/components/FolderViewerWindow";
 
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => (
+  <span
+    className={`
+      inline-flex items-center justify-center gap-1
+      ${vertical ? "flex-col" : "flex-row"}
+      ${className}
+    `}
+  >
+    {Icon && <Icon className={iconClassName || "h-4 w-4"} />}
+
+    {text && (
+      <span className={textClassName || "text-[9px] font-black leading-none"}>
+        {text}
+      </span>
+    )}
+  </span>
+);
+
+const getTabIconText = (label = "") => {
+  const clean = String(label).replace(/[()]/g, " ").trim();
+  if (!clean) return "";
+
+  const parts = clean.split(/\s+/).filter(Boolean);
+  return parts.length > 1 ? parts[0] : clean.slice(0, 5);
+};
+
+const SidebarMiniMetric = ({ label, value, tone = "blue" }) => {
+  const tones = {
+    blue: "border-blue-200 bg-blue-50 text-blue-700",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    rose: "border-rose-200 bg-rose-50 text-rose-700",
+  };
+
+  return (
+    <div
+      className={`rounded-xl border px-1.5 py-1.5 text-center shadow-sm ${
+        tones[tone] || tones.blue
+      }`}
+    >
+      <div className="text-[7px] font-black opacity-70">{label}</div>
+      <div className="mt-0.5 truncate font-mono text-[9px] font-black">
+        {value}
+      </div>
+    </div>
+  );
+};
+
 export const TransactionDetailsModal = ({
   isOpen,
   onClose,
@@ -104,14 +158,7 @@ export const TransactionDetailsModal = ({
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("basic");
 
-  // حالات فتح/إغلاق المجموعات في الشريط الجانبي
-  const [openSidebarGroups, setOpenSidebarGroups] = useState({
-    main: true,
-    engineering: true,
-    documents: true,
-    financial: true,
-    others: false,
-  });
+  // المجموعات تبقى مفتوحة دائمًا في الشريط الجانبي
 
   // حالة التحكم بالشريط الجانبي في الموبايل
   const [isSidebarOpenMobile, setIsSidebarOpenMobile] = useState(false);
@@ -129,10 +176,6 @@ export const TransactionDetailsModal = ({
     },
     enabled: isOpen,
   });
-
-  const toggleSidebarGroup = (group) => {
-    setOpenSidebarGroups((prev) => ({ ...prev, [group]: !prev[group] }));
-  };
 
   const backendUrl = api.defaults.baseURL.replace("/api", "");
 
@@ -1333,9 +1376,10 @@ export const TransactionDetailsModal = ({
     isApprovalRequest: tx?.type?.includes("تصحيح وضع"),
   };
 
-  // 💡 دالة تصيير التبويبات - تصميم أزرق بترولي / ذهبي
+  // 💡 دالة تصيير التبويبات - تصميم Premium مع IconWithText
   const renderTabButton = (id, label, Icon, activeColor = "#c5983c") => {
     const isActive = activeTab === id;
+    const iconText = "";
 
     return (
       <button
@@ -1343,78 +1387,76 @@ export const TransactionDetailsModal = ({
           setActiveTab(id);
           setIsSidebarOpenMobile(false);
         }}
-        className={`tab-item group relative mx-2 mb-1 flex w-[calc(100%-16px)] items-start gap-3 rounded-2xl px-3.5 py-3 text-right transition-all duration-300 ${
+        className={`tab-item group relative mx-1.5 mb-0.5 flex w-[calc(100%-12px)] items-center gap-1.5 overflow-hidden rounded-[14px] border px-1.5 py-1.5 text-right transition-all duration-300 ${
           isActive
-            ? "border border-[#d8b46a]/45 bg-gradient-to-l from-[#f8efe0] via-white to-[#eef7f6] text-[#123f59] shadow-[0_10px_24px_rgba(18,63,89,0.10)]"
-            : "border border-transparent text-[#60707a] hover:border-[#d8b46a]/25 hover:bg-[#fbf8f1] hover:text-[#123f59]"
+            ? "border-[#d8b46a]/60 bg-gradient-to-l from-[#f8efe0] via-white to-[#eef7f6] text-[#123f59] shadow-[0_14px_30px_rgba(18,63,89,0.12)]"
+            : "border-transparent bg-white/55 text-[#60707a] hover:border-[#d8b46a]/35 hover:bg-[#fbf8f1] hover:text-[#123f59]"
         }`}
         title={label}
         type="button"
       >
         <div
-          className={`absolute right-0 top-3 bottom-3 w-[3px] rounded-full transition-all duration-300 ${
-            isActive ? "opacity-100" : "opacity-0 group-hover:opacity-60"
+          className={`absolute inset-y-3 right-0 w-[4px] rounded-full transition-all duration-300 ${
+            isActive ? "opacity-100" : "opacity-0 group-hover:opacity-70"
           }`}
           style={{ backgroundColor: isActive ? activeColor : "#d8b46a" }}
         />
 
         <span
-          className={`grid h-9 w-9 shrink-0 place-items-center rounded-2xl border transition-all duration-300 ${
+          className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg border transition-all duration-300 ${
             isActive
-              ? "border-[#d8b46a]/45 bg-[#123f59] text-[#e2bf74] shadow-sm"
-              : "border-[#e8ddc8] bg-white text-[#78909a] group-hover:border-[#d8b46a]/40 group-hover:text-[#c5983c]"
+              ? "border-[#d8b46a]/50 bg-[#123f59] text-[#e2bf74] shadow-[0_10px_20px_rgba(18,63,89,0.18)]"
+              : "border-[#e8ddc8] bg-white text-[#78909a] group-hover:border-[#d8b46a]/50 group-hover:text-[#c5983c]"
           }`}
         >
-          <Icon
-            className={`h-[18px] w-[18px] transition-transform duration-300 ${
+          <IconWithText
+            icon={Icon}
+            text={iconText}
+            vertical
+            iconClassName={`h-[16px] w-[16px] transition-transform duration-300 ${
               isActive ? "scale-110" : "group-hover:scale-110"
             }`}
-            strokeWidth={isActive ? 2.7 : 2.1}
+            textClassName="hidden"
           />
         </span>
 
         <span
-          className={`min-w-0 flex-1 whitespace-normal pt-1 text-[12px] leading-relaxed ${
+          className={`min-w-0 flex-1 truncate whitespace-nowrap text-[10.5px] leading-4 ${
             isActive ? "font-black" : "font-extrabold"
           }`}
         >
           {label}
         </span>
+
+        {isActive && (
+          <span
+            className="h-2 w-2 shrink-0 rounded-full shadow-[0_0_0_4px_rgba(216,180,106,0.16)]"
+            style={{ backgroundColor: activeColor }}
+          />
+        )}
       </button>
     );
   };
 
-  // 💡 دالة تصيير المجموعات - بدون مربعات بيضاء مزعجة
+  // 💡 دالة تصيير المجموعات - تبقى مفتوحة دائمًا
   const renderSidebarGroup = (title, groupId, icon, children) => {
-    const isOpen = openSidebarGroups[groupId];
-
     return (
-      <div className="mb-2 hidden has-[.tab-item]:block">
-        <button
-          onClick={() => toggleSidebarGroup(groupId)}
-          className="flex w-full items-center justify-between gap-3 border-y border-[#d8b46a]/15 bg-[#0f3448]/95 px-4 py-3 text-right transition-colors hover:bg-[#123f59]"
-          type="button"
+      <div className="mb-1.5 overflow-hidden rounded-[16px] border border-[#d8b46a]/20 bg-white shadow-[0_10px_26px_rgba(18,63,89,0.06)]">
+        <div
+          className="flex w-full items-center justify-between gap-3 bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490] px-2.5 py-2 text-right"
         >
-          <div className="flex min-w-0 items-center gap-2 text-[12px] font-black leading-snug text-white">
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-2xl bg-[#e2bf74]/15 text-[#e2bf74]">
+          <div className="flex min-w-0 items-center gap-2 text-[11.5px] font-black leading-snug text-white">
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg border border-[#e2bf74]/25 bg-[#e2bf74]/15 text-[#e2bf74]">
               {icon}
             </span>
             <span className="truncate">{title}</span>
           </div>
 
-          <ChevronDown
-            className={`h-4 w-4 shrink-0 text-[#e2bf74] transition-transform duration-300 ${
-              isOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
+          <span className="h-2 w-2 shrink-0 rounded-full bg-[#e2bf74] shadow-[0_0_10px_rgba(226,191,116,0.55)]" />
+        </div>
 
-        <div
-          className={`overflow-hidden transition-all duration-300 ${
-            isOpen ? "max-h-[1500px] opacity-100" : "max-h-0 opacity-0"
-          }`}
-        >
-          <div className="space-y-1 bg-gradient-to-b from-white via-[#fbf8f1]/35 to-white py-2">
+        <div className="overflow-visible opacity-100">
+          <div className="space-y-0.5 bg-gradient-to-b from-white via-[#fbf8f1]/55 to-white py-2">
             {children}
           </div>
         </div>
@@ -1427,7 +1469,7 @@ export const TransactionDetailsModal = ({
   // ==========================================================
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#08111c]/80 p-2 pt-16 backdrop-blur-sm animate-in fade-in duration-200 md:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#08111c]/80 p-1 backdrop-blur-sm animate-in fade-in duration-200 md:p-2"
       dir="rtl"
       onClick={onClose}
     >
@@ -1507,154 +1549,260 @@ export const TransactionDetailsModal = ({
 
       {/* --- Main Modal Container --- */}
       <div
-        className="relative flex h-[88vh] w-[98vw] max-w-[1600px] flex-col overflow-hidden rounded-[30px] border border-[#d8b46a]/25 bg-white shadow-[0_30px_90px_rgba(8,17,28,0.45)]"
+        className="relative flex h-[calc(100dvh-8px)] max-h-[calc(100dvh-8px)] w-[calc(100vw-8px)] max-w-none flex-col overflow-hidden rounded-[22px] border border-[#d8b46a]/30 bg-white shadow-[0_24px_80px_rgba(8,17,28,0.48)]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* --- Header (Responsive) --- */}
-        <div className="relative shrink-0 overflow-hidden border-b border-[#d8b46a]/20 bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59] px-4 py-3 text-white md:px-6 md:py-4">
-          <div className="relative z-10 flex flex-wrap items-center gap-2 md:gap-4">
-            {/* زر القائمة الجانبية للموبايل */}
-            <button
-              onClick={() => setIsSidebarOpenMobile(!isSidebarOpenMobile)}
-              className="grid h-9 w-9 place-items-center rounded-2xl border border-white/15 bg-white/10 text-[#e2bf74] transition hover:bg-white/15 md:hidden"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-
-            <span className="rounded-2xl border border-[#e2bf74]/25 bg-[#e2bf74]/12 px-2 py-1 font-mono text-xs font-black text-[#e2bf74] md:px-3 md:text-sm">
-              {tx.ref || tx.id?.slice(-6)}
-            </span>
-            <span className="flex items-center gap-1.5 text-sm font-black text-white md:gap-2 md:text-[16px]">
-              <User className="h-4 w-4 text-[#e2bf74] md:h-5 md:w-5" />{" "}
-              {safeText(tx.client || tx.owner)}
-            </span>
-            <span className="border-white/15 text-xs font-bold text-white/55 md:text-sm sm:border-r sm:pr-4">
-              {tx.type}
-            </span>
-            {isFrozen && (
-              <span className="flex items-center gap-1 rounded-full border border-amber-300/25 bg-amber-400/12 px-2 py-1 text-[10px] font-bold text-amber-100">
-                <Archive className="w-3 h-3" /> مجمّدة
-              </span>
-            )}
+        {/* --- Header Premium Responsive --- */}
+        <div className="relative shrink-0 overflow-hidden border-b border-[#d8b46a]/20 bg-gradient-to-l from-[#06111d] via-[#0f3448] to-[#123f59] px-3 py-2 text-white md:px-4">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-[#e2bf74]/18 blur-3xl" />
+            <div className="absolute left-[22%] bottom-[-90px] h-56 w-56 rounded-full bg-cyan-400/10 blur-3xl" />
           </div>
 
-          <div className="relative z-10 mt-3 flex items-center gap-2 self-end overflow-x-auto pb-1 sm:absolute sm:left-4 sm:top-1/2 sm:mt-0 sm:-translate-y-1/2 sm:self-auto sm:pb-0 md:left-6">
-            {/* 🚀 الزر الجديد: ملفات المعاملة */}
-            <AccessControl
-              code="File_ACTION_QUICK_EDIT"
-              permissionNumber={1}
-              name="ملفات المعاملة"
-              moduleName="الملفات والمرفقات"
-              tabName="ملفات المعاملة"
-            >
+          <div className="relative z-10 flex flex-col gap-1.5 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
               <button
-                onClick={() => setIsFolderViewerOpen(true)}
-                className="flex items-center gap-1.5 whitespace-nowrap rounded-2xl border border-emerald-300/25 bg-emerald-400/12 px-3 py-2 text-[10px] font-black text-emerald-100 shadow-sm transition hover:bg-emerald-400/20 md:px-4 md:text-xs"
+                onClick={() => setIsSidebarOpenMobile(!isSidebarOpenMobile)}
+                className="grid h-7 w-7 shrink-0 place-items-center rounded-2xl border border-white/15 bg-white/10 text-[#e2bf74] transition hover:bg-white/15 md:hidden"
+                type="button"
               >
-                <FolderOpen className="w-3.5 h-3.5 md:w-4 md:h-4" />{" "}
-                <span>ملفات المعاملة</span>
+                <Menu className="h-4.5 w-4.5" />
               </button>
-            </AccessControl>
-            <AccessControl
-              code="Transaction_ACTION_TOGGLE_FREEZE"
-              permissionNumber={2}
-              name="تجميد/تنشيط المعاملة"
-              moduleName="المعاملات"
-              tabName="تفاصيل المعاملة"
-            >
-              <button
-                onClick={() => freezeMutation.mutate(tx.id)}
-                disabled={freezeMutation.isPending}
-                className="flex items-center gap-1.5 whitespace-nowrap rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-[10px] font-bold text-white shadow-sm transition hover:bg-white/15 md:px-4 md:text-xs"
-              >
-                {isFrozen ? (
-                  <RefreshCw className="w-3.5 h-3.5 md:w-4 md:h-4 text-green-600" />
-                ) : (
-                  <Archive className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-600" />
-                )}
-                <span className="hidden sm:inline">
-                  {isFrozen ? "تنشيط" : "تجميد"}
-                </span>
-              </button>
-            </AccessControl>
-            <AccessControl
-              code="Transaction_ACTION_DELETE"
-              permissionNumber={3}
-              name="حذف المعاملة"
-              moduleName="المعاملات"
-              tabName="تفاصيل المعاملة"
-            >
-              <button
-                onClick={() => {
-                  if (window.confirm("حذف نهائي؟ لا يمكن التراجع!"))
-                    deleteMutation.mutate(tx.id);
-                }}
-                disabled={deleteMutation.isPending}
-                className="flex items-center gap-1.5 whitespace-nowrap rounded-2xl border border-rose-300/25 bg-rose-500/12 px-3 py-2 text-[10px] font-bold text-rose-100 shadow-sm transition hover:bg-rose-500/20 md:px-4 md:text-xs"
-              >
-                <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />{" "}
-                <span className="hidden sm:inline">حذف</span>
-              </button>
-            </AccessControl>
 
-            <div className="mx-1 hidden h-6 w-px bg-white/15 sm:block"></div>
-            <button
-              onClick={onClose}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl border border-white/15 bg-white/10 text-white/70 transition hover:border-rose-300/30 hover:bg-rose-500 hover:text-white md:h-10 md:w-10"
-            >
-              <X className="w-5 h-5 md:w-6 md:h-6" />
-            </button>
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[#e2bf74]/35 bg-white/12 text-[#e2bf74] shadow-[0_10px_24px_rgba(0,0,0,0.18)]">
+                <IconWithText
+                  icon={FileText}
+                  text="معاملة"
+                  vertical
+                  iconClassName="h-5 w-5"
+                  textClassName="hidden"
+                />
+              </span>
+
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-2xl border border-[#e2bf74]/25 bg-[#e2bf74]/12 px-3 py-1 font-mono text-xs font-black text-[#e2bf74]">
+                    {tx.ref || tx.id?.slice(-6)}
+                  </span>
+
+                  {isFrozen && (
+                    <span className="flex items-center gap-1 rounded-full border border-amber-300/25 bg-amber-400/12 px-2.5 py-1 text-[10px] font-black text-amber-100">
+                      <Archive className="h-3.5 w-3.5" />
+                      مجمّدة
+                    </span>
+                  )}
+                </div>
+
+                <h2 className="mt-1 truncate text-sm font-black md:text-base">
+                  {safeText(tx.client || tx.owner)}
+                </h2>
+
+                <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] font-bold text-white/55">
+                  <span>{tx.type}</span>
+                  <span className="hidden h-1 w-1 rounded-full bg-white/30 sm:block" />
+                  <span>الحالة: {tx.status || "جارية"}</span>
+                  <span className="hidden h-1 w-1 rounded-full bg-white/30 sm:block" />
+                  <span>التحصيل: {collectionPercent}%</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex min-w-0 flex-wrap items-center gap-2 xl:justify-end">
+              <AccessControl
+                code="File_ACTION_QUICK_EDIT"
+                permissionNumber={1}
+                name="ملفات المعاملة"
+                moduleName="الملفات والمرفقات"
+                tabName="ملفات المعاملة"
+              >
+                <button
+                  onClick={() => setIsFolderViewerOpen(true)}
+                  className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-emerald-300/25 bg-emerald-400/12 px-3 text-[10px] font-black text-emerald-100 shadow-sm transition hover:-translate-y-[1px] hover:bg-emerald-400/20 md:px-4 md:text-xs"
+                  type="button"
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  <span>ملفات المعاملة</span>
+                </button>
+              </AccessControl>
+
+              <AccessControl
+                code="Transaction_ACTION_TOGGLE_FREEZE"
+                permissionNumber={2}
+                name="تجميد/تنشيط المعاملة"
+                moduleName="المعاملات"
+                tabName="تفاصيل المعاملة"
+              >
+                <button
+                  onClick={() => freezeMutation.mutate(tx.id)}
+                  disabled={freezeMutation.isPending}
+                  className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 text-[10px] font-black text-white shadow-sm transition hover:-translate-y-[1px] hover:bg-white/15 disabled:opacity-50 md:px-4 md:text-xs"
+                  type="button"
+                >
+                  {isFrozen ? <RefreshCw className="h-4 w-4 text-emerald-300" /> : <Archive className="h-4 w-4 text-amber-300" />}
+                  <span>{isFrozen ? "تنشيط" : "تجميد"}</span>
+                </button>
+              </AccessControl>
+
+              <AccessControl
+                code="Transaction_ACTION_DELETE"
+                permissionNumber={3}
+                name="حذف المعاملة"
+                moduleName="المعاملات"
+                tabName="تفاصيل المعاملة"
+              >
+                <button
+                  onClick={() => {
+                    if (window.confirm("حذف نهائي؟ لا يمكن التراجع!"))
+                      deleteMutation.mutate(tx.id);
+                  }}
+                  disabled={deleteMutation.isPending}
+                  className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-rose-300/25 bg-rose-500/12 px-3 text-[10px] font-black text-rose-100 shadow-sm transition hover:-translate-y-[1px] hover:bg-rose-500/20 disabled:opacity-50 md:px-4 md:text-xs"
+                  type="button"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">حذف</span>
+                </button>
+              </AccessControl>
+
+              <button
+                onClick={onClose}
+                className="grid h-7 w-7 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-white/70 transition hover:border-rose-300/30 hover:bg-rose-500 hover:text-white"
+                type="button"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* 🚀 Pipeline Strip (Dynamic & Interactive) */}
-        <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-[#d8b46a]/20 bg-gradient-to-l from-[#fbf8f1] via-white to-[#eef7f6] px-4 py-2 custom-scrollbar-slim">
-          {dynamicPipeline.map((step, i, arr) => {
-            // تحديد حالة المرحلة بناءً على الـ index
-            const isCompleted =
-              i < activeStepIndex ||
-              (i === activeStepIndex && tx.status === "مكتملة");
-            const isActive = i === activeStepIndex && tx.status !== "مكتملة";
+        {/* 🚀 Pipeline Strip Premium */}
+        <div className="shrink-0 overflow-x-auto border-b border-[#d8b46a]/20 bg-gradient-to-l from-[#fbf8f1] via-white to-[#eef7f6] px-2.5 py-1.5 custom-scrollbar-slim">
+          <div className="flex min-w-max items-center gap-2">
+            {dynamicPipeline.map((step, i, arr) => {
+              const isCompleted =
+                i < activeStepIndex ||
+                (i === activeStepIndex && tx.status === "مكتملة");
+              const isActive = i === activeStepIndex && tx.status !== "مكتملة";
 
-            return (
-              <React.Fragment key={step}>
-                <div
-                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-black whitespace-nowrap border transition-all
-                    ${
+              return (
+                <React.Fragment key={step}>
+                  <div
+                    className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-1 text-[9.5px] font-black whitespace-nowrap transition-all ${
                       isCompleted
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm"
                         : isActive
-                          ? "border-[#d8b46a]/45 bg-[#123f59] text-[#e2bf74] shadow-[0_0_0_3px_rgba(216,180,106,0.16)]"
+                          ? "border-[#d8b46a]/60 bg-[#123f59] text-[#e2bf74] shadow-[0_0_0_4px_rgba(216,180,106,0.15)]"
                           : "border-[#e8ddc8] bg-white text-[#64748b]"
                     }`}
-                >
-                  {isCompleted ? (
-                    <Check className="w-3.5 h-3.5" />
-                  ) : isActive ? (
-                    <Activity className="w-3 h-3 animate-pulse" /> // أيقونة متحركة للمرحلة الحالية
-                  ) : (
-                    <Circle className="w-2.5 h-2.5" />
-                  )}{" "}
-                  <span>{step}</span>
-                </div>
+                  >
+                    <span
+                      className={`grid h-6 w-6 place-items-center rounded-lg ${
+                        isCompleted
+                          ? "bg-emerald-600 text-white"
+                          : isActive
+                            ? "bg-[#e2bf74]/15 text-[#e2bf74]"
+                            : "bg-[#fbf8f1] text-[#94a3b8]"
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <Check className="h-3.5 w-3.5" />
+                      ) : isActive ? (
+                        <Activity className="h-3.5 w-3.5 animate-pulse" />
+                      ) : (
+                        <Circle className="h-2.5 w-2.5" />
+                      )}
+                    </span>
+                    <span>{step}</span>
+                  </div>
 
-                {/* السهم بين المراحل */}
-                {i < arr.length - 1 && (
-                  <ArrowLeftRight
-                    className={`w-2.5 h-2.5 md:w-3 md:h-3 mx-0.5 md:mx-1 shrink-0 transition-colors
-                      ${i < activeStepIndex ? "text-emerald-400" : "text-[#d8b46a]/45"}`}
-                  />
-                )}
-              </React.Fragment>
-            );
-          })}
+                  {i < arr.length - 1 && (
+                    <ArrowLeftRight
+                      className={`h-3.5 w-3.5 shrink-0 transition-colors ${
+                        i < activeStepIndex ? "text-emerald-400" : "text-[#d8b46a]/55"
+                      }`}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
         </div>
 
         {/* Layout Wrapper for Sidebar and Content */}
-        <div className="flex flex-1 overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white">
+        <div className="relative flex min-h-0 flex-1 overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
+          dir="ltr">
+          {isSidebarOpenMobile && (
+            <button
+              className="fixed inset-0 z-30 bg-[#06111d]/50 backdrop-blur-sm md:hidden"
+              onClick={() => setIsSidebarOpenMobile(false)}
+              type="button"
+              aria-label="إغلاق القائمة"
+            />
+          )}
+
           {/* 💡 Sidebar Tabs (Right in RTL) - Updated Layout */}
-          <div className={`w-[292px] shrink-0 overflow-y-auto border-l border-[#d8b46a]/20 bg-white pb-10 shadow-[8px_0_32px_-24px_rgba(8,17,28,0.35)] custom-scrollbar-slim z-10 flex-col ${isSidebarOpenMobile ? "flex" : "hidden md:flex"}`}>
+          <div
+            className={`order-2 fixed inset-y-0 right-0 z-40 w-[300px] max-w-[88vw] flex-col overflow-hidden border-l border-[#d8b46a]/20 bg-white shadow-[-18px_0_55px_rgba(8,17,28,0.28)] transition-transform duration-300 md:static md:z-10 md:flex md:h-full md:min-h-0 md:w-[300px] md:shrink-0 md:translate-x-0 md:shadow-[8px_0_32px_-24px_rgba(8,17,28,0.35)] ${
+              isSidebarOpenMobile ? "flex translate-x-0" : "hidden translate-x-full md:flex"
+            }`}
+            dir="rtl"
+          >
+            <div className="shrink-0 border-b border-[#d8b46a]/20 bg-white/95 px-3 py-3 backdrop-blur-xl">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-[#123f59] text-[#e2bf74]">
+                    <IconWithText
+                      icon={FolderCog}
+                      text="أقسام"
+                      vertical
+                      iconClassName="h-4 w-4"
+                      textClassName="hidden"
+                    />
+                  </span>
+
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-black text-[#123f59]">
+                      أقسام المعاملة
+                    </h3>
+                    <p className="truncate text-[10px] font-bold text-[#64748b]">
+                      اختر الشاشة المطلوبة للتنقل
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setIsSidebarOpenMobile(false)}
+                  className="grid h-9 w-9 place-items-center rounded-xl border border-rose-200 bg-rose-50 text-rose-600 md:hidden"
+                  type="button"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-1.5">
+                <SidebarMiniMetric
+                  label="تحصيل"
+                  value={`${collectionPercent}%`}
+                  tone="emerald"
+                />
+                <SidebarMiniMetric
+                  label="مدفوع"
+                  value={safeNum(totalPaid).toLocaleString()}
+                  tone="blue"
+                />
+                <SidebarMiniMetric
+                  label="متبقي"
+                  value={safeNum(remaining).toLocaleString()}
+                  tone="rose"
+                />
+              </div>
+            </div>
+
+            {/* Zone scrollable réelle de la sidebar */}
+            <div className="min-h-0 flex-1 overflow-y-scroll overflow-x-hidden pb-6 custom-scrollbar-slim">
+
             {/* المجموعة الرئيسية */}
+
 
             {renderSidebarGroup(
               "البيانات وسير العمل",
@@ -2209,13 +2357,17 @@ export const TransactionDetailsModal = ({
                 )}
               </AccessControl>
             </div>
+            </div>
           </div>
 
           {/* 💡 Dynamic Content Area (Left in RTL) */}
           <div
-            className={`relative flex-1 overflow-y-auto custom-scrollbar-slim ${isSidebarOpenMobile ? "hidden md:block" : "block"}`}
+            className={`order-1 relative h-full min-h-0 min-w-0 flex-1 basis-0 overflow-hidden ${isSidebarOpenMobile ? "hidden md:block" : "block"}`}
+            dir="rtl"
           >
-            <div className="mx-auto min-h-full w-full p-3 md:p-5">
+            <div
+              className="h-full min-h-0 w-full overflow-y-scroll overflow-x-hidden overscroll-contain custom-scrollbar-slim"
+            >
               {/* المكونات الأساسية المتوفرة حالياً */}
               {activeTab === "basic" && <BasicTab {...tabContext} />}
               {activeTab === "request_data" && (
@@ -2262,7 +2414,13 @@ export const TransactionDetailsModal = ({
                 "logs",
               ].includes(activeTab) && (
                 <div className="flex h-full min-h-[400px] flex-col items-center justify-center rounded-[28px] border border-dashed border-[#d8b46a]/45 bg-white/75 text-center text-[#64748b] shadow-[0_14px_34px_rgba(18,63,89,0.08)]">
-                  <FolderCog className="mb-4 h-16 w-16 text-[#c5983c]/35" />
+                  <IconWithText
+                    icon={FolderCog}
+                    text="قريباً"
+                    vertical
+                    iconClassName="h-16 w-16 text-[#c5983c]/35"
+                    textClassName="text-[9px] font-black text-[#c5983c]/50"
+                  />
                   <h3 className="mb-2 text-xl font-black text-[#123f59]">
                     جاري استكمال التبويب
                   </h3>
