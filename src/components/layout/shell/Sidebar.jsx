@@ -36,7 +36,7 @@ const Sidebar = () => {
   const userPermissions = user?.permissions || [];
   const isSuperAdmin = user?.email === "admin@wms.com";
 
-  // ✅ largeur comme avant
+  // ✅ garder 300px pour ne pas cacher la fenêtre principale
   const sbWidth = Math.max(Number(sidebarConfig?.width) || 300, 300);
 
   const logoUrl = sidebarConfig?.logoUrl || "/logo.jpeg";
@@ -156,12 +156,13 @@ const Sidebar = () => {
 
   return (
     <aside
+      dir="rtl"
       style={{
         width: `${sbWidth}px`,
       }}
       className="
         fixed right-0 top-0 z-40 flex h-screen flex-col overflow-hidden
-        direction-rtl border-l border-[#c5983c]/20
+        border-l border-[#c5983c]/20
         bg-[#0d1824]
         shadow-[0_0_45px_rgba(0,0,0,0.45)]
         transition-all duration-300
@@ -178,7 +179,7 @@ const Sidebar = () => {
       </div>
 
       {/* Logo */}
-      <div className="relative z-10 shrink-0 px-5 pt-5">
+      <div className="relative z-10 shrink-0 px-4 pt-4">
         <div className="rounded-[22px] border border-[#e2bf74]/35 bg-gradient-to-br from-white/[0.10] via-[#123f59]/25 to-[#c5983c]/10 p-2 shadow-[0_18px_42px_rgba(0,0,0,0.30)] backdrop-blur-xl">
           <div className="flex h-[82px] items-center justify-center overflow-hidden rounded-2xl border border-[#c5983c]/20 bg-white shadow-inner">
             <img
@@ -217,7 +218,7 @@ const Sidebar = () => {
 
       {/* Pinned screens */}
       {pinnedItems.length > 0 && (
-        <div className="relative z-10 shrink-0 px-4 pb-3">
+        <div className="relative z-10 shrink-0 px-3 pb-3">
           <div className="mb-2 flex items-center justify-between px-1">
             <span className="text-[10px] font-black text-cyan-100">
               الشاشات المثبتة
@@ -239,7 +240,7 @@ const Sidebar = () => {
                   onClick={() => openScreen(item.id, item.label)}
                   className={clsx(
                     `
-                      group relative flex w-full items-center gap-1.5 overflow-hidden
+                      group relative flex min-h-[54px] w-full items-center gap-1.5 overflow-visible
                       rounded-2xl px-2 py-2.5 text-right transition-all duration-300
                     `,
                     isActive
@@ -269,7 +270,7 @@ const Sidebar = () => {
                     }}
                     className={clsx(
                       `
-                        relative z-10 grid h-6 w-6 shrink-0 place-items-center
+                        relative z-10 grid h-7 w-7 shrink-0 place-items-center
                         rounded-lg border transition-all duration-200
                       `,
                       isPinned
@@ -278,14 +279,17 @@ const Sidebar = () => {
                     )}
                     title="إلغاء التثبيت"
                   >
-                    <Pin size={10} className={isPinned ? "fill-[#c5983c]" : ""} />
+                    <Pin
+                      size={11}
+                      className={isPinned ? "fill-[#c5983c]" : ""}
+                    />
                   </span>
 
-                  <span className="relative z-10 min-w-0 flex-1 overflow-hidden">
+                  <span className="relative z-10 min-w-0 flex-1">
                     <span
                       className="
-                        block overflow-hidden whitespace-nowrap text-ellipsis
-                        text-[12.5px] font-black leading-5
+                        block break-words whitespace-normal
+                        text-right text-[10.8px] font-black leading-5
                       "
                       title={item.label}
                     >
@@ -294,8 +298,8 @@ const Sidebar = () => {
 
                     <span
                       className="
-                        mt-0.5 block overflow-hidden whitespace-nowrap text-ellipsis
-                        text-[8.5px] font-bold leading-4 text-slate-500
+                        mt-0.5 block break-words whitespace-normal
+                        text-right text-[8px] font-bold leading-4 text-slate-500
                       "
                       title={item.categoryTitle}
                     >
@@ -359,8 +363,8 @@ const Sidebar = () => {
                             onClick={() => openScreen(item.id, item.label)}
                             className={clsx(
                               `
-                                group relative flex w-full items-center justify-between gap-1.5 overflow-hidden
-                                rounded-2xl px-2.5 py-3 text-right transition-all duration-300
+                                group relative flex min-h-[54px] w-full items-center justify-between gap-1.5 overflow-visible
+                                rounded-2xl px-2 py-2.5 text-right transition-all duration-300
                               `,
                               isActive
                                 ? "border border-[#e2bf74]/55 bg-gradient-to-l from-[#0e7490] via-[#123f59] to-[#08111c] text-white shadow-[0_14px_32px_rgba(14,116,144,0.30)]"
@@ -378,9 +382,9 @@ const Sidebar = () => {
 
                             <span
                               className="
-                                relative z-10 min-w-0 flex-1 overflow-hidden
-                                whitespace-nowrap text-ellipsis
-                                text-[12.5px] font-black leading-5
+                                relative z-10 min-w-0 flex-1
+                                break-words whitespace-normal
+                                text-right text-[10.8px] font-black leading-5
                               "
                               title={item.label}
                             >
@@ -426,8 +430,8 @@ const Sidebar = () => {
                   <div className="flex items-center justify-between gap-2">
                     <h3
                       className="
-                        min-w-0 flex-1 overflow-hidden whitespace-nowrap text-ellipsis
-                        text-[14px] font-black leading-5
+                        min-w-0 flex-1 break-words whitespace-normal
+                        text-right text-[12px] font-black leading-5
                         text-[#f5d99b]
                       "
                       title={category.title}
@@ -465,7 +469,7 @@ const Sidebar = () => {
                           onClick={() => openScreen(item.id, item.label)}
                           className={clsx(
                             `
-                              group relative flex w-full items-center gap-1.5 overflow-hidden
+                              group relative flex min-h-[54px] w-full items-center gap-1.5 overflow-visible
                               rounded-2xl px-2 py-2.5 text-right transition-all duration-300
                             `,
                             isActive
@@ -485,14 +489,14 @@ const Sidebar = () => {
                           {item.isFavorite && (
                             <span
                               className="
-                                relative z-10 grid h-6 w-6 shrink-0 place-items-center
+                                relative z-10 grid h-7 w-7 shrink-0 place-items-center
                                 rounded-lg border border-[#c5983c]/25
                                 bg-[#c5983c]/10 text-[#c5983c]
                               "
                               title="مفضلة"
                             >
                               <Star
-                                size={11}
+                                size={12}
                                 className="fill-[#c5983c] text-[#c5983c]"
                               />
                             </span>
@@ -501,12 +505,13 @@ const Sidebar = () => {
                           <span
                             className={clsx(
                               `
-                                relative z-10 min-w-0 flex-1 overflow-hidden
-                                whitespace-nowrap text-ellipsis leading-5
+                                relative z-10 min-w-0 flex-1
+                                break-words whitespace-normal
+                                text-right leading-5
                               `,
                               isActive
-                                ? "text-[12.5px] font-black"
-                                : "text-[12px] font-extrabold",
+                                ? "text-[10.8px] font-black"
+                                : "text-[10.8px] font-extrabold",
                             )}
                             title={item.label}
                           >
@@ -529,7 +534,7 @@ const Sidebar = () => {
                             }}
                             className={clsx(
                               `
-                                relative z-10 grid h-6 w-6 shrink-0 place-items-center
+                                relative z-10 grid h-7 w-7 shrink-0 place-items-center
                                 rounded-lg border transition-all duration-200
                               `,
                               isPinned
@@ -543,7 +548,7 @@ const Sidebar = () => {
                             }
                           >
                             <Pin
-                              size={10}
+                              size={11}
                               className={isPinned ? "fill-[#c5983c]" : ""}
                             />
                           </span>
@@ -573,11 +578,11 @@ const Sidebar = () => {
       <div className="relative z-10 shrink-0 border-t border-[#c5983c]/20 bg-gradient-to-l from-[#08111c]/92 via-[#0d1824]/92 to-[#123f59]/55 px-4 py-3 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 text-right">
-            <div className="truncate text-[10px] font-black text-slate-200">
+            <div className="break-words text-[10px] font-black text-slate-200">
               WMS System
             </div>
 
-            <div className="truncate text-[9px] font-mono text-slate-500">
+            <div className="break-words text-[9px] font-mono text-slate-500">
               Master List v2.0
             </div>
           </div>
