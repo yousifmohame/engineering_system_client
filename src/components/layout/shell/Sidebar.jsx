@@ -6,7 +6,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { usePermissionBuilder } from "../../../context/PermissionBuilderContext";
 import { DEFAULT_MENU_CATEGORIES } from "../../../constants/menuConstants";
 
-import { Search, Star, ShieldCheck, Layers, Pin } from "lucide-react";
+import { Search, Star, ShieldCheck, Pin } from "lucide-react";
 
 const formatScreenId = (id) => {
   const value = String(id || "");
@@ -29,13 +29,16 @@ const Sidebar = () => {
 
   const { user } = useAuth();
   const permissionBuilder = usePermissionBuilder();
+
   const isBuildMode =
     permissionBuilder?.isBuildMode || permissionBuilder?.isBuilderMode || false;
 
   const userPermissions = user?.permissions || [];
   const isSuperAdmin = user?.email === "admin@wms.com";
 
+  // ✅ largeur comme avant
   const sbWidth = Math.max(Number(sidebarConfig?.width) || 300, 300);
+
   const logoUrl = sidebarConfig?.logoUrl || "/logo.jpeg";
   const customLabels = sidebarConfig?.customLabels || {};
   const categoryOrder = sidebarConfig?.categoryOrder || [];
@@ -212,7 +215,7 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* Pinned screens - user controlled */}
+      {/* Pinned screens */}
       {pinnedItems.length > 0 && (
         <div className="relative z-10 shrink-0 px-4 pb-3">
           <div className="mb-2 flex items-center justify-between px-1">
@@ -228,6 +231,7 @@ const Sidebar = () => {
           <div className="space-y-2">
             {pinnedItems.map((item) => {
               const isActive = activeScreenId === item.id;
+              const isPinned = pinnedScreenIds.includes(item.id);
 
               return (
                 <button
@@ -235,48 +239,73 @@ const Sidebar = () => {
                   onClick={() => openScreen(item.id, item.label)}
                   className={clsx(
                     `
-                      group relative flex w-full items-center gap-2 overflow-hidden
-                      rounded-2xl px-3 py-2.5 text-right transition-all duration-300
+                      group relative flex w-full items-center gap-1.5 overflow-hidden
+                      rounded-2xl px-2 py-2.5 text-right transition-all duration-300
                     `,
                     isActive
                       ? "border border-[#e2bf74]/55 bg-gradient-to-l from-[#0e7490] via-[#123f59] to-[#08111c] text-white shadow-[0_14px_32px_rgba(14,116,144,0.30)]"
                       : "border border-cyan-400/20 bg-gradient-to-l from-[#123f59]/55 via-[#101d2b]/80 to-[#08111c]/80 text-slate-100 hover:border-[#e2bf74]/40 hover:bg-[#173a52] hover:text-white",
                   )}
                   type="button"
+                  title={item.label}
                 >
                   {isActive && (
                     <span className="absolute right-0 top-1/2 h-8 w-1.5 -translate-y-1/2 rounded-l-full bg-[#c5983c]" />
                   )}
 
-                  <button
+                  <span
+                    role="button"
+                    tabIndex={0}
                     onClick={(event) => {
                       event.stopPropagation();
                       togglePinnedScreen(item.id);
                     }}
-                    className="
-                      relative z-10 grid h-8 w-8 shrink-0 place-items-center
-                      rounded-xl border border-[#c5983c]/25
-                      bg-[#c5983c]/10 text-[#e2bf74]
-                      transition hover:bg-[#c5983c]/20
-                    "
-                    type="button"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        togglePinnedScreen(item.id);
+                      }
+                    }}
+                    className={clsx(
+                      `
+                        relative z-10 grid h-6 w-6 shrink-0 place-items-center
+                        rounded-lg border transition-all duration-200
+                      `,
+                      isPinned
+                        ? "border-[#e2bf74]/45 bg-[#e2bf74]/16 text-[#e2bf74]"
+                        : "border-[#243346] bg-[#08111c]/65 text-slate-400 hover:border-cyan-300/30 hover:bg-cyan-400/10 hover:text-cyan-200",
+                    )}
                     title="إلغاء التثبيت"
                   >
-                    <Pin size={14} className="fill-[#c5983c]" />
-                  </button>
+                    <Pin size={10} className={isPinned ? "fill-[#c5983c]" : ""} />
+                  </span>
 
-                  <span className="relative z-10 min-w-0 flex-1">
-                    <span className="block truncate text-[13px] font-black">
+                  <span className="relative z-10 min-w-0 flex-1 overflow-hidden">
+                    <span
+                      className="
+                        block overflow-hidden whitespace-nowrap text-ellipsis
+                        text-[12.5px] font-black leading-5
+                      "
+                      title={item.label}
+                    >
                       {item.label}
                     </span>
-                    <span className="mt-0.5 block truncate text-[9px] font-bold text-slate-500">
+
+                    <span
+                      className="
+                        mt-0.5 block overflow-hidden whitespace-nowrap text-ellipsis
+                        text-[8.5px] font-bold leading-4 text-slate-500
+                      "
+                      title={item.categoryTitle}
+                    >
                       {item.categoryTitle}
                     </span>
                   </span>
 
                   <span
                     className={clsx(
-                      "relative z-10 shrink-0 rounded-lg border px-2 py-1 text-[10px] font-black font-mono",
+                      "relative z-10 shrink-0 rounded-md border px-1 py-[2px] text-[8px] font-black font-mono",
                       isActive
                         ? "border-white/15 bg-white/15 text-[#e2bf74]"
                         : "border-[#243346] bg-[#08111c]/80 text-slate-400",
@@ -291,7 +320,7 @@ const Sidebar = () => {
         </div>
       )}
 
-      {/* Navigation always open */}
+      {/* Navigation */}
       <nav className="sidebar-scrollbar relative z-10 min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-2">
         {filteredCategories.length === 0 ? (
           <div className="mx-2 mt-6 rounded-2xl border border-[#c5983c]/20 bg-[#101d2b]/80 p-4 text-center">
@@ -301,8 +330,6 @@ const Sidebar = () => {
           </div>
         ) : (
           filteredCategories.map((category) => {
-            const CategoryIcon = category.icon || Layers;
-
             if (category.isMain) {
               return (
                 <div key={category.id} className="mb-4">
@@ -332,13 +359,15 @@ const Sidebar = () => {
                             onClick={() => openScreen(item.id, item.label)}
                             className={clsx(
                               `
-                                group relative flex w-full items-center justify-between overflow-hidden
-                                rounded-2xl px-3 py-3 text-right transition-all duration-300
+                                group relative flex w-full items-center justify-between gap-1.5 overflow-hidden
+                                rounded-2xl px-2.5 py-3 text-right transition-all duration-300
                               `,
                               isActive
                                 ? "border border-[#e2bf74]/55 bg-gradient-to-l from-[#0e7490] via-[#123f59] to-[#08111c] text-white shadow-[0_14px_32px_rgba(14,116,144,0.30)]"
                                 : "border border-[#243346] bg-[#101d2b]/70 text-slate-300 hover:border-cyan-300/30 hover:bg-[#173a52] hover:text-white",
                             )}
+                            type="button"
+                            title={item.label}
                           >
                             {isActive && (
                               <>
@@ -347,13 +376,20 @@ const Sidebar = () => {
                               </>
                             )}
 
-                            <span className="relative z-10 min-w-0 truncate text-[13px] font-black">
+                            <span
+                              className="
+                                relative z-10 min-w-0 flex-1 overflow-hidden
+                                whitespace-nowrap text-ellipsis
+                                text-[12.5px] font-black leading-5
+                              "
+                              title={item.label}
+                            >
                               {item.label}
                             </span>
 
                             <span
                               className={clsx(
-                                "relative z-10 shrink-0 rounded-lg border px-2 py-1 text-[10px] font-black font-mono",
+                                "relative z-10 shrink-0 rounded-md border px-1 py-[2px] text-[8px] font-black font-mono",
                                 isActive
                                   ? "border-white/15 bg-white/15 text-[#e2bf74]"
                                   : "border-[#243346] bg-[#08111c]/80 text-slate-400",
@@ -371,45 +407,51 @@ const Sidebar = () => {
             }
 
             return (
-              <section key={category.id} className="mb-5 rounded-[22px] border border-[#243346]/50 bg-[#101d2b]/25 p-2">
-                {/* Category title as section, no big square */}
-                <div className="mb-2 flex items-center gap-2 rounded-[18px] border border-[#c5983c]/18 bg-gradient-to-l from-[#123f59]/45 via-[#101d2b]/50 to-transparent px-2 py-2">
-                  <span
-                    className="
-                      grid h-9 w-9 shrink-0 place-items-center rounded-2xl
-                      border border-[#e2bf74]/35 bg-[#e2bf74]/14 text-[#e2bf74]
-                    "
-                  >
-                    <CategoryIcon size={17} />
-                  </span>
+              <section
+                key={category.id}
+                className="
+                  mb-5 rounded-[22px]
+                  border border-[#243346]/50 bg-[#101d2b]/25 p-2
+                "
+              >
+                {/* Category title */}
+                <div
+                  className="
+                    mb-2 rounded-[18px]
+                    border border-[#e2bf74]/30
+                    bg-gradient-to-l from-[#123f59]/70 via-[#101d2b]/70 to-[#07111d]/40
+                    px-3 py-2.5
+                  "
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <h3
+                      className="
+                        min-w-0 flex-1 overflow-hidden whitespace-nowrap text-ellipsis
+                        text-[14px] font-black leading-5
+                        text-[#f5d99b]
+                      "
+                      title={category.title}
+                    >
+                      {category.title}
+                    </h3>
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="h-px flex-1 bg-gradient-to-l from-[#c5983c]/35 via-[#c5983c]/18 to-transparent" />
-
-                      <h3 className="shrink-0 text-[14px] font-black text-white">
-                        {category.title}
-                      </h3>
-
-                      <span className="h-px flex-1 bg-gradient-to-r from-[#c5983c]/35 via-[#c5983c]/18 to-transparent" />
-                    </div>
+                    <span
+                      className="
+                        shrink-0 rounded-xl border border-[#c5983c]/30
+                        bg-[#c5983c]/12 px-2 py-1
+                        text-[10px] font-black text-[#e2bf74]
+                      "
+                    >
+                      {category.items.length}
+                    </span>
                   </div>
-
-                  <span
-                    className="
-                      shrink-0 rounded-xl border border-[#c5983c]/25
-                      bg-[#c5983c]/10 px-2 py-1
-                      text-[10px] font-black text-[#e2bf74]
-                    "
-                  >
-                    {category.items.length}
-                  </span>
                 </div>
 
-                {/* Items always visible */}
-                <div className="space-y-1.5 pr-2">
+                {/* Items */}
+                <div className="space-y-1.5 pr-1">
                   {category.items.map((item) => {
                     const isActive = activeScreenId === item.id;
+                    const isPinned = pinnedScreenIds.includes(item.id);
 
                     return (
                       <AccessControl
@@ -423,13 +465,15 @@ const Sidebar = () => {
                           onClick={() => openScreen(item.id, item.label)}
                           className={clsx(
                             `
-                              group relative flex w-full items-center gap-2 overflow-hidden
-                              rounded-2xl px-2.5 py-2.5 text-right transition-all duration-300
+                              group relative flex w-full items-center gap-1.5 overflow-hidden
+                              rounded-2xl px-2 py-2.5 text-right transition-all duration-300
                             `,
                             isActive
                               ? "border border-[#e2bf74]/50 bg-gradient-to-l from-[#0e7490] via-[#123f59] to-[#08111c] text-white shadow-[0_10px_24px_rgba(14,116,144,0.26)]"
                               : "border border-[#243346]/70 bg-[#101d2b]/62 text-slate-200 hover:border-cyan-300/28 hover:bg-[#173a52]/80 hover:text-white",
                           )}
+                          type="button"
+                          title={item.label}
                         >
                           {isActive && (
                             <>
@@ -438,76 +482,75 @@ const Sidebar = () => {
                             </>
                           )}
 
-                          <span className="relative z-10 flex w-9 shrink-0 items-center justify-center gap-1.5">
-                            {item.isFavorite ? (
+                          {item.isFavorite && (
+                            <span
+                              className="
+                                relative z-10 grid h-6 w-6 shrink-0 place-items-center
+                                rounded-lg border border-[#c5983c]/25
+                                bg-[#c5983c]/10 text-[#c5983c]
+                              "
+                              title="مفضلة"
+                            >
                               <Star
-                                size={13}
+                                size={11}
                                 className="fill-[#c5983c] text-[#c5983c]"
                               />
-                            ) : (
-                              <span
-                                className={clsx(
-                                  "h-2 w-2 rounded-full",
-                                  isActive
-                                    ? "bg-[#e2bf74] shadow-[0_0_8px_rgba(226,191,116,0.65)]"
-                                    : "bg-cyan-400/85",
-                                )}
-                              />
-                            )}
-
-                            <span
-                              className={clsx(
-                                "h-1.5 w-1.5 rounded-full",
-                                isActive
-                                  ? "bg-emerald-300 shadow-[0_0_8px_#6ee7b7]"
-                                  : "bg-slate-500",
-                              )}
-                            />
-                          </span>
+                            </span>
+                          )}
 
                           <span
                             className={clsx(
-                              "relative z-10 min-w-0 flex-1 truncate text-[12px]",
-                              isActive ? "font-black" : "font-bold",
+                              `
+                                relative z-10 min-w-0 flex-1 overflow-hidden
+                                whitespace-nowrap text-ellipsis leading-5
+                              `,
+                              isActive
+                                ? "text-[12.5px] font-black"
+                                : "text-[12px] font-extrabold",
                             )}
+                            title={item.label}
                           >
                             {item.label}
                           </span>
 
-                          <button
+                          <span
+                            role="button"
+                            tabIndex={0}
                             onClick={(event) => {
                               event.stopPropagation();
                               togglePinnedScreen(item.id);
                             }}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                togglePinnedScreen(item.id);
+                              }
+                            }}
                             className={clsx(
                               `
-                                relative z-10 grid h-7 w-7 shrink-0 place-items-center
+                                relative z-10 grid h-6 w-6 shrink-0 place-items-center
                                 rounded-lg border transition-all duration-200
                               `,
-                              pinnedScreenIds.includes(item.id)
+                              isPinned
                                 ? "border-[#e2bf74]/45 bg-[#e2bf74]/16 text-[#e2bf74]"
                                 : "border-[#243346] bg-[#08111c]/65 text-slate-400 hover:border-cyan-300/30 hover:bg-cyan-400/10 hover:text-cyan-200",
                             )}
-                            type="button"
                             title={
-                              pinnedScreenIds.includes(item.id)
+                              isPinned
                                 ? "إلغاء التثبيت"
                                 : "تثبيت الشاشة في الأعلى"
                             }
                           >
                             <Pin
-                              size={12}
-                              className={
-                                pinnedScreenIds.includes(item.id)
-                                  ? "fill-[#c5983c]"
-                                  : ""
-                              }
+                              size={10}
+                              className={isPinned ? "fill-[#c5983c]" : ""}
                             />
-                          </button>
+                          </span>
 
                           <span
                             className={clsx(
-                              "relative z-10 shrink-0 rounded-lg border px-1.5 py-0.5 text-[9px] font-black font-mono",
+                              "relative z-10 shrink-0 rounded-md border px-1 py-[2px] text-[8px] font-black font-mono",
                               isActive
                                 ? "border-white/15 bg-white/15 text-[#e2bf74]"
                                 : "border-[#243346] bg-[#08111c]/75 text-slate-400",

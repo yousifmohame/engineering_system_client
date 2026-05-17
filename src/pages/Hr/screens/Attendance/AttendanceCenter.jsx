@@ -1,27 +1,40 @@
 import React, { useState } from "react";
-import { X, Clock, BrainCircuit, ChartColumn, CalendarDays, Wifi, Settings } from "lucide-react";
+import {
+  X,
+  Clock,
+  BrainCircuit,
+  ChartColumn,
+  CalendarDays,
+  Wifi,
+  Settings,
+} from "lucide-react";
 
 // ⚠️ استيراد المكونات التي قمنا بتقسيمها للتو
 import DashboardTab from "./components/DashboardTab";
 import DailyLogTab from "./components/DailyLogTab";
 import ReportsTab from "./components/ReportsTab";
-import DevicesTab from "./components/DevicesTab";
+
 import PoliciesTab from "./components/PoliciesTab";
 
 export default function AttendanceCenter({ onClose }) {
   const [activeTab, setActiveTab] = useState("DASHBOARD");
 
   const TABS = [
-    { id: "DASHBOARD", label: "تحليل المنظومة (AI Dashboard)", icon: ChartColumn },
+    {
+      id: "DASHBOARD",
+      label: "تحليل المنظومة (AI Dashboard)",
+      icon: ChartColumn,
+    },
     { id: "DAILY", label: "السجل اللحظي واليومي", icon: Clock },
     { id: "REPORTS", label: "التقارير والأرشيف التاريخي", icon: CalendarDays },
-    { id: "DEVICES", label: "إدارة أجهزة البصمة", icon: Wifi },
     { id: "POLICIES", label: "سياسات الدوام", icon: Settings },
   ];
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden relative bg-slate-50 font-cairo animate-in fade-in duration-300" dir="rtl">
-      
+    <div
+      className="w-full h-full flex flex-col overflow-hidden relative bg-slate-50 font-cairo animate-in fade-in duration-300"
+      dir="rtl"
+    >
       {/* ─── Sticky Sub-Header ─── */}
       <div className="bg-white/80 backdrop-blur-xl px-6 py-5 border-b border-slate-200/60 shadow-sm flex justify-between items-center shrink-0 z-20">
         <div>
@@ -36,7 +49,10 @@ export default function AttendanceCenter({ onClose }) {
             مدعوم بالذكاء الاصطناعي لتحليل السلوك والانضباط (متصل بـ ZKTeco)
           </p>
         </div>
-        <button onClick={onClose} className="p-2 text-slate-400 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 rounded-full transition-colors">
+        <button
+          onClick={onClose}
+          className="p-2 text-slate-400 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 rounded-full transition-colors"
+        >
           <X className="w-5 h-5" />
         </button>
       </div>
@@ -51,12 +67,18 @@ export default function AttendanceCenter({ onClose }) {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`py-4 relative flex items-center gap-2 text-sm font-bold transition-colors whitespace-nowrap ${
-                isActive ? "text-amber-600" : "text-slate-500 hover:text-slate-800"
+                isActive
+                  ? "text-amber-600"
+                  : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? "text-amber-500" : "text-slate-400"}`} />
+              <Icon
+                className={`w-4 h-4 ${isActive ? "text-amber-500" : "text-slate-400"}`}
+              />
               {tab.label}
-              {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500 rounded-t-full animate-in slide-in-from-bottom-1" />}
+              {isActive && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500 rounded-t-full animate-in slide-in-from-bottom-1" />
+              )}
             </button>
           );
         })}
@@ -68,7 +90,6 @@ export default function AttendanceCenter({ onClose }) {
         {activeTab === "DASHBOARD" && <DashboardTab />}
         {activeTab === "DAILY" && <DailyLogTab />}
         {activeTab === "REPORTS" && <ReportsTab />}
-        {activeTab === "DEVICES" && <DevicesTab />}
         {activeTab === "POLICIES" && <PoliciesTab />}
       </div>
     </div>
