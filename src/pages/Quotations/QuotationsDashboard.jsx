@@ -40,7 +40,6 @@ const QuotationsDashboard = () => {
   const { addTab } = useAppStore();
   const SCREEN_ID = "815";
 
-  // ... (نفس دوال فتح التابات بدون تغيير)
   const openCreateTab = () =>
     addTab(SCREEN_ID, {
       id: `CREATE-QUOTATION-${Date.now()}`,
