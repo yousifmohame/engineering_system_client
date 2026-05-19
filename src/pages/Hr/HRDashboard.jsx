@@ -90,14 +90,14 @@ export default function HRDashboard({ onNavigate }) {
       },
       {
         id: "CONTRACTS_QIWA",
-        title: "العقود والاتفاقيات\n(بوابة قوى)",
+        title: "رواتب موظفي الأوتسورس",
         icon: FileText,
         gradient: "from-emerald-500 to-teal-600 border-emerald-400",
         shadow: "shadow-emerald-500/30",
       },
       {
         id: "HR_PAYROLL",
-        title: "مسيرات الرواتب\n(نظام WPS)",
+        title: "الخزنة",
         icon: Banknote,
         gradient: "from-cyan-600 to-blue-700 border-cyan-500",
         shadow: "shadow-cyan-600/30",

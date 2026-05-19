@@ -6,15 +6,17 @@ import HRDashboard from "./HRDashboard";
 import InternalFormsTab from "./screens/InternalForms/InternalFormsTab";
 import EmployeesManagement from "./screens/employees/EmployeesManagement";
 import AttendanceCenter from "./screens/Attendance/AttendanceCenter";
+import OutsourceSalariesPage from "./screens/OutsourceSalaries/OutsourceSalariesPage";
+import TreasuryPage from "./screens/Treasury/TreasuryPage";
 
 // 💡 قاموس بأسماء جميع الشاشات الجديدة (لعرضها في عنوان النافذة)
 const TAB_TITLES = {
   HR_EMPLOYEES: "إدارة الموظفين",
   ATTENDANCE_AI: "الحضور والانصراف (AI)",
-  CONTRACTS_QIWA: "العقود والاتفاقيات",
-  HR_REQUESTS: "مركز الطلبات والنماذج",
+  CONTRACTS_QIWA: "رواتب موظفي الأوتسورس",
+  // HR_REQUESTS: "مركز الطلبات والنماذج",
   MY_PORTAL: "بوابة الموظف",
-  HR_PAYROLL: "الرواتب والمسيرات",
+  HR_PAYROLL: "الخزنة",
   LEAVES_ABSENCE: "سجل الإجازات والغياب",
   HR_SETTINGS: "إعدادات الحالات والبدلات",
   PROF_PLATFORMS: "المنصات المهنية والهيئات",
@@ -71,6 +73,24 @@ const HRScreenWrapper = () => {
         <div className="h-full overflow-hidden bg-slate-50">
           {/* نمرر دالة الإغلاق لشاشة الحضور لأن بداخلها زر إغلاق خاص بها */}
           <AttendanceCenter onClose={closeModal} />
+        </div>
+      );
+    }
+
+    if (activeModal === "CONTRACTS_QIWA") {
+      return (
+        <div className="h-full overflow-hidden bg-slate-50">
+          {/* نمرر دالة الإغلاق لشاشة الحضور لأن بداخلها زر إغلاق خاص بها */}
+          <OutsourceSalariesPage onClose={closeModal} />
+        </div>
+      );
+    }
+
+    if (activeModal === "HR_PAYROLL") {
+      return (
+        <div className="h-full overflow-hidden bg-slate-50">
+          {/* نمرر دالة الإغلاق لشاشة الحضور لأن بداخلها زر إغلاق خاص بها */}
+          <TreasuryPage onClose={closeModal} />
         </div>
       );
     }
