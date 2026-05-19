@@ -9,6 +9,36 @@ import QuotationsApprovals from "./QuotationsApprovals";
 import QuotationsPayments from "./QuotationsPayments";
 import QuotationsReports from "./QuotationsReports";
 import QuotationsCancellations from "./QuotationsCancellations";
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`
+        inline-flex min-w-0 items-center justify-center
+        ${vertical ? "flex-col gap-0.5" : "gap-1.5"}
+        ${className}
+      `}
+    >
+      {Icon && <Icon className={iconClassName || "h-4 w-4 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 break-words text-[10px] font-black leading-tight"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
 
 const QuotationsScreenWrapper = () => {
   const { screenTabs, activeTabPerScreen, removeTab } = useAppStore();
@@ -18,8 +48,8 @@ const QuotationsScreenWrapper = () => {
   const activeTabId = activeTabPerScreen[screenId];
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
-      <div className="flex-1 relative overflow-y-auto">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white">
+      <div className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim">
         {tabs.map((tab) => {
           // فقط نظهر التاب إذا كان هو النشط حالياً
           if (tab.id !== activeTabId) return null;
@@ -27,7 +57,7 @@ const QuotationsScreenWrapper = () => {
           return (
             <div
               key={tab.id}
-              className="h-full animate-in fade-in duration-300"
+              className="h-full font-[Tajawal] animate-in fade-in duration-300"
             >
               {tab.type === "dashboard" ? (
                 <QuotationsDashboard />
@@ -54,7 +84,7 @@ const QuotationsScreenWrapper = () => {
               ) : tab.type === "cancellations" ? (
                 <QuotationsCancellations />
               ) : (
-                <div className="p-8 text-center text-slate-500 font-bold">
+                <div className="p-3 text-center text-[#64748b] font-bold">
                   محتوى التاب غير معروف ({tab.id})
                 </div>
               )}

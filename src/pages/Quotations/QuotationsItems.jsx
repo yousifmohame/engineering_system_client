@@ -16,13 +16,43 @@ import {
   Ban,
   Loader2,
 } from "lucide-react";
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`
+        inline-flex min-w-0 items-center justify-center
+        ${vertical ? "flex-col gap-0.5" : "gap-1.5"}
+        ${className}
+      `}
+    >
+      {Icon && <Icon className={iconClassName || "h-4 w-4 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 break-words text-[10px] font-black leading-tight"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
 
 const CATEGORIES_MAP = {
-  "خدمات هندسية": "bg-blue-50 text-blue-600",
-  "خدمات عقارية": "bg-emerald-50 text-emerald-700",
+  "خدمات هندسية": "bg-blue-50 text-[#123f59]",
+  "خدمات عقارية": "bg-emerald-50 text-[#0f766e]",
   "خدمات قانونية": "bg-red-50 text-red-600",
   استشارات: "bg-purple-50 text-purple-600",
-  أخرى: "bg-slate-50 text-slate-600",
+  أخرى: "bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white text-slate-600",
 };
 
 const QuotationsItems = () => {
@@ -144,18 +174,18 @@ const QuotationsItems = () => {
 
     return (
       <div
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex min-w-0 items-center justify-center p-3 animate-in fade-in duration-200"
         dir="rtl"
       >
-        <div className="bg-white rounded-2xl p-6 w-full max-w-[580px] max-h-[85vh] overflow-y-auto shadow-2xl custom-scrollbar animate-in zoom-in-95">
-          <div className="flex justify-between items-center mb-4">
-            <div className="text-base font-bold text-slate-800 flex items-center gap-2">
+        <div className="bg-white rounded-[20px] p-3 w-full max-w-[580px] max-h-[85vh] overflow-y-auto overflow-x-hidden shadow-[0_20px_55px_rgba(18,63,89,0.18)] custom-scrollbar-slim animate-in zoom-in-95">
+          <div className="flex min-w-0 justify-between items-center mb-3">
+            <div className="text-base font-bold text-[#123f59] flex min-w-0 items-center gap-2">
               <PenLine className="w-5 h-5 text-orange-600" />{" "}
               {isNew ? "إنشاء بند جديد" : `تعديل البند — ${item.id}`}
             </div>
             <button
               onClick={() => setEditingItem(null)}
-              className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"
+              className="p-1 hover:bg-slate-100 rounded-lg text-[#94a3b8]"
             >
               <X className="w-5 h-5" />
             </button>
@@ -163,7 +193,7 @@ const QuotationsItems = () => {
 
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+              <label className="block text-[11px] font-bold text-[#475569] mb-1">
                 العنوان المختصر
               </label>
               <input
@@ -175,19 +205,19 @@ const QuotationsItems = () => {
               />
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+              <label className="block text-[11px] font-bold text-[#475569] mb-1">
                 الكود
               </label>
               <input
                 readOnly
                 value={isNew ? "تلقائي" : item.id}
-                className="w-full p-2 border border-slate-300 bg-slate-50 rounded-lg text-xs font-mono outline-none text-slate-500"
+                className="w-full p-2 border border-slate-300 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-lg text-xs font-mono outline-none text-[#64748b]"
               />
             </div>
           </div>
 
           <div className="mb-3">
-            <label className="block text-[11px] font-bold text-slate-700 mb-1">
+            <label className="block text-[11px] font-bold text-[#475569] mb-1">
               الوصف التفصيلي
             </label>
             <textarea
@@ -203,7 +233,7 @@ const QuotationsItems = () => {
 
           <div className="grid grid-cols-3 gap-3 mb-3">
             <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+              <label className="block text-[11px] font-bold text-[#475569] mb-1">
                 الفئة (القسم الرئيسي)
               </label>
               <select
@@ -221,7 +251,7 @@ const QuotationsItems = () => {
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+              <label className="block text-[11px] font-bold text-[#475569] mb-1">
                 الوحدة
               </label>
               <input
@@ -233,7 +263,7 @@ const QuotationsItems = () => {
               />
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+              <label className="block text-[11px] font-bold text-[#475569] mb-1">
                 السعر الافتراضي (ر.س)
               </label>
               <input
@@ -249,7 +279,7 @@ const QuotationsItems = () => {
 
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+              <label className="block text-[11px] font-bold text-[#475569] mb-1">
                 التصنيف الفرعي
               </label>
               <input
@@ -269,11 +299,11 @@ const QuotationsItems = () => {
               </datalist>
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+              <label className="block text-[11px] font-bold text-[#475569] mb-1.5">
                 خيارات
               </label>
-              <div className="flex gap-4 mt-2">
-                <label className="flex items-center gap-1.5 text-[10px] cursor-pointer">
+              <div className="flex gap-3 mt-2">
+                <label className="flex min-w-0 items-center gap-1.5 text-[10px] cursor-pointer">
                   <input
                     type="checkbox"
                     checked={item.editable}
@@ -284,7 +314,7 @@ const QuotationsItems = () => {
                   />{" "}
                   السعر قابل للتعديل
                 </label>
-                <label className="flex items-center gap-1.5 text-[10px] cursor-pointer">
+                <label className="flex min-w-0 items-center gap-1.5 text-[10px] cursor-pointer">
                   <input
                     type="checkbox"
                     checked={item.isActive}
@@ -299,8 +329,8 @@ const QuotationsItems = () => {
             </div>
           </div>
 
-          <div className="mb-5">
-            <label className="block text-[11px] font-bold text-slate-700 mb-1">
+          <div className="mb-3">
+            <label className="block text-[11px] font-bold text-[#475569] mb-1">
               ملاحظات قانونية / استثناءات (Warning)
             </label>
             <textarea
@@ -314,17 +344,17 @@ const QuotationsItems = () => {
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
+          <div className="flex justify-end gap-2 pt-4 border-t border-[#d8b46a]/25">
             <button
               onClick={() => setEditingItem(null)}
-              className="px-5 py-2 bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-xs font-bold hover:bg-slate-200"
+              className="px-3.5 py-2 bg-slate-100 text-slate-600 border border-[#d8b46a]/25 rounded-lg text-xs font-bold hover:bg-slate-200"
             >
               إغلاق
             </button>
             <button
               onClick={() => saveItemMutation.mutate(item)}
               disabled={saveItemMutation.isPending}
-              className="px-5 py-2 bg-orange-600 text-white rounded-lg text-xs font-bold shadow-md hover:bg-orange-700 flex items-center gap-1.5 disabled:opacity-50"
+              className="px-3.5 py-2 bg-orange-600 text-white rounded-lg text-xs font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-orange-700 flex min-w-0 items-center gap-1.5 disabled:opacity-50"
             >
               {saveItemMutation.isPending ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -364,18 +394,18 @@ const QuotationsItems = () => {
 
     return (
       <div
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex min-w-0 items-center justify-center p-3 animate-in fade-in duration-200"
         dir="rtl"
       >
-        <div className="bg-white rounded-2xl p-6 w-full max-w-[640px] max-h-[85vh] overflow-y-auto shadow-2xl custom-scrollbar animate-in zoom-in-95">
-          <div className="flex justify-between items-center mb-4">
-            <div className="text-base font-bold text-slate-800 flex items-center gap-2">
+        <div className="bg-white rounded-[20px] p-3 w-full max-w-[640px] max-h-[85vh] overflow-y-auto overflow-x-hidden shadow-[0_20px_55px_rgba(18,63,89,0.18)] custom-scrollbar-slim animate-in zoom-in-95">
+          <div className="flex min-w-0 justify-between items-center mb-3">
+            <div className="text-base font-bold text-[#123f59] flex min-w-0 items-center gap-2">
               <Package className="w-5 h-5 text-violet-600" />{" "}
               {isNew ? "إنشاء مجموعة جديدة" : `تعديل المجموعة — ${bdl.id}`}
             </div>
             <button
               onClick={() => setEditingBundle(null)}
-              className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"
+              className="p-1 hover:bg-slate-100 rounded-lg text-[#94a3b8]"
             >
               <X className="w-5 h-5" />
             </button>
@@ -383,7 +413,7 @@ const QuotationsItems = () => {
 
           <div className="grid grid-cols-3 gap-3 mb-3">
             <div className="col-span-2">
-              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+              <label className="block text-[11px] font-bold text-[#475569] mb-1">
                 اسم المجموعة
               </label>
               <input
@@ -395,7 +425,7 @@ const QuotationsItems = () => {
               />
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+              <label className="block text-[11px] font-bold text-[#475569] mb-1">
                 الرمز (Emoji)
               </label>
               <input
@@ -408,8 +438,8 @@ const QuotationsItems = () => {
             </div>
           </div>
 
-          <div className="mb-4">
-            <label className="block text-[11px] font-bold text-slate-700 mb-1">
+          <div className="mb-3">
+            <label className="block text-[11px] font-bold text-[#475569] mb-1">
               الوصف
             </label>
             <input
@@ -421,8 +451,8 @@ const QuotationsItems = () => {
             />
           </div>
 
-          <div className="mb-5">
-            <label className="block text-[12px] font-bold text-slate-700 mb-2">
+          <div className="mb-3">
+            <label className="block text-[12px] font-bold text-[#475569] mb-2">
               بنود المجموعة ({bdl.items.length} بند)
             </label>
             <div className="space-y-1.5 mb-2">
@@ -431,15 +461,15 @@ const QuotationsItems = () => {
                 return (
                   <div
                     key={idx}
-                    className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-100 rounded-lg text-[10px]"
+                    className="flex min-w-0 items-center gap-2 p-2 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border border-[#e8ddc8] rounded-lg text-[10px]"
                   >
-                    <span className="text-slate-400 font-mono w-4">
+                    <span className="text-[#94a3b8] font-mono w-4">
                       {idx + 1}
                     </span>
-                    <span className="flex-1 font-bold text-slate-700 truncate">
+                    <span className="flex-1 font-bold text-[#475569] truncate">
                       {itemData.title}
                     </span>
-                    <span className="font-mono text-blue-700 font-bold">
+                    <span className="font-mono text-[#123f59] font-bold">
                       {itemData.price.toLocaleString()} ر.س
                     </span>
                     <button
@@ -454,7 +484,7 @@ const QuotationsItems = () => {
             </div>
             <select
               onChange={handleAddItemToBundle}
-              className="w-full p-2 border border-slate-300 rounded-lg text-[11px] outline-none text-slate-500"
+              className="w-full p-2 border border-slate-300 rounded-lg text-[11px] outline-none text-[#64748b]"
             >
               <option value="">+ إضافة بند من المكتبة...</option>
               {dbItems.map((i) => (
@@ -465,17 +495,17 @@ const QuotationsItems = () => {
             </select>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
+          <div className="flex justify-end gap-2 pt-4 border-t border-[#d8b46a]/25">
             <button
               onClick={() => setEditingBundle(null)}
-              className="px-5 py-2 bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-xs font-bold hover:bg-slate-200"
+              className="px-3.5 py-2 bg-slate-100 text-slate-600 border border-[#d8b46a]/25 rounded-lg text-xs font-bold hover:bg-slate-200"
             >
               إغلاق
             </button>
             <button
               onClick={() => saveBundleMutation.mutate(bdl)}
               disabled={saveBundleMutation.isPending}
-              className="px-5 py-2 bg-violet-600 text-white rounded-lg text-xs font-bold shadow-md hover:bg-violet-700 flex items-center gap-1.5 disabled:opacity-50"
+              className="px-3.5 py-2 bg-[#123f59] text-white rounded-lg text-xs font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-[#0f3448] flex min-w-0 items-center gap-1.5 disabled:opacity-50"
             >
               {saveBundleMutation.isPending ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -494,18 +524,18 @@ const QuotationsItems = () => {
   // Render Main Page
   // ==========================================
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50" dir="rtl">
-      <div className="p-5 md:p-6 font-sans max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-5">
+    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim overflow-x-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white" dir="rtl">
+      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 md:p-3 font-[Tajawal] max-w-7xl mx-auto">
+        <div className="flex min-w-0 justify-between items-center mb-3">
           <div>
-            <div className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <div className="text-lg font-bold text-[#123f59] flex min-w-0 items-center gap-2">
               <Package className="w-5 h-5 text-orange-600" /> البنود ومجموعات
               البنود
               <span className="px-2 py-0.5 bg-orange-50 text-orange-600 border border-orange-100 rounded text-[10px] font-mono font-bold">
                 815-I01
               </span>
             </div>
-            <div className="text-xs text-slate-500 mt-1">
+            <div className="text-xs text-[#64748b] mt-1">
               {dbItems.length} بند مفرد · {dbBundles.length} مجموعة
             </div>
           </div>
@@ -531,31 +561,31 @@ const QuotationsItems = () => {
                     items: [],
                   })
             }
-            className="px-4 py-2 bg-orange-600 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-orange-700 shadow-md shadow-orange-200 transition-colors"
+            className="px-4 py-2 bg-orange-600 text-white rounded-lg text-xs font-bold flex min-w-0 items-center gap-1.5 hover:bg-orange-700 shadow-[0_8px_18px_rgba(18,63,89,0.08)] shadow-orange-200 transition-colors"
           >
             <Plus className="w-4 h-4" />{" "}
             {activeTab === "items" ? "بند جديد" : "مجموعة جديدة"}
           </button>
         </div>
 
-        <div className="flex gap-1 mb-5 border-b-2 border-slate-200">
+        <div className="flex gap-1 mb-3 border-b-2 border-[#d8b46a]/25">
           <button
             onClick={() => setActiveTab("items")}
-            className={`px-6 py-2.5 text-xs font-bold transition-all border-x-2 border-t-2 rounded-t-lg -mb-[2px] ${activeTab === "items" ? "bg-white text-orange-600 border-slate-200 border-b-white" : "bg-transparent text-slate-400 border-transparent hover:text-slate-600"}`}
+            className={`px-4 py-2.5 text-xs font-bold transition-all border-x-2 border-t-2 rounded-t-lg -mb-[2px] ${activeTab === "items" ? "bg-white text-orange-600 border-[#d8b46a]/25 border-b-white" : "bg-transparent text-[#94a3b8] border-transparent hover:text-slate-600"}`}
           >
             البنود المفردة ({dbItems.length})
           </button>
           <button
             onClick={() => setActiveTab("bundles")}
-            className={`px-6 py-2.5 text-xs font-bold transition-all border-x-2 border-t-2 rounded-t-lg -mb-[2px] ${activeTab === "bundles" ? "bg-white text-violet-600 border-slate-200 border-b-white" : "bg-transparent text-slate-400 border-transparent hover:text-slate-600"}`}
+            className={`px-4 py-2.5 text-xs font-bold transition-all border-x-2 border-t-2 rounded-t-lg -mb-[2px] ${activeTab === "bundles" ? "bg-white text-violet-600 border-[#d8b46a]/25 border-b-white" : "bg-transparent text-[#94a3b8] border-transparent hover:text-slate-600"}`}
           >
             المجموعات والـ Bundles ({dbBundles.length})
           </button>
         </div>
 
-        <div className="flex gap-2 mb-4 items-center flex-wrap">
+        <div className="flex gap-2 mb-3 items-center flex-wrap">
           <div className="flex-1 relative min-w-[200px]">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
             <input
               placeholder="بحث بالكود أو الوصف..."
               value={searchTerm}
@@ -590,37 +620,37 @@ const QuotationsItems = () => {
         </div>
 
         {itemsLoading || bundlesLoading ? (
-          <div className="flex justify-center p-10">
-            <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+          <div className="flex justify-center p-3.5">
+            <Loader2 className="w-8 h-8 animate-spin text-[#94a3b8]" />
           </div>
         ) : activeTab === "items" ? (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="bg-white rounded-xl border border-[#d8b46a]/25 overflow-hidden shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
             <div className="overflow-x-auto">
               <table className="w-full text-right border-collapse min-w-[1000px]">
                 <thead>
-                  <tr className="bg-slate-50 border-b-2 border-slate-200">
-                    <th className="p-2 text-[10px] text-slate-500 font-bold">
+                  <tr className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-b-2 border-[#d8b46a]/25">
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
                       الكود
                     </th>
-                    <th className="p-2 text-[10px] text-slate-500 font-bold">
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
                       البند
                     </th>
-                    <th className="p-2 text-[10px] text-slate-500 font-bold">
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
                       التصنيف الفرعي
                     </th>
-                    <th className="p-2 text-[10px] text-slate-500 font-bold">
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
                       الفئة
                     </th>
-                    <th className="p-2 text-[10px] text-slate-500 font-bold">
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
                       الوحدة
                     </th>
-                    <th className="p-2 text-[10px] text-slate-500 font-bold">
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
                       السعر
                     </th>
-                    <th className="p-2 text-[10px] text-slate-500 font-bold text-center">
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold text-center">
                       الاستخدام
                     </th>
-                    <th className="p-2 text-[10px] text-slate-500 font-bold text-center">
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold text-center">
                       إجراءات
                     </th>
                   </tr>
@@ -629,22 +659,22 @@ const QuotationsItems = () => {
                   {filteredItems.map((item) => (
                     <tr
                       key={item.id}
-                      className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${!item.isActive ? "opacity-50 bg-slate-50" : ""}`}
+                      className={`border-b border-[#e8ddc8] hover:bg-[#fbf8f1] transition-colors ${!item.isActive ? "opacity-50 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white" : ""}`}
                     >
                       <td className="p-2 text-[10px] font-mono font-bold text-orange-600">
                         {item.id}
                       </td>
                       <td className="p-2 max-w-[280px]">
-                        <div className="font-bold text-[11px] text-slate-800">
+                        <div className="font-bold text-[11px] text-[#123f59]">
                           {item.title}
                         </div>
                         {item.desc && (
-                          <div className="text-[9px] text-slate-500 mt-1 line-clamp-1">
+                          <div className="text-[9px] text-[#64748b] mt-1 line-clamp-1">
                             {item.desc}
                           </div>
                         )}
                         {item.warning && (
-                          <div className="text-[8px] text-orange-700 flex items-center gap-1 mt-1 bg-orange-50 w-fit px-1.5 py-0.5 rounded">
+                          <div className="text-[8px] text-orange-700 flex min-w-0 items-center gap-1 mt-1 bg-orange-50 w-fit px-1.5 py-0.5 rounded">
                             <AlertTriangle className="w-2.5 h-2.5" />{" "}
                             {item.warning}
                           </div>
@@ -665,10 +695,10 @@ const QuotationsItems = () => {
                       <td className="p-2 text-[10px] text-slate-600">
                         {item.unit}
                       </td>
-                      <td className="p-2 text-[11px] font-bold text-blue-700 font-mono">
+                      <td className="p-2 text-[11px] font-bold text-[#123f59] font-mono">
                         {item.price.toLocaleString()}
                       </td>
-                      <td className="p-2 text-center text-[10px] text-slate-500 font-mono">
+                      <td className="p-2 text-center text-[10px] text-[#64748b] font-mono">
                         {item.uses}
                       </td>
                       <td className="p-2">
@@ -695,7 +725,7 @@ const QuotationsItems = () => {
                     <tr>
                       <td
                         colSpan={8}
-                        className="p-6 text-center text-slate-400 text-xs"
+                        className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-center text-[#94a3b8] text-xs"
                       >
                         لا يوجد بنود
                       </td>
@@ -706,46 +736,46 @@ const QuotationsItems = () => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {filteredBundles.map((bdl) => (
               <div
                 key={bdl.id}
-                className={`p-4 bg-white rounded-xl border-y border-l border-r-4 border-slate-200 shadow-sm border-r-${bdl.color}-500 hover:shadow-md transition-shadow`}
+                className={`p-3 bg-white rounded-xl border-y border-l border-r-4 border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] border-r-${bdl.color}-500 hover:shadow-md transition-shadow`}
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-2xl">{bdl.icon}</span>
+                <div className="flex min-w-0 items-center gap-3 mb-3">
+                  <span className="text-lg">{bdl.icon}</span>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
                       <span
                         className={`px-1.5 py-0.5 bg-${bdl.color}-50 text-${bdl.color}-600 rounded text-[9px] font-mono font-bold`}
                       >
                         {bdl.id}
                       </span>
-                      <span className="font-bold text-sm text-slate-800">
+                      <span className="font-bold text-sm text-[#123f59]">
                         {bdl.title}
                       </span>
                     </div>
-                    <div className="text-[10px] text-slate-500 mt-1">
+                    <div className="text-[10px] text-[#64748b] mt-1">
                       {bdl.desc}
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-slate-50 rounded-lg p-2 mb-3 border border-slate-100">
+                <div className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-lg p-2 mb-3 border border-[#e8ddc8]">
                   {bdl.items.map((itemId, idx) => {
                     const itemData = getItemDetails(itemId);
                     return (
                       <div
                         key={idx}
-                        className="flex justify-between items-center text-[9px] py-1 border-b border-slate-200/60 last:border-0"
+                        className="flex min-w-0 justify-between items-center text-[9px] py-1 border-b border-[#d8b46a]/25/60 last:border-0"
                       >
                         <span className="text-slate-600 truncate flex-1 pl-2">
-                          <span className="text-slate-400 font-mono ml-1">
+                          <span className="text-[#94a3b8] font-mono ml-1">
                             {idx + 1}.
                           </span>{" "}
                           {itemData.title}
                         </span>
-                        <span className="font-bold text-blue-700 font-mono">
+                        <span className="font-bold text-[#123f59] font-mono">
                           {itemData.price.toLocaleString()}
                         </span>
                       </div>
@@ -753,11 +783,11 @@ const QuotationsItems = () => {
                   })}
                 </div>
 
-                <div className="flex justify-between items-center pt-3 border-t border-slate-100">
-                  <div className="text-[9px] text-slate-400">
+                <div className="flex min-w-0 justify-between items-center pt-3 border-t border-[#e8ddc8]">
+                  <div className="text-[9px] text-[#94a3b8]">
                     {bdl.items.length} بنود · استُخدم {bdl.uses} مرة
                   </div>
-                  <div className="text-sm font-black text-blue-700">
+                  <div className="text-sm font-black text-[#123f59]">
                     {bdl.items
                       .reduce((s, id) => s + getItemDetails(id).price, 0)
                       .toLocaleString()}{" "}
@@ -768,18 +798,18 @@ const QuotationsItems = () => {
                 <div className="flex gap-2 mt-3">
                   <button
                     onClick={() => setEditingBundle(bdl)}
-                    className="flex-1 py-1.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold hover:bg-slate-200 flex items-center justify-center gap-1.5"
+                    className="flex-1 py-1.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold hover:bg-slate-200 flex min-w-0 items-center justify-center gap-1.5"
                   >
                     <PenLine className="w-3 h-3" /> تعديل
                   </button>
-                  <button className="flex-1 py-1.5 bg-red-50 text-red-600 rounded-md text-[10px] font-bold hover:bg-red-100 flex items-center justify-center gap-1.5">
-                    <Ban className="w-3 h-3" /> تعطيل
+                  <button className="flex-1 py-1.5 bg-red-50 text-red-600 rounded-md text-[10px] font-bold hover:bg-red-100 flex min-w-0 items-center justify-center gap-1.5">
+                    <IconWithText icon={Ban} text="تعطيل" iconClassName="w-3 h-3" />
                   </button>
                 </div>
               </div>
             ))}
             {filteredBundles.length === 0 && (
-              <div className="col-span-2 p-6 text-center text-slate-400 text-xs bg-white rounded-xl border border-slate-200">
+              <div className="col-span-2 p-3 text-center text-[#94a3b8] text-xs bg-white rounded-xl border border-[#d8b46a]/25">
                 لا يوجد مجموعات
               </div>
             )}

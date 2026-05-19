@@ -7,17 +7,47 @@ import {
   TriangleAlert, CreditCard, Search, Download, X, Loader2
 } from "lucide-react";
 import { format } from "date-fns";
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`
+        inline-flex min-w-0 items-center justify-center
+        ${vertical ? "flex-col gap-0.5" : "gap-1.5"}
+        ${className}
+      `}
+    >
+      {Icon && <Icon className={iconClassName || "h-4 w-4 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 break-words text-[10px] font-black leading-tight"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
 
 // ==========================================
 // 1. مكونات مساعدة
 // ==========================================
 const StatusBadge = ({ status }) => {
   const config = {
-    DRAFT: { label: "مسودة", bg: "bg-slate-100", text: "text-slate-500" },
-    PENDING_APPROVAL: { label: "تحت المراجعة", bg: "bg-blue-100", text: "text-blue-700" },
+    DRAFT: { label: "مسودة", bg: "bg-slate-100", text: "text-[#64748b]" },
+    PENDING_APPROVAL: { label: "تحت المراجعة", bg: "bg-blue-100", text: "text-[#123f59]" },
     REJECTED: { label: "مرفوض", bg: "bg-orange-100", text: "text-orange-700" },
     SENT: { label: "بانتظار التوقيع", bg: "bg-amber-100", text: "text-amber-700" },
-    APPROVED: { label: "بانتظار الدفع", bg: "bg-emerald-100", text: "text-emerald-700" },
+    APPROVED: { label: "بانتظار الدفع", bg: "bg-emerald-100", text: "text-[#0f766e]" },
     PARTIALLY_PAID: { label: "مسدد جزئياً", bg: "bg-yellow-100", text: "text-yellow-700" },
     ACCEPTED: { label: "مسدد بالكامل", bg: "bg-green-100", text: "text-green-700" },
     EXPIRED: { label: "منتهي الصلاحية", bg: "bg-red-50", text: "text-red-700" },
@@ -153,20 +183,20 @@ const QuotationsPayments = () => {
     if (!isPaymentModalOpen || !selectedQuote) return null;
 
     return (
-      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" dir="rtl">
-        <div className="bg-white rounded-2xl p-6 w-full max-w-[480px] shadow-2xl animate-in zoom-in-95">
-          <div className="flex justify-between items-center mb-5">
-            <div className="text-base font-bold text-slate-800">تسجيل دفعة — {selectedQuote.number}</div>
-            <button onClick={closeModal} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"><X className="w-5 h-5" /></button>
+      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex min-w-0 items-center justify-center p-3 animate-in fade-in duration-200" dir="rtl">
+        <div className="bg-white rounded-[20px] p-3 w-full max-w-[480px] shadow-[0_20px_55px_rgba(18,63,89,0.18)] animate-in zoom-in-95">
+          <div className="flex min-w-0 justify-between items-center mb-3">
+            <div className="text-base font-bold text-[#123f59]">تسجيل دفعة — {selectedQuote.number}</div>
+            <button onClick={closeModal} className="p-1 hover:bg-slate-100 rounded-lg text-[#94a3b8]"><X className="w-5 h-5" /></button>
           </div>
 
-          <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-4 text-xs text-green-700">
+          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-green-50 border border-green-200 rounded-lg mb-3 text-xs text-green-700">
             المتبقي: <strong className="text-sm">{selectedQuote.remaining.toLocaleString()} ر.س</strong> — إجمالي العرض: {selectedQuote.quoteTotal.toLocaleString()} ر.س
           </div>
 
           <div className="flex flex-col gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">المبلغ (ر.س) *</label>
+              <label className="block text-xs font-bold text-[#475569] mb-1.5">المبلغ (ر.س) *</label>
               <input 
                 type="number" 
                 value={paymentForm.amount}
@@ -176,7 +206,7 @@ const QuotationsPayments = () => {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">طريقة الدفع</label>
+              <label className="block text-xs font-bold text-[#475569] mb-1.5">طريقة الدفع</label>
               <select 
                 value={paymentForm.method}
                 onChange={e => setPaymentForm({...paymentForm, method: e.target.value})}
@@ -189,7 +219,7 @@ const QuotationsPayments = () => {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">مرجع العملية (اختياري)</label>
+              <label className="block text-xs font-bold text-[#475569] mb-1.5">مرجع العملية (اختياري)</label>
               <input 
                 type="text" 
                 value={paymentForm.reference}
@@ -200,11 +230,11 @@ const QuotationsPayments = () => {
             </div>
           </div>
 
-          <div className="flex gap-2 mt-6">
-            <button onClick={handleSavePayment} disabled={recordPaymentMutation.isPending} className="px-6 py-2.5 bg-green-600 text-white rounded-lg text-sm font-bold shadow-md hover:bg-green-700 flex items-center gap-1.5 disabled:opacity-50">
+          <div className="flex gap-2 mt-4">
+            <button onClick={handleSavePayment} disabled={recordPaymentMutation.isPending} className="px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-green-700 flex min-w-0 items-center gap-1.5 disabled:opacity-50">
               {recordPaymentMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin"/> : <CircleCheckBig className="w-4 h-4" />} تسجيل الدفعة
             </button>
-            <button onClick={closeModal} className="px-6 py-2.5 bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-sm hover:bg-slate-200 font-bold">إلغاء</button>
+            <button onClick={closeModal} className="px-4 py-2.5 bg-slate-100 text-slate-600 border border-[#d8b46a]/25 rounded-lg text-sm hover:bg-slate-200 font-bold">إلغاء</button>
           </div>
         </div>
       </div>
@@ -215,84 +245,84 @@ const QuotationsPayments = () => {
   // Main Render
   // ==========================================
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50 font-sans h-full" dir="rtl">
-      <div className="p-5 md:p-6 max-w-7xl mx-auto">
+    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim overflow-x-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-[Tajawal] h-full" dir="rtl">
+      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 md:p-3 max-w-7xl mx-auto">
         
         {/* Top Statistics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
-          <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center"><DollarSign className="w-5 h-5" /></div>
-            <div><div className="text-[10px] text-slate-500">إجمالي المستحقات</div><div className="text-base font-bold text-slate-800 font-mono">{totalDues.toLocaleString()} ر.س</div></div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
+          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-500 flex min-w-0 items-center justify-center"><DollarSign className="w-5 h-5" /></div>
+            <div><div className="text-[10px] text-[#64748b]">إجمالي المستحقات</div><div className="text-base font-bold text-[#123f59] font-mono">{totalDues.toLocaleString()} ر.س</div></div>
           </div>
-          <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-50 text-green-600 flex items-center justify-center"><ArrowDownRight className="w-5 h-5" /></div>
-            <div><div className="text-[10px] text-slate-500">إجمالي المحصّل</div><div className="text-base font-bold text-slate-800 font-mono">{totalCollected.toLocaleString()} ر.س</div></div>
+          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-green-50 text-green-600 flex min-w-0 items-center justify-center"><ArrowDownRight className="w-5 h-5" /></div>
+            <div><div className="text-[10px] text-[#64748b]">إجمالي المحصّل</div><div className="text-base font-bold text-[#123f59] font-mono">{totalCollected.toLocaleString()} ر.س</div></div>
           </div>
-          <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center"><ArrowUpRight className="w-5 h-5" /></div>
-            <div><div className="text-[10px] text-slate-500">المتبقي</div><div className="text-base font-bold text-slate-800 font-mono">{totalRemaining.toLocaleString()} ر.س</div></div>
+          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-orange-50 text-orange-500 flex min-w-0 items-center justify-center"><ArrowUpRight className="w-5 h-5" /></div>
+            <div><div className="text-[10px] text-[#64748b]">المتبقي</div><div className="text-base font-bold text-[#123f59] font-mono">{totalRemaining.toLocaleString()} ر.س</div></div>
           </div>
-          <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-50 text-green-600 flex items-center justify-center"><CircleCheckBig className="w-5 h-5" /></div>
-            <div><div className="text-[10px] text-slate-500">مسددة بالكامل</div><div className="text-base font-bold text-slate-800">{fullyPaidCount}</div></div>
+          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-green-50 text-green-600 flex min-w-0 items-center justify-center"><CircleCheckBig className="w-5 h-5" /></div>
+            <div><div className="text-[10px] text-[#64748b]">مسددة بالكامل</div><div className="text-base font-bold text-[#123f59]">{fullyPaidCount}</div></div>
           </div>
-          <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-yellow-50 text-yellow-600 flex items-center justify-center"><Clock className="w-5 h-5" /></div>
-            <div><div className="text-[10px] text-slate-500">مسددة جزئياً</div><div className="text-base font-bold text-slate-800">{partiallyPaidCount}</div></div>
+          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-yellow-50 text-yellow-600 flex min-w-0 items-center justify-center"><Clock className="w-5 h-5" /></div>
+            <div><div className="text-[10px] text-[#64748b]">مسددة جزئياً</div><div className="text-base font-bold text-[#123f59]">{partiallyPaidCount}</div></div>
           </div>
-          <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><TriangleAlert className="w-5 h-5" /></div>
-            <div><div className="text-[10px] text-slate-500">بانتظار الدفع</div><div className="text-base font-bold text-slate-800">{pendingPaymentCount}</div></div>
+          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex min-w-0 items-center justify-center"><TriangleAlert className="w-5 h-5" /></div>
+            <div><div className="text-[10px] text-[#64748b]">بانتظار الدفع</div><div className="text-base font-bold text-[#123f59]">{pendingPaymentCount}</div></div>
           </div>
         </div>
 
         {/* Toolbar */}
-        <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm mb-4 flex flex-wrap items-center gap-3">
-          <CreditCard className="w-5 h-5 text-emerald-600 mr-1" />
-          <span className="text-sm font-bold text-slate-800">الدفعات والتحصيل</span>
-          <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-600">{filteredData.length}</span>
+        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] mb-3 flex flex-wrap items-center gap-3">
+          <CreditCard className="w-5 h-5 text-[#0f766e] mr-1" />
+          <span className="text-sm font-bold text-[#123f59]">الدفعات والتحصيل</span>
+          <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-[#0f766e]">{filteredData.length}</span>
           
           <div className="flex-1"></div>
           
           <div className="relative">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
             <input 
               placeholder="بحث بالكود أو العميل..." 
               value={searchTerm}
               onChange={e=>setSearchTerm(e.target.value)}
-              className="py-1.5 pr-9 pl-3 border border-slate-300 rounded-lg text-xs w-[220px] outline-none focus:border-emerald-500" 
+              className="py-1.5 pr-9 pl-3 border border-slate-300 rounded-lg text-xs w-[220px] outline-none focus:border-[#c5983c]/70" 
             />
           </div>
           
-          <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} className="py-1.5 px-3 border border-slate-300 rounded-lg text-xs outline-none focus:border-emerald-500 cursor-pointer bg-white">
+          <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} className="py-1.5 px-3 border border-slate-300 rounded-lg text-xs outline-none focus:border-[#c5983c]/70 cursor-pointer bg-white">
             <option value="all">جميع الحالات</option>
             <option value="approved_pending_payment">بانتظار الدفع</option>
             <option value="partially_paid">مسددة جزئياً</option>
             <option value="fully_paid">مسددة بالكامل</option>
           </select>
           
-          <button className="px-3 py-1.5 bg-slate-50 text-slate-500 border border-slate-200 rounded-lg text-[11px] font-bold hover:bg-slate-100 flex items-center gap-1.5">
-            <Download className="w-3 h-3" /> تصدير
+          <button className="px-3 py-1.5 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white text-[#64748b] border border-[#d8b46a]/25 rounded-lg text-[11px] font-bold hover:bg-slate-100 flex min-w-0 items-center gap-1.5">
+            <IconWithText icon={Download} text="تصدير" iconClassName="w-3 h-3" />
           </button>
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] overflow-hidden">
           <div className="overflow-x-auto min-h-[300px]">
             {isLoading ? (
-               <div className="flex flex-col items-center justify-center h-40 text-slate-400"><Loader2 className="w-8 h-8 animate-spin mb-2" /> جاري التحميل...</div>
+               <div className="flex flex-col items-center justify-center h-40 text-[#94a3b8]"><Loader2 className="w-8 h-8 animate-spin mb-2" /> جاري التحميل...</div>
             ) : (
               <table className="w-full text-right border-collapse min-w-[1000px]">
                 <thead>
-                  <tr className="bg-slate-50 border-b-2 border-slate-200">
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap">الكود</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap">العميل</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap">إجمالي العرض</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap">المسدد</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap">المتبقي</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap">نسبة التحصيل</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap">الحالة</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap text-center">إجراءات</th>
+                  <tr className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-b-2 border-[#d8b46a]/25">
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">الكود</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">العميل</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">إجمالي العرض</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">المسدد</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">المتبقي</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">نسبة التحصيل</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">الحالة</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap text-center">إجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -303,34 +333,34 @@ const QuotationsPayments = () => {
                     else if (q.progress > 0) progressColor = "bg-yellow-500";
 
                     return (
-                      <tr key={q.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                        <td className="p-3 text-xs font-bold text-blue-600 font-mono">{q.number}</td>
-                        <td className="p-3 text-xs text-slate-700 font-bold">{getClientName(q.client)}</td>
-                        <td className="p-3 text-xs text-slate-700 font-mono">{q.quoteTotal.toLocaleString()}</td>
-                        <td className="p-3 text-xs text-green-600 font-mono font-bold">{q.collected.toLocaleString()}</td>
-                        <td className="p-3 text-xs text-red-600 font-mono font-bold">{q.remaining.toLocaleString()}</td>
-                        <td className="p-3">
-                          <div className="flex items-center gap-2">
+                      <tr key={q.id} className="border-b border-[#e8ddc8] hover:bg-[#fbf8f1]/50 transition-colors">
+                        <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-[#123f59] font-mono">{q.number}</td>
+                        <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-[#475569] font-bold">{getClientName(q.client)}</td>
+                        <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-[#475569] font-mono">{q.quoteTotal.toLocaleString()}</td>
+                        <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-green-600 font-mono font-bold">{q.collected.toLocaleString()}</td>
+                        <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-red-600 font-mono font-bold">{q.remaining.toLocaleString()}</td>
+                        <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3">
+                          <div className="flex min-w-0 items-center gap-2">
                             <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                               <div className={`h-full ${progressColor} transition-all duration-500`} style={{ width: `${q.progress}%` }}></div>
                             </div>
-                            <span className="text-[10px] font-bold text-slate-500 min-w-[32px]">{q.progress}%</span>
+                            <span className="text-[10px] font-bold text-[#64748b] min-w-[32px]">{q.progress}%</span>
                           </div>
                         </td>
-                        <td className="p-3"><StatusBadge status={q.status} /></td>
-                        <td className="p-3 text-center">
+                        <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3"><StatusBadge status={q.status} /></td>
+                        <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-center">
                           {q.remaining > 0 ? (
-                            <button onClick={() => openPaymentModal(q)} className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg text-[10px] font-bold hover:bg-green-100 flex items-center gap-1.5 mx-auto">
+                            <button onClick={() => openPaymentModal(q)} className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg text-[10px] font-bold hover:bg-green-100 flex min-w-0 items-center gap-1.5 mx-auto">
                               <CreditCard className="w-3 h-3" /> تسجيل دفعة
                             </button>
                           ) : (
-                            <span className="text-[10px] text-slate-400">مكتمل</span>
+                            <span className="text-[10px] text-[#94a3b8]">مكتمل</span>
                           )}
                         </td>
                       </tr>
                     )
                   })}
-                  {filteredData.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-slate-400 text-sm">لا توجد عروض لعرضها هنا</td></tr>}
+                  {filteredData.length === 0 && <tr><td colSpan={8} className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-center text-[#94a3b8] text-sm">لا توجد عروض لعرضها هنا</td></tr>}
                 </tbody>
               </table>
             )}

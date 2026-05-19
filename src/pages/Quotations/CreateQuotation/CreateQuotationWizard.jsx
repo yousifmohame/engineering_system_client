@@ -23,6 +23,36 @@ import { Step5Payments } from "./components/Wizart_steps/Payments";
 import { Step6Attachments } from "./components/Wizart_steps/Attachments";
 import { Step7Terms } from "./components/Wizart_steps/Terms";
 import { Step8Review } from "./components/Wizart_steps/Review";
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`
+        inline-flex min-w-0 items-center justify-center
+        ${vertical ? "flex-col gap-0.5" : "gap-1.5"}
+        ${className}
+      `}
+    >
+      {Icon && <Icon className={iconClassName || "h-4 w-4 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 break-words text-[10px] font-black leading-tight"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
 
 // 🔥 التصحيح الأول: استخراج البيانات بذكاء ليتوافق مع نظام التابات
 const CreateQuotationWizard = (incomingProps) => {
@@ -391,19 +421,19 @@ const CreateQuotationWizard = (incomingProps) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 font-sans" dir="rtl">
+    <div className="flex h-full min-h-0 flex-col bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-[Tajawal]" dir="rtl">
       {isEditMode && isQuoteLoading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+        <div className="absolute inset-0 z-50 flex min-w-0 items-center justify-center bg-white/80 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <Loader2 className="w-8 h-8 animate-spin text-[#123f59]" />
             <span className="text-xs font-bold text-slate-600">جاري تحميل بيانات عرض السعر...</span>
           </div>
         </div>
       )}
 
-      <div className="flex-1 overflow-hidden p-4 md:p-5 flex gap-6">
-        <div className="w-[50%] flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div ref={tabsContainerRef} className="flex items-center gap-1 p-4 border-b border-slate-100 overflow-x-auto custom-scrollbar bg-slate-50 scroll-smooth">
+      <div className="flex-1 overflow-hidden p-3 md:p-3.5 flex gap-3">
+        <div className="w-[50%] flex flex-col bg-white rounded-[20px] border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] overflow-hidden">
+          <div ref={tabsContainerRef} className="flex min-w-0 items-center gap-1 p-3 border-b border-[#e8ddc8] overflow-x-auto custom-scrollbar-slim custom-scrollbar-slim bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white scroll-smooth">
             {STEPS.map((step) => {
               const isActive = currentStep === step.id;
               const isCompleted = step.id < currentStep;
@@ -414,10 +444,10 @@ const CreateQuotationWizard = (incomingProps) => {
                   onClick={() => setCurrentStep(step.id)}
                   className={`flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-lg border-none text-[10px] font-bold whitespace-nowrap transition-all ${
                     isActive
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/20 scale-105"
+                      ? "bg-[#123f59] text-white shadow-[0_8px_18px_rgba(18,63,89,0.08)] shadow-blue-600/20 scale-105"
                       : isCompleted
-                        ? "bg-emerald-100 text-emerald-600 hover:bg-emerald-200"
-                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                        ? "bg-emerald-100 text-[#0f766e] hover:bg-emerald-200"
+                        : "bg-slate-100 text-[#64748b] hover:bg-slate-200"
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" /> <span>{step.label}</span>
@@ -426,7 +456,7 @@ const CreateQuotationWizard = (incomingProps) => {
             })}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-50/30">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 custom-scrollbar-slim bg-[#fbf8f1]/30">
             {currentStep === 0 && <Step2Template props={stepProps} />}
             {currentStep === 1 && <Step0ClientProperty props={stepProps} />}
             {currentStep === 2 && <Step1BasicInfo props={stepProps} />}
@@ -438,15 +468,15 @@ const CreateQuotationWizard = (incomingProps) => {
             {currentStep === 8 && <Step8Review props={stepProps} />}
           </div>
 
-          <div className="flex justify-between items-center p-4 border-t border-slate-200 bg-white shrink-0">
+          <div className="flex min-w-0 justify-between items-center p-3 border-t border-[#d8b46a]/25 bg-white shrink-0">
             <button
               disabled={currentStep === 0}
               onClick={() => setCurrentStep((p) => p - 1)}
-              className="px-5 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-slate-200 disabled:opacity-40 transition-colors"
+              className="px-3.5 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold flex min-w-0 items-center gap-1.5 hover:bg-slate-200 disabled:opacity-40 transition-colors"
             >
               <ChevronRight className="w-4 h-4" /> السابق
             </button>
-            <div className="text-[10px] font-bold text-slate-500 bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+            <div className="text-[10px] font-bold text-[#64748b] bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white px-3 py-1 rounded-full border border-[#d8b46a]/25">
               الخطوة {currentStep + 1} من {STEPS.length}
             </div>
 
@@ -455,14 +485,14 @@ const CreateQuotationWizard = (incomingProps) => {
             ) : currentStep === STEPS.length - 2 ? (
               <button
                 onClick={handleNextOrSave}
-                className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-700 transition-colors shadow-sm"
+                className="px-3.5 py-2.5 bg-[#123f59] text-white rounded-xl text-xs font-bold flex min-w-0 items-center gap-1.5 hover:bg-[#0f3448] transition-colors shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
               >
-                <Save className="w-4 h-4" /> مراجعة وحفظ
+                <IconWithText icon={Save} text="مراجعة وحفظ" iconClassName="w-4 h-4" />
               </button>
             ) : (
               <button
                 onClick={handleNextOrSave}
-                className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700 transition-colors shadow-sm"
+                className="px-3.5 py-2.5 bg-[#123f59] text-white rounded-xl text-xs font-bold flex min-w-0 items-center gap-1.5 hover:bg-[#0f3448] transition-colors shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
               >
                 التالي <ChevronLeft className="w-4 h-4" />
               </button>

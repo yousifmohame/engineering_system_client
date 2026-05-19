@@ -3,7 +3,6 @@ import TemplatesList from "./TemplatesList";
 import AdvancedQuotationBuilder from "./AdvancedQuotationBuilder";
 
 export default function QuotationTemplatesManager() {
-  // الحالات الممكنة: 'LIST', 'BUILDER'
   const [currentView, setCurrentView] = useState("LIST");
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
 
@@ -23,16 +22,13 @@ export default function QuotationTemplatesManager() {
   };
 
   return (
-    <div className="h-full w-full bg-slate-50">
+    <div className="h-full min-h-0 w-full overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white">
       {currentView === "LIST" ? (
-        <TemplatesList 
-          onCreateNew={handleCreateNew} 
-          onEdit={handleEdit} 
-        />
+        <TemplatesList onCreateNew={handleCreateNew} onEdit={handleEdit} />
       ) : (
-        <AdvancedQuotationBuilder 
-          templateId={selectedTemplateId} 
-          onBack={handleBackToList} 
+        <AdvancedQuotationBuilder
+          templateId={selectedTemplateId}
+          onBack={handleBackToList}
         />
       )}
     </div>

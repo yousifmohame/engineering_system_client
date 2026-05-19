@@ -28,6 +28,36 @@ import {
   Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`
+        inline-flex min-w-0 items-center justify-center
+        ${vertical ? "flex-col gap-0.5" : "gap-1.5"}
+        ${className}
+      `}
+    >
+      {Icon && <Icon className={iconClassName || "h-4 w-4 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 break-words text-[10px] font-black leading-tight"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
 
 // ==========================================
 // 1. مكونات مساعدة
@@ -37,13 +67,13 @@ const StatusBadge = ({ status }) => {
     DRAFT: {
       label: "مسودة",
       bg: "bg-slate-100",
-      text: "text-slate-500",
+      text: "text-[#64748b]",
       icon: FileText,
     },
     PENDING_APPROVAL: {
       label: "تحت المراجعة",
       bg: "bg-blue-100",
-      text: "text-blue-700",
+      text: "text-[#123f59]",
       icon: Eye,
     },
     REJECTED: {
@@ -61,7 +91,7 @@ const StatusBadge = ({ status }) => {
     APPROVED: {
       label: "معتمد — بانتظار الدفع",
       bg: "bg-emerald-100",
-      text: "text-emerald-700",
+      text: "text-[#0f766e]",
       icon: CircleCheckBig,
     },
     PARTIALLY_PAID: {
@@ -218,24 +248,24 @@ const QuotationsApprovals = () => {
     const q = activeModal.data;
     return (
       <div
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex min-w-0 items-center justify-center p-3 animate-in fade-in duration-200"
         dir="rtl"
       >
-        <div className="bg-white rounded-2xl p-6 w-full max-w-[520px] shadow-2xl animate-in zoom-in-95">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="bg-white rounded-[20px] p-3 w-full max-w-[520px] shadow-[0_20px_55px_rgba(18,63,89,0.18)] animate-in zoom-in-95">
+          <div className="flex min-w-0 items-center gap-2 mb-3">
             <Stamp className="w-6 h-6 text-amber-600" />
-            <div className="text-base font-bold text-slate-800">
+            <div className="text-base font-bold text-[#123f59]">
               ختم المكتب — {q.number}
             </div>
             <div className="flex-1"></div>
             <button
               onClick={closeModal}
-              className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"
+              className="p-1 hover:bg-slate-100 rounded-lg text-[#94a3b8]"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-          <div className="p-6 text-center mb-4 border border-slate-100 rounded-xl bg-slate-50">
+          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-center mb-3 border border-[#e8ddc8] rounded-xl bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white">
             <div className="w-[120px] h-[120px] mx-auto border-4 border-amber-700 rounded-full flex flex-col items-center justify-center bg-amber-50/50">
               <Stamp className="w-8 h-8 text-amber-700" />
               <div className="text-[8px] font-bold text-amber-700 mt-1 text-center leading-tight">
@@ -244,7 +274,7 @@ const QuotationsApprovals = () => {
                 العقارية
               </div>
             </div>
-            <div className="text-xs text-slate-500 mt-4">
+            <div className="text-xs text-[#64748b] mt-4">
               سيتم تطبيق ختم المكتب الرسمي على مسودة العرض ({q.number}) الموجهة
               للعميل: {getClientName(q.client)}
             </div>
@@ -252,13 +282,13 @@ const QuotationsApprovals = () => {
           <div className="flex justify-end gap-2">
             <button
               onClick={closeModal}
-              className="px-5 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200"
+              className="px-3.5 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200"
             >
               إلغاء
             </button>
             <button
               onClick={() => handleAction("stamp")}
-              className="px-5 py-2 bg-amber-700 text-white rounded-lg text-xs font-bold shadow-md hover:bg-amber-800 flex items-center gap-1.5"
+              className="px-3.5 py-2 bg-amber-700 text-white rounded-lg text-xs font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-amber-800 flex min-w-0 items-center gap-1.5"
             >
               <Stamp className="w-4 h-4" /> تطبيق الختم
             </button>
@@ -273,45 +303,45 @@ const QuotationsApprovals = () => {
     const q = activeModal.data;
     return (
       <div
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex min-w-0 items-center justify-center p-3 animate-in fade-in duration-200"
         dir="rtl"
       >
-        <div className="bg-white rounded-2xl p-6 w-full max-w-[520px] shadow-2xl animate-in zoom-in-95">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="bg-white rounded-[20px] p-3 w-full max-w-[520px] shadow-[0_20px_55px_rgba(18,63,89,0.18)] animate-in zoom-in-95">
+          <div className="flex min-w-0 items-center gap-2 mb-3">
             <PenTool className="w-6 h-6 text-cyan-600" />
-            <div className="text-base font-bold text-slate-800">
+            <div className="text-base font-bold text-[#123f59]">
               توقيع إلكتروني — {q.number}
             </div>
             <div className="flex-1"></div>
             <button
               onClick={closeModal}
-              className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"
+              className="p-1 hover:bg-slate-100 rounded-lg text-[#94a3b8]"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-          <div className="p-6 bg-cyan-50 border-2 border-dashed border-cyan-500 rounded-xl text-center mb-4">
-            <PenTool className="w-10 h-10 mx-auto mb-2 text-cyan-600" />
+          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-cyan-50 border-2 border-dashed border-cyan-500 rounded-xl text-center mb-3">
+            <PenTool className="w-9 h-9 mx-auto mb-2 text-cyan-600" />
             <div className="text-sm font-bold text-cyan-700">
               توقيع إلكتروني مُعتمد
             </div>
-            <div className="text-[10px] text-slate-500 mt-1">
+            <div className="text-[10px] text-[#64748b] mt-1">
               يتضمن ختم زمني + هوية الموقّع + التشفير
             </div>
-            <div className="font-mono text-[9px] text-slate-400 mt-3">
+            <div className="font-mono text-[9px] text-[#94a3b8] mt-3">
               SHA-256: {Math.random().toString(36).substring(2, 15)}...
             </div>
           </div>
           <div className="flex justify-end gap-2">
             <button
               onClick={closeModal}
-              className="px-5 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200"
+              className="px-3.5 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200"
             >
               إلغاء
             </button>
             <button
               onClick={() => handleAction("sign")}
-              className="px-5 py-2 bg-cyan-600 text-white rounded-lg text-xs font-bold shadow-md hover:bg-cyan-700 flex items-center gap-1.5"
+              className="px-3.5 py-2 bg-cyan-600 text-white rounded-lg text-xs font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-cyan-700 flex min-w-0 items-center gap-1.5"
             >
               <PenTool className="w-4 h-4" /> اعتماد وتوقيع
             </button>
@@ -326,11 +356,11 @@ const QuotationsApprovals = () => {
     const q = activeModal.data;
     return (
       <div
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex min-w-0 items-center justify-center p-3 animate-in fade-in duration-200"
         dir="rtl"
       >
-        <div className="bg-white rounded-2xl p-6 w-full max-w-[520px] shadow-2xl animate-in zoom-in-95">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="bg-white rounded-[20px] p-3 w-full max-w-[520px] shadow-[0_20px_55px_rgba(18,63,89,0.18)] animate-in zoom-in-95">
+          <div className="flex min-w-0 items-center gap-2 mb-3">
             <GitBranch className="w-6 h-6 text-violet-600" />
             <div className="text-base font-bold text-violet-700">
               إنشاء إصدار جديد — {q.number}
@@ -338,13 +368,13 @@ const QuotationsApprovals = () => {
             <div className="flex-1"></div>
             <button
               onClick={closeModal}
-              className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"
+              className="p-1 hover:bg-slate-100 rounded-lg text-[#94a3b8]"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="p-3 bg-amber-50 rounded-lg mb-3 text-[11px] color-amber-700 flex items-center gap-2 border border-amber-200">
+          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-amber-50 rounded-lg mb-3 text-[11px] color-amber-700 flex min-w-0 items-center gap-2 border border-amber-200">
             <Lock className="w-4 h-4" /> هذا العرض معتمد — التعديل يتطلب إنشاء
             إصدار جديد وسبب مُوثّق
           </div>
@@ -365,7 +395,7 @@ const QuotationsApprovals = () => {
           </div>
 
           <div className="mb-3">
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+            <label className="block text-xs font-bold text-[#475569] mb-1.5">
               سبب التعديل <span className="text-red-500">*</span>
             </label>
             <input
@@ -374,8 +404,8 @@ const QuotationsApprovals = () => {
             />
           </div>
 
-          <div className="mb-5">
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+          <div className="mb-3">
+            <label className="block text-xs font-bold text-[#475569] mb-1.5">
               التغييرات المقترحة (للسجل)
             </label>
             <textarea
@@ -388,12 +418,12 @@ const QuotationsApprovals = () => {
           <div className="flex justify-end gap-2">
             <button
               onClick={closeModal}
-              className="px-5 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200"
+              className="px-3.5 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200"
             >
               إلغاء
             </button>
-            <button className="px-5 py-2 bg-violet-600 text-white rounded-lg text-xs font-bold shadow-md hover:bg-violet-700 flex items-center gap-1.5">
-              <GitBranch className="w-4 h-4" /> إنشاء الإصدار (R01)
+            <button className="px-3.5 py-2 bg-[#123f59] text-white rounded-lg text-xs font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-[#0f3448] flex min-w-0 items-center gap-1.5">
+              <IconWithText icon={GitBranch} text="إنشاء الإصدار (R01)" iconClassName="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -406,11 +436,11 @@ const QuotationsApprovals = () => {
     const q = activeModal.data;
     return (
       <div
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex min-w-0 items-center justify-center p-3 animate-in fade-in duration-200"
         dir="rtl"
       >
-        <div className="bg-white rounded-2xl p-6 w-full max-w-[520px] shadow-2xl animate-in zoom-in-95">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="bg-white rounded-[20px] p-3 w-full max-w-[520px] shadow-[0_20px_55px_rgba(18,63,89,0.18)] animate-in zoom-in-95">
+          <div className="flex min-w-0 items-center gap-2 mb-3">
             <Ban className="w-6 h-6 text-red-700" />
             <div className="text-base font-bold text-red-700">
               إلغاء العرض — {q.number}
@@ -418,19 +448,19 @@ const QuotationsApprovals = () => {
             <div className="flex-1"></div>
             <button
               onClick={closeModal}
-              className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"
+              className="p-1 hover:bg-slate-100 rounded-lg text-[#94a3b8]"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="p-3 bg-red-50 rounded-lg mb-4 text-xs text-red-700 flex items-center gap-2 border border-red-200">
+          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-red-50 rounded-lg mb-3 text-xs text-red-700 flex min-w-0 items-center gap-2 border border-red-200">
             <TriangleAlert className="w-4 h-4" /> هذا الإجراء لا يمكن التراجع
             عنه. سيتم إلغاء العرض نهائياً.
           </div>
 
-          <div className="mb-5">
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+          <div className="mb-3">
+            <label className="block text-xs font-bold text-[#475569] mb-1.5">
               سبب الإلغاء <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -445,14 +475,14 @@ const QuotationsApprovals = () => {
           <div className="flex justify-end gap-2">
             <button
               onClick={closeModal}
-              className="px-5 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200"
+              className="px-3.5 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200"
             >
               تراجع
             </button>
             <button
               onClick={() => handleAction("cancel")}
               disabled={updateStatusMutation.isPending}
-              className="px-5 py-2 bg-red-700 text-white rounded-lg text-xs font-bold shadow-md hover:bg-red-800 flex items-center gap-1.5 disabled:opacity-50"
+              className="px-3.5 py-2 bg-red-700 text-white rounded-lg text-xs font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-red-800 flex min-w-0 items-center gap-1.5 disabled:opacity-50"
             >
               {updateStatusMutation.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -472,58 +502,58 @@ const QuotationsApprovals = () => {
   // ==========================================
   return (
     <div
-      className="flex-1 overflow-y-auto bg-slate-50 font-sans h-full"
+      className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim overflow-x-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-[Tajawal] h-full"
       dir="rtl"
     >
-      <div className="p-5 md:p-6 max-w-[1400px] mx-auto">
+      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 md:p-3 max-w-[1400px] mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-5">
+        <div className="flex min-w-0 justify-between items-center mb-3">
           <div>
-            <div className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <div className="text-lg font-bold text-[#123f59] flex min-w-0 items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-cyan-600" /> الاعتماد
               والمراجعة
               <span className="px-2 py-0.5 bg-cyan-100 text-cyan-700 border border-cyan-200 rounded text-[10px] font-mono font-bold">
                 815-W01
               </span>
             </div>
-            <div className="text-xs text-slate-500 mt-1">
+            <div className="text-xs text-[#64748b] mt-1">
               سير عمل الاعتماد + التوقيع/الختم + الإصدارات + سجل التدقيق
             </div>
           </div>
         </div>
 
         {/* Status Filters */}
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-2 custom-scrollbar">
+        <div className="flex gap-2 mb-3 overflow-x-auto pb-2 custom-scrollbar-slim">
           <button
             onClick={() => setFilterStatus("ALL")}
-            className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors border ${filterStatus === "ALL" ? "bg-cyan-600 text-white border-cyan-600" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+            className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors border ${filterStatus === "ALL" ? "bg-cyan-600 text-white border-cyan-600" : "bg-white text-slate-600 border-[#d8b46a]/25 hover:bg-[#fbf8f1]"}`}
           >
             الكل ({quotationsData.length})
           </button>
           <button
             onClick={() => setFilterStatus("DRAFT")}
-            className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-colors border ${filterStatus === "DRAFT" ? "bg-slate-200 text-slate-800 border-slate-300" : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"}`}
+            className={`px-4 py-2 rounded-lg text-xs font-bold flex min-w-0 items-center gap-1.5 whitespace-nowrap transition-colors border ${filterStatus === "DRAFT" ? "bg-slate-200 text-[#123f59] border-slate-300" : "bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white text-slate-600 border-[#d8b46a]/25 hover:bg-slate-100"}`}
           >
             <FileText className="w-3.5 h-3.5" /> مسودة (
             {getStatusCount("DRAFT")})
           </button>
           <button
             onClick={() => setFilterStatus("PENDING_APPROVAL")}
-            className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-colors border ${filterStatus === "PENDING_APPROVAL" ? "bg-blue-100 text-blue-800 border-blue-300" : "bg-blue-50/50 text-blue-600 border-blue-100 hover:bg-blue-50"}`}
+            className={`px-4 py-2 rounded-lg text-xs font-bold flex min-w-0 items-center gap-1.5 whitespace-nowrap transition-colors border ${filterStatus === "PENDING_APPROVAL" ? "bg-blue-100 text-blue-800 border-blue-300" : "bg-blue-50/50 text-[#123f59] border-blue-100 hover:bg-blue-50"}`}
           >
             <Eye className="w-3.5 h-3.5" /> تحت المراجعة (
             {getStatusCount("PENDING_APPROVAL")})
           </button>
           <button
             onClick={() => setFilterStatus("SENT")}
-            className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-colors border ${filterStatus === "SENT" ? "bg-amber-100 text-amber-800 border-amber-300" : "bg-amber-50/50 text-amber-600 border-amber-100 hover:bg-amber-50"}`}
+            className={`px-4 py-2 rounded-lg text-xs font-bold flex min-w-0 items-center gap-1.5 whitespace-nowrap transition-colors border ${filterStatus === "SENT" ? "bg-amber-100 text-amber-800 border-amber-300" : "bg-amber-50/50 text-amber-600 border-amber-100 hover:bg-amber-50"}`}
           >
             <PenTool className="w-3.5 h-3.5" /> بانتظار التوقيع (
             {getStatusCount("SENT")})
           </button>
           <button
             onClick={() => setFilterStatus("APPROVED")}
-            className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-colors border ${filterStatus === "APPROVED" ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-emerald-50/50 text-emerald-600 border-emerald-100 hover:bg-emerald-50"}`}
+            className={`px-4 py-2 rounded-lg text-xs font-bold flex min-w-0 items-center gap-1.5 whitespace-nowrap transition-colors border ${filterStatus === "APPROVED" ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-emerald-50/50 text-[#0f766e] border-emerald-100 hover:bg-emerald-50"}`}
           >
             <CircleCheckBig className="w-3.5 h-3.5" /> معتمد (
             {getStatusCount("APPROVED")})
@@ -531,31 +561,31 @@ const QuotationsApprovals = () => {
         </div>
 
         {/* Search */}
-        <div className="relative mb-5">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <div className="relative mb-3">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
           <input
             placeholder="بحث بالكود أو العميل أو العنوان..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full py-2.5 pr-9 pl-3 border border-slate-300 rounded-xl text-xs outline-none focus:border-cyan-500 shadow-sm"
+            className="w-full py-2.5 pr-9 pl-3 border border-slate-300 rounded-xl text-xs outline-none focus:border-cyan-500 shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
           />
         </div>
 
         {/* Cards List */}
         {isLoading ? (
-          <div className="flex justify-center p-10">
-            <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+          <div className="flex justify-center p-3.5">
+            <Loader2 className="w-8 h-8 animate-spin text-[#94a3b8]" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-3">
             {filteredData.map((q) => (
               <div
                 key={q.id}
-                className={`bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:shadow-md transition-shadow`}
+                className={`bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] p-3 hover:shadow-md transition-shadow`}
               >
-                <div className="flex justify-between items-start mb-3">
+                <div className="flex min-w-0 justify-between items-start mb-3">
                   <div>
-                    <div className="flex items-center gap-2 mb-1.5">
+                    <div className="flex min-w-0 items-center gap-2 mb-1.5">
                       <span className="font-mono text-xs font-bold text-cyan-700">
                         {q.number}
                       </span>
@@ -565,43 +595,43 @@ const QuotationsApprovals = () => {
                         </span>
                       )}
                     </div>
-                    <div className="font-bold text-sm text-slate-800">
+                    <div className="font-bold text-sm text-[#123f59]">
                       عرض سعر — {q.ownership?.district || "خدمات عامة"}
                     </div>
-                    <div className="text-xs text-slate-500 mt-1">
+                    <div className="text-xs text-[#64748b] mt-1">
                       {getClientName(q.client)}
                     </div>
                   </div>
                   <div className="text-left">
                     <StatusBadge status={q.status} />
-                    <div className="text-[10px] text-slate-400 mt-1.5 font-mono">
+                    <div className="text-[10px] text-[#94a3b8] mt-1.5 font-mono">
                       {format(new Date(q.issueDate), "yyyy-MM-dd")}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center text-xs text-slate-500 border-t border-slate-100 pt-3 mt-2">
-                  <span className="font-bold text-slate-700">
+                <div className="flex min-w-0 justify-between items-center text-xs text-[#64748b] border-t border-[#e8ddc8] pt-3 mt-2">
+                  <span className="font-bold text-[#475569]">
                     {Number(q.total).toLocaleString()} ر.س
                   </span>
                   <span>{q.items?.length || 0} بنود · 0 إصدار</span>
                 </div>
 
                 {/* Actions Toolbar */}
-                <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-100">
+                <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-[#e8ddc8]">
                   {/* أزرار الموافقة تظهر فقط إذا كان مسودة أو تحت المراجعة */}
                   {["DRAFT", "PENDING_APPROVAL"].includes(q.status) && (
                     <>
                       <button
                         onClick={() => openModal("stamp", q)}
-                        className="px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-[11px] font-bold flex items-center gap-1.5 hover:bg-amber-100 transition-colors"
+                        className="px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-[11px] font-bold flex min-w-0 items-center gap-1.5 hover:bg-amber-100 transition-colors"
                       >
                         <Stamp className="w-3.5 h-3.5" /> ختم
                       </button>
                       <button
                         onClick={() => handleAction("stamp")}
                         disabled={stampMutation.isPending}
-                        className="px-5 py-2 bg-amber-700 text-white rounded-lg text-xs font-bold shadow-md hover:bg-amber-800 flex items-center gap-1.5 disabled:opacity-50"
+                        className="px-3.5 py-2 bg-amber-700 text-white rounded-lg text-xs font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-amber-800 flex min-w-0 items-center gap-1.5 disabled:opacity-50"
                       >
                         {stampMutation.isPending ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -613,7 +643,7 @@ const QuotationsApprovals = () => {
                       <button
                         onClick={() => handleAction("sign")}
                         disabled={signMutation.isPending}
-                        className="px-5 py-2 bg-cyan-600 text-white rounded-lg text-xs font-bold shadow-md hover:bg-cyan-700 flex items-center gap-1.5 disabled:opacity-50"
+                        className="px-3.5 py-2 bg-cyan-600 text-white rounded-lg text-xs font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-cyan-700 flex min-w-0 items-center gap-1.5 disabled:opacity-50"
                       >
                         {signMutation.isPending ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -629,7 +659,7 @@ const QuotationsApprovals = () => {
                   {["APPROVED", "SENT", "ACCEPTED"].includes(q.status) && (
                     <button
                       onClick={() => openModal("version", q)}
-                      className="px-3 py-1.5 bg-violet-50 text-violet-700 border border-violet-200 rounded-lg text-[11px] font-bold flex items-center gap-1.5 hover:bg-violet-100 transition-colors"
+                      className="px-3 py-1.5 bg-violet-50 text-violet-700 border border-violet-200 rounded-lg text-[11px] font-bold flex min-w-0 items-center gap-1.5 hover:bg-violet-100 transition-colors"
                     >
                       <GitBranch className="w-3.5 h-3.5" /> إنشاء إصدار مُعدل
                     </button>
@@ -641,7 +671,7 @@ const QuotationsApprovals = () => {
                   {!["CANCELLED", "REJECTED"].includes(q.status) && (
                     <button
                       onClick={() => openModal("cancel", q)}
-                      className="px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg text-[11px] font-bold flex items-center gap-1.5 hover:bg-red-100 transition-colors"
+                      className="px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg text-[11px] font-bold flex min-w-0 items-center gap-1.5 hover:bg-red-100 transition-colors"
                     >
                       <Ban className="w-3.5 h-3.5" /> إلغاء
                     </button>
@@ -650,7 +680,7 @@ const QuotationsApprovals = () => {
               </div>
             ))}
             {filteredData.length === 0 && (
-              <div className="p-10 text-center text-slate-400 text-sm bg-white rounded-xl border border-slate-200">
+              <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 text-center text-[#94a3b8] text-sm bg-white rounded-xl border border-[#d8b46a]/25">
                 لا يوجد عروض مطابقة للبحث
               </div>
             )}

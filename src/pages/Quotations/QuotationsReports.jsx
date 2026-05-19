@@ -19,6 +19,36 @@ import {
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { arSA } from "date-fns/locale";
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`
+        inline-flex min-w-0 items-center justify-center
+        ${vertical ? "flex-col gap-0.5" : "gap-1.5"}
+        ${className}
+      `}
+    >
+      {Icon && <Icon className={iconClassName || "h-4 w-4 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 break-words text-[10px] font-black leading-tight"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
 
 // ==========================================
 // 1. إعدادات الحالات والألوان
@@ -26,16 +56,16 @@ import { arSA } from "date-fns/locale";
 const STATUS_CONFIG = {
   DRAFT: {
     label: "مسودة",
-    color: "bg-slate-500",
-    text: "text-slate-700",
-    bar: "bg-slate-500",
+    color: "bg-[#fbf8f1]0",
+    text: "text-[#475569]",
+    bar: "bg-[#fbf8f1]0",
     badgeBg: "bg-slate-100",
   },
   PENDING_APPROVAL: {
     label: "تحت المراجعة",
-    color: "bg-blue-600",
-    text: "text-blue-700",
-    bar: "bg-blue-600",
+    color: "bg-[#123f59]",
+    text: "text-[#123f59]",
+    bar: "bg-[#123f59]",
     badgeBg: "bg-blue-100",
   },
   REJECTED: {
@@ -54,9 +84,9 @@ const STATUS_CONFIG = {
   },
   APPROVED: {
     label: "معتمد — بانتظار الدفع",
-    color: "bg-emerald-600",
-    text: "text-emerald-700",
-    bar: "bg-emerald-600",
+    color: "bg-[#123f59]",
+    text: "text-[#0f766e]",
+    bar: "bg-[#123f59]",
     badgeBg: "bg-emerald-100",
   },
   PARTIALLY_PAID: {
@@ -104,7 +134,7 @@ const StatusBadge = ({ status }) => {
 
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${config.badgeBg} ${config.text}`}
+      className={`inline-flex min-w-0 items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${config.badgeBg} ${config.text}`}
     >
       {config.label}
     </span>
@@ -341,46 +371,46 @@ const QuotationsReports = () => {
   // ==========================================
 
   const renderOverview = () => (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4 animate-in fade-in">
-      <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm text-center">
-        <div className="text-[20px] font-bold text-blue-600 font-mono">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-3 animate-in fade-in">
+      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] text-center">
+        <div className="text-[20px] font-bold text-[#123f59] font-mono">
           {processedData.filtered.length}
         </div>
-        <div className="text-[10px] text-slate-500 mt-0.5">إجمالي العروض</div>
+        <div className="text-[10px] text-[#64748b] mt-0.5">إجمالي العروض</div>
       </div>
-      <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm text-center">
+      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] text-center">
         <div className="text-[20px] font-bold text-indigo-700 font-mono">
           {processedData.totalValue.toLocaleString()}
         </div>
-        <div className="text-[10px] text-slate-500 mt-0.5">
+        <div className="text-[10px] text-[#64748b] mt-0.5">
           القيمة الإجمالية (ر.س)
         </div>
       </div>
-      <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm text-center">
-        <div className="text-[20px] font-bold text-emerald-600 font-mono">
+      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] text-center">
+        <div className="text-[20px] font-bold text-[#0f766e] font-mono">
           {processedData.totalCollected.toLocaleString()}
         </div>
-        <div className="text-[10px] text-slate-500 mt-0.5">المحصّل (ر.س)</div>
+        <div className="text-[10px] text-[#64748b] mt-0.5">المحصّل (ر.س)</div>
       </div>
-      <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm text-center">
+      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] text-center">
         <div className="text-[20px] font-bold text-red-600 font-mono">
           {processedData.totalUncollected.toLocaleString()}
         </div>
-        <div className="text-[10px] text-slate-500 mt-0.5">غير محصّل (ر.س)</div>
+        <div className="text-[10px] text-[#64748b] mt-0.5">غير محصّل (ر.س)</div>
       </div>
-      <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm text-center">
+      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] text-center">
         <div className="text-[20px] font-bold text-purple-600 font-mono">
           {Math.round(processedData.avgValue).toLocaleString()}
         </div>
-        <div className="text-[10px] text-slate-500 mt-0.5">
+        <div className="text-[10px] text-[#64748b] mt-0.5">
           متوسط قيمة العرض
         </div>
       </div>
-      <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm text-center">
+      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] text-center">
         <div className="text-[20px] font-bold text-cyan-600 font-mono">
           {processedData.conversionRate}%
         </div>
-        <div className="text-[10px] text-slate-500 mt-0.5">
+        <div className="text-[10px] text-[#64748b] mt-0.5">
           معدل التحويل (مقبول)
         </div>
       </div>
@@ -388,8 +418,8 @@ const QuotationsReports = () => {
   );
 
   const renderStatus = () => (
-    <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-sm animate-in fade-in max-w-3xl">
-      <div className="text-[13px] font-bold text-slate-800 mb-4">
+    <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] animate-in fade-in max-w-3xl">
+      <div className="text-[13px] font-bold text-[#123f59] mb-3">
         توزيع حسب الحالة
       </div>
       <div className="flex flex-col gap-3">
@@ -402,13 +432,13 @@ const QuotationsReports = () => {
               0;
             return (
               <div key={status}>
-                <div className="flex justify-between text-[11px] mb-1">
+                <div className="flex min-w-0 justify-between text-[11px] mb-1">
                   <span className={`font-bold ${config.text}`}>
                     {config.label}
                   </span>
-                  <span className="text-slate-500">
+                  <span className="text-[#64748b]">
                     {data.count} عرض ({percentage}%) —{" "}
-                    <strong className="text-blue-700 font-mono">
+                    <strong className="text-[#123f59] font-mono">
                       {data.value.toLocaleString()} ر.س
                     </strong>
                   </span>
@@ -428,105 +458,105 @@ const QuotationsReports = () => {
 
   const renderFinancial = () => (
     <div className="animate-in fade-in">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
-        <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
+        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-500 flex min-w-0 items-center justify-center">
             <DollarSign className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500">إجمالي المستحقات</div>
-            <div className="text-base font-bold text-slate-800 font-mono">
+            <div className="text-[10px] text-[#64748b]">إجمالي المستحقات</div>
+            <div className="text-base font-bold text-[#123f59] font-mono">
               {processedData.totalValue.toLocaleString()} ر.س
             </div>
           </div>
         </div>
-        <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
+        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-green-50 text-green-600 flex min-w-0 items-center justify-center">
             <ArrowDownRight className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500">إجمالي المحصّل</div>
-            <div className="text-base font-bold text-slate-800 font-mono">
+            <div className="text-[10px] text-[#64748b]">إجمالي المحصّل</div>
+            <div className="text-base font-bold text-[#123f59] font-mono">
               {processedData.totalCollected.toLocaleString()} ر.س
             </div>
           </div>
         </div>
-        <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center">
+        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-orange-50 text-orange-500 flex min-w-0 items-center justify-center">
             <ArrowUpRight className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500">المتبقي</div>
-            <div className="text-base font-bold text-slate-800 font-mono">
+            <div className="text-[10px] text-[#64748b]">المتبقي</div>
+            <div className="text-base font-bold text-[#123f59] font-mono">
               {processedData.totalUncollected.toLocaleString()} ر.س
             </div>
           </div>
         </div>
-        <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
+        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-green-50 text-green-600 flex min-w-0 items-center justify-center">
             <CircleCheckBig className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500">مسددة بالكامل</div>
-            <div className="text-base font-bold text-slate-800">
+            <div className="text-[10px] text-[#64748b]">مسددة بالكامل</div>
+            <div className="text-base font-bold text-[#123f59]">
               {processedData.fullyPaidCount}
             </div>
           </div>
         </div>
-        <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-yellow-50 text-yellow-600 flex items-center justify-center">
+        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-yellow-50 text-yellow-600 flex min-w-0 items-center justify-center">
             <Clock className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500">مسددة جزئياً</div>
-            <div className="text-base font-bold text-slate-800">
+            <div className="text-[10px] text-[#64748b]">مسددة جزئياً</div>
+            <div className="text-base font-bold text-[#123f59]">
               {processedData.partiallyPaidCount}
             </div>
           </div>
         </div>
-        <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
+        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex min-w-0 items-center justify-center">
             <TriangleAlert className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500">بانتظار الدفع</div>
-            <div className="text-base font-bold text-slate-800">
+            <div className="text-[10px] text-[#64748b]">بانتظار الدفع</div>
+            <div className="text-base font-bold text-[#123f59]">
               {processedData.pendingPaymentCount}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-3 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
-          <CreditCard className="w-4 h-4 text-emerald-600" />
-          <span className="text-xs font-bold text-slate-700">
+      <div className="bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] overflow-hidden">
+        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 border-b border-[#d8b46a]/25 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white flex min-w-0 items-center gap-2">
+          <CreditCard className="w-4 h-4 text-[#0f766e]" />
+          <span className="text-xs font-bold text-[#475569]">
             تفاصيل الدفعات والتحصيل
           </span>
         </div>
-        <div className="overflow-x-auto max-h-[400px] custom-scrollbar">
+        <div className="overflow-x-auto max-h-[400px] custom-scrollbar-slim">
           <table className="w-full text-right border-collapse">
             <thead>
-              <tr className="bg-slate-50">
-                <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap sticky top-0 bg-slate-50 shadow-sm">
+              <tr className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white">
+                <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
                   الكود
                 </th>
-                <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap sticky top-0 bg-slate-50 shadow-sm">
+                <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
                   العميل
                 </th>
-                <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap sticky top-0 bg-slate-50 shadow-sm">
+                <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
                   إجمالي العرض
                 </th>
-                <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap sticky top-0 bg-slate-50 shadow-sm">
+                <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
                   المسدد
                 </th>
-                <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap sticky top-0 bg-slate-50 shadow-sm">
+                <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
                   المتبقي
                 </th>
-                <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap sticky top-0 bg-slate-50 shadow-sm">
+                <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
                   نسبة التحصيل
                 </th>
-                <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap sticky top-0 bg-slate-50 shadow-sm">
+                <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
                   الحالة
                 </th>
               </tr>
@@ -540,37 +570,37 @@ const QuotationsReports = () => {
                 return (
                   <tr
                     key={q.id}
-                    className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors"
+                    className="border-b border-[#e8ddc8] hover:bg-[#fbf8f1]/50 transition-colors"
                   >
-                    <td className="p-3 text-xs font-bold text-blue-600 font-mono">
+                    <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-[#123f59] font-mono">
                       {q.number}
                     </td>
-                    <td className="p-3 text-xs text-slate-700 font-bold">
+                    <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-[#475569] font-bold">
                       {getClientName(q.client)}
                     </td>
-                    <td className="p-3 text-xs text-slate-700 font-mono">
+                    <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-[#475569] font-mono">
                       {q.quoteTotal.toLocaleString()}
                     </td>
-                    <td className="p-3 text-xs text-green-600 font-mono font-bold">
+                    <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-green-600 font-mono font-bold">
                       {q.collected.toLocaleString()}
                     </td>
-                    <td className="p-3 text-xs text-red-600 font-mono font-bold">
+                    <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-red-600 font-mono font-bold">
                       {q.remaining.toLocaleString()}
                     </td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-2">
+                    <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3">
+                      <div className="flex min-w-0 items-center gap-2">
                         <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden w-16">
                           <div
                             className={`h-full ${progressColor} transition-all duration-500`}
                             style={{ width: `${q.progress}%` }}
                           ></div>
                         </div>
-                        <span className="text-[10px] font-bold text-slate-500 min-w-[32px]">
+                        <span className="text-[10px] font-bold text-[#64748b] min-w-[32px]">
                           {q.progress}%
                         </span>
                       </div>
                     </td>
-                    <td className="p-3">
+                    <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3">
                       <StatusBadge status={q.status} />
                     </td>
                   </tr>
@@ -584,28 +614,28 @@ const QuotationsReports = () => {
   );
 
   const renderClient = () => (
-    <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-sm animate-in fade-in">
-      <div className="text-[13px] font-bold text-slate-800 mb-4">
+    <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] animate-in fade-in">
+      <div className="text-[13px] font-bold text-[#123f59] mb-3">
         تحليل حسب العميل
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-right border-collapse">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="p-3 text-[11px] text-slate-500 font-bold">#</th>
-              <th className="p-3 text-[11px] text-slate-500 font-bold">
+            <tr className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-b border-[#d8b46a]/25">
+              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">#</th>
+              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
                 العميل
               </th>
-              <th className="p-3 text-[11px] text-slate-500 font-bold">
+              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
                 عدد العروض
               </th>
-              <th className="p-3 text-[11px] text-slate-500 font-bold">
+              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
                 إجمالي القيمة
               </th>
-              <th className="p-3 text-[11px] text-slate-500 font-bold">
+              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
                 المحصّل
               </th>
-              <th className="p-3 text-[11px] text-slate-500 font-bold">
+              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
                 المتبقي
               </th>
             </tr>
@@ -614,24 +644,24 @@ const QuotationsReports = () => {
             {processedData.clientArray.map((c, idx) => (
               <tr
                 key={c.name}
-                className="border-b border-slate-100 hover:bg-slate-50"
+                className="border-b border-[#e8ddc8] hover:bg-[#fbf8f1]"
               >
-                <td className="p-3 text-[10px] text-slate-400 font-mono">
+                <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[10px] text-[#94a3b8] font-mono">
                   {idx + 1}
                 </td>
-                <td className="p-3 text-xs font-bold text-slate-700">
+                <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-[#475569]">
                   {c.name}
                 </td>
-                <td className="p-3 text-xs text-slate-600 font-mono">
+                <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-slate-600 font-mono">
                   {c.count}
                 </td>
-                <td className="p-3 text-xs font-bold text-blue-700 font-mono">
+                <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-[#123f59] font-mono">
                   {c.total.toLocaleString()} ر.س
                 </td>
-                <td className="p-3 text-xs font-bold text-green-600 font-mono">
+                <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-green-600 font-mono">
                   {c.collected.toLocaleString()} ر.س
                 </td>
-                <td className="p-3 text-xs font-bold text-red-600 font-mono">
+                <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-red-600 font-mono">
                   {c.remaining.toLocaleString()} ر.س
                 </td>
               </tr>
@@ -640,7 +670,7 @@ const QuotationsReports = () => {
               <tr>
                 <td
                   colSpan={6}
-                  className="p-6 text-center text-slate-400 text-xs"
+                  className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-center text-[#94a3b8] text-xs"
                 >
                   لا توجد بيانات متاحة
                 </td>
@@ -653,30 +683,30 @@ const QuotationsReports = () => {
   );
 
   const renderMonthly = () => (
-    <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-sm animate-in fade-in max-w-4xl">
-      <div className="text-[13px] font-bold text-slate-800 mb-4">
+    <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] animate-in fade-in max-w-4xl">
+      <div className="text-[13px] font-bold text-[#123f59] mb-3">
         التحليل الشهري
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-right border-collapse">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="p-3 text-[11px] text-slate-500 font-bold">
+            <tr className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-b border-[#d8b46a]/25">
+              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
                 الشهر
               </th>
-              <th className="p-3 text-[11px] text-slate-500 font-bold">
+              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
                 العدد
               </th>
-              <th className="p-3 text-[11px] text-slate-500 font-bold">
+              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
                 القيمة
               </th>
-              <th className="p-3 text-[11px] text-slate-500 font-bold">
+              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
                 المحصّل
               </th>
-              <th className="p-3 text-[11px] text-slate-500 font-bold">
+              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
                 المتبقي
               </th>
-              <th className="p-3 text-[11px] text-slate-500 font-bold">
+              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
                 نسبة التحصيل
               </th>
             </tr>
@@ -688,32 +718,32 @@ const QuotationsReports = () => {
               return (
                 <tr
                   key={m.month}
-                  className="border-b border-slate-100 hover:bg-slate-50"
+                  className="border-b border-[#e8ddc8] hover:bg-[#fbf8f1]"
                 >
-                  <td className="p-3 text-xs font-bold text-slate-700 font-mono">
+                  <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-[#475569] font-mono">
                     {m.month}
                   </td>
-                  <td className="p-3 text-xs text-slate-600 font-mono">
+                  <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-slate-600 font-mono">
                     {m.count}
                   </td>
-                  <td className="p-3 text-xs font-bold text-blue-700 font-mono">
+                  <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-[#123f59] font-mono">
                     {m.value.toLocaleString()} ر.س
                   </td>
-                  <td className="p-3 text-xs font-bold text-green-600 font-mono">
+                  <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-green-600 font-mono">
                     {m.collected.toLocaleString()} ر.س
                   </td>
-                  <td className="p-3 text-xs font-bold text-red-600 font-mono">
+                  <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-red-600 font-mono">
                     {m.remaining.toLocaleString()} ر.س
                   </td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
+                  <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3">
+                    <div className="flex min-w-0 items-center gap-2">
                       <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden w-16">
                         <div
                           className={`h-full bg-blue-500 transition-all duration-500`}
                           style={{ width: `${progress}%` }}
                         ></div>
                       </div>
-                      <span className="text-[10px] font-bold text-slate-500 min-w-[32px]">
+                      <span className="text-[10px] font-bold text-[#64748b] min-w-[32px]">
                         {progress}%
                       </span>
                     </div>
@@ -739,34 +769,34 @@ const QuotationsReports = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50" dir="rtl">
-      <div className="p-5 md:p-6 font-sans max-w-7xl mx-auto">
+    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim overflow-x-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white" dir="rtl">
+      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 md:p-3 font-[Tajawal] max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-4">
-          <div className="text-base font-bold text-slate-800 flex items-center gap-2">
+        <div className="flex min-w-0 justify-between items-center mb-3">
+          <div className="text-base font-bold text-[#123f59] flex min-w-0 items-center gap-2">
             <ChartColumn className="w-5 h-5 text-indigo-600" /> تقارير عروض
             الأسعار
-            <span className="text-[11px] text-slate-500 font-normal">
+            <span className="text-[11px] text-[#64748b] font-normal">
               ({processedData.filtered.length} عرض)
             </span>
           </div>
           <div className="flex gap-2">
             <button
               onClick={handlePrint}
-              className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-md text-[11px] font-bold cursor-pointer flex items-center gap-1.5 hover:bg-blue-100 transition-colors"
+              className="px-3 py-1.5 bg-blue-50 text-[#123f59] border border-blue-200 rounded-md text-[11px] font-bold cursor-pointer flex min-w-0 items-center gap-1.5 hover:bg-blue-100 transition-colors"
             >
-              <Printer className="w-3.5 h-3.5" /> طباعة تقرير احترافي
+              <IconWithText icon={Printer} text="طباعة تقرير احترافي" iconClassName="w-3.5 h-3.5" />
             </button>
-            <button className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-md text-[11px] font-bold cursor-pointer flex items-center gap-1.5 hover:bg-green-100 transition-colors">
-              <Download className="w-3.5 h-3.5" /> Excel
+            <button className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-md text-[11px] font-bold cursor-pointer flex min-w-0 items-center gap-1.5 hover:bg-green-100 transition-colors">
+              <IconWithText icon={Download} text="Excel" iconClassName="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="flex gap-3 mb-4 items-end flex-wrap p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex gap-3 mb-3 items-end flex-wrap p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
           <div>
-            <label className="text-[10px] font-bold text-slate-500 block mb-1">
+            <label className="text-[10px] font-bold text-[#64748b] block mb-1">
               الحالة
             </label>
             <select
@@ -783,7 +813,7 @@ const QuotationsReports = () => {
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-bold text-slate-500 block mb-1">
+            <label className="text-[10px] font-bold text-[#64748b] block mb-1">
               من تاريخ
             </label>
             <input
@@ -794,7 +824,7 @@ const QuotationsReports = () => {
             />
           </div>
           <div>
-            <label className="text-[10px] font-bold text-slate-500 block mb-1">
+            <label className="text-[10px] font-bold text-[#64748b] block mb-1">
               إلى تاريخ
             </label>
             <input
@@ -807,7 +837,7 @@ const QuotationsReports = () => {
         </div>
 
         {/* Sub Tabs */}
-        <div className="flex gap-1 mb-5 border-b-2 border-slate-200">
+        <div className="flex gap-1 mb-3 border-b-2 border-[#d8b46a]/25">
           {[
             { id: "overview", label: "نظرة عامة" },
             { id: "status", label: "حسب الحالة" },
@@ -818,7 +848,7 @@ const QuotationsReports = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 text-[11px] font-bold transition-all border-x-2 border-t-2 rounded-t-lg -mb-[2px] ${activeTab === tab.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-transparent text-slate-500 border-transparent hover:text-slate-700"}`}
+              className={`px-4 py-2 text-[11px] font-bold transition-all border-x-2 border-t-2 rounded-t-lg -mb-[2px] ${activeTab === tab.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-transparent text-[#64748b] border-transparent hover:text-[#475569]"}`}
             >
               {tab.label}
             </button>

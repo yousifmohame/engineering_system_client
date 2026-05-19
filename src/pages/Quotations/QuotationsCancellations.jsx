@@ -7,6 +7,36 @@ import {
   Search, X, TriangleAlert, Loader2
 } from "lucide-react";
 import { format } from "date-fns";
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`
+        inline-flex min-w-0 items-center justify-center
+        ${vertical ? "flex-col gap-0.5" : "gap-1.5"}
+        ${className}
+      `}
+    >
+      {Icon && <Icon className={iconClassName || "h-4 w-4 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 break-words text-[10px] font-black leading-tight"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
 
 // ==========================================
 // 1. دوال مساعدة
@@ -136,23 +166,23 @@ const QuotationsCancellations = () => {
     const selectedQuote = processedData.cancellableQuotes.find(q => q.id === cancelForm.quotationId);
 
     return (
-      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" dir="rtl">
-        <div className="bg-white rounded-2xl p-6 w-full max-w-[480px] shadow-2xl animate-in zoom-in-95">
-          <div className="flex justify-between items-center mb-5">
-            <div className="text-base font-bold text-red-600 flex items-center gap-2">
-              <Ban className="w-5 h-5" /> إلغاء عرض سعر
+      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex min-w-0 items-center justify-center p-3 animate-in fade-in duration-200" dir="rtl">
+        <div className="bg-white rounded-[20px] p-3 w-full max-w-[480px] shadow-[0_20px_55px_rgba(18,63,89,0.18)] animate-in zoom-in-95">
+          <div className="flex min-w-0 justify-between items-center mb-3">
+            <div className="text-base font-bold text-red-600 flex min-w-0 items-center gap-2">
+              <IconWithText icon={Ban} iconClassName="w-5 h-5" /> إلغاء عرض سعر
             </div>
-            <button onClick={closeModal} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"><X className="w-5 h-5" /></button>
+            <button onClick={closeModal} className="p-1 hover:bg-slate-100 rounded-lg text-[#94a3b8]"><X className="w-5 h-5" /></button>
           </div>
 
           {selectedQuote && (
-            <div className="p-3 bg-red-50 border border-red-100 rounded-lg mb-4 text-xs text-red-700">
+            <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-red-50 border border-red-100 rounded-lg mb-3 text-xs text-red-700">
               <strong>{selectedQuote.number}</strong> — {getClientName(selectedQuote.client)} — {Number(selectedQuote.total).toLocaleString()} ر.س
             </div>
           )}
 
-          <div className="mb-4">
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">العرض المراد إلغاؤه</label>
+          <div className="mb-3">
+            <label className="block text-xs font-bold text-[#475569] mb-1.5">العرض المراد إلغاؤه</label>
             <select 
               value={cancelForm.quotationId} 
               onChange={e => setCancelForm({...cancelForm, quotationId: e.target.value})}
@@ -165,8 +195,8 @@ const QuotationsCancellations = () => {
             </select>
           </div>
 
-          <div className="mb-5">
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">سبب الإلغاء <span className="text-red-500">*</span></label>
+          <div className="mb-3">
+            <label className="block text-xs font-bold text-[#475569] mb-1.5">سبب الإلغاء <span className="text-red-500">*</span></label>
             <textarea 
               value={cancelForm.reason}
               onChange={e => setCancelForm({...cancelForm, reason: e.target.value})}
@@ -177,10 +207,10 @@ const QuotationsCancellations = () => {
           </div>
 
           <div className="flex gap-2">
-            <button onClick={handleCancelQuote} disabled={updateStatusMutation.isPending} className="px-6 py-2.5 bg-red-600 text-white rounded-lg text-xs font-bold shadow-md hover:bg-red-700 flex items-center gap-1.5 disabled:opacity-50">
+            <button onClick={handleCancelQuote} disabled={updateStatusMutation.isPending} className="px-4 py-2.5 bg-red-600 text-white rounded-lg text-xs font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-red-700 flex min-w-0 items-center gap-1.5 disabled:opacity-50">
               {updateStatusMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin"/> : <Ban className="w-4 h-4" />} تأكيد الإلغاء
             </button>
-            <button onClick={closeModal} className="px-6 py-2.5 bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-xs font-bold hover:bg-slate-200">تراجع</button>
+            <button onClick={closeModal} className="px-4 py-2.5 bg-slate-100 text-slate-600 border border-[#d8b46a]/25 rounded-lg text-xs font-bold hover:bg-slate-200">تراجع</button>
           </div>
         </div>
       </div>
@@ -192,17 +222,17 @@ const QuotationsCancellations = () => {
     const selectedQuote = processedData.refundableQuotes.find(q => q.id === refundForm.quotationId);
 
     return (
-      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" dir="rtl">
-        <div className="bg-white rounded-2xl p-6 w-full max-w-[480px] shadow-2xl animate-in zoom-in-95">
-          <div className="flex justify-between items-center mb-5">
-            <div className="text-base font-bold text-violet-600 flex items-center gap-2">
+      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex min-w-0 items-center justify-center p-3 animate-in fade-in duration-200" dir="rtl">
+        <div className="bg-white rounded-[20px] p-3 w-full max-w-[480px] shadow-[0_20px_55px_rgba(18,63,89,0.18)] animate-in zoom-in-95">
+          <div className="flex min-w-0 justify-between items-center mb-3">
+            <div className="text-base font-bold text-violet-600 flex min-w-0 items-center gap-2">
               <Undo2 className="w-5 h-5" /> طلب استرجاع مبلغ
             </div>
-            <button onClick={closeModal} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"><X className="w-5 h-5" /></button>
+            <button onClick={closeModal} className="p-1 hover:bg-slate-100 rounded-lg text-[#94a3b8]"><X className="w-5 h-5" /></button>
           </div>
 
-          <div className="mb-4">
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">العرض</label>
+          <div className="mb-3">
+            <label className="block text-xs font-bold text-[#475569] mb-1.5">العرض</label>
             <select 
               value={refundForm.quotationId} 
               onChange={e => setRefundForm({...refundForm, quotationId: e.target.value})}
@@ -216,14 +246,14 @@ const QuotationsCancellations = () => {
           </div>
 
           {selectedQuote && (
-            <div className="p-3 bg-violet-50 border border-violet-100 rounded-lg mb-4 text-xs text-violet-700">
+            <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-violet-50 border border-violet-100 rounded-lg mb-3 text-xs text-violet-700">
               المبلغ المسدد: <strong>{Number(selectedQuote.collectedAmount).toLocaleString()} ر.س</strong>
             </div>
           )}
 
-          <div className="flex flex-col gap-3 mb-5">
+          <div className="flex flex-col gap-3 mb-3">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">مبلغ الاسترجاع (ر.س) <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-bold text-[#475569] mb-1.5">مبلغ الاسترجاع (ر.س) <span className="text-red-500">*</span></label>
               <input 
                 type="number" 
                 placeholder={`الحد الأقصى: ${selectedQuote ? Number(selectedQuote.collectedAmount).toLocaleString() : '0'}`} 
@@ -233,7 +263,7 @@ const QuotationsCancellations = () => {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">طريقة الاسترجاع</label>
+              <label className="block text-xs font-bold text-[#475569] mb-1.5">طريقة الاسترجاع</label>
               <select 
                 value={refundForm.method}
                 onChange={e => setRefundForm({...refundForm, method: e.target.value})}
@@ -245,7 +275,7 @@ const QuotationsCancellations = () => {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">سبب الاسترجاع <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-bold text-[#475569] mb-1.5">سبب الاسترجاع <span className="text-red-500">*</span></label>
               <textarea 
                 rows="2" 
                 placeholder="سبب طلب الاسترجاع..." 
@@ -257,10 +287,10 @@ const QuotationsCancellations = () => {
           </div>
 
           <div className="flex gap-2">
-            <button onClick={handleRequestRefund} disabled={updateStatusMutation.isPending} className="px-6 py-2.5 bg-violet-600 text-white rounded-lg text-xs font-bold shadow-md hover:bg-violet-700 flex items-center gap-1.5 disabled:opacity-50">
+            <button onClick={handleRequestRefund} disabled={updateStatusMutation.isPending} className="px-4 py-2.5 bg-[#123f59] text-white rounded-lg text-xs font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-[#0f3448] flex min-w-0 items-center gap-1.5 disabled:opacity-50">
               {updateStatusMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin"/> : <Undo2 className="w-4 h-4" />} تقديم طلب الاسترجاع
             </button>
-            <button onClick={closeModal} className="px-6 py-2.5 bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-xs font-bold hover:bg-slate-200">تراجع</button>
+            <button onClick={closeModal} className="px-4 py-2.5 bg-slate-100 text-slate-600 border border-[#d8b46a]/25 rounded-lg text-xs font-bold hover:bg-slate-200">تراجع</button>
           </div>
         </div>
       </div>
@@ -271,63 +301,63 @@ const QuotationsCancellations = () => {
   // Render Main Page
   // ==========================================
   if (isLoading) {
-    return <div className="flex justify-center items-center h-full min-h-screen bg-slate-50"><Loader2 className="w-8 h-8 animate-spin text-red-500" /></div>;
+    return <div className="flex justify-center items-center h-full min-h-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"><Loader2 className="w-8 h-8 animate-spin text-red-500" /></div>;
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50 font-sans h-full" dir="rtl">
-      <div className="p-5 md:p-6 max-w-7xl mx-auto">
+    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim overflow-x-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-[Tajawal] h-full" dir="rtl">
+      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 md:p-3 max-w-7xl mx-auto">
         
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-          <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 hover:-translate-y-0.5 transition-transform">
-            <div className="w-10 h-10 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><Ban className="w-5 h-5" /></div>
-            <div><div className="text-[10px] text-slate-500">إجمالي الملغاة</div><div className="text-lg font-bold text-slate-800">{processedData.kpis.totalCancelled}</div></div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3 hover:-translate-y-0.5 transition-transform">
+            <div className="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex min-w-0 items-center justify-center"><Ban className="w-5 h-5" /></div>
+            <div><div className="text-[10px] text-[#64748b]">إجمالي الملغاة</div><div className="text-lg font-bold text-[#123f59]">{processedData.kpis.totalCancelled}</div></div>
           </div>
-          <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 hover:-translate-y-0.5 transition-transform">
-            <div className="w-10 h-10 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center"><Undo2 className="w-5 h-5" /></div>
-            <div><div className="text-[10px] text-slate-500">طلبات استرجاع جارية</div><div className="text-lg font-bold text-slate-800">{processedData.kpis.activeRefunds}</div></div>
+          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3 hover:-translate-y-0.5 transition-transform">
+            <div className="w-9 h-9 rounded-lg bg-orange-50 text-orange-500 flex min-w-0 items-center justify-center"><Undo2 className="w-5 h-5" /></div>
+            <div><div className="text-[10px] text-[#64748b]">طلبات استرجاع جارية</div><div className="text-lg font-bold text-[#123f59]">{processedData.kpis.activeRefunds}</div></div>
           </div>
-          <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 hover:-translate-y-0.5 transition-transform">
-            <div className="w-10 h-10 rounded-lg bg-green-50 text-green-600 flex items-center justify-center"><CircleCheckBig className="w-5 h-5" /></div>
-            <div><div className="text-[10px] text-slate-500">استرجاعات مكتملة</div><div className="text-lg font-bold text-slate-800">{processedData.kpis.completedRefunds}</div></div>
+          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3 hover:-translate-y-0.5 transition-transform">
+            <div className="w-9 h-9 rounded-lg bg-green-50 text-green-600 flex min-w-0 items-center justify-center"><CircleCheckBig className="w-5 h-5" /></div>
+            <div><div className="text-[10px] text-[#64748b]">استرجاعات مكتملة</div><div className="text-lg font-bold text-[#123f59]">{processedData.kpis.completedRefunds}</div></div>
           </div>
-          <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 hover:-translate-y-0.5 transition-transform">
-            <div className="w-10 h-10 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center"><DollarSign className="w-5 h-5" /></div>
-            <div><div className="text-[10px] text-slate-500">إجمالي المبالغ المستردة</div><div className="text-lg font-bold text-slate-800 font-mono">{processedData.kpis.totalRefundedAmount.toLocaleString()} ر.س</div></div>
+          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3 hover:-translate-y-0.5 transition-transform">
+            <div className="w-9 h-9 rounded-lg bg-violet-50 text-violet-600 flex min-w-0 items-center justify-center"><DollarSign className="w-5 h-5" /></div>
+            <div><div className="text-[10px] text-[#64748b]">إجمالي المبالغ المستردة</div><div className="text-lg font-bold text-[#123f59] font-mono">{processedData.kpis.totalRefundedAmount.toLocaleString()} ر.س</div></div>
           </div>
         </div>
 
         {/* Header & Actions */}
-        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm mb-4 flex flex-wrap items-center gap-3">
+        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] mb-3 flex flex-wrap items-center gap-3">
           <RotateCcw className="w-5 h-5 text-red-600 mr-1" />
-          <span className="text-sm font-bold text-slate-800">الملغاة والاسترجاعات</span>
+          <span className="text-sm font-bold text-[#123f59]">الملغاة والاسترجاعات</span>
           
           <div className="flex-1"></div>
 
           <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
-            <button onClick={() => setActiveTab('cancelled')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'cancelled' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>العروض الملغاة</button>
-            <button onClick={() => setActiveTab('refunds')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'refunds' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>طلبات الاسترجاع</button>
+            <button onClick={() => setActiveTab('cancelled')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'cancelled' ? 'bg-white text-[#123f59] shadow-[0_6px_18px_rgba(18,63,89,0.05)]' : 'text-[#64748b] hover:text-[#475569]'}`}>العروض الملغاة</button>
+            <button onClick={() => setActiveTab('refunds')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'refunds' ? 'bg-white text-[#123f59] shadow-[0_6px_18px_rgba(18,63,89,0.05)]' : 'text-[#64748b] hover:text-[#475569]'}`}>طلبات الاسترجاع</button>
           </div>
 
-          <button onClick={() => openModal('cancel')} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg text-[11px] font-bold hover:bg-red-100 flex items-center gap-1.5 ml-2 transition-colors">
+          <button onClick={() => openModal('cancel')} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg text-[11px] font-bold hover:bg-red-100 flex min-w-0 items-center gap-1.5 ml-2 transition-colors">
             <Ban className="w-3.5 h-3.5" /> إلغاء عرض
           </button>
-          <button onClick={() => openModal('refund')} className="px-3 py-1.5 bg-violet-50 text-violet-600 border border-violet-200 rounded-lg text-[11px] font-bold hover:bg-violet-100 flex items-center gap-1.5 transition-colors">
+          <button onClick={() => openModal('refund')} className="px-3 py-1.5 bg-violet-50 text-violet-600 border border-violet-200 rounded-lg text-[11px] font-bold hover:bg-violet-100 flex min-w-0 items-center gap-1.5 transition-colors">
             <Undo2 className="w-3.5 h-3.5" /> طلب استرجاع
           </button>
         </div>
 
         {/* Table Area */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-3 border-b border-slate-100 flex justify-end">
+        <div className="bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] overflow-hidden">
+          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 border-b border-[#e8ddc8] flex justify-end">
             <div className="relative w-[250px]">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
               <input 
                 placeholder="بحث بالكود أو العميل..." 
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full py-1.5 pr-9 pl-3 border border-slate-300 rounded-lg text-xs outline-none focus:border-slate-500 bg-slate-50"
+                className="w-full py-1.5 pr-9 pl-3 border border-slate-300 rounded-lg text-xs outline-none focus:border-slate-500 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
               />
             </div>
           </div>
@@ -336,68 +366,68 @@ const QuotationsCancellations = () => {
             {activeTab === 'cancelled' ? (
               <table className="w-full text-right border-collapse">
                 <thead>
-                  <tr className="bg-slate-50">
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap border-b-2 border-slate-200">الكود</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap border-b-2 border-slate-200">العميل</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap border-b-2 border-slate-200">الإجمالي</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap border-b-2 border-slate-200">الحالة</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap border-b-2 border-slate-200">ملاحظات / السبب</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap border-b-2 border-slate-200">التاريخ</th>
+                  <tr className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white">
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap border-b-2 border-[#d8b46a]/25">الكود</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap border-b-2 border-[#d8b46a]/25">العميل</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap border-b-2 border-[#d8b46a]/25">الإجمالي</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap border-b-2 border-[#d8b46a]/25">الحالة</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap border-b-2 border-[#d8b46a]/25">ملاحظات / السبب</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap border-b-2 border-[#d8b46a]/25">التاريخ</th>
                   </tr>
                 </thead>
                 <tbody>
                   {displayData.map(q => (
-                    <tr key={q.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                      <td className="p-3 text-xs font-bold text-red-600 font-mono">{q.number}</td>
-                      <td className="p-3 text-xs text-slate-700 font-bold">{getClientName(q.client)}</td>
-                      <td className="p-3 text-xs text-slate-600 font-mono">{Number(q.total).toLocaleString()} ر.س</td>
-                      <td className="p-3">
+                    <tr key={q.id} className="border-b border-[#e8ddc8] hover:bg-[#fbf8f1] transition-colors">
+                      <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-red-600 font-mono">{q.number}</td>
+                      <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-[#475569] font-bold">{getClientName(q.client)}</td>
+                      <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-slate-600 font-mono">{Number(q.total).toLocaleString()} ر.س</td>
+                      <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3">
                         <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-red-100 text-red-700">ملغى</span>
                       </td>
-                      <td className="p-3 text-[11px] text-slate-500 max-w-[200px] truncate" title={q.notes}>{q.notes || "لا يوجد سبب مسجل"}</td>
-                      <td className="p-3 text-[11px] text-slate-400 font-mono">{format(new Date(q.updatedAt || q.createdAt), "yyyy-MM-dd")}</td>
+                      <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] max-w-[200px] truncate" title={q.notes}>{q.notes || "لا يوجد سبب مسجل"}</td>
+                      <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#94a3b8] font-mono">{format(new Date(q.updatedAt || q.createdAt), "yyyy-MM-dd")}</td>
                     </tr>
                   ))}
-                  {displayData.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-slate-400 text-sm">لا توجد عروض ملغاة</td></tr>}
+                  {displayData.length === 0 && <tr><td colSpan={6} className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-center text-[#94a3b8] text-sm">لا توجد عروض ملغاة</td></tr>}
                 </tbody>
               </table>
             ) : (
               <table className="w-full text-right border-collapse">
                 <thead>
-                  <tr className="bg-slate-50">
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap border-b-2 border-slate-200">كود العرض</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap border-b-2 border-slate-200">العميل</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap border-b-2 border-slate-200">المبلغ المسترد (المحصّل)</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap border-b-2 border-slate-200">ملاحظات</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap border-b-2 border-slate-200">الحالة</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap border-b-2 border-slate-200">التاريخ</th>
-                    <th className="p-3 text-[11px] text-slate-500 font-bold whitespace-nowrap border-b-2 border-slate-200 text-center">إجراءات</th>
+                  <tr className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white">
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap border-b-2 border-[#d8b46a]/25">كود العرض</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap border-b-2 border-[#d8b46a]/25">العميل</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap border-b-2 border-[#d8b46a]/25">المبلغ المسترد (المحصّل)</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap border-b-2 border-[#d8b46a]/25">ملاحظات</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap border-b-2 border-[#d8b46a]/25">الحالة</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap border-b-2 border-[#d8b46a]/25">التاريخ</th>
+                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap border-b-2 border-[#d8b46a]/25 text-center">إجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
                   {displayData.map(q => (
-                    <tr key={q.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                      <td className="p-3 text-xs font-bold text-blue-600 font-mono">{q.number}</td>
-                      <td className="p-3 text-xs text-slate-700 font-bold">{getClientName(q.client)}</td>
-                      <td className="p-3 text-xs font-bold text-red-600 font-mono">{Number(q.collectedAmount).toLocaleString()} ر.س</td>
-                      <td className="p-3 text-[11px] text-slate-500 max-w-[200px] truncate" title={q.notes}>{q.notes}</td>
-                      <td className="p-3">
+                    <tr key={q.id} className="border-b border-[#e8ddc8] hover:bg-[#fbf8f1] transition-colors">
+                      <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-[#123f59] font-mono">{q.number}</td>
+                      <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-[#475569] font-bold">{getClientName(q.client)}</td>
+                      <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-red-600 font-mono">{Number(q.collectedAmount).toLocaleString()} ر.س</td>
+                      <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] max-w-[200px] truncate" title={q.notes}>{q.notes}</td>
+                      <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3">
                         {q.status === 'REFUND_IN_PROGRESS' 
                           ? <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-orange-100 text-orange-700">قيد المعالجة</span>
                           : <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-green-100 text-green-700">مسترد بالكامل</span>
                         }
                       </td>
-                      <td className="p-3 text-[11px] text-slate-400 font-mono">{format(new Date(q.updatedAt), "yyyy-MM-dd")}</td>
-                      <td className="p-3 text-center">
+                      <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#94a3b8] font-mono">{format(new Date(q.updatedAt), "yyyy-MM-dd")}</td>
+                      <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-center">
                         {q.status === 'REFUND_IN_PROGRESS' && (
-                          <button onClick={() => handleCompleteRefund(q.id)} className="px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-lg text-[10px] font-bold hover:bg-green-100 flex items-center gap-1.5 mx-auto transition-colors">
+                          <button onClick={() => handleCompleteRefund(q.id)} className="px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-lg text-[10px] font-bold hover:bg-green-100 flex min-w-0 items-center gap-1.5 mx-auto transition-colors">
                             <CircleCheckBig className="w-3 h-3" /> إتمام
                           </button>
                         )}
                       </td>
                     </tr>
                   ))}
-                  {displayData.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-slate-400 text-sm">لا توجد طلبات استرجاع</td></tr>}
+                  {displayData.length === 0 && <tr><td colSpan={7} className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-center text-[#94a3b8] text-sm">لا توجد طلبات استرجاع</td></tr>}
                 </tbody>
               </table>
             )}

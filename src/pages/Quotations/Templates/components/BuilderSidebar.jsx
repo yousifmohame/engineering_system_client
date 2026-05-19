@@ -9,8 +9,38 @@ import {
   AlignRight,
   Loader2,
   ArrowRight,
+  FileText,
+  Hash,
+  Settings2,
+  Percent,
+  Signature,
+  CheckSquare,
 } from "lucide-react";
 import { DYNAMIC_VARIABLES } from "../constants";
+
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`inline-flex min-w-0 items-center justify-center ${
+        vertical ? "flex-col gap-0.5" : "gap-1.5"
+      } ${className}`}
+    >
+      {Icon && <Icon className={iconClassName || "h-4 w-4 shrink-0"} />}
+      {text && (
+        <span className={textClassName || "min-w-0 break-words text-[10px] font-black leading-tight"}>
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
 
 export default function BuilderSidebar({
   template,
@@ -25,429 +55,504 @@ export default function BuilderSidebar({
   const insertVariable = (field, variable) => {
     setTemplate((prev) => ({
       ...prev,
-      intro: { ...prev.intro, [field]: prev.intro[field] + " " + variable },
+      intro: {
+        ...prev.intro,
+        [field]: `${prev.intro[field] || ""} ${variable}`.trim(),
+      },
     }));
   };
 
+  const tabs = [
+    { id: "intro", label: "المقدمة", icon: AlignRight },
+    { id: "table", label: "الجدول", icon: TableIcon },
+    { id: "terms", label: "الشروط", icon: ListChecks },
+    { id: "header", label: "الترويسة", icon: ImageIcon },
+  ];
+
   return (
-    <div className="w-[450px] border-l border-slate-200 flex flex-col bg-slate-50/50 shadow-lg z-10">
-      {/* Header */}
-      <div className="p-5 border-b border-slate-200 bg-white">
-        <div className="flex justify-between items-center mb-1">
-          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+    <aside
+      className="
+        z-10 flex h-full min-h-0 w-[400px] shrink-0 flex-col overflow-hidden
+        border-l border-[#d8b46a]/25 bg-white/90
+        shadow-[0_10px_24px_rgba(18,63,89,0.10)] backdrop-blur-xl
+      "
+      dir="rtl"
+    >
+      <div
+        className="
+          relative overflow-hidden border-b border-[#d8b46a]/25
+          bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490]
+          px-3 py-3 text-white
+        "
+      >
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute right-[-70px] top-[-70px] h-32 w-32 rounded-full bg-[#e2bf74]/18 blur-3xl" />
+          <div className="absolute left-[-70px] bottom-[-80px] h-36 w-36 rounded-full bg-cyan-400/16 blur-3xl" />
+        </div>
+
+        <div className="relative z-10 flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             <button
               onClick={onBack}
-              className="p-1 hover:bg-slate-100 rounded text-slate-500"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-white transition hover:bg-white/18"
+              type="button"
+              title="رجوع"
             >
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="h-4 w-4" />
             </button>
-            <Layout className="w-5 h-5 text-violet-600" />
-            {templateId ? "تعديل النموذج" : "إنشاء نموذج جديد"}
-          </h2>
-        </div>
-        <p className="text-xs text-slate-500 mr-8">
-          قم بتخصيص هيكل عرض السعر وسيطبق ديناميكياً
-        </p>
-      </div>
 
-      {/* Tabs Menu */}
-      <div className="flex px-4 pt-4 gap-1 border-b border-slate-200 bg-white">
-        {[
-          { id: "intro", label: "المقدمة", icon: AlignRight },
-          { id: "table", label: "الجدول", icon: TableIcon },
-          { id: "terms", label: "الشروط", icon: ListChecks },
-          { id: "header", label: "الترويسة", icon: ImageIcon },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 text-[11px] font-bold border-b-2 transition-colors ${
-              activeTab === tab.id
-                ? "border-violet-600 text-violet-700 bg-violet-50/50"
-                : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-            }`}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-        {/* Intro Tab */}
-        {activeTab === "intro" && (
-          <div className="space-y-5 animate-in slide-in-from-right-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">
-                اسم القالب الإداري
-              </label>
-              <input
-                type="text"
-                value={template.title}
-                onChange={(e) =>
-                  setTemplate({ ...template, title: e.target.value })
-                }
-                className="w-full p-2.5 text-sm border border-slate-300 rounded-xl"
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-[#e2bf74]/35 bg-white/10 text-[#e2bf74]">
+              <IconWithText
+                icon={Layout}
+                text="قالب"
+                vertical
+                iconClassName="h-4.5 w-4.5"
+                textClassName="text-[6px] font-black leading-none"
               />
+            </span>
+
+            <div className="min-w-0">
+              <h2 className="truncate text-sm font-black">
+                {templateId ? "تعديل النموذج" : "إنشاء نموذج جديد"}
+              </h2>
+              <p className="mt-0.5 truncate text-[10px] font-bold text-white/60">
+                تخصيص هيكل العرض والمعاينة المباشرة.
+              </p>
             </div>
-            <div className="p-4 bg-white border border-slate-200 rounded-xl">
-              <label className="block text-xs font-bold text-slate-700 mb-3 flex items-center gap-2">
-                <Type className="w-4 h-4 text-violet-600" /> صياغة فقرة المقدمة
-              </label>
-              <div className="mb-3 p-3 bg-violet-50 rounded-lg border border-violet-100">
-                <div className="flex flex-wrap gap-1.5">
-                  {DYNAMIC_VARIABLES.map((v) => (
-                    <button
-                      key={v.value}
-                      onClick={() => insertVariable("text", v.value)}
-                      className="px-2 py-1 bg-white text-violet-700 text-[10px] font-bold border border-violet-200 rounded"
+          </div>
+        </div>
+      </div>
+
+      <div className="shrink-0 border-b border-[#d8b46a]/25 bg-white px-2 pt-2">
+        <div className="grid grid-cols-4 gap-1">
+          {tabs.map((tab) => {
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  flex h-12 flex-col items-center justify-center gap-0.5 rounded-t-xl
+                  border-b-2 text-[10px] font-black transition-all
+                  ${
+                    active
+                      ? "border-[#123f59] bg-[#fbf8f1] text-[#123f59]"
+                      : "border-transparent text-[#64748b] hover:bg-[#fbf8f1] hover:text-[#123f59]"
+                  }
+                `}
+                type="button"
+              >
+                <tab.icon className={active ? "h-4 w-4 text-[#c5983c]" : "h-4 w-4"} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[#fbf8f1]/55 p-3 custom-scrollbar-slim">
+        {activeTab === "intro" && (
+          <div className="space-y-3 animate-in fade-in slide-in-from-right-4">
+            <EditorSection icon={FileText} title="بيانات النموذج" subtitle="اسم القالب ونوعه ووصفه الداخلي.">
+              <div className="space-y-3">
+                <Field label="اسم القالب الإداري">
+                  <input
+                    type="text"
+                    value={template.title}
+                    onChange={(e) => setTemplate({ ...template, title: e.target.value })}
+                    className={INPUT_CLASS}
+                  />
+                </Field>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="نوع القالب">
+                    <select
+                      value={template.type}
+                      onChange={(e) => setTemplate({ ...template, type: e.target.value })}
+                      className={INPUT_CLASS}
                     >
-                      + {v.label}
-                    </button>
-                  ))}
+                      <option value="DETAILED">تفصيلي</option>
+                      <option value="SIMPLE">مختصر</option>
+                    </select>
+                  </Field>
+
+                  <Field label="وصف داخلي">
+                    <input
+                      type="text"
+                      value={template.desc || ""}
+                      onChange={(e) => setTemplate({ ...template, desc: e.target.value })}
+                      className={INPUT_CLASS}
+                      placeholder="وصف سريع..."
+                    />
+                  </Field>
                 </div>
               </div>
-              <textarea
-                rows={8}
-                value={template.intro.text}
-                onChange={(e) =>
-                  setTemplate({
-                    ...template,
-                    intro: { ...template.intro, text: e.target.value },
-                  })
-                }
-                className="w-full p-3 text-sm border border-slate-300 rounded-xl outline-none resize-y"
-              />
-            </div>
+            </EditorSection>
+
+            <EditorSection icon={Type} title="صياغة فقرة المقدمة" subtitle="أدرج المتغيرات الديناميكية داخل نص المقدمة.">
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-violet-200 bg-violet-50/70 p-2.5">
+                  <div className="mb-2 flex items-center gap-1.5 text-[10px] font-black text-violet-700">
+                    <Hash className="h-3.5 w-3.5" />
+                    المتغيرات السريعة
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {DYNAMIC_VARIABLES.map((v) => (
+                      <button
+                        key={v.value}
+                        onClick={() => insertVariable("text", v.value)}
+                        className="rounded-lg border border-violet-200 bg-white px-2 py-1 text-[9px] font-black text-violet-700 transition hover:bg-violet-100"
+                        type="button"
+                      >
+                        + {v.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <Field label="مخاطبة العميل">
+                  <input
+                    type="text"
+                    value={template.intro.addresseePrefix}
+                    onChange={(e) =>
+                      setTemplate({
+                        ...template,
+                        intro: { ...template.intro, addresseePrefix: e.target.value },
+                      })
+                    }
+                    className={INPUT_CLASS}
+                  />
+                </Field>
+
+                <Field label="التحية">
+                  <input
+                    type="text"
+                    value={template.intro.greeting}
+                    onChange={(e) =>
+                      setTemplate({
+                        ...template,
+                        intro: { ...template.intro, greeting: e.target.value },
+                      })
+                    }
+                    className={INPUT_CLASS}
+                  />
+                </Field>
+
+                <Field label="نص المقدمة">
+                  <textarea
+                    rows={8}
+                    value={template.intro.text}
+                    onChange={(e) =>
+                      setTemplate({
+                        ...template,
+                        intro: { ...template.intro, text: e.target.value },
+                      })
+                    }
+                    className={`${INPUT_CLASS} h-auto min-h-[160px] resize-y py-3 leading-6`}
+                  />
+                </Field>
+              </div>
+            </EditorSection>
           </div>
         )}
 
         {activeTab === "table" && (
-          <div className="space-y-4 animate-in slide-in-from-right-4">
-            <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
-              <h3 className="text-xs font-bold text-slate-800 border-b pb-2">
-                أعمدة الجدول المعروضة
-              </h3>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked
-                  disabled
-                  className="w-4 h-4 text-violet-600 rounded bg-slate-100"
-                />
-                <span className="text-sm text-slate-500">
-                  مسلسل (م) - إجباري
-                </span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked
-                  disabled
-                  className="w-4 h-4 text-violet-600 rounded bg-slate-100"
-                />
-                <span className="text-sm text-slate-500">الوصف - إجباري</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
+          <div className="space-y-3 animate-in fade-in slide-in-from-right-4">
+            <EditorSection icon={TableIcon} title="أعمدة الجدول" subtitle="تحديد الأعمدة التي تظهر في عرض السعر.">
+              <div className="space-y-2">
+                <ToggleRow checked disabled label="مسلسل (م) - إجباري" />
+                <ToggleRow checked disabled label="الوصف - إجباري" />
+                <ToggleRow
                   checked={template.table.showUnit}
-                  onChange={(e) =>
+                  label="عمود الوحدة"
+                  onChange={(checked) =>
                     setTemplate({
                       ...template,
-                      table: {
-                        ...template.table,
-                        showUnit: e.target.checked,
-                      },
+                      table: { ...template.table, showUnit: checked },
                     })
                   }
-                  className="w-4 h-4 text-violet-600 rounded focus:ring-violet-500"
                 />
-                <span className="text-sm font-medium text-slate-700">
-                  عمود الوحدة
-                </span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
+                <ToggleRow
                   checked={template.table.showQuantity}
-                  onChange={(e) =>
+                  label="عمود الكمية"
+                  onChange={(checked) =>
                     setTemplate({
                       ...template,
-                      table: {
-                        ...template.table,
-                        showQuantity: e.target.checked,
-                      },
+                      table: { ...template.table, showQuantity: checked },
                     })
                   }
-                  className="w-4 h-4 text-violet-600 rounded focus:ring-violet-500"
                 />
-                <span className="text-sm font-medium text-slate-700">
-                  عمود الكمية
-                </span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
+                <ToggleRow
                   checked={template.table.showUnitPrice}
-                  onChange={(e) =>
+                  label="عمود سعر الوحدة"
+                  onChange={(checked) =>
                     setTemplate({
                       ...template,
-                      table: {
-                        ...template.table,
-                        showUnitPrice: e.target.checked,
-                      },
+                      table: { ...template.table, showUnitPrice: checked },
                     })
                   }
-                  className="w-4 h-4 text-violet-600 rounded focus:ring-violet-500"
                 />
-                <span className="text-sm font-medium text-slate-700">
-                  عمود سعر الوحدة
-                </span>
-              </label>
-            </div>
+              </div>
+            </EditorSection>
 
-            <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
-              <h3 className="text-xs font-bold text-slate-800 border-b pb-2">
-                المالية والضرائب
-              </h3>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
+            <EditorSection icon={Percent} title="المالية والضرائب" subtitle="إظهار الإجماليات ونسبة ضريبة القيمة المضافة.">
+              <div className="space-y-3">
+                <ToggleRow
                   checked={template.financials.showSubtotal}
-                  onChange={(e) =>
+                  label="إظهار الإجمالي قبل الضريبة"
+                  onChange={(checked) =>
                     setTemplate({
                       ...template,
-                      financials: {
-                        ...template.financials,
-                        showSubtotal: e.target.checked,
-                      },
+                      financials: { ...template.financials, showSubtotal: checked },
                     })
                   }
-                  className="w-4 h-4 text-violet-600 rounded"
                 />
-                <span className="text-sm font-medium text-slate-700">
-                  إظهار الإجمالي قبل الضريبة
-                </span>
-              </label>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1 mt-2">
-                  نسبة الضريبة (VAT) %
-                </label>
-                <input
-                  type="number"
-                  value={template.financials.vatPercentage}
-                  onChange={(e) =>
+
+                <ToggleRow
+                  checked={template.financials.showTotal}
+                  label="إظهار الإجمالي النهائي"
+                  onChange={(checked) =>
                     setTemplate({
                       ...template,
-                      financials: {
-                        ...template.financials,
-                        vatPercentage: e.target.value,
-                      },
+                      financials: { ...template.financials, showTotal: checked },
                     })
                   }
-                  className="w-24 p-2 text-sm border border-slate-300 rounded-lg outline-none focus:border-violet-500"
                 />
+
+                <Field label="نسبة الضريبة VAT %">
+                  <input
+                    type="number"
+                    value={template.financials.vatPercentage}
+                    onChange={(e) =>
+                      setTemplate({
+                        ...template,
+                        financials: {
+                          ...template.financials,
+                          vatPercentage: e.target.value,
+                        },
+                      })
+                    }
+                    className="h-10 w-28 rounded-xl border border-[#d8b46a]/25 bg-white px-3 text-xs font-bold text-[#123f59] outline-none focus:border-[#c5983c]/70 focus:ring-4 focus:ring-[#c5983c]/10"
+                  />
+                </Field>
               </div>
-            </div>
+            </EditorSection>
           </div>
         )}
 
-        {/* Terms Tab */}
         {activeTab === "terms" && (
-          <div className="space-y-4 animate-in slide-in-from-right-4">
-            <div className="p-4 bg-white border border-slate-200 rounded-xl">
-              <label className="block text-xs font-bold text-slate-700 mb-2">
-                عنوان قسم الملاحظات
-              </label>
-              <input
-                type="text"
-                value={template.terms.title}
-                onChange={(e) =>
-                  setTemplate({
-                    ...template,
-                    terms: { ...template.terms, title: e.target.value },
-                  })
-                }
-                className="w-full p-2.5 text-sm border border-slate-300 rounded-xl mb-4"
-              />
-
-              <label className="block text-xs font-bold text-slate-700 mb-2">
-                الشروط والأحكام
-              </label>
-              <textarea
-                rows={8}
-                value={template.terms.text}
-                onChange={(e) =>
-                  setTemplate({
-                    ...template,
-                    terms: { ...template.terms, text: e.target.value },
-                  })
-                }
-                className="w-full p-3 text-sm border border-slate-300 rounded-xl resize-y"
-              />
-            </div>
-
-            <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-4">
-              <h3 className="text-xs font-bold text-slate-800 border-b pb-2">
-                التوقيعات
-              </h3>
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer">
+          <div className="space-y-3 animate-in fade-in slide-in-from-right-4">
+            <EditorSection icon={ListChecks} title="الشروط والملاحظات" subtitle="العنوان والنص الذي يظهر أسفل العرض.">
+              <div className="space-y-3">
+                <Field label="عنوان القسم">
                   <input
-                    type="checkbox"
-                    checked={template.signatures.showClient}
+                    type="text"
+                    value={template.terms.title}
                     onChange={(e) =>
                       setTemplate({
                         ...template,
-                        signatures: {
-                          ...template.signatures,
-                          showClient: e.target.checked,
-                        },
+                        terms: { ...template.terms, title: e.target.value },
                       })
                     }
-                    className="w-4 h-4 text-violet-600 rounded"
+                    className={INPUT_CLASS}
                   />
-                  <span className="text-sm font-medium text-slate-700">
-                    توقيع العميل
-                  </span>
-                </label>
-                <input
-                  type="text"
+                </Field>
+
+                <Field label="الشروط والأحكام">
+                  <textarea
+                    rows={8}
+                    value={template.terms.text}
+                    onChange={(e) =>
+                      setTemplate({
+                        ...template,
+                        terms: { ...template.terms, text: e.target.value },
+                      })
+                    }
+                    className={`${INPUT_CLASS} h-auto min-h-[170px] resize-y py-3 leading-6`}
+                  />
+                </Field>
+              </div>
+            </EditorSection>
+
+            <EditorSection icon={Signature} title="التوقيعات" subtitle="تحديد التوقيعات والمسميات التي تظهر في نهاية العرض.">
+              <div className="space-y-3">
+                <SignatureRow
+                  checked={template.signatures.showClient}
+                  label="توقيع العميل"
                   value={template.signatures.clientLabel}
-                  disabled={!template.signatures.showClient}
-                  onChange={(e) =>
+                  onToggle={(checked) =>
                     setTemplate({
                       ...template,
-                      signatures: {
-                        ...template.signatures,
-                        clientLabel: e.target.value,
-                      },
+                      signatures: { ...template.signatures, showClient: checked },
                     })
                   }
-                  className="w-48 p-1.5 text-xs border border-slate-300 rounded-lg disabled:bg-slate-50"
+                  onChange={(value) =>
+                    setTemplate({
+                      ...template,
+                      signatures: { ...template.signatures, clientLabel: value },
+                    })
+                  }
                 />
-              </div>
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={template.signatures.showOffice}
-                    onChange={(e) =>
-                      setTemplate({
-                        ...template,
-                        signatures: {
-                          ...template.signatures,
-                          showOffice: e.target.checked,
-                        },
-                      })
-                    }
-                    className="w-4 h-4 text-violet-600 rounded"
-                  />
-                  <span className="text-sm font-medium text-slate-700">
-                    توقيع المكتب
-                  </span>
-                </label>
-                <input
-                  type="text"
+
+                <SignatureRow
+                  checked={template.signatures.showOffice}
+                  label="توقيع المكتب"
                   value={template.signatures.officeLabel}
-                  disabled={!template.signatures.showOffice}
-                  onChange={(e) =>
+                  onToggle={(checked) =>
                     setTemplate({
                       ...template,
-                      signatures: {
-                        ...template.signatures,
-                        officeLabel: e.target.value,
-                      },
+                      signatures: { ...template.signatures, showOffice: checked },
                     })
                   }
-                  className="w-48 p-1.5 text-xs border border-slate-300 rounded-lg disabled:bg-slate-50"
+                  onChange={(value) =>
+                    setTemplate({
+                      ...template,
+                      signatures: { ...template.signatures, officeLabel: value },
+                    })
+                  }
                 />
               </div>
-            </div>
+            </EditorSection>
           </div>
         )}
 
-        {/* Header Tab */}
         {activeTab === "header" && (
-          <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-4 animate-in slide-in-from-right-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={template.header.showLogo}
-                onChange={(e) =>
-                  setTemplate({
-                    ...template,
-                    header: {
-                      ...template.header,
-                      showLogo: e.target.checked,
-                    },
-                  })
-                }
-                className="w-4 h-4 text-violet-600 rounded"
-              />
-              <span className="text-sm font-medium text-slate-700">
-                إظهار شعار المكتب المعتمد
-              </span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={template.header.showDate}
-                onChange={(e) =>
-                  setTemplate({
-                    ...template,
-                    header: {
-                      ...template.header,
-                      showDate: e.target.checked,
-                    },
-                  })
-                }
-                className="w-4 h-4 text-violet-600 rounded"
-              />
-              <span className="text-sm font-medium text-slate-700">
-                إظهار تاريخ العرض
-              </span>
-            </label>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">
-                عنوان الوثيقة الرئيسي
-              </label>
-              <input
-                type="text"
-                value={template.header.documentTitle}
-                onChange={(e) =>
-                  setTemplate({
-                    ...template,
-                    header: {
-                      ...template.header,
-                      documentTitle: e.target.value,
-                    },
-                  })
-                }
-                className="w-full p-2.5 text-sm border border-slate-300 rounded-xl"
-              />
-            </div>
+          <div className="space-y-3 animate-in fade-in slide-in-from-right-4">
+            <EditorSection icon={ImageIcon} title="الترويسة" subtitle="الشعار، التاريخ، وعنوان الوثيقة.">
+              <div className="space-y-3">
+                <ToggleRow
+                  checked={template.header.showLogo}
+                  label="إظهار شعار المكتب المعتمد"
+                  onChange={(checked) =>
+                    setTemplate({
+                      ...template,
+                      header: { ...template.header, showLogo: checked },
+                    })
+                  }
+                />
+
+                <ToggleRow
+                  checked={template.header.showDate}
+                  label="إظهار تاريخ العرض"
+                  onChange={(checked) =>
+                    setTemplate({
+                      ...template,
+                      header: { ...template.header, showDate: checked },
+                    })
+                  }
+                />
+
+                <Field label="عنوان الوثيقة الرئيسي">
+                  <input
+                    type="text"
+                    value={template.header.documentTitle}
+                    onChange={(e) =>
+                      setTemplate({
+                        ...template,
+                        header: { ...template.header, documentTitle: e.target.value },
+                      })
+                    }
+                    className={INPUT_CLASS}
+                  />
+                </Field>
+              </div>
+            </EditorSection>
           </div>
         )}
       </div>
 
-      {/* Save Button */}
-      <div className="p-5 border-t border-slate-200 bg-white">
+      <div className="shrink-0 border-t border-[#d8b46a]/25 bg-white p-3">
         <button
           onClick={handleSaveTemplate}
           disabled={isSaving}
-          className="w-full py-3 bg-violet-600 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-violet-700 transition-colors disabled:opacity-50"
+          className="
+            inline-flex h-11 w-full items-center justify-center gap-2
+            rounded-xl bg-gradient-to-l from-[#123f59] via-[#15536f] to-[#0e7490]
+            text-xs font-black text-white
+            shadow-[0_10px_22px_rgba(18,63,89,0.16)]
+            transition hover:-translate-y-[1px]
+            disabled:cursor-not-allowed disabled:opacity-50
+          "
+          type="button"
         >
           {isSaving ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin text-[#e2bf74]" />
           ) : (
-            <Save className="w-4 h-4" />
+            <Save className="h-4 w-4 text-[#e2bf74]" />
           )}
-          {templateId ? "حفظ التعديلات" : "حفظ وإعتماد النموذج"}
+          {templateId ? "حفظ التعديلات" : "حفظ واعتماد النموذج"}
         </button>
       </div>
-    </div>
+    </aside>
   );
 }
+
+const EditorSection = ({ icon: Icon, title, subtitle, children }) => {
+  return (
+    <section className="overflow-hidden rounded-[20px] border border-[#d8b46a]/25 bg-white shadow-[0_8px_18px_rgba(18,63,89,0.05)]">
+      <div className="flex items-center gap-2 border-b border-[#e8ddc8] bg-gradient-to-l from-[#fbf8f1] via-white to-[#eef7f6] px-3 py-2.5">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[#123f59] text-[#e2bf74]">
+          <Icon className="h-4 w-4" />
+        </span>
+        <div className="min-w-0">
+          <h3 className="truncate text-xs font-black text-[#123f59]">{title}</h3>
+          <p className="mt-0.5 truncate text-[9px] font-bold text-[#94a3b8]">{subtitle}</p>
+        </div>
+      </div>
+      <div className="p-3">{children}</div>
+    </section>
+  );
+};
+
+const Field = ({ label, children }) => {
+  return (
+    <label className="block space-y-1.5">
+      <span className="text-[10px] font-black text-[#64748b]">{label}</span>
+      {children}
+    </label>
+  );
+};
+
+const ToggleRow = ({ checked, label, onChange, disabled = false }) => {
+  return (
+    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-[#e8ddc8] bg-[#fbf8f1]/75 px-3 py-2 transition hover:bg-[#f8efe0]">
+      <span className="flex min-w-0 items-center gap-2 text-xs font-black text-[#123f59]">
+        <CheckSquare className="h-4 w-4 shrink-0 text-[#c5983c]" />
+        <span className="break-words">{label}</span>
+      </span>
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange?.(e.target.checked)}
+        className="h-4 w-4 shrink-0 rounded border-[#d8b46a]/50 text-[#123f59] focus:ring-[#c5983c]/20 disabled:opacity-50"
+      />
+    </label>
+  );
+};
+
+const SignatureRow = ({ checked, label, value, onToggle, onChange }) => {
+  return (
+    <div className="rounded-2xl border border-[#e8ddc8] bg-[#fbf8f1]/75 p-3">
+      <ToggleRow checked={checked} label={label} onChange={onToggle} />
+      <input
+        type="text"
+        value={value}
+        disabled={!checked}
+        onChange={(e) => onChange(e.target.value)}
+        className={`${INPUT_CLASS} mt-2 disabled:bg-slate-100 disabled:text-slate-400`}
+      />
+    </div>
+  );
+};
+
+const INPUT_CLASS = `
+  h-10 w-full rounded-xl
+  border border-[#d8b46a]/25 bg-white
+  px-3 text-xs font-bold text-[#123f59]
+  shadow-sm outline-none transition-all
+  placeholder:text-[#94a3b8]
+  focus:border-[#c5983c]/70
+  focus:bg-white
+  focus:ring-4 focus:ring-[#c5983c]/10
+`;

@@ -12,6 +12,36 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { getClientName } from "../../utils/quotationConstants";
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`
+        inline-flex min-w-0 items-center justify-center
+        ${vertical ? "flex-col gap-0.5" : "gap-1.5"}
+        ${className}
+      `}
+    >
+      {Icon && <Icon className={iconClassName || "h-4 w-4 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 break-words text-[10px] font-black leading-tight"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
 
 export const Step0ClientProperty = ({ props }) => {
   const {
@@ -48,12 +78,12 @@ export const Step0ClientProperty = ({ props }) => {
         {/* ========================================== */}
         {/* 1️⃣ اختيار الملكية (سماوي) */}
         {/* ========================================== */}
-        <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col h-[230px]">
+        <div className="bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] relative overflow-hidden flex flex-col h-[230px]">
           <div className="absolute top-0 bottom-0 right-0 w-1 bg-cyan-500"></div>
 
-          <div className="flex justify-between items-center mb-2.5 pl-1">
-            <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <Building className="w-3.5 h-3.5 text-cyan-500" /> تحديد ملف
+          <div className="flex min-w-0 justify-between items-center mb-2.5 pl-1">
+            <div className="text-xs font-bold text-[#475569] flex min-w-0 items-center gap-1.5">
+              <IconWithText icon={Building} iconClassName="w-3.5 h-3.5 text-cyan-500" /> تحديد ملف
               الملكية <span className="text-red-500">*</span>
             </div>
             {selectedProperty && (
@@ -64,17 +94,17 @@ export const Step0ClientProperty = ({ props }) => {
           </div>
 
           <div className="relative mb-2">
-            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#94a3b8]" />
             <input
               type="text"
               value={propertySearch}
               onChange={(e) => setPropertySearch(e.target.value)}
               placeholder="بحث برقم الصك، الكود..."
-              className="w-full py-1.5 pr-8 pl-2 border border-slate-200 rounded-lg text-[11px] focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 bg-slate-50"
+              className="w-full py-1.5 pr-8 pl-2 border border-[#d8b46a]/25 rounded-lg text-[11px] focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-1.5">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim pr-1 flex flex-col gap-1.5">
             {propertiesLoading ? (
               <div className="m-auto">
                 <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
@@ -92,29 +122,29 @@ export const Step0ClientProperty = ({ props }) => {
                     }}
                     className={`flex flex-col p-2 rounded-lg cursor-pointer border transition-all ${
                       isSelected
-                        ? "border-cyan-400 bg-cyan-50/50 shadow-sm"
-                        : "border-slate-100 bg-white hover:border-cyan-200"
+                        ? "border-cyan-400 bg-cyan-50/50 shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
+                        : "border-[#e8ddc8] bg-white hover:border-cyan-200"
                     }`}
                   >
-                    <div className="flex justify-between items-center mb-1">
-                      <div className="flex items-center gap-1.5">
+                    <div className="flex min-w-0 justify-between items-center mb-1">
+                      <div className="flex min-w-0 items-center gap-1.5">
                         {isSelected ? (
                           <CheckCircle2 className="w-3.5 h-3.5 text-cyan-600" />
                         ) : (
                           <div className="w-3.5 h-3.5 rounded-full border border-slate-300" />
                         )}
                         <span
-                          className={`font-bold text-[11px] ${isSelected ? "text-cyan-800" : "text-slate-700"}`}
+                          className={`font-bold text-[11px] ${isSelected ? "text-cyan-800" : "text-[#475569]"}`}
                         >
                           {prop.code}
                         </span>
                       </div>
-                      <span className="font-mono text-[9px] text-slate-500 px-1.5 py-0.5 rounded border border-slate-100 bg-slate-50">
+                      <span className="font-mono text-[9px] text-[#64748b] px-1.5 py-0.5 rounded border border-[#e8ddc8] bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white">
                         صك: {prop.deedNumber || "—"}
                       </span>
                     </div>
                     {prop.district && (
-                      <div className="text-[9.5px] text-slate-500 flex items-center gap-1 mr-5">
+                      <div className="text-[9.5px] text-[#64748b] flex min-w-0 items-center gap-1 mr-5">
                         <MapPin className="w-2.5 h-2.5" /> {prop.city} -{" "}
                         {prop.district}
                       </div>
@@ -123,7 +153,7 @@ export const Step0ClientProperty = ({ props }) => {
                 );
               })
             ) : (
-              <div className="text-[10px] text-slate-400 text-center mt-4">
+              <div className="text-[10px] text-[#94a3b8] text-center mt-4">
                 لا توجد ملكيات مطابقة
               </div>
             )}
@@ -133,33 +163,33 @@ export const Step0ClientProperty = ({ props }) => {
         {/* ========================================== */}
         {/* 2️⃣ اختيار العميل (أزرق) */}
         {/* ========================================== */}
-        <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col h-[230px]">
+        <div className="bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] relative overflow-hidden flex flex-col h-[230px]">
           <div className="absolute top-0 bottom-0 right-0 w-1 bg-blue-500"></div>
 
-          <div className="flex justify-between items-center mb-2.5 pl-1">
-            <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+          <div className="flex min-w-0 justify-between items-center mb-2.5 pl-1">
+            <div className="text-xs font-bold text-[#475569] flex min-w-0 items-center gap-1.5">
               <Users className="w-3.5 h-3.5 text-blue-500" /> تحديد ملف العميل{" "}
               <span className="text-red-500">*</span>
             </div>
             {selectedClient && (
-              <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded font-bold">
+              <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-[#123f59] rounded font-bold">
                 تم التحديد
               </span>
             )}
           </div>
 
           <div className="relative mb-2">
-            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#94a3b8]" />
             <input
               type="text"
               value={clientSearch}
               onChange={(e) => setClientSearch(e.target.value)}
               placeholder="بحث بالاسم، الهوية، الجوال..."
-              className="w-full py-1.5 pr-8 pl-2 border border-slate-200 rounded-lg text-[11px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 bg-slate-50"
+              className="w-full py-1.5 pr-8 pl-2 border border-[#d8b46a]/25 rounded-lg text-[11px] focus:outline-none focus:border-[#c5983c]/70 focus:ring-1 focus:ring-blue-200 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-1.5">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim pr-1 flex flex-col gap-1.5">
             {clientsLoading ? (
               <div className="m-auto">
                 <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
@@ -173,29 +203,29 @@ export const Step0ClientProperty = ({ props }) => {
                     onClick={() => setSelectedClient(client.id)}
                     className={`flex flex-col p-2 rounded-lg cursor-pointer border transition-all ${
                       isSelected
-                        ? "border-blue-400 bg-blue-50/50 shadow-sm"
-                        : "border-slate-100 bg-white hover:border-blue-200"
+                        ? "border-blue-400 bg-blue-50/50 shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
+                        : "border-[#e8ddc8] bg-white hover:border-blue-200"
                     }`}
                   >
-                    <div className="flex justify-between items-center mb-1">
-                      <div className="flex items-center gap-1.5">
+                    <div className="flex min-w-0 justify-between items-center mb-1">
+                      <div className="flex min-w-0 items-center gap-1.5">
                         {isSelected ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#123f59]" />
                         ) : (
                           <div className="w-3.5 h-3.5 rounded-full border border-slate-300" />
                         )}
                         <span
-                          className={`font-bold text-[11px] ${isSelected ? "text-blue-800" : "text-slate-700"}`}
+                          className={`font-bold text-[11px] ${isSelected ? "text-blue-800" : "text-[#475569]"}`}
                         >
                           {getClientName(client)}
                         </span>
                       </div>
-                      <span className="font-mono text-[9px] text-slate-500 px-1.5 py-0.5 bg-slate-50 rounded border border-slate-100">
+                      <span className="font-mono text-[9px] text-[#64748b] px-1.5 py-0.5 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded border border-[#e8ddc8]">
                         {client.clientCode}
                       </span>
                     </div>
                     {(client.idNumber || client.mobile) && (
-                      <div className="text-[9.5px] text-slate-500 flex gap-2 mr-5">
+                      <div className="text-[9.5px] text-[#64748b] flex gap-2 mr-5">
                         {client.idNumber && (
                           <span>هوية: {client.idNumber}</span>
                         )}
@@ -210,7 +240,7 @@ export const Step0ClientProperty = ({ props }) => {
                 );
               })
             ) : (
-              <div className="text-[10px] text-slate-400 text-center mt-4">
+              <div className="text-[10px] text-[#94a3b8] text-center mt-4">
                 لا يوجد عملاء مطابقين
               </div>
             )}
@@ -220,21 +250,21 @@ export const Step0ClientProperty = ({ props }) => {
         {/* ========================================== */}
         {/* 3️⃣ اختيار المعاملة (بنفسجي - اختياري) */}
         {/* ========================================== */}
-        <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col h-[180px]">
+        <div className="bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] relative overflow-hidden flex flex-col h-[180px]">
           <div className="absolute top-0 bottom-0 right-0 w-1 bg-purple-500"></div>
 
-          <div className="flex justify-between items-center mb-2.5 pl-1">
-            <div className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+          <div className="flex min-w-0 justify-between items-center mb-2.5 pl-1">
+            <div className="text-[11px] font-bold text-[#475569] flex min-w-0 items-center gap-1.5">
               <FolderOpen className="w-3.5 h-3.5 text-purple-500" /> ربط بمعاملة
               قائمة
             </div>
-            <span className="text-[8px] font-bold px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">
+            <span className="text-[8px] font-bold px-1.5 py-0.5 bg-slate-100 text-[#64748b] rounded">
               اختياري
             </span>
           </div>
 
           <div className="relative mb-2">
-            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#94a3b8]" />
             <input
               type="text"
               value={transactionSearch || ""}
@@ -242,11 +272,11 @@ export const Step0ClientProperty = ({ props }) => {
                 setTransactionSearch && setTransactionSearch(e.target.value)
               }
               placeholder="بحث برقم المعاملة، الوصف..."
-              className="w-full py-1.5 pr-8 pl-2 border border-slate-200 rounded-lg text-[10px] focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200 bg-slate-50"
+              className="w-full py-1.5 pr-8 pl-2 border border-[#d8b46a]/25 rounded-lg text-[10px] focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-1">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim pr-1 flex flex-col gap-1">
             {transactionsLoading ? (
               <div className="m-auto">
                 <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
@@ -262,32 +292,32 @@ export const Step0ClientProperty = ({ props }) => {
                     onClick={() =>
                       setSelectedTransaction && setSelectedTransaction(txn.id)
                     }
-                    className={`flex justify-between items-center p-2 rounded-lg cursor-pointer border transition-all ${
+                    className={`flex min-w-0 justify-between items-center p-2 rounded-lg cursor-pointer border transition-all ${
                       isSelected
-                        ? "border-purple-400 bg-purple-50/50 shadow-sm"
-                        : "border-slate-100 bg-white hover:border-purple-200"
+                        ? "border-purple-400 bg-purple-50/50 shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
+                        : "border-[#e8ddc8] bg-white hover:border-purple-200"
                     }`}
                   >
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex min-w-0 items-center gap-1.5">
                       {isSelected ? (
                         <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />
                       ) : (
                         <div className="w-3.5 h-3.5 rounded-full border border-slate-300" />
                       )}
                       <span
-                        className={`font-bold text-[10px] truncate max-w-[140px] ${isSelected ? "text-purple-800" : "text-slate-700"}`}
+                        className={`font-bold text-[10px] truncate max-w-[140px] ${isSelected ? "text-purple-800" : "text-[#475569]"}`}
                       >
                         {txn.client || txn.description || "معاملة بدون وصف"}
                       </span>
                     </div>
-                    <span className="font-mono text-[8px] text-slate-500 px-1 py-0.5 rounded border border-slate-100 bg-slate-50">
+                    <span className="font-mono text-[8px] text-[#64748b] px-1 py-0.5 rounded border border-[#e8ddc8] bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white">
                       {txn.referenceNumber || txn.ref}
                     </span>
                   </div>
                 );
               })
             ) : (
-              <div className="text-[9px] text-slate-400 text-center mt-4">
+              <div className="text-[9px] text-[#94a3b8] text-center mt-4">
                 لا توجد معاملات مطابقة
               </div>
             )}
@@ -297,21 +327,21 @@ export const Step0ClientProperty = ({ props }) => {
         {/* ========================================== */}
         {/* 4️⃣ اختيار محضر الاجتماع (أصفر - اختياري) */}
         {/* ========================================== */}
-        <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col h-[180px]">
+        <div className="bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] relative overflow-hidden flex flex-col h-[180px]">
           <div className="absolute top-0 bottom-0 right-0 w-1 bg-amber-500"></div>
 
-          <div className="flex justify-between items-center mb-2.5 pl-1">
-            <div className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+          <div className="flex min-w-0 justify-between items-center mb-2.5 pl-1">
+            <div className="text-[11px] font-bold text-[#475569] flex min-w-0 items-center gap-1.5">
               <ClipboardList className="w-3.5 h-3.5 text-amber-500" /> الاستناد
               لمحضر اجتماع
             </div>
-            <span className="text-[8px] font-bold px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">
+            <span className="text-[8px] font-bold px-1.5 py-0.5 bg-slate-100 text-[#64748b] rounded">
               اختياري
             </span>
           </div>
 
           <div className="relative mb-2">
-            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#94a3b8]" />
             <input
               type="text"
               value={meetingSearch || ""}
@@ -319,11 +349,11 @@ export const Step0ClientProperty = ({ props }) => {
                 setMeetingSearch && setMeetingSearch(e.target.value)
               }
               placeholder="بحث بعنوان المحضر، التاريخ..."
-              className="w-full py-1.5 pr-8 pl-2 border border-slate-200 rounded-lg text-[10px] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-200 bg-slate-50"
+              className="w-full py-1.5 pr-8 pl-2 border border-[#d8b46a]/25 rounded-lg text-[10px] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-200 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-1">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim pr-1 flex flex-col gap-1">
             {meetingsLoading ? (
               <div className="m-auto">
                 <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
@@ -337,25 +367,25 @@ export const Step0ClientProperty = ({ props }) => {
                     onClick={() =>
                       setSelectedMeeting && setSelectedMeeting(meeting.id)
                     }
-                    className={`flex justify-between items-center p-2 rounded-lg cursor-pointer border transition-all ${
+                    className={`flex min-w-0 justify-between items-center p-2 rounded-lg cursor-pointer border transition-all ${
                       isSelected
-                        ? "border-amber-400 bg-amber-50/50 shadow-sm"
-                        : "border-slate-100 bg-white hover:border-amber-200"
+                        ? "border-amber-400 bg-amber-50/50 shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
+                        : "border-[#e8ddc8] bg-white hover:border-amber-200"
                     }`}
                   >
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex min-w-0 items-center gap-1.5">
                       {isSelected ? (
                         <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
                       ) : (
                         <div className="w-3.5 h-3.5 rounded-full border border-slate-300" />
                       )}
                       <span
-                        className={`font-bold text-[10px] truncate max-w-[140px] ${isSelected ? "text-amber-800" : "text-slate-700"}`}
+                        className={`font-bold text-[10px] truncate max-w-[140px] ${isSelected ? "text-amber-800" : "text-[#475569]"}`}
                       >
                         {meeting.title || "محضر اجتماع"}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1 text-[8px] text-slate-500 font-mono bg-slate-50 px-1 py-0.5 border border-slate-100 rounded">
+                    <div className="flex min-w-0 items-center gap-1 text-[8px] text-[#64748b] font-mono bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white px-1 py-0.5 border border-[#e8ddc8] rounded">
                       <CalendarDays className="w-2.5 h-2.5" />
                       {meeting.meetingDate
                         ? new Date(meeting.meetingDate).toLocaleDateString(
@@ -367,7 +397,7 @@ export const Step0ClientProperty = ({ props }) => {
                 );
               })
             ) : (
-              <div className="text-[9px] text-slate-400 text-center mt-4">
+              <div className="text-[9px] text-[#94a3b8] text-center mt-4">
                 {selectedClient
                   ? "لا توجد محاضر لهذا العميل"
                   : "حدد العميل أولاً"}
@@ -378,12 +408,12 @@ export const Step0ClientProperty = ({ props }) => {
       </div>
 
       {/* 💡 نصيحة السفلية (أكثر كثافة) */}
-      <div className="mt-3 p-2.5 bg-gradient-to-r from-slate-50 to-indigo-50/50 border border-indigo-100/50 rounded-lg flex items-center gap-2.5 text-[10.5px] text-indigo-800">
+      <div className="mt-3 p-2.5 bg-gradient-to-r from-slate-50 to-indigo-50/50 border border-indigo-100/50 rounded-lg flex min-w-0 items-center gap-2.5 text-[10.5px] text-indigo-800">
         <Sparkles className="w-4 h-4 text-indigo-500 shrink-0" />
         <div>
           <strong className="font-bold mr-1">تلميح ذكي:</strong>
           تحديد <span className="text-cyan-600 font-bold">الملكية</span> أولاً
-          يقوم بجلب <span className="text-blue-600 font-bold">العميل</span>{" "}
+          يقوم بجلب <span className="text-[#123f59] font-bold">العميل</span>{" "}
           تلقائياً. ربط العرض بـ{" "}
           <span className="text-amber-600 font-bold">محضر اجتماع</span> يسرع من
           عملية الاعتماد.

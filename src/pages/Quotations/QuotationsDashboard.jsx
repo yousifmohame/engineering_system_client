@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import axios from "../../api/axios"; // تأكد من مسار axios
+import axios from "../../api/axios";
 import {
   Plus,
   Upload,
@@ -33,8 +33,37 @@ import {
   TrendingUp,
   Bookmark,
   Loader2,
+  ArrowUpLeft,
+  WalletCards,
 } from "lucide-react";
 import { useAppStore } from "../../stores/useAppStore";
+
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`
+        inline-flex items-center justify-center
+        ${vertical ? "flex-col gap-0.5" : "gap-1.5"}
+        ${className}
+      `}
+    >
+      {Icon && <Icon className={iconClassName || "h-4 w-4"} />}
+
+      {text && (
+        <span className={textClassName || "text-[10px] font-black leading-none"}>
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
 
 const QuotationsDashboard = () => {
   const { addTab } = useAppStore();
@@ -47,6 +76,7 @@ const QuotationsDashboard = () => {
       type: "create-quotation",
       closable: true,
     });
+
   const openDirectoryTab = () =>
     addTab(SCREEN_ID, {
       id: `QUOTATIONS-DIRECTORY`,
@@ -54,6 +84,7 @@ const QuotationsDashboard = () => {
       type: "directory",
       closable: true,
     });
+
   const openTemplatesTab = () =>
     addTab(SCREEN_ID, {
       id: `QUOTATIONS-TEMPLATES`,
@@ -61,6 +92,7 @@ const QuotationsDashboard = () => {
       type: "templates",
       closable: true,
     });
+
   const openItemsTab = () =>
     addTab(SCREEN_ID, {
       id: `QUOTATIONS-ITEMS`,
@@ -68,6 +100,7 @@ const QuotationsDashboard = () => {
       type: "items",
       closable: true,
     });
+
   const openApprovalsTab = () =>
     addTab(SCREEN_ID, {
       id: `QUOTATIONS-APPROVALS`,
@@ -75,6 +108,7 @@ const QuotationsDashboard = () => {
       type: "approvals",
       closable: true,
     });
+
   const openPaymentsTab = () =>
     addTab(SCREEN_ID, {
       id: `QUOTATIONS-PAYMENTS`,
@@ -82,6 +116,7 @@ const QuotationsDashboard = () => {
       type: "payments",
       closable: true,
     });
+
   const openReportsTab = () =>
     addTab(SCREEN_ID, {
       id: `QUOTATIONS-REPORTS`,
@@ -89,6 +124,7 @@ const QuotationsDashboard = () => {
       type: "reports",
       closable: true,
     });
+
   const openCancellationsTab = () =>
     addTab(SCREEN_ID, {
       id: `QUOTATIONS-CANCELLATIONS`,
@@ -123,348 +159,625 @@ const QuotationsDashboard = () => {
     totalSent: 0,
   };
 
+  const operationButtons = [
+    {
+      color: "blue",
+      icon: FileText,
+      label: "دليل العروض",
+      code: "B-815",
+      badge: stats.totalQuotations,
+      onClick: openDirectoryTab,
+    },
+    {
+      color: "emerald",
+      icon: FilePlus,
+      label: "إنشاء عرض",
+      code: "A-815",
+      onClick: openCreateTab,
+    },
+    {
+      color: "violet",
+      icon: Layout,
+      label: "نماذج العروض",
+      code: "T-815",
+      onClick: openTemplatesTab,
+    },
+    {
+      color: "orange",
+      icon: Package,
+      label: "البنود والمجموعات",
+      code: "I-815",
+      onClick: openItemsTab,
+    },
+    {
+      color: "cyan",
+      icon: ShieldCheck,
+      label: "الاعتماد والمراجعة",
+      code: "W-815",
+      badge: stats.pendingApproval,
+      onClick: openApprovalsTab,
+    },
+    {
+      color: "green",
+      icon: CreditCard,
+      label: "الدفعات والتحصيل",
+      code: "P-815",
+      onClick: openPaymentsTab,
+    },
+    {
+      color: "indigo",
+      icon: BarChart3,
+      label: "تقارير العروض",
+      code: "R-815",
+      onClick: openReportsTab,
+    },
+    {
+      color: "red",
+      icon: RotateCcw,
+      label: "الملغاة والاسترجاع",
+      code: "C-815",
+      badge: stats.cancelled,
+      onClick: openCancellationsTab,
+    },
+    {
+      color: "slate",
+      icon: Settings,
+      label: "الإعدادات",
+      code: "S-815",
+      readyForDev: true,
+    },
+    {
+      color: "amber",
+      icon: Bell,
+      label: "الإشعارات",
+      code: "N-815",
+    },
+    {
+      color: "slate",
+      icon: ScrollText,
+      label: "سجل التدقيق",
+      code: "L-815",
+    },
+    {
+      color: "cyan",
+      icon: Archive,
+      label: "التصدير والأرشفة",
+      code: "X-815",
+      readyForDev: true,
+    },
+    {
+      color: "pink",
+      icon: Link2,
+      label: "ربط العملاء",
+      code: "CL-815",
+      readyForDev: true,
+    },
+    {
+      color: "violet",
+      icon: Sparkles,
+      label: "المساعد الذكي",
+      code: "AI-815",
+      readyForDev: true,
+    },
+    {
+      color: "sky",
+      icon: TrendingUp,
+      label: "التحليلات",
+      code: "D-815",
+      readyForDev: true,
+    },
+    {
+      color: "yellow",
+      icon: Bookmark,
+      label: "القوالب السريعة",
+      code: "M-815",
+      badge: 1,
+      readyForDev: true,
+    },
+  ];
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full min-h-screen bg-slate-50">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      <div className="flex h-full min-h-[420px] items-center justify-center bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="grid h-12 w-12 place-items-center rounded-2xl border border-[#d8b46a]/35 bg-white shadow-[0_10px_24px_rgba(18,63,89,0.10)]">
+            <Loader2 className="h-6 w-6 animate-spin text-[#123f59]" />
+          </div>
+
+          <p className="text-xs font-black text-[#123f59]">
+            جاري تحميل لوحة عروض الأسعار...
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-3 md:p-4 bg-slate-50 min-h-screen" dir="rtl">
-      {/* 1. إجراءات سريعة - أكثر كثافة */}
-      <div className="flex flex-wrap items-center gap-1.5 mb-3 p-2 bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="text-[11px] font-bold text-slate-500 ml-1 whitespace-nowrap">
-          إجراءات سريعة:
-        </div>
-        <button
-          onClick={openCreateTab}
-          className="px-2.5 py-1 bg-blue-500 text-white rounded text-[11px] font-bold flex items-center gap-1 hover:bg-blue-600 transition-colors"
+    <div
+      className="
+        h-full min-h-0 w-full max-w-full overflow-y-auto overflow-x-hidden
+        bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
+        p-3 pb-20 font-[Tajawal] text-right text-[#123f59]
+        md:p-4 md:pb-20
+        custom-scrollbar-slim
+      "
+      dir="rtl"
+    >
+      <div className="max-w-full space-y-3 overflow-x-hidden">
+        {/* Header + quick actions */}
+        <section
+          className="
+            relative max-w-full overflow-hidden rounded-[22px]
+            border border-[#d8b46a]/25
+            bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490]
+            px-3 py-3 text-white
+            shadow-[0_10px_24px_rgba(18,63,89,0.14)]
+          "
         >
-          <Plus className="w-3 h-3" /> عرض سعر جديد
-        </button>
-        <button className="px-2.5 py-1 bg-violet-50 text-violet-600 border border-violet-200 rounded text-[11px] font-bold flex items-center gap-1 hover:bg-violet-100 transition-colors">
-          <Upload className="w-3 h-3" /> استيراد (PDF)
-        </button>
-        <button className="px-2.5 py-1 bg-cyan-50 text-cyan-700 border border-cyan-200 rounded text-[11px] font-bold flex items-center gap-1 hover:bg-cyan-100 transition-colors">
-          <Download className="w-3 h-3" /> تصدير سريع
-        </button>
-        <button className="px-2.5 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded text-[11px] font-bold flex items-center gap-1 relative hover:bg-emerald-100 transition-colors">
-          <Stamp className="w-3 h-3" /> موافقة المالك
-          {stats.awaitingSignature > 0 && (
-            <span className="px-1 py-0.5 bg-red-600 text-white rounded text-[9px] font-bold ml-1">
-              {stats.awaitingSignature}
-            </span>
-          )}
-        </button>
-        <div className="flex-1"></div>
-        <button className="px-2.5 py-1 bg-slate-50 text-slate-500 border border-slate-300 rounded text-[11px] flex items-center gap-1 hover:bg-slate-100 transition-colors">
-          <Search className="w-3 h-3" /> بحث{" "}
-          <span className="px-1 bg-slate-200 rounded text-[8px] font-mono">
-            Ctrl+K
-          </span>
-        </button>
-      </div>
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute right-[-70px] top-[-80px] h-36 w-36 rounded-full bg-[#e2bf74]/18 blur-3xl" />
+            <div className="absolute left-[-70px] bottom-[-80px] h-40 w-40 rounded-full bg-cyan-400/18 blur-3xl" />
+          </div>
 
-      {/* 2. الإحصائيات 8 بطاقات في سطر واحد للشاشات الكبيرة */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 mb-3">
-        <StatCard
-          color="blue"
-          icon={ClipboardList}
-          count={stats.totalQuotations}
-          label="إجمالي العروض"
-        />
-        <StatCard
-          color="indigo"
-          icon={FileSearch}
-          count={stats.pendingApproval}
-          label="قيد المراجعة"
-        />
-        <StatCard
-          color="amber"
-          icon={PenTool}
-          count={stats.awaitingSignature}
-          label="بانتظار التوقيع"
-        />
-        <StatCard
-          color="emerald"
-          icon={CircleDollarSign}
-          count={stats.approvedPendingPayment}
-          label="بانتظار الدفع"
-        />
-        <StatCard
-          color="yellow"
-          icon={Hourglass}
-          count={stats.partiallyPaid}
-          label="مسددة جزئياً"
-        />
-        <StatCard
-          color="green"
-          icon={CheckCircle}
-          count={stats.fullyPaid}
-          label="مسددة بالكامل"
-        />
-        <StatCard
-          color="orange"
-          icon={Clock}
-          count={stats.expired}
-          label="منتهية الصلاحية"
-        />
-        <StatCard
-          color="red"
-          icon={Ban}
-          count={stats.cancelled}
-          label="ملغاة / مستردة"
-        />
-      </div>
+          <div className="relative z-10 flex max-w-full flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <span
+                className="
+                  grid h-11 w-11 shrink-0 place-items-center
+                  rounded-2xl border border-[#e2bf74]/35
+                  bg-white/10 text-[#e2bf74]
+                  shadow-md backdrop-blur-xl
+                "
+              >
+                <IconWithText
+                  icon={ClipboardList}
+                  text="عروض"
+                  vertical
+                  iconClassName="h-5 w-5"
+                  textClassName="text-[7px] font-black leading-none"
+                />
+              </span>
 
-      {/* 3. الملخص المالي ومؤشرات الأداء في سطر واحد معاً */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-2 mb-3">
-        <FinancialCard
-          color="blue"
-          label="إجمالي قيمة العروض"
-          amount={stats.totalValue.toLocaleString()}
-        />
-        <FinancialCard
-          color="green"
-          label="إجمالي المحصّل (تقريبي)"
-          amount={stats.totalCollected.toLocaleString()}
-        />
-        <MetricCard
-          color="violet"
-          icon={Stamp}
-          label="متوسط الموافقة"
-          value={stats.avgApprovalDays}
-          unit="يوم"
-        />
-        <MetricCard
-          color="emerald"
-          icon={CheckCircle}
-          label="نسبة الموافقة"
-          value={`${stats.approvalRate}%`}
-        />
-        <MetricCard
-          color="red"
-          icon={Clock}
-          label="معدل عدم الرد"
-          value={`${stats.noResponseRate}%`}
-        />
-        <MetricCard
-          color="sky"
-          icon={Send}
-          label="العروض المُرسلة"
-          value={stats.totalSent}
-        />
-      </div>
+              <div className="min-w-0">
+                <h2 className="truncate text-xl font-black">
+                  لوحة عروض الأسعار
+                </h2>
 
-      {/* 4. لوحة التحكم - شبكة الأزرار المكثفة (8 في السطر للشاشات الكبيرة جداً) */}
-      <div className="p-3 md:p-4 bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="text-xs font-bold text-slate-800 mb-3 flex items-center gap-1.5">
-          <ClipboardList className="w-3.5 h-3.5 text-blue-600" /> العمليات
-          والخدمات
-        </div>
+                <p className="mt-0.5 truncate text-[11px] font-bold text-white/60">
+                  متابعة العروض، الموافقات، التحصيل، التقارير والخدمات المرتبطة.
+                </p>
+              </div>
+            </div>
 
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
-          <DashboardButton
+            <div className="flex max-w-full flex-wrap items-center gap-2">
+              <QuickButton
+                icon={Plus}
+                label="عرض جديد"
+                onClick={openCreateTab}
+                variant="primary"
+              />
+
+              <QuickButton icon={Upload} label="استيراد" variant="ghost" />
+
+              <QuickButton icon={Download} label="تصدير" variant="ghost" />
+
+              <QuickButton
+                icon={Stamp}
+                label="موافقة المالك"
+                variant="ghost"
+                badge={stats.awaitingSignature}
+              />
+
+              <QuickButton
+                icon={Search}
+                label="بحث"
+                variant="soft"
+                shortcut="Ctrl+K"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Main stats */}
+        <section className="grid max-w-full grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
+          <StatCard
             color="blue"
-            icon={FileText}
-            label="دليل العروض"
-            code="815-B"
-            badge={stats.totalQuotations}
-            onClick={openDirectoryTab}
+            icon={ClipboardList}
+            count={stats.totalQuotations}
+            label="إجمالي العروض"
           />
-          <DashboardButton
-            color="green"
-            icon={FilePlus}
-            label="إنشاء عرض"
-            code="815-A"
-            onClick={openCreateTab}
-          />
-          <DashboardButton
-            color="violet"
-            icon={Layout}
-            label="نماذج العروض"
-            code="815-T"
-            onClick={openTemplatesTab}
-          />
-          <DashboardButton
-            color="orange"
-            icon={Package}
-            label="البنود والمجموعات"
-            code="815-I"
-            onClick={openItemsTab}
-          />
-          <DashboardButton
-            color="cyan"
-            icon={ShieldCheck}
-            label="الاعتماد والمراجعة"
-            code="815-W"
-            badge={stats.pendingApproval}
-            onClick={openApprovalsTab}
-          />
-          <DashboardButton
-            color="emerald"
-            icon={CreditCard}
-            label="الدفعات والتحصيل"
-            code="815-P"
-            onClick={openPaymentsTab}
-          />
-          <DashboardButton
+
+          <StatCard
             color="indigo"
-            icon={BarChart3}
-            label="تقارير العروض"
-            code="815-R"
-            onClick={openReportsTab}
+            icon={FileSearch}
+            count={stats.pendingApproval}
+            label="قيد المراجعة"
           />
-          <DashboardButton
-            color="red"
-            icon={RotateCcw}
-            label="الملغاة/الاسترجاع"
-            code="815-C"
-            badge={stats.cancelled}
-            onClick={openCancellationsTab}
-          />
-          <DashboardButton
-            color="slate"
-            icon={Settings}
-            label="الإعدادات"
-            code="815-S"
-            readyForDev
-          />
-          <DashboardButton
+
+          <StatCard
             color="amber"
-            icon={Bell}
-            label="الإشعارات"
-            code="815-N"
+            icon={PenTool}
+            count={stats.awaitingSignature}
+            label="بانتظار التوقيع"
           />
-          <DashboardButton
-            color="slate"
-            icon={ScrollText}
-            label="سجل التدقيق"
-            code="815-L"
+
+          <StatCard
+            color="emerald"
+            icon={CircleDollarSign}
+            count={stats.approvedPendingPayment}
+            label="بانتظار الدفع"
           />
-          <DashboardButton
-            color="cyan"
-            icon={Archive}
-            label="التصدير والأرشفة"
-            code="815-X"
-            readyForDev
-          />
-          <DashboardButton
-            color="pink"
-            icon={Link2}
-            label="ربط العملاء"
-            code="815-CL"
-            readyForDev
-          />
-          <DashboardButton
-            color="violet"
-            icon={Sparkles}
-            label="المساعد الذكي"
-            code="815-AI"
-            readyForDev
-          />
-          <DashboardButton
-            color="sky"
-            icon={TrendingUp}
-            label="التحليلات"
-            code="815-D"
-            readyForDev
-          />
-          <DashboardButton
+
+          <StatCard
             color="yellow"
-            icon={Bookmark}
-            label="القوالب السريعة"
-            code="815-M"
-            badge="1"
-            readyForDev
+            icon={Hourglass}
+            count={stats.partiallyPaid}
+            label="مسددة جزئياً"
           />
-        </div>
+
+          <StatCard
+            color="green"
+            icon={CheckCircle}
+            count={stats.fullyPaid}
+            label="مسددة بالكامل"
+          />
+
+          <StatCard
+            color="orange"
+            icon={Clock}
+            count={stats.expired}
+            label="منتهية الصلاحية"
+          />
+
+          <StatCard
+            color="red"
+            icon={Ban}
+            count={stats.cancelled}
+            label="ملغاة / مستردة"
+          />
+        </section>
+
+        {/* Financial + metrics */}
+        <section className="grid max-w-full grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <FinancialCard
+            color="blue"
+            icon={WalletCards}
+            label="إجمالي قيمة العروض"
+            amount={stats.totalValue.toLocaleString()}
+          />
+
+          <FinancialCard
+            color="green"
+            icon={CircleDollarSign}
+            label="إجمالي المحصّل"
+            amount={stats.totalCollected.toLocaleString()}
+          />
+
+          <MetricCard
+            color="violet"
+            icon={Stamp}
+            label="متوسط الموافقة"
+            value={stats.avgApprovalDays}
+            unit="يوم"
+          />
+
+          <MetricCard
+            color="emerald"
+            icon={CheckCircle}
+            label="نسبة الموافقة"
+            value={`${stats.approvalRate}%`}
+          />
+
+          <MetricCard
+            color="red"
+            icon={Clock}
+            label="عدم الرد"
+            value={`${stats.noResponseRate}%`}
+          />
+
+          <MetricCard
+            color="sky"
+            icon={Send}
+            label="العروض المُرسلة"
+            value={stats.totalSent}
+          />
+        </section>
+
+        {/* Operations */}
+        <section
+          className="
+            max-w-full overflow-hidden rounded-[22px]
+            border border-[#d8b46a]/25 bg-white/90
+            shadow-[0_8px_22px_rgba(18,63,89,0.06)]
+            backdrop-blur-xl
+          "
+        >
+          <div
+            className="
+              flex items-center justify-between gap-3
+              border-b border-[#e8ddc8]
+              bg-gradient-to-l from-[#fbf8f1] via-white to-[#eef7f6]
+              px-4 py-3
+            "
+          >
+            <div className="flex min-w-0 items-center gap-2">
+              <span
+                className="
+                  grid h-9 w-9 shrink-0 place-items-center
+                  rounded-xl bg-[#123f59] text-[#e2bf74]
+                "
+              >
+                <ClipboardList className="h-4 w-4" />
+              </span>
+
+              <div className="min-w-0">
+                <h3 className="truncate text-sm font-black text-[#123f59]">
+                  العمليات والخدمات
+                </h3>
+
+                <p className="mt-0.5 truncate text-[10px] font-bold text-[#94a3b8]">
+                  فتح الشاشات الفرعية الخاصة بإدارة عروض الأسعار.
+                </p>
+              </div>
+            </div>
+
+            <span
+              className="
+                shrink-0 rounded-xl border border-[#d8b46a]/25
+                bg-[#fbf8f1] px-3 py-1.5
+                text-[10px] font-black text-[#64748b]
+              "
+            >
+              {operationButtons.length} خدمة
+            </span>
+          </div>
+
+          <div className="p-3">
+            <div className="grid max-w-full grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
+              {operationButtons.map((button) => (
+                <DashboardButton key={button.code} {...button} />
+              ))}
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );
 };
 
-// ==========================================
-// المكونات المساعدة - تم تكثيفها بشدة
-// ==========================================
+const QuickButton = ({
+  icon: Icon,
+  label,
+  onClick,
+  variant = "ghost",
+  badge,
+  shortcut,
+}) => {
+  const variants = {
+    primary:
+      "border-[#e2bf74]/40 bg-[#e2bf74] text-[#082032] hover:bg-[#f5d99b] shadow-[0_10px_20px_rgba(226,191,116,0.18)]",
+    ghost:
+      "border-white/15 bg-white/10 text-white hover:bg-white/18 hover:border-[#e2bf74]/35",
+    soft:
+      "border-white/15 bg-white text-[#123f59] hover:bg-[#fbf8f1]",
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        relative inline-flex h-9 items-center justify-center gap-1.5
+        rounded-xl border px-3 text-[11px] font-black
+        transition-all hover:-translate-y-[1px]
+        ${variants[variant] || variants.ghost}
+      `}
+      type="button"
+    >
+      <Icon className="h-4 w-4" />
+      {label}
+
+      {badge > 0 && (
+        <span
+          className="
+            mr-1 rounded-lg bg-rose-600 px-1.5 py-0.5
+            text-[8px] font-black text-white
+          "
+        >
+          {badge}
+        </span>
+      )}
+
+      {shortcut && (
+        <span
+          className="
+            mr-1 hidden rounded-lg border border-[#d8b46a]/25
+            bg-[#fbf8f1] px-1.5 py-0.5
+            font-mono text-[8px] font-black text-[#64748b]
+            sm:inline-flex
+          "
+        >
+          {shortcut}
+        </span>
+      )}
+    </button>
+  );
+};
 
 const StatCard = ({ color, icon: Icon, count, label }) => {
   const colorMap = {
-    blue: "border-t-blue-500 text-blue-500 bg-blue-50/30",
-    indigo: "border-t-indigo-500 text-indigo-500 bg-indigo-50/30",
-    amber: "border-t-amber-500 text-amber-500 bg-amber-50/30",
-    emerald: "border-t-emerald-500 text-emerald-500 bg-emerald-50/30",
-    yellow: "border-t-yellow-500 text-yellow-500 bg-yellow-50/30",
-    green: "border-t-green-500 text-green-500 bg-green-50/30",
-    orange: "border-t-orange-500 text-orange-500 bg-orange-50/30",
-    red: "border-t-red-500 text-red-500 bg-red-50/30",
+    blue: {
+      icon: "border-blue-200 bg-blue-50 text-blue-700",
+      bar: "bg-blue-500",
+    },
+    indigo: {
+      icon: "border-indigo-200 bg-indigo-50 text-indigo-700",
+      bar: "bg-indigo-500",
+    },
+    amber: {
+      icon: "border-amber-200 bg-amber-50 text-amber-700",
+      bar: "bg-amber-500",
+    },
+    emerald: {
+      icon: "border-emerald-200 bg-emerald-50 text-emerald-700",
+      bar: "bg-emerald-500",
+    },
+    yellow: {
+      icon: "border-yellow-200 bg-yellow-50 text-yellow-700",
+      bar: "bg-yellow-500",
+    },
+    green: {
+      icon: "border-green-200 bg-green-50 text-green-700",
+      bar: "bg-green-500",
+    },
+    orange: {
+      icon: "border-orange-200 bg-orange-50 text-orange-700",
+      bar: "bg-orange-500",
+    },
+    red: {
+      icon: "border-rose-200 bg-rose-50 text-rose-700",
+      bar: "bg-rose-500",
+    },
   };
+
+  const selected = colorMap[color] || colorMap.blue;
+
   return (
-    <div
-      className={`p-2 rounded-lg border border-slate-200 border-t-2 shadow-sm text-center flex flex-col items-center justify-center ${colorMap[color]}`}
+    <article
+      className="
+        relative min-w-0 overflow-hidden rounded-[16px]
+        border border-[#d8b46a]/25 bg-white/90
+        p-2.5 shadow-[0_8px_18px_rgba(18,63,89,0.05)]
+        backdrop-blur-xl
+      "
     >
-      <div className="flex items-center gap-1.5 mb-1">
-        <Icon className="w-3.5 h-3.5" />
-        <span className="text-lg font-bold leading-none text-slate-800">
-          {count}
+      <span className={`absolute right-0 top-0 h-full w-1 ${selected.bar}`} />
+
+      <div className="flex min-w-0 items-center justify-between gap-2 pr-1">
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-lg font-black leading-none text-[#123f59]">
+            {count}
+          </div>
+
+          <div className="mt-1 line-clamp-2 min-h-[24px] text-[9px] font-black leading-3 text-[#64748b]">
+            {label}
+          </div>
+        </div>
+
+        <span
+          className={`
+            grid h-8 w-8 shrink-0 place-items-center
+            rounded-xl border
+            ${selected.icon}
+          `}
+        >
+          <Icon className="h-4 w-4" />
         </span>
       </div>
-      <div className="text-[9.5px] font-medium text-slate-500 leading-tight truncate w-full">
-        {label}
-      </div>
-    </div>
+    </article>
   );
 };
 
-const FinancialCard = ({ color, label, amount }) => {
-  const colorMap = { blue: "border-r-blue-500", green: "border-r-green-500" };
-  const textMap = { blue: "text-blue-700", green: "text-green-700" };
+const FinancialCard = ({ color, icon: Icon, label, amount }) => {
+  const colors = {
+    blue: {
+      icon: "border-blue-200 bg-blue-50 text-blue-700",
+      value: "text-[#123f59]",
+      bar: "bg-blue-500",
+    },
+    green: {
+      icon: "border-emerald-200 bg-emerald-50 text-emerald-700",
+      value: "text-emerald-700",
+      bar: "bg-emerald-500",
+    },
+  };
+
+  const selected = colors[color] || colors.blue;
 
   return (
-    <div
-      className={`p-2.5 bg-white rounded-lg border border-slate-200 border-r-4 shadow-sm flex flex-col justify-center ${colorMap[color]}`}
+    <article
+      className="
+        relative min-w-0 overflow-hidden rounded-[16px]
+        border border-[#d8b46a]/25 bg-white/90
+        p-2.5 shadow-[0_8px_18px_rgba(18,63,89,0.05)]
+        backdrop-blur-xl
+      "
     >
-      <div className="text-[10px] text-slate-500 mb-0.5">{label}</div>
-      <div className={`text-lg font-bold leading-none ${textMap[color]}`}>
-        {amount}{" "}
-        <span className="text-[10px] font-normal text-slate-400">ر.س</span>
+      <span className={`absolute right-0 top-0 h-full w-1 ${selected.bar}`} />
+
+      <div className="flex min-w-0 items-center gap-2 pr-1">
+        <span
+          className={`
+            grid h-8 w-8 shrink-0 place-items-center
+            rounded-xl border
+            ${selected.icon}
+          `}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[9.5px] font-black text-[#64748b]">
+            {label}
+          </div>
+
+          <div
+            className={`mt-1 truncate text-base font-black leading-none ${selected.value}`}
+          >
+            {amount}
+            <span className="mr-1 text-[9px] font-bold text-[#94a3b8]">
+              ر.س
+            </span>
+          </div>
+        </div>
       </div>
-    </div>
+    </article>
   );
 };
 
 const MetricCard = ({ color, icon: Icon, label, value, unit }) => {
   const colorMap = {
-    violet: "border-r-violet-500 text-violet-600 bg-violet-50/50",
-    emerald: "border-r-emerald-500 text-emerald-600 bg-emerald-50/50",
-    red: "border-r-red-500 text-red-600 bg-red-50/50",
-    sky: "border-r-sky-500 text-sky-600 bg-sky-50/50",
+    violet: "border-violet-200 bg-violet-50 text-violet-700",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    red: "border-rose-200 bg-rose-50 text-rose-700",
+    sky: "border-sky-200 bg-sky-50 text-sky-700",
   };
-  const bgClass = colorMap[color].split(" ")[2];
 
   return (
-    <div
-      className={`p-2 bg-white rounded-lg border border-slate-200 border-r-4 shadow-sm flex items-center gap-2 ${colorMap[color].split(" ")[0]}`}
+    <article
+      className="
+        min-w-0 rounded-[16px] border border-[#d8b46a]/25
+        bg-white/90 p-2.5
+        shadow-[0_8px_18px_rgba(18,63,89,0.05)]
+        backdrop-blur-xl
+      "
     >
-      <div
-        className={`w-7 h-7 rounded bg-white shadow-sm flex items-center justify-center ${colorMap[color].split(" ")[1]}`}
-      >
-        <Icon className="w-3.5 h-3.5" />
-      </div>
-      <div className="flex-1 overflow-hidden">
-        <div className="text-[9.5px] text-slate-500 truncate">{label}</div>
-        <div className="text-sm font-bold text-slate-800 leading-tight">
-          {value}{" "}
-          {unit && (
-            <span className="text-[9px] font-normal text-slate-400">
-              {unit}
-            </span>
-          )}
+      <div className="flex min-w-0 items-center gap-2">
+        <span
+          className={`
+            grid h-8 w-8 shrink-0 place-items-center
+            rounded-xl border
+            ${colorMap[color] || colorMap.sky}
+          `}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[9.5px] font-black text-[#64748b]">
+            {label}
+          </div>
+
+          <div className="mt-1 truncate text-sm font-black leading-none text-[#123f59]">
+            {value}
+            {unit && (
+              <span className="mr-1 text-[9px] font-bold text-[#94a3b8]">
+                {unit}
+              </span>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </article>
   );
 };
 
@@ -478,49 +791,99 @@ const DashboardButton = ({
   onClick,
 }) => {
   const colorMap = {
-    blue: "bg-blue-50 text-blue-600 border-blue-100",
-    green: "bg-green-50 text-green-600 border-green-100",
-    violet: "bg-violet-50 text-violet-600 border-violet-100",
-    orange: "bg-orange-50 text-orange-500 border-orange-100",
-    cyan: "bg-cyan-50 text-cyan-600 border-cyan-100",
-    emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
-    indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
-    red: "bg-red-50 text-red-600 border-red-100",
-    slate: "bg-slate-50 text-slate-500 border-slate-200",
-    amber: "bg-amber-50 text-amber-600 border-amber-100",
-    pink: "bg-pink-50 text-pink-600 border-pink-100",
-    sky: "bg-sky-50 text-sky-600 border-sky-100",
-    yellow: "bg-yellow-50 text-yellow-600 border-yellow-100",
+    blue: "border-blue-200 bg-blue-50 text-blue-700",
+    green: "border-green-200 bg-green-50 text-green-700",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    violet: "border-violet-200 bg-violet-50 text-violet-700",
+    orange: "border-orange-200 bg-orange-50 text-orange-700",
+    cyan: "border-cyan-200 bg-cyan-50 text-cyan-700",
+    indigo: "border-indigo-200 bg-indigo-50 text-indigo-700",
+    red: "border-rose-200 bg-rose-50 text-rose-700",
+    slate: "border-[#d8b46a]/25 bg-[#fbf8f1] text-[#64748b]",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    pink: "border-pink-200 bg-pink-50 text-pink-700",
+    sky: "border-sky-200 bg-sky-50 text-sky-700",
+    yellow: "border-yellow-200 bg-yellow-50 text-yellow-700",
   };
-  const selectedColor = colorMap[color] || colorMap.slate;
+
+  const selected = colorMap[color] || colorMap.slate;
 
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center justify-center p-2.5 bg-white border rounded-lg cursor-pointer hover:bg-slate-50 transition-colors relative min-h-[85px] hover:border-slate-300`}
+      className="
+        group relative flex min-h-[76px] min-w-0 flex-col items-center justify-center
+        rounded-[16px] border border-[#e8ddc8]
+        bg-white px-2 py-2
+        text-center transition-all duration-200
+        hover:-translate-y-[1px]
+        hover:border-[#d8b46a]/55 hover:bg-[#fbf8f1]
+        hover:shadow-[0_10px_24px_rgba(18,63,89,0.08)]
+      "
+      type="button"
+      title={label}
     >
-      {badge && (
+      {badge !== undefined && Number(badge) > 0 && (
         <span
-          className={`absolute top-1 right-1 px-1.5 py-0.5 text-white rounded text-[9px] font-bold leading-none ${selectedColor.split(" ")[1].replace("text", "bg")}`}
+          className="
+            absolute right-1.5 top-1.5
+            rounded-lg bg-[#123f59]
+            px-1.5 py-0.5
+            text-[8px] font-black leading-none text-[#e2bf74]
+            shadow-sm
+          "
         >
           {badge}
         </span>
       )}
+
       {readyForDev && (
         <span
           title="جاهز للتطوير"
-          className="absolute top-1.5 left-1.5 w-1.5 h-1.5 rounded-full bg-slate-300"
-        ></span>
+          className="
+            absolute left-2 top-2
+            h-1.5 w-1.5 rounded-full bg-slate-300
+          "
+        />
       )}
-      <div
-        className={`w-8 h-8 rounded-lg flex items-center justify-center mb-1.5 ${selectedColor.split(" ").slice(0, 2).join(" ")}`}
+
+      <span
+        className={`
+          grid h-8 w-8 shrink-0 place-items-center rounded-xl border
+          transition-transform group-hover:scale-105
+          ${selected}
+        `}
       >
-        <Icon className="w-4 h-4" />
-      </div>
-      <div className="text-[10.5px] font-bold text-slate-700 text-center leading-tight w-full truncate px-1">
+        <Icon className="h-4 w-4" />
+      </span>
+
+      <span
+        className="
+          mt-1.5 line-clamp-2 min-h-[28px]
+          px-1 text-[9.5px] font-black
+          leading-[14px] text-[#123f59]
+        "
+      >
         {label}
-      </div>
-      <div className="text-[8px] text-slate-400 font-mono mt-1">{code}</div>
+      </span>
+
+      <span
+        className="
+          mt-0.5 rounded-md bg-[#fbf8f1]
+          px-1.5 py-0.5
+          font-mono text-[7.5px] font-black text-[#94a3b8]
+        "
+      >
+        {code}
+      </span>
+
+      <ArrowUpLeft
+        className="
+          absolute bottom-1.5 left-1.5 h-3 w-3
+          text-[#c5983c] opacity-0
+          transition-opacity group-hover:opacity-100
+        "
+      />
     </button>
   );
 };

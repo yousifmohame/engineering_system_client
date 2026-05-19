@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import api from "../../../../api/axios";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   UploadCloud,
   FileText,
@@ -25,15 +26,20 @@ import {
   User,
   AtSign,
   MessageSquare,
+  ScanLine,
+  ShieldAlert,
 } from "lucide-react";
 
 export default function ExternalUploadPage({ config = {} }) {
-  const [internalStatus, setInternalStatus] = useState(config.status || "active");
+  const [internalStatus, setInternalStatus] = useState(
+    config.status || "active",
+  );
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState(false);
 
   const [files, setFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false); // حالة الإرسال النهائي
 
   const [senderData, setSenderData] = useState({
     senderName: "",
@@ -75,8 +81,84 @@ export default function ExternalUploadPage({ config = {} }) {
     if (file.size > maxFileSize * 1024 * 1024) {
       return `حجم الملف يتجاوز ${maxFileSize}MB`;
     }
-
     return null;
+  };
+
+  // 🚀 دالة الرفع الفوري والفحص الأمني لكل ملف على حدة
+  const uploadAndScanFile = async (fileObj) => {
+    if (config.isPreview) {
+      // محاكاة الرفع للـ Preview
+      for (let i = 0; i <= 100; i += 20) {
+        await new Promise((r) => setTimeout(r, 200));
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === fileObj.id
+              ? {
+                  ...f,
+                  progress: i,
+                  status: i === 100 ? "scanning" : "uploading",
+                }
+              : f,
+          ),
+        );
+      }
+      await new Promise((r) => setTimeout(r, 1500)); // محاكاة الفحص الأمني
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileObj.id
+            ? { ...f, status: "safe", serverId: "mock-id" }
+            : f,
+        ),
+      );
+      return;
+    }
+
+    const uploadFormData = new FormData();
+    uploadFormData.append("file", fileObj.file);
+
+    try {
+      const res = await api.post(
+        `/transfer-center/upload-temp/${config.shortLink}`,
+        uploadFormData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total,
+            );
+            setFiles((prev) =>
+              prev.map((f) =>
+                f.id === fileObj.id
+                  ? {
+                      ...f,
+                      progress: percentCompleted,
+                      status:
+                        percentCompleted === 100 ? "scanning" : "uploading",
+                    }
+                  : f,
+              ),
+            );
+          },
+        },
+      );
+
+      // بمجرد نجاح الطلب، الملف آمن وتم حفظه مبدئياً
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileObj.id
+            ? { ...f, status: "safe", serverId: res.data.data.id }
+            : f,
+        ),
+      );
+    } catch (error) {
+      const errorMsg =
+        error.response?.data?.message || "فشل الرفع أو اكتشاف تهديد أمني";
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileObj.id ? { ...f, status: "infected", errorMsg } : f,
+        ),
+      );
+    }
   };
 
   const processFiles = (newFiles) => {
@@ -87,23 +169,28 @@ export default function ExternalUploadPage({ config = {} }) {
       return;
     }
 
-    const processed = filesArray.map((file) => {
+    const newFileObjects = filesArray.map((file) => {
       const error = validateFile(file);
-
       return {
         id: Math.random().toString(36).substring(7),
         file,
         progress: 0,
-        status: error ? "error" : "pending",
+        status: error ? "error" : "uploading",
         errorMsg: error || undefined,
+        serverId: null,
       };
     });
 
-    setFiles((prev) => [...prev, ...processed]);
+    setFiles((prev) => [...prev, ...newFileObjects]);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+
+    // 🚀 تشغيل الرفع والفحص فوراً للملفات الصالحة
+    newFileObjects
+      .filter((f) => f.status === "uploading")
+      .forEach((f) => uploadAndScanFile(f));
   };
 
   const handleDragOver = (e) => {
@@ -126,125 +213,48 @@ export default function ExternalUploadPage({ config = {} }) {
     setFiles((prev) => prev.filter((file) => file.id !== id));
   };
 
-  const hasUploadingFile = files.some((file) => file.status === "uploading");
-  const validPendingFiles = files.filter((file) => file.status === "pending");
+  // دوال التحقق من حالات الملفات
+  const hasUploadingOrScanning = files.some(
+    (file) => file.status === "uploading" || file.status === "scanning",
+  );
+  const safeFiles = files.filter((file) => file.status === "safe");
 
+  // 🚀 الاعتماد النهائي (تأكيد وإرسال الملفات بعد الفحص)
   const handleSubmit = async () => {
-    if (validPendingFiles.length === 0) {
-      toast.error("يرجى اختيار ملف صالح واحد على الأقل");
+    if (safeFiles.length === 0) {
+      toast.error("يرجى التأكد من رفع وفحص ملف واحد آمن على الأقل");
       return;
     }
 
-    setFiles((prev) =>
-      prev.map((file) =>
-        file.status === "pending"
-          ? {
-              ...file,
-              status: "uploading",
-            }
-          : file,
-      ),
-    );
+    setIsFinalizing(true);
 
     if (config.isPreview) {
-      for (let i = 0; i <= 100; i += 20) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
-
-        setFiles((prev) =>
-          prev.map((file) =>
-            file.status === "uploading"
-              ? {
-                  ...file,
-                  progress: i,
-                }
-              : file,
-          ),
-        );
-      }
-
-      setFiles((prev) =>
-        prev.map((file) =>
-          file.status === "uploading"
-            ? {
-                ...file,
-                status: "success",
-                progress: 100,
-              }
-            : file,
-        ),
-      );
-
-      setTimeout(() => setInternalStatus("success"), 500);
+      setTimeout(() => {
+        setIsFinalizing(false);
+        setInternalStatus("success");
+      }, 1000);
       return;
     }
 
-    const uploadFormData = new FormData();
-
-    validPendingFiles.forEach((fileItem) => {
-      uploadFormData.append("files", fileItem.file);
-    });
-
-    uploadFormData.append("senderName", senderData.senderName);
-    uploadFormData.append("senderMobile", senderData.senderMobile);
-    uploadFormData.append("senderEmail", senderData.senderEmail);
-    uploadFormData.append("senderNote", senderData.senderNote);
-    uploadFormData.append("requestId", config.id || "");
-
     try {
-      await api.post(`/transfer-center/upload/${config.shortLink}`, uploadFormData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total,
-          );
+      const payload = {
+        fileIds: safeFiles.map((f) => f.serverId), // نرسل الـ IDs للملفات الآمنة المرفوعة مسبقاً
+        senderName: senderData.senderName,
+        senderMobile: senderData.senderMobile,
+        senderEmail: senderData.senderEmail,
+        senderNote: senderData.senderNote,
+      };
 
-          setFiles((prev) =>
-            prev.map((file) =>
-              file.status === "uploading"
-                ? {
-                    ...file,
-                    progress: percentCompleted,
-                  }
-                : file,
-            ),
-          );
-        },
-      });
-
-      setFiles((prev) =>
-        prev.map((file) =>
-          file.status === "uploading"
-            ? {
-                ...file,
-                status: "success",
-                progress: 100,
-              }
-            : file,
-        ),
-      );
-
-      setTimeout(() => setInternalStatus("success"), 1000);
+      await api.post(`/transfer-center/finalize/${config.shortLink}`, payload);
+      setInternalStatus("success");
     } catch (error) {
-      console.error("Upload Error:", error);
-
+      console.error("Finalize Error:", error);
       toast.error(
         error.response?.data?.message ||
-          "حدث خطأ أثناء رفع الملفات، يرجى المحاولة مرة أخرى",
+          "حدث خطأ أثناء اعتماد الملفات، يرجى المحاولة مرة أخرى",
       );
-
-      setFiles((prev) =>
-        prev.map((file) =>
-          file.status === "uploading"
-            ? {
-                ...file,
-                status: "error",
-                errorMsg: "فشل الرفع",
-              }
-            : file,
-        ),
-      );
+    } finally {
+      setIsFinalizing(false);
     }
   };
 
@@ -268,7 +278,9 @@ export default function ExternalUploadPage({ config = {} }) {
       config.emailMessage || "لدي استفسار بخصوص طلب الملفات المرسل.",
     );
 
-    window.open(`mailto:${config.contactEmail}?subject=${subject}&body=${body}`);
+    window.open(
+      `mailto:${config.contactEmail}?subject=${subject}&body=${body}`,
+    );
   };
 
   const handleSMS = () => {
@@ -333,7 +345,7 @@ export default function ExternalUploadPage({ config = {} }) {
               "
             >
               <ShieldCheck className="h-3.5 w-3.5" />
-              تم الاستلام بأمان
+              تم الفحص والاستلام بأمان
             </div>
 
             <h1 className="mb-2 text-2xl font-black text-[#123f59]">
@@ -341,8 +353,8 @@ export default function ExternalUploadPage({ config = {} }) {
             </h1>
 
             <p className="mx-auto mb-6 max-w-sm text-sm font-bold leading-7 text-[#64748b]">
-              شكراً لك، تم استقبال ملفاتك وحفظها بأمان. سيتم عرضها ومراجعتها من
-              قبل فريق العمل.
+              شكراً لك، تم استقبال ملفاتك وتشفيرها وحفظها بأمان. سيتم عرضها
+              ومراجعتها من قبل فريق العمل.
             </p>
 
             <div
@@ -512,7 +524,7 @@ export default function ExternalUploadPage({ config = {} }) {
 
           <div className="min-w-0 text-center">
             <p className="mb-1 text-[11px] font-black text-[#e2bf74]">
-              منصة رفع الملفات الآمنة
+              منصة رفع الملفات والفحص الآمن
             </p>
 
             <h2 className="truncate text-xl font-black">
@@ -615,7 +627,7 @@ export default function ExternalUploadPage({ config = {} }) {
             <SectionHeader
               icon={FileText}
               title="بيانات المرسل"
-              subtitle="يرجى تعبئة البيانات المطلوبة قبل إرسال الملفات."
+              subtitle="يرجى تعبئة البيانات المطلوبة لتوثيق الملفات."
             />
 
             <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
@@ -703,7 +715,7 @@ export default function ExternalUploadPage({ config = {} }) {
           </section>
         )}
 
-        {/* Upload */}
+        {/* Upload & Security Scan Area */}
         <section
           className="
             overflow-hidden rounded-[30px]
@@ -715,7 +727,7 @@ export default function ExternalUploadPage({ config = {} }) {
           <SectionHeader
             icon={UploadCloud}
             title="إرفاق المستندات المحددة"
-            subtitle={`يمكن رفع حتى ${maxFiles} ملفات، بحجم أقصى ${maxFileSize}MB لكل ملف.`}
+            subtitle={`سيتم فحص الملفات أمنياً فوراً بمجرد إفلاتها. (الحد الأقصى ${maxFiles} ملفات).`}
           />
 
           <div className="space-y-5 p-5">
@@ -760,7 +772,7 @@ export default function ExternalUploadPage({ config = {} }) {
               </div>
 
               <p className="relative z-10 mb-2 text-sm font-black text-[#123f59]">
-                اسحب الملفات وأفلتها هنا
+                اسحب الملفات وأفلتها هنا للرفع والفحص
               </p>
 
               <p className="relative z-10 text-xs font-bold text-[#64748b]">
@@ -779,17 +791,20 @@ export default function ExternalUploadPage({ config = {} }) {
               </p>
             </div>
 
-            {files.length > 0 && (
-              <div className="space-y-3">
-                {files.map((fileItem) => (
-                  <UploadFileRow
-                    key={fileItem.id}
-                    fileItem={fileItem}
-                    onRemove={() => removeFile(fileItem.id)}
-                  />
-                ))}
-              </div>
-            )}
+            {/* 💡 مكون الملفات الذكي (UploadFileRow) المدمج داخلياً في نفس الملف */}
+            <AnimatePresence>
+              {files.length > 0 && (
+                <div className="space-y-3">
+                  {files.map((fileItem) => (
+                    <UploadFileRow
+                      key={fileItem.id}
+                      fileItem={fileItem}
+                      onRemove={() => removeFile(fileItem.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </AnimatePresence>
           </div>
         </section>
 
@@ -813,7 +828,9 @@ export default function ExternalUploadPage({ config = {} }) {
         {/* Submit */}
         <button
           onClick={handleSubmit}
-          disabled={files.length === 0 || hasUploadingFile}
+          disabled={
+            safeFiles.length === 0 || hasUploadingOrScanning || isFinalizing
+          }
           className="
             flex h-14 w-full items-center justify-center gap-2
             rounded-2xl text-sm font-black text-white
@@ -824,17 +841,21 @@ export default function ExternalUploadPage({ config = {} }) {
           style={brandBgStyle}
           type="button"
         >
-          {hasUploadingFile ? (
+          {isFinalizing ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
             <Send className="h-5 w-5" />
           )}
 
-          {hasUploadingFile ? "جاري رفع الملفات..." : "تأكيد وإرسال الملفات"}
+          {hasUploadingOrScanning
+            ? "يرجى الانتظار لحين اكتمال الرفع والفحص..."
+            : "تأكيد واعتماد إرسال الملفات"}
         </button>
 
         {/* Contact */}
-        {(config.enableWhatsApp || config.enableEmailCTA || config.enableSms) && (
+        {(config.enableWhatsApp ||
+          config.enableEmailCTA ||
+          config.enableSms) && (
           <section
             className="
               overflow-hidden rounded-[30px]
@@ -899,9 +920,7 @@ export default function ExternalUploadPage({ config = {} }) {
           border-t border-[#e8ddc8] p-6 text-center
         "
       >
-        <p className="text-xs font-bold text-[#64748b]">
-          {config.footerText}
-        </p>
+        <p className="text-xs font-bold text-[#64748b]">{config.footerText}</p>
 
         <div className="flex flex-wrap justify-center gap-4 text-xs font-bold text-[#94a3b8]">
           {config.contactEmail && (
@@ -923,6 +942,100 @@ export default function ExternalUploadPage({ config = {} }) {
   );
 }
 
+// ==========================================
+// 🚀 مكون ملف الرفع الذكي (Smart File Row)
+// ==========================================
+const UploadFileRow = ({ fileItem, onRemove }) => {
+  const sizeMB = (fileItem.file.size / (1024 * 1024)).toFixed(1);
+  const { status, progress, errorMsg } = fileItem;
+
+  const isUploading = status === "uploading";
+  const isScanning = status === "scanning";
+  const isSafe = status === "safe";
+  const isError = status === "error" || status === "infected";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className={`flex flex-col gap-3 rounded-[22px] border p-4 sm:flex-row sm:items-center transition-all ${isError ? "border-rose-200 bg-rose-50" : isSafe ? "border-emerald-200 bg-emerald-50/50" : isScanning ? "border-indigo-200 bg-indigo-50/50" : "border-[#e8ddc8] bg-white"}`}
+    >
+      {/* الأيقونة */}
+      <div
+        className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${isError ? "bg-rose-100 text-rose-600" : isSafe ? "bg-emerald-100 text-emerald-600" : isScanning ? "bg-indigo-100 text-indigo-600 animate-pulse" : "bg-[#f8efe0] text-[#c5983c]"}`}
+      >
+        {isScanning ? (
+          <ScanLine className="h-5 w-5" />
+        ) : isError ? (
+          <ShieldAlert className="h-5 w-5" />
+        ) : isSafe ? (
+          <ShieldCheck className="h-5 w-5" />
+        ) : (
+          <File className="h-5 w-5" />
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="mb-2 flex items-start justify-between gap-3 text-xs">
+          <span className="truncate font-black text-[#123f59]" dir="ltr">
+            {fileItem.file.name}
+          </span>
+          <span className="shrink-0 font-bold text-[#64748b]">{sizeMB} MB</span>
+        </div>
+
+        {/* 💡 شريط التقدم والفحص الذكي */}
+        {isError ? (
+          <p className="mt-1 flex items-center gap-1.5 text-[10px] font-black text-rose-600">
+            <AlertTriangle className="h-3.5 w-3.5" /> {errorMsg}
+          </p>
+        ) : isSafe ? (
+          <p className="mt-1 flex items-center gap-1.5 text-[10px] font-black text-emerald-600">
+            <CheckCircle2 className="h-3.5 w-3.5" /> ملف آمن وموثوق
+          </p>
+        ) : isScanning ? (
+          <div className="flex w-full items-center gap-2">
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-indigo-100">
+              {/* شريط متحرك للفحص */}
+              <div className="h-full w-full bg-indigo-500 rounded-full animate-pulse"></div>
+            </div>
+            <span className="shrink-0 text-[10px] font-black text-indigo-600 flex items-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin" /> فحص أمني
+            </span>
+          </div>
+        ) : (
+          <div className="flex w-full items-center gap-3">
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#eef2f2]">
+              <div
+                className="h-full rounded-full bg-[#c5983c] transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <span className="w-8 shrink-0 text-[10px] font-black text-[#64748b]">
+              {progress}%
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* زر الحذف */}
+      {(isError || isSafe) && (
+        <button
+          onClick={onRemove}
+          className="flex min-w-[48px] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-rose-200 bg-white px-2 py-1.5 text-[8px] font-black text-rose-600 transition hover:bg-rose-50"
+          type="button"
+        >
+          <Trash2 className="h-4 w-4" /> حذف
+        </button>
+      )}
+    </motion.div>
+  );
+};
+
+// ==========================================
+// 🎨 المكونات المساعدة للواجهة (Helpers)
+// ==========================================
+
 const PageShell = ({ children }) => (
   <div
     className="
@@ -937,60 +1050,31 @@ const PageShell = ({ children }) => (
       <div className="absolute left-[-140px] bottom-[-140px] h-96 w-96 rounded-full bg-[#c5983c]/16 blur-3xl" />
       <div className="absolute left-[22%] top-[18%] h-52 w-52 rounded-full bg-emerald-400/10 blur-3xl" />
     </div>
-
     {children}
   </div>
 );
 
 const StatusCard = ({ icon: Icon, title, message, companyName, tone }) => {
   const isRose = tone === "rose";
-
   return (
     <div
-      className={`
-        relative z-10 w-full max-w-md overflow-hidden rounded-[32px]
-        border ${isRose ? "border-rose-200" : "border-emerald-200"}
-        bg-white/90 p-8 text-center
-        shadow-[0_30px_90px_rgba(18,63,89,0.18)]
-        backdrop-blur-xl
-      `}
+      className={`relative z-10 w-full max-w-md overflow-hidden rounded-[32px] border ${isRose ? "border-rose-200" : "border-emerald-200"} bg-white/90 p-8 text-center shadow-[0_30px_90px_rgba(18,63,89,0.18)] backdrop-blur-xl`}
     >
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-br from-[#fbf8f1]/70 via-white/45 to-[#eef7f6]/70" />
       </div>
-
       <div className="relative z-10">
         <div
-          className={`
-            mx-auto mb-5 grid h-20 w-20 place-items-center
-            rounded-[28px] text-white
-            shadow-[0_16px_34px_rgba(18,63,89,0.22)]
-            ${
-              isRose
-                ? "bg-gradient-to-br from-rose-600 to-rose-500"
-                : "bg-gradient-to-br from-emerald-600 to-emerald-500"
-            }
-          `}
+          className={`mx-auto mb-5 grid h-20 w-20 place-items-center rounded-[28px] text-white shadow-[0_16px_34px_rgba(18,63,89,0.22)] ${isRose ? "bg-gradient-to-br from-rose-600 to-rose-500" : "bg-gradient-to-br from-emerald-600 to-emerald-500"}`}
         >
           <Icon className="h-10 w-10" />
         </div>
-
-        <h1 className="mb-3 text-2xl font-black text-[#123f59]">
-          {title}
-        </h1>
-
+        <h1 className="mb-3 text-2xl font-black text-[#123f59]">{title}</h1>
         <p className="mx-auto mb-7 max-w-sm text-sm font-bold leading-7 text-[#64748b]">
           {message}
         </p>
-
-        <div
-          className="
-            flex items-center justify-center gap-2
-            border-t border-[#e8ddc8] pt-5
-            text-xs font-black text-[#94a3b8]
-          "
-        >
-          <Building className="h-4 w-4 text-[#c5983c]" />
+        <div className="flex items-center justify-center gap-2 border-t border-[#e8ddc8] pt-5 text-xs font-black text-[#94a3b8]">
+          <Building className="h-4 w-4 text-[#c5983c]" />{" "}
           {companyName || "الجهة المرسلة"}
         </div>
       </div>
@@ -999,34 +1083,29 @@ const StatusCard = ({ icon: Icon, title, message, companyName, tone }) => {
 };
 
 const SectionHeader = ({ icon: Icon, title, subtitle }) => (
-  <div
-    className="
-      flex items-center gap-3 border-b border-[#e8ddc8]
-      bg-gradient-to-l from-[#fbf8f1] via-white to-[#eef7f6]
-      px-5 py-4
-    "
-  >
+  <div className="flex items-center gap-3 border-b border-[#e8ddc8] bg-gradient-to-l from-[#fbf8f1] via-white to-[#eef7f6] px-5 py-4">
     <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#123f59] text-[#e2bf74]">
       <Icon className="h-5 w-5" />
     </span>
-
     <div>
       <h3 className="text-sm font-black text-[#123f59]">{title}</h3>
-      <p className="mt-0.5 text-[11px] font-bold text-[#64748b]">
-        {subtitle}
-      </p>
+      <p className="mt-0.5 text-[11px] font-bold text-[#64748b]">{subtitle}</p>
     </div>
   </div>
 );
 
-const FormField = ({ label, icon: Icon, required, children, className = "" }) => (
+const FormField = ({
+  label,
+  icon: Icon,
+  required,
+  children,
+  className = "",
+}) => (
   <div className={className}>
     <label className="mb-1.5 flex items-center gap-1.5 text-xs font-black text-[#123f59]">
-      {Icon && <Icon className="h-3.5 w-3.5 text-[#c5983c]" />}
-      {label}
+      {Icon && <Icon className="h-3.5 w-3.5 text-[#c5983c]" />} {label}{" "}
       {required && <span className="text-rose-500">*</span>}
     </label>
-
     {children}
   </div>
 );
@@ -1040,112 +1119,6 @@ const InfoPill = ({ label, value, dir }) => (
   </div>
 );
 
-const UploadFileRow = ({ fileItem, onRemove }) => {
-  const sizeMB = (fileItem.file.size / (1024 * 1024)).toFixed(1);
-  const isError = fileItem.status === "error";
-  const isSuccess = fileItem.status === "success";
-  const isUploading = fileItem.status === "uploading";
-
-  return (
-    <div
-      className={`
-        flex flex-col gap-4 rounded-[22px] border p-4
-        sm:flex-row sm:items-center
-        ${
-          isError
-            ? "border-rose-200 bg-rose-50/70"
-            : isSuccess
-              ? "border-emerald-200 bg-emerald-50/70"
-              : "border-[#e8ddc8] bg-white"
-        }
-      `}
-    >
-      <div
-        className={`
-          grid h-11 w-11 shrink-0 place-items-center rounded-2xl
-          ${
-            isError
-              ? "bg-rose-100 text-rose-600"
-              : isSuccess
-                ? "bg-emerald-100 text-emerald-600"
-                : "bg-[#f8efe0] text-[#c5983c]"
-          }
-        `}
-      >
-        <File className="h-5 w-5" />
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <div className="mb-2 flex items-start justify-between gap-3 text-xs">
-          <span
-            className="truncate font-black text-[#123f59]"
-            dir="ltr"
-          >
-            {fileItem.file.name}
-          </span>
-
-          <span className="shrink-0 font-bold text-[#64748b]">
-            {sizeMB} MB
-          </span>
-        </div>
-
-        {isError ? (
-          <p className="mt-1 flex items-center gap-1 text-[10px] font-black text-rose-600">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            {fileItem.errorMsg}
-          </p>
-        ) : (
-          <div className="flex w-full items-center gap-3">
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#eef2f2]">
-              <div
-                className={`
-                  h-full rounded-full transition-all duration-300
-                  ${isSuccess ? "bg-emerald-500" : "bg-[#123f59]"}
-                `}
-                style={{ width: `${fileItem.progress}%` }}
-              />
-            </div>
-
-            <span className="w-10 shrink-0 text-[10px] font-black text-[#64748b]">
-              {fileItem.progress}%
-            </span>
-          </div>
-        )}
-      </div>
-
-      {fileItem.status === "pending" && (
-        <button
-          onClick={onRemove}
-          className="
-            flex min-w-[48px] shrink-0 flex-col items-center justify-center
-            gap-0.5 rounded-xl border border-rose-200 bg-rose-50
-            px-2 py-1.5 text-[8px] font-black text-rose-600
-            transition hover:bg-rose-100
-          "
-          type="button"
-        >
-          <Trash2 className="h-4 w-4" />
-          حذف
-        </button>
-      )}
-
-      {isUploading && (
-        <div className="flex shrink-0 items-center gap-1.5 text-xs font-black text-[#64748b]">
-          <Loader2 className="h-4 w-4 animate-spin text-[#c5983c]" />
-          رفع
-        </div>
-      )}
-
-      {isSuccess && (
-        <div className="flex shrink-0 items-center gap-1.5 text-xs font-black text-emerald-600">
-          <CheckCircle2 className="h-5 w-5" />
-          تم
-        </div>
-      )}
-    </div>
-  );
-};
-
 const ContactButton = ({ label, icon: Icon, tone = "cyan", onClick }) => {
   const tones = {
     emerald:
@@ -1153,31 +1126,16 @@ const ContactButton = ({ label, icon: Icon, tone = "cyan", onClick }) => {
     cyan: "border-cyan-200 bg-cyan-50 text-cyan-800 hover:bg-cyan-100",
     blue: "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100",
   };
-
   return (
     <button
       onClick={onClick}
-      className={`
-        flex h-10 items-center gap-2 rounded-2xl
-        border px-4 text-xs font-black
-        transition hover:-translate-y-[1px]
-        ${tones[tone] || tones.cyan}
-      `}
+      className={`flex h-10 items-center gap-2 rounded-2xl border px-4 text-xs font-black transition hover:-translate-y-[1px] ${tones[tone] || tones.cyan}`}
       type="button"
     >
-      <Icon className="h-4 w-4" />
-      {label}
+      <Icon className="h-4 w-4" /> {label}
     </button>
   );
 };
 
-const INPUT_CLASS = `
-  w-full rounded-2xl border border-[#d8b46a]/25
-  bg-white px-4 py-3 text-sm font-bold text-[#123f59]
-  shadow-sm outline-none transition-all
-  placeholder:text-slate-400
-  focus:border-[#c5983c]/70
-  focus:bg-white
-  focus:ring-4
-  focus:ring-[#c5983c]/10
-`;
+const INPUT_CLASS =
+  "w-full rounded-2xl border border-[#d8b46a]/25 bg-white px-4 py-3 text-sm font-bold text-[#123f59] shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-[#c5983c]/70 focus:bg-white focus:ring-4 focus:ring-[#c5983c]/10";

@@ -28,16 +28,46 @@ import { useAppStore } from "../../stores/useAppStore";
 // 💡 استيراد مكون الختم الاحترافي
 import { OfficialStamp } from "../../components/OfficialStamp/OfficialStamp";
 import AccessControl from "../../components/AccessControl";
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`
+        inline-flex min-w-0 items-center justify-center
+        ${vertical ? "flex-col gap-0.5" : "gap-1.5"}
+        ${className}
+      `}
+    >
+      {Icon && <Icon className={iconClassName || "h-4 w-4 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 break-words text-[10px] font-black leading-tight"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
 
 // ==========================================
 // ثوابت التطبيق
 // ==========================================
 const STATUS_CONFIG = {
-  DRAFT: { label: "مسودة", bg: "bg-slate-100", text: "text-slate-500" },
+  DRAFT: { label: "مسودة", bg: "bg-slate-100", text: "text-[#64748b]" },
   PENDING_APPROVAL: {
     label: "تحت المراجعة",
     bg: "bg-blue-100",
-    text: "text-blue-700",
+    text: "text-[#123f59]",
   },
   REJECTED: {
     label: "راجع بملاحظات",
@@ -52,7 +82,7 @@ const STATUS_CONFIG = {
   APPROVED: {
     label: "معتمد — بانتظار الدفع",
     bg: "bg-emerald-100",
-    text: "text-emerald-700",
+    text: "text-[#0f766e]",
   },
   PARTIALLY_PAID: {
     label: "مسدد جزئياً",
@@ -233,10 +263,10 @@ const QuotationsDirectory = () => {
   if (listError) {
     return (
       <div
-        className="flex h-full items-center justify-center bg-slate-50"
+        className="flex h-full min-h-0 items-center justify-center bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
         dir="rtl"
       >
-        <div className="text-center p-6">
+        <div className="text-center p-3">
           <div className="text-red-500 font-bold mb-2">
             ⚠️ حدث خطأ في تحميل البيانات
           </div>
@@ -244,7 +274,7 @@ const QuotationsDirectory = () => {
             onClick={() =>
               queryClient.invalidateQueries({ queryKey: ["quotations-list"] })
             }
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+            className="px-4 py-2 bg-[#123f59] text-white rounded-lg text-sm hover:bg-[#0f3448]"
           >
             إعادة المحاولة
           </button>
@@ -254,16 +284,16 @@ const QuotationsDirectory = () => {
   }
 
   return (
-    <div className="flex h-full bg-slate-50 font-sans relative" dir="rtl">
+    <div className="flex h-full min-h-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-[Tajawal] relative" dir="rtl">
       {/* ========================================== */}
       {/* الجدول الرئيسي */}
       {/* ========================================== */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-5 w-full">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-base font-bold text-slate-800 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-blue-600" />
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim overflow-x-hidden p-3 md:p-3.5 w-full">
+        <div className="flex min-w-0 items-center justify-between mb-3">
+          <div className="text-base font-bold text-[#123f59] flex min-w-0 items-center gap-2">
+            <IconWithText icon={FileText} iconClassName="w-5 h-5 text-[#123f59]" />
             دليل عروض الأسعار
-            <span className="text-xs text-slate-500 font-normal">
+            <span className="text-xs text-[#64748b] font-normal">
               ({filteredData.length} من {quotationsData?.length || 0})
             </span>
           </div>
@@ -271,13 +301,13 @@ const QuotationsDirectory = () => {
 
         {/* شريط البحث */}
         <div className="relative mb-3">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
           <input
             type="text"
             placeholder="بحث ذكي: اسم العميل، الكود، آخر 4 أرقام..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full py-2 pr-9 pl-3 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+            className="w-full py-2 pr-9 pl-3 border border-slate-300 rounded-lg text-xs outline-none focus:border-[#c5983c]/70 focus:ring-1 focus:ring-blue-500 transition-all"
             aria-label="بحث في العروض"
           />
         </div>
@@ -295,8 +325,8 @@ const QuotationsDirectory = () => {
               onClick={() => setFilterStatus(key)}
               className={`px-3 py-1 rounded-md text-[10px] font-bold border transition-all ${
                 filterStatus === key
-                  ? "bg-blue-600 border-blue-600 text-white shadow-sm"
-                  : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+                  ? "bg-[#123f59] border-blue-600 text-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
+                  : "bg-white border-[#d8b46a]/25 text-[#64748b] hover:bg-[#fbf8f1]"
               }`}
             >
               {label} (
@@ -306,39 +336,39 @@ const QuotationsDirectory = () => {
         </div>
 
         {/* جدول البيانات */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="bg-white rounded-xl border border-[#d8b46a]/25 overflow-hidden shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
           <div className="overflow-x-auto min-h-[300px]">
             {isListLoading ? (
-              <div className="flex flex-col items-center justify-center h-40 text-slate-400">
-                <Loader2 className="w-8 h-8 animate-spin mb-2 text-blue-600" />
+              <div className="flex flex-col items-center justify-center h-40 text-[#94a3b8]">
+                <Loader2 className="w-8 h-8 animate-spin mb-2 text-[#123f59]" />
                 <span className="text-xs">جاري التحميل...</span>
               </div>
             ) : (
               <table className="w-full text-right border-collapse min-w-[1200px]">
                 <thead>
-                  <tr className="bg-slate-50 border-b-2 border-slate-200">
-                    <th className="p-2 text-[10px] text-slate-500 font-bold w-10">
+                  <tr className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-b-2 border-[#d8b46a]/25">
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold w-10">
                       #
                     </th>
-                    <th className="p-2 text-[10px] text-slate-500 font-bold">
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
                       رقم العرض
                     </th>
-                    <th className="p-2 text-[10px] text-slate-500 font-bold">
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
                       التاريخ
                     </th>
-                    <th className="p-2 text-[10px] text-slate-500 font-bold">
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
                       العميل
                     </th>
-                    <th className="p-2 text-[10px] text-slate-500 font-bold">
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
                       الملكية
                     </th>
-                    <th className="p-2 text-[10px] text-slate-500 font-bold">
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
                       الإجمالي
                     </th>
-                    <th className="p-2 text-[10px] text-slate-500 font-bold">
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
                       الحالة
                     </th>
-                    <th className="p-2 text-[10px] text-slate-500 font-bold text-center">
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold text-center">
                       إجراءات
                     </th>
                   </tr>
@@ -347,15 +377,15 @@ const QuotationsDirectory = () => {
                   {filteredData.map((q, idx) => (
                     <tr
                       key={q.id}
-                      className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
+                      className="border-b border-[#e8ddc8] hover:bg-[#fbf8f1] transition-colors cursor-pointer"
                       onClick={(e) => handleEditQuotation(e, q)}
                     >
-                      <td className="p-2 text-[10px] text-slate-400 font-mono">
+                      <td className="p-2 text-[10px] text-[#94a3b8] font-mono">
                         {idx + 1}
                       </td>
                       <td className="p-2">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-[11px] font-bold text-blue-600">
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <span className="font-mono text-[11px] font-bold text-[#123f59]">
                             {q.number}
                           </span>
                           <span className="text-[8px] text-purple-600 font-bold bg-purple-50 px-1 rounded">
@@ -371,16 +401,16 @@ const QuotationsDirectory = () => {
                         </div>
                       </td>
                       <td className="p-2">
-                        <div className="font-bold text-[11px] text-slate-700">
+                        <div className="font-bold text-[11px] text-[#475569]">
                           {getClientName(q.client)}
                         </div>
                       </td>
                       <td className="p-2">
-                        <span className="font-mono text-[10px] text-emerald-600 font-bold">
+                        <span className="font-mono text-[10px] text-[#0f766e] font-bold">
                           {q.ownership?.code || "—"}
                         </span>
                       </td>
-                      <td className="p-2 text-[11px] font-bold text-blue-700 font-mono">
+                      <td className="p-2 text-[11px] font-bold text-[#123f59] font-mono">
                         {formatCurrency(q.total)} ر.س
                       </td>
                       <td className="p-2">
@@ -388,13 +418,13 @@ const QuotationsDirectory = () => {
                       </td>
                       <td className="p-2">
                         <div
-                          className="flex items-center justify-center gap-1"
+                          className="flex min-w-0 items-center justify-center gap-1"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {/* زر التعديل */}
                           <button
                             onClick={(e) => handleEditQuotation(e, q)}
-                            className="p-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
+                            className="p-1.5 bg-blue-50 text-[#123f59] rounded hover:bg-blue-100 transition-colors"
                             title="تعديل ومعاينة"
                             aria-label="تعديل العرض"
                           >
@@ -404,7 +434,7 @@ const QuotationsDirectory = () => {
                           {/* زر الطباعة */}
                           <button
                             onClick={(e) => handleOpenPrint(e, q.id)}
-                            className="p-1.5 bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 transition-colors"
+                            className="p-1.5 bg-emerald-50 text-[#0f766e] rounded hover:bg-emerald-100 transition-colors"
                             title="طباعة العرض"
                             aria-label="طباعة العرض"
                           >
@@ -439,7 +469,7 @@ const QuotationsDirectory = () => {
                     <tr>
                       <td
                         colSpan="8"
-                        className="p-8 text-center text-slate-400 text-xs"
+                        className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-center text-[#94a3b8] text-xs"
                       >
                         {searchTerm || filterStatus !== "ALL"
                           ? "لا يوجد عروض أسعار مطابقة لبحثك"
@@ -459,24 +489,24 @@ const QuotationsDirectory = () => {
       {/* ========================================== */}
       {isPrintModalOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/80 z-[2000] flex items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/80 z-[2000] flex min-w-0 items-center justify-center p-3 backdrop-blur-sm"
           onClick={handleClosePrint}
           role="dialog"
           aria-modal="true"
           aria-labelledby="print-modal-title"
         >
           <div
-            className="bg-slate-200 rounded-2xl w-full max-w-[1000px] h-[95vh] flex flex-col shadow-2xl overflow-hidden relative"
+            className="bg-slate-200 rounded-[20px] w-full max-w-[1000px] h-[95vh] flex flex-col shadow-[0_20px_55px_rgba(18,63,89,0.18)] overflow-hidden relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* شريط الأدوات */}
-            <div className="shrink-0 z-50 w-full flex justify-between items-center bg-white px-6 py-3 shadow-sm border-b border-slate-200">
-              <div className="flex items-center gap-3">
-                <Printer className="w-5 h-5 text-blue-600" />
+            <div className="shrink-0 z-50 w-full flex min-w-0 justify-between items-center bg-white px-4 py-3 shadow-[0_6px_18px_rgba(18,63,89,0.05)] border-b border-[#d8b46a]/25">
+              <div className="flex min-w-0 items-center gap-3">
+                <Printer className="w-5 h-5 text-[#123f59]" />
                 <div>
                   <h3
                     id="print-modal-title"
-                    className="text-sm font-black text-slate-800"
+                    className="text-sm font-black text-[#123f59]"
                   >
                     تصدير وطباعة عرض السعر
                   </h3>
@@ -485,24 +515,24 @@ const QuotationsDirectory = () => {
                       جاري جلب البنود والماليات...
                     </span>
                   ) : (
-                    <p className="text-[10px] text-blue-600 font-mono font-bold bg-blue-50 px-2 py-0.5 rounded mt-0.5 inline-block">
+                    <p className="text-[10px] text-[#123f59] font-mono font-bold bg-blue-50 px-2 py-0.5 rounded mt-0.5 inline-block">
                       {fullQuoteData?.number}
                     </p>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <button
                   onClick={() => handlePrint()}
                   disabled={isDetailLoading || !fullQuoteData}
-                  className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg text-xs font-black hover:bg-blue-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex min-w-0 items-center gap-2 px-4 py-2 bg-[#123f59] text-white rounded-lg text-xs font-black hover:bg-[#0f3448] transition-all shadow-[0_8px_18px_rgba(18,63,89,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Printer className="w-4 h-4" /> طباعة فورية
                 </button>
                 <div className="w-px h-6 bg-slate-200"></div>
                 <button
                   onClick={handleClosePrint}
-                  className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  className="p-2 text-[#94a3b8] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                   aria-label="إغلاق"
                 >
                   <X className="w-5 h-5" />
@@ -511,18 +541,18 @@ const QuotationsDirectory = () => {
             </div>
 
             {/* مساحة عرض الورقة */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar flex justify-center py-8">
+            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim overflow-x-hidden custom-scrollbar-slim flex justify-center py-3">
               {isDetailLoading || !fullQuoteData ? (
-                <div className="m-auto flex flex-col items-center gap-4">
-                  <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
-                  <p className="text-slate-500 font-bold">
+                <div className="m-auto flex flex-col items-center gap-3">
+                  <Loader2 className="w-9 h-9 animate-spin text-[#123f59]" />
+                  <p className="text-[#64748b] font-bold">
                     جاري تجهيز بيانات العرض والختم...
                   </p>
                 </div>
               ) : (
                 <div
                   ref={printComponentRef}
-                  className="bg-white shadow-xl relative border border-slate-300 print-area"
+                  className="bg-white shadow-[0_14px_34px_rgba(18,63,89,0.12)] relative border border-slate-300 print-area"
                   style={{
                     width: "210mm",
                     minHeight: "297mm",
@@ -532,9 +562,9 @@ const QuotationsDirectory = () => {
                 >
                   <div className="p-[15mm] relative z-10 flex flex-col h-full">
                     {/* الترويسة */}
-                    <div className="flex justify-between items-start border-b-4 border-blue-900 pb-6 mb-8">
+                    <div className="flex min-w-0 justify-between items-start border-b-4 border-blue-900 pb-6 mb-3">
                       <div className="flex flex-col items-center">
-                        <div className="w-32 h-12 flex items-center justify-center mb-2">
+                        <div className="w-32 h-10 flex min-w-0 items-center justify-center mb-2">
                           <img
                             src="/logo.jpeg"
                             alt="شعار بلاك كيوب"
@@ -544,16 +574,16 @@ const QuotationsDirectory = () => {
                         <h1 className="font-black text-[13px] text-blue-900">
                           بلاك كيوب للإستشارات الهندسية
                         </h1>
-                        <h2 className="text-[8px] text-slate-500 uppercase tracking-widest mt-0.5">
+                        <h2 className="text-[8px] text-[#64748b] uppercase tracking-widest mt-0.5">
                           Black Cube Engineering
                         </h2>
                       </div>
                       <div className="text-left mt-2">
-                        <h3 className="text-2xl font-black text-blue-900 mb-3 tracking-tighter">
+                        <h3 className="text-lg font-black text-blue-900 mb-3 tracking-tighter">
                           عرض سعر خدمات
                         </h3>
-                        <div className="text-[10px] font-bold text-slate-700 space-y-1.5">
-                          <p className="flex justify-between gap-6">
+                        <div className="text-[10px] font-bold text-[#475569] space-y-1.5">
+                          <p className="flex min-w-0 justify-between gap-3">
                             <span>التاريخ:</span>
                             <span>
                               {format(
@@ -563,9 +593,9 @@ const QuotationsDirectory = () => {
                               )}
                             </span>
                           </p>
-                          <p className="flex justify-between gap-6">
+                          <p className="flex min-w-0 justify-between gap-3">
                             <span>المرجع:</span>
-                            <span className="font-mono text-blue-700">
+                            <span className="font-mono text-[#123f59]">
                               {fullQuoteData.number}
                             </span>
                           </p>
@@ -574,30 +604,30 @@ const QuotationsDirectory = () => {
                     </div>
 
                     {/* بيانات العميل */}
-                    <div className="mb-8">
+                    <div className="mb-3">
                       <div className="flex items-baseline gap-1 mb-1">
-                        <span className="text-[13px] font-black text-slate-900">
+                        <span className="text-[13px] font-black text-[#123f59]">
                           السادة /
                         </span>
                         <span className="text-[13px] font-black text-blue-800">
                           {getClientName(fullQuoteData.client)}
                         </span>
                       </div>
-                      <p className="text-[13px] font-black text-slate-900 mb-4">
+                      <p className="text-[13px] font-black text-[#123f59] mb-3">
                         المحترم
                       </p>
-                      <p className="text-[12px] font-black text-slate-900 mb-4">
+                      <p className="text-[12px] font-black text-[#123f59] mb-3">
                         السلام عليكم ورحمة الله وبركاته ،،،،
                       </p>
-                      <div className="text-[12px] leading-[2] text-slate-700 text-justify whitespace-pre-wrap">
+                      <div className="text-[12px] leading-[2] text-[#475569] text-justify whitespace-pre-wrap">
                         {fullQuoteData.terms ||
                           "إشارة إلى طلبكم بخصوص تقديم عرض سعر خدمات هندسية، فإنه يسرنا تقديم العرض المالي والفني لإنهاء الأعمال المطلوبة على أن يكون نطاق العمل كما يلي:"}
                       </div>
                     </div>
 
                     {/* جدول البنود */}
-                    <div className="mb-6">
-                      <table className="w-full border-collapse border-2 border-blue-900 text-[10px] text-center shadow-sm">
+                    <div className="mb-3">
+                      <table className="w-full border-collapse border-2 border-blue-900 text-[10px] text-center shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
                         <thead className="bg-blue-900 text-white font-black">
                           <tr>
                             <th className="border border-blue-900 p-2.5 w-8">
@@ -617,7 +647,7 @@ const QuotationsDirectory = () => {
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="text-slate-800 font-bold">
+                        <tbody className="text-[#123f59] font-bold">
                           {(fullQuoteData.items || []).map((item, idx) => (
                             <tr
                               key={idx}
@@ -625,7 +655,7 @@ const QuotationsDirectory = () => {
                                 idx % 2 === 0 ? "bg-white" : "bg-blue-50/30"
                               }
                             >
-                              <td className="border border-blue-100 p-2 font-mono text-slate-400">
+                              <td className="border border-blue-100 p-2 font-mono text-[#94a3b8]">
                                 {idx + 1}
                               </td>
                               <td className="border border-blue-100 p-2 text-right">
@@ -710,10 +740,10 @@ const QuotationsDirectory = () => {
 
                     {/* الفوتر */}
                     <div className="absolute bottom-0 left-0 right-0 bg-white px-[15mm] pb-[10mm] pt-4">
-                      <div className="border-t border-slate-200 pt-6 flex justify-between items-end text-[10px] text-slate-500 font-sans print:border-slate-300 break-inside-avoid">
+                      <div className="border-t border-[#d8b46a]/25 pt-6 flex min-w-0 justify-between items-end text-[10px] text-[#64748b] font-[Tajawal] print:border-slate-300 break-inside-avoid">
                         <div className="flex flex-col gap-1 w-1/3">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-800 tracking-tight">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="font-bold text-[#123f59] tracking-tight">
                               الرقم المرجعي:
                             </span>
                             <span className="font-mono text-xs">
@@ -728,7 +758,7 @@ const QuotationsDirectory = () => {
 
                         {/* باركود */}
                         <div className="flex flex-col items-center gap-1 w-1/3">
-                          <div className="h-10 mb-1 w-[135px] flex items-center justify-center opacity-80">
+                          <div className="h-10 mb-1 w-[135px] flex min-w-0 items-center justify-center opacity-80">
                             <div className="w-full h-[35px] bg-[repeating-linear-gradient(90deg,#000_0,#000_2px,transparent_0,transparent_4px,transparent_6px,#000_6px,#000_8px,transparent_8px,transparent_10px)]"></div>
                           </div>
                           <span className="font-mono text-[9px] tracking-[0.2em]">
@@ -737,8 +767,8 @@ const QuotationsDirectory = () => {
                         </div>
 
                         {/* QR */}
-                        <div className="flex justify-end gap-6 items-end w-1/3">
-                          <div className="bg-white p-1 border border-slate-100 rounded shadow-sm">
+                        <div className="flex justify-end gap-3 items-end w-1/3">
+                          <div className="bg-white p-1 border border-[#e8ddc8] rounded shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
                             <svg
                               height="60"
                               width="60"
@@ -757,8 +787,8 @@ const QuotationsDirectory = () => {
                               ></path>
                             </svg>
                           </div>
-                          <div className="text-left font-black text-slate-900 border-r-2 border-slate-900 pr-4 h-full flex flex-col justify-center">
-                            <div className="text-xs uppercase tracking-widest text-slate-400 mb-0.5">
+                          <div className="text-left font-black text-[#123f59] border-r-2 border-slate-900 pr-4 h-full flex flex-col justify-center">
+                            <div className="text-xs uppercase tracking-widest text-[#94a3b8] mb-0.5">
                               Page
                             </div>
                             <div className="text-lg leading-none print:hidden">
@@ -770,19 +800,19 @@ const QuotationsDirectory = () => {
                     </div>
 
                     {/* معلومات الاتصال */}
-                    <div className="mt-4 pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-[10px] text-slate-500 font-bold gap-2">
-                      <div className="flex gap-4 flex-wrap">
-                        <span className="flex items-center gap-1">
+                    <div className="mt-4 pt-4 border-t border-[#d8b46a]/25 flex flex-col sm:flex-row items-center justify-between text-[10px] text-[#64748b] font-bold gap-2">
+                      <div className="flex gap-3 flex-wrap">
+                        <span className="flex min-w-0 items-center gap-1">
                           <Phone className="w-3 h-3" /> 0547267500
                         </span>
-                        <span className="flex items-center gap-1">
+                        <span className="flex min-w-0 items-center gap-1">
                           <Mail className="w-3 h-3" /> info@blackcube.sa
                         </span>
-                        <span className="flex items-center gap-1">
+                        <span className="flex min-w-0 items-center gap-1">
                           <Globe className="w-3 h-3" /> www.blackcube.sa
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100/50">
+                      <div className="flex min-w-0 items-center gap-1.5 text-[#0f766e] bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100/50">
                         <ShieldCheck className="w-3 h-3" />
                         <span className="uppercase tracking-widest text-[8px] font-black">
                           Secure Digital Original
