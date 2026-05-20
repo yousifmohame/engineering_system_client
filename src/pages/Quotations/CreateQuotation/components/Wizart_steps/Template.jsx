@@ -77,7 +77,7 @@ export const Step2Template = ({ props }) => {
           {/* رأس المعاينة */}
           <div className="flex min-w-0 justify-between items-center p-3 border-b border-[#e8ddc8] bg-[#fbf8f1]/50">
             <div className="flex min-w-0 items-center gap-2">
-              <div className="p-1.5 bg-indigo-100 text-indigo-600 rounded-lg">
+              <div className="p-1.5 bg-indigo-100 text-indigo-600 rounded-xl">
                 <IconWithText icon={FileText} iconClassName="w-4 h-4" />
               </div>
               <div>
@@ -91,19 +91,19 @@ export const Step2Template = ({ props }) => {
             </div>
             <button
               onClick={() => setPreviewTemplate(null)}
-              className="p-1.5 text-[#94a3b8] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              className="p-1.5 text-[#94a3b8] hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* محتوى المعاينة المكتف */}
-          <div className="p-3 overflow-y-auto overflow-x-hidden max-h-[300px] custom-scrollbar-slim space-y-3">
+          <div className="p-3 overflow-y-auto overflow-x-hidden custom-scrollbar-slim max-h-[300px] custom-scrollbar-slim space-y-3">
             <div>
               <div className="text-[10px] font-bold text-[#64748b] mb-1 flex min-w-0 items-center gap-1">
                 <FileText className="w-3 h-3" /> نص المقدمة:
               </div>
-              <div className="p-2.5 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-lg text-xs leading-relaxed text-[#475569] text-justify border border-[#e8ddc8]">
+              <div className="p-2.5 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-xl text-xs leading-relaxed text-[#475569] text-justify border border-[#e8ddc8]">
                 {previewTemplate.sections?.intro?.text ||
                   previewTemplate.desc ||
                   "لا يوجد نص مقدمة"}
@@ -115,7 +115,7 @@ export const Step2Template = ({ props }) => {
                 <div className="text-[10px] font-bold text-[#64748b] mb-1 flex min-w-0 items-center gap-1">
                   <TableIcon className="w-3 h-3" /> إعدادات الجدول:
                 </div>
-                <div className="p-2.5 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-lg text-[10px] text-[#475569] border border-[#e8ddc8] space-y-1 font-medium">
+                <div className="p-2.5 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-xl text-[10px] text-[#475569] border border-[#e8ddc8] space-y-1 font-medium">
                   <div className="flex min-w-0 justify-between">
                     <span>عرض الوحدة:</span>{" "}
                     <span>
@@ -140,7 +140,7 @@ export const Step2Template = ({ props }) => {
                 <div className="text-[10px] font-bold text-[#64748b] mb-1 flex min-w-0 items-center gap-1">
                   <ListChecks className="w-3 h-3" /> الشروط والأحكام:
                 </div>
-                <div className="p-2.5 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-lg text-[10px] leading-relaxed text-[#475569] border border-[#e8ddc8] max-h-[70px] overflow-hidden relative">
+                <div className="p-2.5 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-xl text-[10px] leading-relaxed text-[#475569] border border-[#e8ddc8] max-h-[70px] overflow-hidden relative">
                   {previewTemplate.defaultTerms || "لا يوجد شروط"}
                   <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-slate-50 to-transparent"></div>
                 </div>
@@ -156,7 +156,7 @@ export const Step2Template = ({ props }) => {
                 setTermsText(previewTemplate.defaultTerms || "");
                 setPreviewTemplate(null);
               }}
-              className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
+              className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-[0_8px_22px_rgba(18,63,89,0.06)]"
             >
               اختيار هذا النموذج
             </button>
@@ -182,19 +182,19 @@ export const Step2Template = ({ props }) => {
           {/* العمود الأيمن: الإعدادات والخيارات (كثافة عالية) */}
           <div className="lg:col-span-1 space-y-1">
             {/* اختيار نوع النموذج (Segmented Control) */}
-            <div className="bg-white p-2 rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
+            <div className="bg-white p-2 rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
               <div className="text-[10px] font-bold text-[#64748b] mb-2 flex min-w-0 items-center gap-1.5">
                 <LayoutTemplate className="w-3.5 h-3.5" /> هيكل عرض السعر
               </div>
-              <div className="flex bg-slate-100 p-1 rounded-lg">
+              <div className="flex bg-[#fbf8f1] p-1 rounded-xl">
                 <button
                   onClick={() => {
                     setTemplateType("SUMMARY");
                     setSelectedTemplate("");
                   }}
-                  className={`flex-1 flex min-w-0 items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-bold transition-all ${
+                  className={`flex-1 flex min-w-0 items-center justify-center gap-1.5 py-1.5 rounded-xl text-[11px] font-bold transition-all ${
                     templateType === "SUMMARY"
-                      ? "bg-white text-indigo-700 shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
+                      ? "bg-white text-indigo-700 shadow-[0_8px_22px_rgba(18,63,89,0.06)]"
                       : "text-[#64748b] hover:text-[#475569]"
                   }`}
                 >
@@ -208,9 +208,9 @@ export const Step2Template = ({ props }) => {
                     setTemplateType("DETAILED");
                     setSelectedTemplate("");
                   }}
-                  className={`flex-1 flex min-w-0 items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-bold transition-all ${
+                  className={`flex-1 flex min-w-0 items-center justify-center gap-1.5 py-1.5 rounded-xl text-[11px] font-bold transition-all ${
                     templateType === "DETAILED"
-                      ? "bg-white text-indigo-700 shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
+                      ? "bg-white text-indigo-700 shadow-[0_8px_22px_rgba(18,63,89,0.06)]"
                       : "text-[#64748b] hover:text-[#475569]"
                   }`}
                 >
@@ -224,7 +224,7 @@ export const Step2Template = ({ props }) => {
           </div>
 
           {/* العمود الأيسر: قائمة النماذج (Grid View) */}
-          <div className="lg:col-span-8 bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex flex-col h-[230px]">
+          <div className="lg:col-span-8 bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex flex-col h-[230px]">
             <div className="text-[10px] font-bold text-[#64748b] mb-2.5 flex min-w-0 justify-between items-center">
               <span>النماذج الإدارية المعتمدة ({currentTemplates.length})</span>
               {selectedTemplate && (
@@ -246,10 +246,10 @@ export const Step2Template = ({ props }) => {
                   return (
                     <div
                       key={tpl.id}
-                      className={`group relative flex flex-col justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${
+                      className={`group relative flex flex-col justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
                         isSelected
                           ? "border-indigo-400 bg-indigo-50/40 shadow-[0_0_0_1px_rgba(99,102,241,1)]"
-                          : "border-[#d8b46a]/25 bg-white hover:border-indigo-300 hover:shadow-sm"
+                          : "border-[#d8b46a]/25 bg-white hover:border-indigo-300 hover:shadow-[0_8px_18px_rgba(18,63,89,0.05)]"
                       }`}
                     >
                       {/* منطقة الضغط لاختيار النموذج */}
@@ -266,7 +266,7 @@ export const Step2Template = ({ props }) => {
                           {isSelected ? (
                             <CheckCircle2 className="w-4 h-4 text-indigo-600" />
                           ) : (
-                            <div className="w-4 h-4 rounded-full border border-slate-300 group-hover:border-indigo-400"></div>
+                            <div className="w-4 h-4 rounded-full border border-[#d8b46a]/25 group-hover:border-indigo-400"></div>
                           )}
                           <div
                             className={`text-[11px] font-bold line-clamp-1 pr-1 ${isSelected ? "text-indigo-800" : "text-[#123f59]"}`}
@@ -292,10 +292,10 @@ export const Step2Template = ({ props }) => {
                             e.stopPropagation(); // منع تفعيل الاختيار عند ضغط زر المعاينة
                             setPreviewTemplate(tpl);
                           }}
-                          className={`p-1.5 rounded-md flex min-w-0 items-center justify-center transition-all ${
+                          className={`p-1.5 rounded-xl flex min-w-0 items-center justify-center transition-all ${
                             isSelected
                               ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 opacity-100"
-                              : "bg-slate-100 text-[#64748b] hover:bg-indigo-50 hover:text-indigo-600 opacity-0 group-hover:opacity-100"
+                              : "bg-[#fbf8f1] text-[#64748b] hover:bg-indigo-50 hover:text-indigo-600 opacity-0 group-hover:opacity-100"
                           }`}
                           title="معاينة النموذج"
                         >

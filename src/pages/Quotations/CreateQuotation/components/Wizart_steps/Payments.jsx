@@ -44,9 +44,9 @@ export const Step5Payments = ({ props }) => {
   } = props;
 
   return (
-    <div className="animate-in fade-in duration-300 h-full flex flex-col">
+    <div className="animate-in fade-in duration-300 h-full flex flex-col text-[#123f59]">
       
-      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 mb-3 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim">
+      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 mb-3 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim">
         <div className="flex min-w-0 items-center gap-3 mb-3">
           <label className="text-[11px] font-bold text-[#475569] mb-0">
             عدد الدفعات:
@@ -56,9 +56,9 @@ export const Step5Payments = ({ props }) => {
               <button
                 key={num}
                 onClick={() => setPaymentCount(num)}
-                className={`w-8 h-8 rounded-lg border text-xs font-bold transition-colors ${
+                className={`w-8 h-8 rounded-xl border text-xs font-bold transition-colors ${
                   paymentCount === num
-                    ? "bg-blue-500 text-white border-blue-500"
+                    ? "bg-[#0e7490] text-white border-[#0e7490]"
                     : "bg-white text-[#64748b] border-[#d8b46a]/25 hover:bg-[#fbf8f1]"
                 }`}
               >
@@ -90,7 +90,7 @@ export const Step5Payments = ({ props }) => {
                 <td className="p-1.5 text-[11px] font-bold text-[#475569]">
                   {p.label}
                 </td>
-                <td className="p-1.5 text-[11px] text-slate-600">
+                <td className="p-1.5 text-[11px] text-[#64748b]">
                   {p.percentage}%
                 </td>
                 <td className="p-1.5 text-[11px] font-bold text-[#123f59] font-mono">
@@ -103,7 +103,7 @@ export const Step5Payments = ({ props }) => {
                   <input
                     type="text"
                     defaultValue={p.condition}
-                    className="w-full p-1 bg-transparent border-b border-dashed border-slate-300 outline-none focus:border-[#c5983c]/70"
+                    className="w-full p-1 bg-transparent border-b border-dashed border-[#d8b46a]/25 outline-none focus:border-[#c5983c]/70"
                   />
                 </td>
               </tr>
@@ -111,7 +111,7 @@ export const Step5Payments = ({ props }) => {
           </tbody>
         </table>
       </div>
-      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] mt-4">
+      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] mt-4">
         <label className="block text-[12px] font-bold text-[#475569] mb-2">
           طرق الدفع المقبولة
         </label>
@@ -123,10 +123,10 @@ export const Step5Payments = ({ props }) => {
           ].map((method) => (
             <label
               key={method.id}
-              className={`flex min-w-0 items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] cursor-pointer border transition-colors ${
+              className={`flex min-w-0 items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] cursor-pointer border transition-colors ${
                 acceptedMethods.includes(method.id)
-                  ? "bg-blue-50 border-blue-300 text-blue-800 font-bold"
-                  : "bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-[#d8b46a]/25 text-slate-600"
+                  ? "bg-[#eef7f6] border-blue-300 text-[#123f59] font-bold"
+                  : "bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-[#d8b46a]/25 text-[#64748b]"
               }`}
             >
               <input

@@ -297,7 +297,7 @@ export default function TemplatesList({ onCreateNew, onEdit }) {
                     <tr
                       key={tpl.id}
                       className={`transition-colors hover:bg-[#fbf8f1]/70 ${
-                        tpl.isFrozen ? "bg-slate-50/80 opacity-80" : "bg-white"
+                        tpl.isFrozen ? "bg-[#fbf8f1]/80 opacity-80" : "bg-white"
                       }`}
                     >
                       <td className="px-4 py-3 font-mono text-xs font-black text-[#94a3b8]">
@@ -320,7 +320,7 @@ export default function TemplatesList({ onCreateNew, onEdit }) {
                               {tpl.title}
                             </div>
                             {tpl.isFrozen && (
-                              <span className="mt-1 inline-flex rounded-lg border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] font-black text-amber-700">
+                              <span className="mt-1 inline-flex rounded-xl border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] font-black text-amber-700">
                                 مجمد
                               </span>
                             )}
@@ -329,14 +329,14 @@ export default function TemplatesList({ onCreateNew, onEdit }) {
                       </td>
 
                       <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1 rounded-lg border border-[#e8ddc8] bg-[#fbf8f1] px-2 py-1 font-mono text-[10px] font-black text-[#64748b]">
+                        <span className="inline-flex items-center gap-1 rounded-xl border border-[#e8ddc8] bg-[#fbf8f1] px-2 py-1 font-mono text-[10px] font-black text-[#64748b]">
                           <Hash className="h-3 w-3 text-[#c5983c]" />
                           {tpl.code || "—"}
                         </span>
                       </td>
 
                       <td className="px-4 py-3 text-center">
-                        <span className="inline-flex min-w-[46px] justify-center rounded-lg border border-violet-200 bg-violet-50 px-2 py-1 text-xs font-black text-violet-700">
+                        <span className="inline-flex min-w-[46px] justify-center rounded-xl border border-violet-200 bg-violet-50 px-2 py-1 text-xs font-black text-violet-700">
                           {tpl.uses || 0}
                         </span>
                       </td>
@@ -433,7 +433,7 @@ const ActionButton = ({ icon: Icon, label, onClick, tone = "blue", disabled = fa
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex h-8 items-center justify-center gap-1 rounded-lg border px-2 text-[9px] font-black transition disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-300 ${tones[tone] || tones.blue}`}
+      className={`inline-flex h-8 items-center justify-center gap-1 rounded-xl border px-2 text-[9px] font-black transition disabled:cursor-not-allowed disabled:border-[#e8ddc8] disabled:bg-[#fbf8f1] disabled:text-[#cbd5e1] ${tones[tone] || tones.blue}`}
       type="button"
       title={label}
     >

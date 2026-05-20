@@ -42,4 +42,14 @@ export const DEFAULT_TEMPLATE = {
     showOffice: true,
     officeLabel: "بلاك كيوب للاستشارات الهندسية",
   },
+  pageStyle: {
+    preset: "classic",
+    accentColor: "#123f59",
+    goldColor: "#c5983c",
+    paperTone: "white",
+    fontScale: 1,
+    density: "normal",
+    pagePaddingMm: 15,
+    showOuterBorder: false,
+  },
 };

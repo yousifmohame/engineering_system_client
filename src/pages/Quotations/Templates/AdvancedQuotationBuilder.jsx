@@ -64,6 +64,8 @@ export default function AdvancedQuotationBuilder({ templateId, onBack }) {
         },
         signatures:
           fetchedTemplate.sections?.signatures || DEFAULT_TEMPLATE.signatures,
+        pageStyle:
+          fetchedTemplate.sections?.pageStyle || DEFAULT_TEMPLATE.pageStyle,
       });
     }
   }, [fetchedTemplate]);
@@ -96,6 +98,7 @@ export default function AdvancedQuotationBuilder({ templateId, onBack }) {
         financials: template.financials,
         terms: { title: template.terms.title },
         signatures: template.signatures,
+        pageStyle: template.pageStyle,
       },
       options: template.table,
       defaultTerms: template.terms.text,
@@ -136,21 +139,7 @@ export default function AdvancedQuotationBuilder({ templateId, onBack }) {
 
       <section className="min-w-0 flex-1 overflow-hidden">
         <div className="flex h-full min-h-0 flex-col">
-          <div className="shrink-0 border-b border-[#d8b46a]/25 bg-white/80 px-4 py-2 backdrop-blur-xl">
-            <div className="flex min-w-0 items-center gap-2 text-xs font-black text-[#123f59]">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[#123f59] text-[#e2bf74]">
-                <LayoutTemplate className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <div className="truncate">معاينة النموذج</div>
-                <div className="truncate text-[10px] font-bold text-[#94a3b8]">
-                  يتم تحديث المعاينة مباشرة حسب الإعدادات الحالية.
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <A4Preview template={template} />
+<A4Preview template={template} setTemplate={setTemplate} />
         </div>
       </section>
     </div>

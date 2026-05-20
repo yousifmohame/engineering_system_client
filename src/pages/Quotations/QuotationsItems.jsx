@@ -52,7 +52,7 @@ const CATEGORIES_MAP = {
   "خدمات عقارية": "bg-emerald-50 text-[#0f766e]",
   "خدمات قانونية": "bg-red-50 text-red-600",
   استشارات: "bg-purple-50 text-purple-600",
-  أخرى: "bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white text-slate-600",
+  أخرى: "bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white text-[#64748b]",
 };
 
 const QuotationsItems = () => {
@@ -185,7 +185,7 @@ const QuotationsItems = () => {
             </div>
             <button
               onClick={() => setEditingItem(null)}
-              className="p-1 hover:bg-slate-100 rounded-lg text-[#94a3b8]"
+              className="p-1 hover:bg-[#fbf8f1] rounded-xl text-[#94a3b8]"
             >
               <X className="w-5 h-5" />
             </button>
@@ -201,7 +201,7 @@ const QuotationsItems = () => {
                 onChange={(e) =>
                   setEditingItem({ ...item, title: e.target.value })
                 }
-                className="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-orange-500"
+                className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-orange-500"
               />
             </div>
             <div>
@@ -211,7 +211,7 @@ const QuotationsItems = () => {
               <input
                 readOnly
                 value={isNew ? "تلقائي" : item.id}
-                className="w-full p-2 border border-slate-300 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-lg text-xs font-mono outline-none text-[#64748b]"
+                className="w-full p-2 border border-[#d8b46a]/25 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-xl text-xs font-mono outline-none text-[#64748b]"
               />
             </div>
           </div>
@@ -227,7 +227,7 @@ const QuotationsItems = () => {
               }
               rows={3}
               placeholder="وصف مفصّل يظهر في النموذج التفصيلي..."
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-orange-500 resize-y"
+              className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-orange-500 resize-y"
             />
           </div>
 
@@ -241,7 +241,7 @@ const QuotationsItems = () => {
                 onChange={(e) =>
                   setEditingItem({ ...item, category: e.target.value })
                 }
-                className="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-orange-500"
+                className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-orange-500"
               >
                 <option value="خدمات عقارية">خدمات عقارية</option>
                 <option value="خدمات هندسية">خدمات هندسية</option>
@@ -259,7 +259,7 @@ const QuotationsItems = () => {
                 onChange={(e) =>
                   setEditingItem({ ...item, unit: e.target.value })
                 }
-                className="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-orange-500"
+                className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-orange-500"
               />
             </div>
             <div>
@@ -272,7 +272,7 @@ const QuotationsItems = () => {
                 onChange={(e) =>
                   setEditingItem({ ...item, price: Number(e.target.value) })
                 }
-                className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono outline-none focus:border-orange-500"
+                className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs font-mono outline-none focus:border-orange-500"
               />
             </div>
           </div>
@@ -288,7 +288,7 @@ const QuotationsItems = () => {
                 onChange={(e) =>
                   setEditingItem({ ...item, subCategory: e.target.value })
                 }
-                className="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-orange-500"
+                className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-orange-500"
               />
               <datalist id="item-groups-list">
                 <option value="رخص وأمانة" />
@@ -340,21 +340,21 @@ const QuotationsItems = () => {
               }
               rows={2}
               placeholder="مثلاً: لا يشمل رسوم كتابة العدل..."
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-orange-500 resize-y text-orange-700"
+              className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-orange-500 resize-y text-orange-700"
             />
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t border-[#d8b46a]/25">
             <button
               onClick={() => setEditingItem(null)}
-              className="px-3.5 py-2 bg-slate-100 text-slate-600 border border-[#d8b46a]/25 rounded-lg text-xs font-bold hover:bg-slate-200"
+              className="px-3.5 py-2 bg-[#fbf8f1] text-[#64748b] border border-[#d8b46a]/25 rounded-xl text-xs font-bold hover:bg-[#eef7f6]"
             >
               إغلاق
             </button>
             <button
               onClick={() => saveItemMutation.mutate(item)}
               disabled={saveItemMutation.isPending}
-              className="px-3.5 py-2 bg-orange-600 text-white rounded-lg text-xs font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-orange-700 flex min-w-0 items-center gap-1.5 disabled:opacity-50"
+              className="px-3.5 py-2 bg-orange-600 text-white rounded-xl text-xs font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-orange-700 flex min-w-0 items-center gap-1.5 disabled:opacity-50"
             >
               {saveItemMutation.isPending ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -405,7 +405,7 @@ const QuotationsItems = () => {
             </div>
             <button
               onClick={() => setEditingBundle(null)}
-              className="p-1 hover:bg-slate-100 rounded-lg text-[#94a3b8]"
+              className="p-1 hover:bg-[#fbf8f1] rounded-xl text-[#94a3b8]"
             >
               <X className="w-5 h-5" />
             </button>
@@ -421,7 +421,7 @@ const QuotationsItems = () => {
                 onChange={(e) =>
                   setEditingBundle({ ...bdl, title: e.target.value })
                 }
-                className="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-violet-500"
+                className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-violet-500"
               />
             </div>
             <div>
@@ -433,7 +433,7 @@ const QuotationsItems = () => {
                 onChange={(e) =>
                   setEditingBundle({ ...bdl, icon: e.target.value })
                 }
-                className="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-violet-500 text-center"
+                className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-violet-500 text-center"
               />
             </div>
           </div>
@@ -447,7 +447,7 @@ const QuotationsItems = () => {
               onChange={(e) =>
                 setEditingBundle({ ...bdl, desc: e.target.value })
               }
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-violet-500"
+              className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-violet-500"
             />
           </div>
 
@@ -461,7 +461,7 @@ const QuotationsItems = () => {
                 return (
                   <div
                     key={idx}
-                    className="flex min-w-0 items-center gap-2 p-2 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border border-[#e8ddc8] rounded-lg text-[10px]"
+                    className="flex min-w-0 items-center gap-2 p-2 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border border-[#e8ddc8] rounded-xl text-[10px]"
                   >
                     <span className="text-[#94a3b8] font-mono w-4">
                       {idx + 1}
@@ -484,7 +484,7 @@ const QuotationsItems = () => {
             </div>
             <select
               onChange={handleAddItemToBundle}
-              className="w-full p-2 border border-slate-300 rounded-lg text-[11px] outline-none text-[#64748b]"
+              className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-[11px] outline-none text-[#64748b]"
             >
               <option value="">+ إضافة بند من المكتبة...</option>
               {dbItems.map((i) => (
@@ -498,14 +498,14 @@ const QuotationsItems = () => {
           <div className="flex justify-end gap-2 pt-4 border-t border-[#d8b46a]/25">
             <button
               onClick={() => setEditingBundle(null)}
-              className="px-3.5 py-2 bg-slate-100 text-slate-600 border border-[#d8b46a]/25 rounded-lg text-xs font-bold hover:bg-slate-200"
+              className="px-3.5 py-2 bg-[#fbf8f1] text-[#64748b] border border-[#d8b46a]/25 rounded-xl text-xs font-bold hover:bg-[#eef7f6]"
             >
               إغلاق
             </button>
             <button
               onClick={() => saveBundleMutation.mutate(bdl)}
               disabled={saveBundleMutation.isPending}
-              className="px-3.5 py-2 bg-[#123f59] text-white rounded-lg text-xs font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-[#0f3448] flex min-w-0 items-center gap-1.5 disabled:opacity-50"
+              className="px-3.5 py-2 bg-[#123f59] text-white rounded-xl text-xs font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-[#0f3448] flex min-w-0 items-center gap-1.5 disabled:opacity-50"
             >
               {saveBundleMutation.isPending ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -524,7 +524,7 @@ const QuotationsItems = () => {
   // Render Main Page
   // ==========================================
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim overflow-x-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white" dir="rtl">
+    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white" dir="rtl">
       <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 md:p-3 font-[Tajawal] max-w-7xl mx-auto">
         <div className="flex min-w-0 justify-between items-center mb-3">
           <div>
@@ -561,7 +561,7 @@ const QuotationsItems = () => {
                     items: [],
                   })
             }
-            className="px-4 py-2 bg-orange-600 text-white rounded-lg text-xs font-bold flex min-w-0 items-center gap-1.5 hover:bg-orange-700 shadow-[0_8px_18px_rgba(18,63,89,0.08)] shadow-orange-200 transition-colors"
+            className="px-4 py-2 bg-orange-600 text-white rounded-xl text-xs font-bold flex min-w-0 items-center gap-1.5 hover:bg-orange-700 shadow-[0_8px_18px_rgba(18,63,89,0.08)] shadow-orange-200 transition-colors"
           >
             <Plus className="w-4 h-4" />{" "}
             {activeTab === "items" ? "بند جديد" : "مجموعة جديدة"}
@@ -571,13 +571,13 @@ const QuotationsItems = () => {
         <div className="flex gap-1 mb-3 border-b-2 border-[#d8b46a]/25">
           <button
             onClick={() => setActiveTab("items")}
-            className={`px-4 py-2.5 text-xs font-bold transition-all border-x-2 border-t-2 rounded-t-lg -mb-[2px] ${activeTab === "items" ? "bg-white text-orange-600 border-[#d8b46a]/25 border-b-white" : "bg-transparent text-[#94a3b8] border-transparent hover:text-slate-600"}`}
+            className={`px-4 py-2.5 text-xs font-bold transition-all border-x-2 border-t-2 rounded-t-lg -mb-[2px] ${activeTab === "items" ? "bg-white text-orange-600 border-[#d8b46a]/25 border-b-white" : "bg-transparent text-[#94a3b8] border-transparent hover:text-[#64748b]"}`}
           >
             البنود المفردة ({dbItems.length})
           </button>
           <button
             onClick={() => setActiveTab("bundles")}
-            className={`px-4 py-2.5 text-xs font-bold transition-all border-x-2 border-t-2 rounded-t-lg -mb-[2px] ${activeTab === "bundles" ? "bg-white text-violet-600 border-[#d8b46a]/25 border-b-white" : "bg-transparent text-[#94a3b8] border-transparent hover:text-slate-600"}`}
+            className={`px-4 py-2.5 text-xs font-bold transition-all border-x-2 border-t-2 rounded-t-lg -mb-[2px] ${activeTab === "bundles" ? "bg-white text-violet-600 border-[#d8b46a]/25 border-b-white" : "bg-transparent text-[#94a3b8] border-transparent hover:text-[#64748b]"}`}
           >
             المجموعات والـ Bundles ({dbBundles.length})
           </button>
@@ -590,7 +590,7 @@ const QuotationsItems = () => {
               placeholder="بحث بالكود أو الوصف..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full py-2 pr-9 pl-3 border border-slate-300 rounded-lg text-xs outline-none focus:border-orange-500"
+              className="w-full py-2 pr-9 pl-3 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-orange-500"
             />
           </div>
           {activeTab === "items" && (
@@ -598,7 +598,7 @@ const QuotationsItems = () => {
               <select
                 value={filterSubCat}
                 onChange={(e) => setFilterSubCat(e.target.value)}
-                className="w-[140px] p-2 border border-slate-300 rounded-lg text-xs outline-none bg-white"
+                className="w-[140px] p-2 border border-[#d8b46a]/25 rounded-xl text-xs outline-none bg-white"
               >
                 <option value="all">كل التصنيفات</option>
                 <option value="رخص وأمانة">رخص وأمانة</option>
@@ -608,7 +608,7 @@ const QuotationsItems = () => {
               <select
                 value={filterCat}
                 onChange={(e) => setFilterCat(e.target.value)}
-                className="w-[140px] p-2 border border-slate-300 rounded-lg text-xs outline-none bg-white"
+                className="w-[140px] p-2 border border-[#d8b46a]/25 rounded-xl text-xs outline-none bg-white"
               >
                 <option value="all">كل الفئات</option>
                 <option value="خدمات عقارية">خدمات عقارية</option>
@@ -624,8 +624,8 @@ const QuotationsItems = () => {
             <Loader2 className="w-8 h-8 animate-spin text-[#94a3b8]" />
           </div>
         ) : activeTab === "items" ? (
-          <div className="bg-white rounded-xl border border-[#d8b46a]/25 overflow-hidden shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
-            <div className="overflow-x-auto">
+          <div className="bg-white rounded-xl border border-[#d8b46a]/25 overflow-hidden shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
+            <div className="overflow-x-auto custom-scrollbar-slim">
               <table className="w-full text-right border-collapse min-w-[1000px]">
                 <thead>
                   <tr className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-b-2 border-[#d8b46a]/25">
@@ -681,7 +681,7 @@ const QuotationsItems = () => {
                         )}
                       </td>
                       <td className="p-2">
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-bold">
+                        <span className="px-2 py-0.5 bg-[#fbf8f1] text-[#64748b] rounded text-[9px] font-bold">
                           {item.subCategory}
                         </span>
                       </td>
@@ -692,7 +692,7 @@ const QuotationsItems = () => {
                           {item.category}
                         </span>
                       </td>
-                      <td className="p-2 text-[10px] text-slate-600">
+                      <td className="p-2 text-[10px] text-[#64748b]">
                         {item.unit}
                       </td>
                       <td className="p-2 text-[11px] font-bold text-[#123f59] font-mono">
@@ -725,7 +725,7 @@ const QuotationsItems = () => {
                     <tr>
                       <td
                         colSpan={8}
-                        className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-center text-[#94a3b8] text-xs"
+                        className="p-3 text-center text-[#94a3b8] text-xs"
                       >
                         لا يوجد بنود
                       </td>
@@ -740,7 +740,7 @@ const QuotationsItems = () => {
             {filteredBundles.map((bdl) => (
               <div
                 key={bdl.id}
-                className={`p-3 bg-white rounded-xl border-y border-l border-r-4 border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] border-r-${bdl.color}-500 hover:shadow-md transition-shadow`}
+                className={`p-3 bg-white rounded-xl border-y border-l border-r-4 border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] border-r-${bdl.color}-500 hover:shadow-md transition-shadow`}
               >
                 <div className="flex min-w-0 items-center gap-3 mb-3">
                   <span className="text-lg">{bdl.icon}</span>
@@ -761,7 +761,7 @@ const QuotationsItems = () => {
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-lg p-2 mb-3 border border-[#e8ddc8]">
+                <div className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-xl p-2 mb-3 border border-[#e8ddc8]">
                   {bdl.items.map((itemId, idx) => {
                     const itemData = getItemDetails(itemId);
                     return (
@@ -769,7 +769,7 @@ const QuotationsItems = () => {
                         key={idx}
                         className="flex min-w-0 justify-between items-center text-[9px] py-1 border-b border-[#d8b46a]/25/60 last:border-0"
                       >
-                        <span className="text-slate-600 truncate flex-1 pl-2">
+                        <span className="text-[#64748b] truncate flex-1 pl-2">
                           <span className="text-[#94a3b8] font-mono ml-1">
                             {idx + 1}.
                           </span>{" "}
@@ -798,11 +798,11 @@ const QuotationsItems = () => {
                 <div className="flex gap-2 mt-3">
                   <button
                     onClick={() => setEditingBundle(bdl)}
-                    className="flex-1 py-1.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold hover:bg-slate-200 flex min-w-0 items-center justify-center gap-1.5"
+                    className="flex-1 py-1.5 bg-[#fbf8f1] text-[#64748b] rounded-xl text-[10px] font-bold hover:bg-[#eef7f6] flex min-w-0 items-center justify-center gap-1.5"
                   >
                     <PenLine className="w-3 h-3" /> تعديل
                   </button>
-                  <button className="flex-1 py-1.5 bg-red-50 text-red-600 rounded-md text-[10px] font-bold hover:bg-red-100 flex min-w-0 items-center justify-center gap-1.5">
+                  <button className="flex-1 py-1.5 bg-red-50 text-red-600 rounded-xl text-[10px] font-bold hover:bg-red-100 flex min-w-0 items-center justify-center gap-1.5">
                     <IconWithText icon={Ban} text="تعطيل" iconClassName="w-3 h-3" />
                   </button>
                 </div>

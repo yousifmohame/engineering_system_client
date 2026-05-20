@@ -63,7 +63,7 @@ const IconWithText = ({
 // ثوابت التطبيق
 // ==========================================
 const STATUS_CONFIG = {
-  DRAFT: { label: "مسودة", bg: "bg-slate-100", text: "text-[#64748b]" },
+  DRAFT: { label: "مسودة", bg: "bg-[#fbf8f1]", text: "text-[#64748b]" },
   PENDING_APPROVAL: {
     label: "تحت المراجعة",
     bg: "bg-blue-100",
@@ -107,7 +107,7 @@ const StatusBadge = React.memo(({ status }) => {
   const current = STATUS_CONFIG[status] || STATUS_CONFIG.DRAFT;
   return (
     <span
-      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${current.bg} ${current.text}`}
+      className={`px-2.5 py-1 rounded-xl text-[10px] font-bold ${current.bg} ${current.text}`}
     >
       {current.label}
     </span>
@@ -129,6 +129,115 @@ const formatCurrency = (value) => {
 // ==========================================
 // المكون الرئيسي: دليل العروض
 // ==========================================
+
+
+
+
+const toArabicDigits = (value) =>
+  String(value ?? "").replace(/\d/g, (digit) => "٠١٢٣٤٥٦٧٨٩"[Number(digit)]);
+
+const getDatePart = (formatter, date, type) =>
+  formatter.formatToParts(date).find((part) => part.type === type)?.value || "";
+
+const formatDateParts = (value) => {
+  const date = value ? new Date(value) : new Date();
+
+  if (Number.isNaN(date.getTime())) {
+    const fallback = String(value || "");
+    return {
+      gregorian: fallback,
+      hijri: fallback,
+      combined: `ميلادي: ${fallback} / هجري: ${fallback}`,
+    };
+  }
+
+  const gregorianFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-gregory", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  const hijriFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  const gregorianDay = getDatePart(gregorianFormatter, date, "day");
+  const gregorianMonth = getDatePart(gregorianFormatter, date, "month");
+  const gregorianYear = getDatePart(gregorianFormatter, date, "year");
+
+  const hijriDay = getDatePart(hijriFormatter, date, "day");
+  const hijriMonth = getDatePart(hijriFormatter, date, "month");
+  const hijriYear = getDatePart(hijriFormatter, date, "year");
+
+  const gregorian = toArabicDigits(`${gregorianDay}/${gregorianMonth}/${gregorianYear}`);
+  const hijri = toArabicDigits(`${hijriDay}/${hijriMonth}/${hijriYear}`);
+
+  return {
+    gregorian,
+    hijri,
+    combined: `ميلادي: ${gregorian} / هجري: ${hijri}`,
+  };
+};
+
+const DetailsPrintFooter = ({ accentColor = "#0f5570" }) => {
+  return (
+    <footer
+      className="
+        details-print-footer absolute bottom-[7mm] left-[10mm] right-[10mm]
+        bg-white font-[Tajawal]
+      "
+      dir="ltr"
+    >
+      <div className="border-t-[2.5px] pt-1.5" style={{ borderColor: accentColor }}>
+        <div className="flex items-start gap-2" style={{ color: accentColor }}>
+          <img
+            src="/qrcode.png"
+            alt="QR Code"
+            className="h-[16mm] w-[16mm] shrink-0 object-contain"
+          />
+
+          <div className="min-w-0 flex-1">
+            <div
+              className="
+                flex items-center justify-end gap-1 whitespace-nowrap
+                text-[10.5px] font-black leading-[1.35]
+              "
+              dir="rtl"
+            >
+              <span>📍</span>
+              <span>حي الملك فهد - الرياض - المملكة العربية السعودية - الرمز البريدي : ١٢٢٧٤</span>
+              <span>·</span>
+              <span>جوال : ٠٥٩٠٧٢٢٨٢٧</span>
+              <span>·</span>
+              <span>الرقم الوطني الموحد : ٧٠٥٢٣٠٣٨٢٨</span>
+            </div>
+
+            <div
+              className="
+                mt-0.5 flex items-center gap-1 whitespace-nowrap
+                text-[10.5px] font-black leading-[1.35]
+              "
+              dir="ltr"
+            >
+              <span>📍</span>
+              <span>King Fahd Dist - RIYADH - Kingdom of Saudi Arabia -POSTAL CODE :12274</span>
+              <span>☎</span>
+              <span>0590722827</span>
+              <span>- N.N:</span>
+              <span>7052303828</span>
+              <span>✉</span>
+              <span>info@details-consults.sa</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+};
+
+
 const QuotationsDirectory = () => {
   const queryClient = useQueryClient();
   const { addTab } = useAppStore();
@@ -274,7 +383,7 @@ const QuotationsDirectory = () => {
             onClick={() =>
               queryClient.invalidateQueries({ queryKey: ["quotations-list"] })
             }
-            className="px-4 py-2 bg-[#123f59] text-white rounded-lg text-sm hover:bg-[#0f3448]"
+            className="px-4 py-2 bg-[#123f59] text-white rounded-xl text-sm hover:bg-[#0f3448]"
           >
             إعادة المحاولة
           </button>
@@ -288,7 +397,7 @@ const QuotationsDirectory = () => {
       {/* ========================================== */}
       {/* الجدول الرئيسي */}
       {/* ========================================== */}
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim overflow-x-hidden p-3 md:p-3.5 w-full">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 md:p-3.5 w-full">
         <div className="flex min-w-0 items-center justify-between mb-3">
           <div className="text-base font-bold text-[#123f59] flex min-w-0 items-center gap-2">
             <IconWithText icon={FileText} iconClassName="w-5 h-5 text-[#123f59]" />
@@ -307,7 +416,7 @@ const QuotationsDirectory = () => {
             placeholder="بحث ذكي: اسم العميل، الكود، آخر 4 أرقام..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full py-2 pr-9 pl-3 border border-slate-300 rounded-lg text-xs outline-none focus:border-[#c5983c]/70 focus:ring-1 focus:ring-blue-500 transition-all"
+            className="w-full py-2 pr-9 pl-3 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-[#c5983c]/70 focus:ring-1 focus:ring-blue-500 transition-all"
             aria-label="بحث في العروض"
           />
         </div>
@@ -323,9 +432,9 @@ const QuotationsDirectory = () => {
             <button
               key={key}
               onClick={() => setFilterStatus(key)}
-              className={`px-3 py-1 rounded-md text-[10px] font-bold border transition-all ${
+              className={`px-3 py-1 rounded-xl text-[10px] font-bold border transition-all ${
                 filterStatus === key
-                  ? "bg-[#123f59] border-blue-600 text-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
+                  ? "bg-[#123f59] border-blue-600 text-white shadow-[0_8px_22px_rgba(18,63,89,0.06)]"
                   : "bg-white border-[#d8b46a]/25 text-[#64748b] hover:bg-[#fbf8f1]"
               }`}
             >
@@ -336,8 +445,8 @@ const QuotationsDirectory = () => {
         </div>
 
         {/* جدول البيانات */}
-        <div className="bg-white rounded-xl border border-[#d8b46a]/25 overflow-hidden shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
-          <div className="overflow-x-auto min-h-[300px]">
+        <div className="bg-white rounded-xl border border-[#d8b46a]/25 overflow-hidden shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
+          <div className="overflow-x-auto custom-scrollbar-slim min-h-[300px]">
             {isListLoading ? (
               <div className="flex flex-col items-center justify-center h-40 text-[#94a3b8]">
                 <Loader2 className="w-8 h-8 animate-spin mb-2 text-[#123f59]" />
@@ -469,7 +578,7 @@ const QuotationsDirectory = () => {
                     <tr>
                       <td
                         colSpan="8"
-                        className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-center text-[#94a3b8] text-xs"
+                        className="p-3 text-center text-[#94a3b8] text-xs"
                       >
                         {searchTerm || filterStatus !== "ALL"
                           ? "لا يوجد عروض أسعار مطابقة لبحثك"
@@ -496,11 +605,11 @@ const QuotationsDirectory = () => {
           aria-labelledby="print-modal-title"
         >
           <div
-            className="bg-slate-200 rounded-[20px] w-full max-w-[1000px] h-[95vh] flex flex-col shadow-[0_20px_55px_rgba(18,63,89,0.18)] overflow-hidden relative"
+            className="bg-[#eef7f6] rounded-[20px] w-full max-w-[1000px] h-[95vh] flex flex-col shadow-[0_20px_55px_rgba(18,63,89,0.18)] overflow-hidden relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* شريط الأدوات */}
-            <div className="shrink-0 z-50 w-full flex min-w-0 justify-between items-center bg-white px-4 py-3 shadow-[0_6px_18px_rgba(18,63,89,0.05)] border-b border-[#d8b46a]/25">
+            <div className="shrink-0 z-50 w-full flex min-w-0 justify-between items-center bg-white px-4 py-3 shadow-[0_8px_22px_rgba(18,63,89,0.06)] border-b border-[#d8b46a]/25">
               <div className="flex min-w-0 items-center gap-3">
                 <Printer className="w-5 h-5 text-[#123f59]" />
                 <div>
@@ -525,14 +634,14 @@ const QuotationsDirectory = () => {
                 <button
                   onClick={() => handlePrint()}
                   disabled={isDetailLoading || !fullQuoteData}
-                  className="flex min-w-0 items-center gap-2 px-4 py-2 bg-[#123f59] text-white rounded-lg text-xs font-black hover:bg-[#0f3448] transition-all shadow-[0_8px_18px_rgba(18,63,89,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex min-w-0 items-center gap-2 px-4 py-2 bg-[#123f59] text-white rounded-xl text-xs font-black hover:bg-[#0f3448] transition-all shadow-[0_8px_18px_rgba(18,63,89,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Printer className="w-4 h-4" /> طباعة فورية
                 </button>
-                <div className="w-px h-6 bg-slate-200"></div>
+                <div className="w-px h-6 bg-[#eef7f6]"></div>
                 <button
                   onClick={handleClosePrint}
-                  className="p-2 text-[#94a3b8] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  className="p-2 text-[#94a3b8] hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                   aria-label="إغلاق"
                 >
                   <X className="w-5 h-5" />
@@ -541,7 +650,7 @@ const QuotationsDirectory = () => {
             </div>
 
             {/* مساحة عرض الورقة */}
-            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim overflow-x-hidden custom-scrollbar-slim flex justify-center py-3">
+            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim custom-scrollbar-slim flex justify-center py-3">
               {isDetailLoading || !fullQuoteData ? (
                 <div className="m-auto flex flex-col items-center gap-3">
                   <Loader2 className="w-9 h-9 animate-spin text-[#123f59]" />
@@ -552,34 +661,28 @@ const QuotationsDirectory = () => {
               ) : (
                 <div
                   ref={printComponentRef}
-                  className="bg-white shadow-[0_14px_34px_rgba(18,63,89,0.12)] relative border border-slate-300 print-area"
+                  className="bg-white shadow-[0_14px_34px_rgba(18,63,89,0.12)] relative border border-[#d8b46a]/25 print-area"
                   style={{
                     width: "210mm",
                     minHeight: "297mm",
-                    paddingBottom: "50mm",
+                    paddingBottom: "32mm",
                   }}
                   dir="rtl"
                 >
                   <div className="p-[15mm] relative z-10 flex flex-col h-full">
                     {/* الترويسة */}
-                    <div className="flex min-w-0 justify-between items-start border-b-4 border-blue-900 pb-6 mb-3">
-                      <div className="flex flex-col items-center">
-                        <div className="w-32 h-10 flex min-w-0 items-center justify-center mb-2">
+                    <div className="flex min-w-0 justify-between items-start border-b-4 border-[#123f59] pb-6 mb-3">
+                      <div className="flex items-start">
+                        <div className="mb-2 flex h-20 w-64 min-w-0 items-center justify-center">
                           <img
                             src="/logo.jpeg"
-                            alt="شعار بلاك كيوب"
-                            className="max-w-full max-h-full object-contain"
+                            alt="Details Consulting Engineers"
+                            className="max-h-full max-w-full object-contain"
                           />
                         </div>
-                        <h1 className="font-black text-[13px] text-blue-900">
-                          بلاك كيوب للإستشارات الهندسية
-                        </h1>
-                        <h2 className="text-[8px] text-[#64748b] uppercase tracking-widest mt-0.5">
-                          Black Cube Engineering
-                        </h2>
                       </div>
                       <div className="text-left mt-2">
-                        <h3 className="text-lg font-black text-blue-900 mb-3 tracking-tighter">
+                        <h3 className="text-lg font-black text-[#123f59] mb-3 tracking-tighter">
                           عرض سعر خدمات
                         </h3>
                         <div className="text-[10px] font-bold text-[#475569] space-y-1.5">
@@ -627,22 +730,22 @@ const QuotationsDirectory = () => {
 
                     {/* جدول البنود */}
                     <div className="mb-3">
-                      <table className="w-full border-collapse border-2 border-blue-900 text-[10px] text-center shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
+                      <table className="w-full border-collapse border-2 border-[#123f59] text-[10px] text-center shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
                         <thead className="bg-blue-900 text-white font-black">
                           <tr>
-                            <th className="border border-blue-900 p-2.5 w-8">
+                            <th className="border border-[#123f59] p-2.5 w-8">
                               م
                             </th>
-                            <th className="border border-blue-900 p-2.5 text-right">
+                            <th className="border border-[#123f59] p-2.5 text-right">
                               الوصـف
                             </th>
-                            <th className="border border-blue-900 p-2.5 w-14">
+                            <th className="border border-[#123f59] p-2.5 w-14">
                               الكمية
                             </th>
-                            <th className="border border-blue-900 p-2.5 w-20">
+                            <th className="border border-[#123f59] p-2.5 w-20">
                               سعر الوحدة
                             </th>
-                            <th className="border border-blue-900 p-2.5 w-24">
+                            <th className="border border-[#123f59] p-2.5 w-24">
                               الإجمالي
                             </th>
                           </tr>
@@ -667,7 +770,7 @@ const QuotationsDirectory = () => {
                               <td className="border border-blue-100 p-2 font-mono">
                                 {formatCurrency(item.unitPrice)}
                               </td>
-                              <td className="border border-blue-100 p-2 font-mono text-blue-900">
+                              <td className="border border-blue-100 p-2 font-mono text-[#123f59]">
                                 {formatCurrency(item.subtotal)}
                               </td>
                             </tr>
@@ -675,34 +778,34 @@ const QuotationsDirectory = () => {
                           <tr className="bg-blue-50/50">
                             <td
                               colSpan="4"
-                              className="border border-blue-900 p-2 text-left font-black text-blue-900"
+                              className="border border-[#123f59] p-2 text-left font-black text-[#123f59]"
                             >
                               المجموع الفرعي
                             </td>
-                            <td className="border border-blue-900 p-2 font-black font-mono text-blue-900">
+                            <td className="border border-[#123f59] p-2 font-black font-mono text-[#123f59]">
                               {formatCurrency(fullQuoteData.subtotal)}
                             </td>
                           </tr>
                           <tr>
                             <td
                               colSpan="4"
-                              className="border border-blue-900 p-2 text-left font-bold text-slate-600"
+                              className="border border-[#123f59] p-2 text-left font-bold text-[#64748b]"
                             >
                               ضريبة القيمة المضافة (
                               {fullQuoteData.taxRate * 100}%)
                             </td>
-                            <td className="border border-blue-900 p-2 font-bold font-mono text-slate-600">
+                            <td className="border border-[#123f59] p-2 font-bold font-mono text-[#64748b]">
                               {formatCurrency(fullQuoteData.taxAmount)}
                             </td>
                           </tr>
                           <tr className="bg-blue-900 text-white">
                             <td
                               colSpan="4"
-                              className="border border-blue-900 p-2.5 text-left font-black text-[12px]"
+                              className="border border-[#123f59] p-2.5 text-left font-black text-[12px]"
                             >
                               الإجمالي الشامل
                             </td>
-                            <td className="border border-blue-900 p-2.5 font-black font-mono text-[12px]">
+                            <td className="border border-[#123f59] p-2.5 font-black font-mono text-[12px]">
                               {formatCurrency(fullQuoteData.total)} ر.س
                             </td>
                           </tr>
@@ -714,17 +817,17 @@ const QuotationsDirectory = () => {
                     <div className="mt-auto pt-12">
                       <div className="grid grid-cols-2 gap-12 text-center">
                         <div className="space-y-12">
-                          <p className="text-[11px] font-black text-blue-900">
+                          <p className="text-[11px] font-black text-[#123f59]">
                             توقيع العميل بالموافقة
                           </p>
-                          <div className="border-b-2 border-slate-300 w-48 mx-auto border-dashed"></div>
+                          <div className="border-b-2 border-[#d8b46a]/25 w-48 mx-auto border-dashed"></div>
                         </div>
 
                         <div className="space-y-12 relative flex flex-col items-center">
-                          <p className="text-[11px] font-black text-blue-900 z-20 bg-white px-2">
+                          <p className="text-[11px] font-black text-[#123f59] z-20 bg-white px-2">
                             الاعتماد والختم الرسمي
                           </p>
-                          <div className="border-b-2 border-slate-300 w-48 mx-auto border-dashed relative z-10 hidden"></div>
+                          <div className="border-b-2 border-[#d8b46a]/25 w-48 mx-auto border-dashed relative z-10 hidden"></div>
 
                           <div className="absolute top-4 flex flex-col items-center justify-center w-full z-[10000] pointer-events-none opacity-90">
                             <OfficialStamp
@@ -738,87 +841,8 @@ const QuotationsDirectory = () => {
                       </div>
                     </div>
 
-                    {/* الفوتر */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-white px-[15mm] pb-[10mm] pt-4">
-                      <div className="border-t border-[#d8b46a]/25 pt-6 flex min-w-0 justify-between items-end text-[10px] text-[#64748b] font-[Tajawal] print:border-slate-300 break-inside-avoid">
-                        <div className="flex flex-col gap-1 w-1/3">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span className="font-bold text-[#123f59] tracking-tight">
-                              الرقم المرجعي:
-                            </span>
-                            <span className="font-mono text-xs">
-                              {fullQuoteData.number}
-                            </span>
-                          </div>
-                          <p className="leading-relaxed opacity-75 max-w-xs">
-                            جميع الأسعار خاضعة لضريبة القيمة المضافة حسب الأنظمة
-                            المتبعة.
-                          </p>
-                        </div>
-
-                        {/* باركود */}
-                        <div className="flex flex-col items-center gap-1 w-1/3">
-                          <div className="h-10 mb-1 w-[135px] flex min-w-0 items-center justify-center opacity-80">
-                            <div className="w-full h-[35px] bg-[repeating-linear-gradient(90deg,#000_0,#000_2px,transparent_0,transparent_4px,transparent_6px,#000_6px,#000_8px,transparent_8px,transparent_10px)]"></div>
-                          </div>
-                          <span className="font-mono text-[9px] tracking-[0.2em]">
-                            {fullQuoteData.number}
-                          </span>
-                        </div>
-
-                        {/* QR */}
-                        <div className="flex justify-end gap-3 items-end w-1/3">
-                          <div className="bg-white p-1 border border-[#e8ddc8] rounded shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
-                            <svg
-                              height="60"
-                              width="60"
-                              viewBox="0 0 21 21"
-                              aria-hidden="true"
-                            >
-                              <path
-                                fill="#FFFFFF"
-                                d="M0,0 h21v21H0z"
-                                shapeRendering="crispEdges"
-                              ></path>
-                              <path
-                                fill="#000000"
-                                d="M0 0h7v1H0zM9 0h1v1H9zM11 0h2v1H11zM14,0 h7v1H14zM0 1h1v1H0zM6 1h1v1H6zM8 1h2v1H8zM14 1h1v1H14zM20,1 h1v1H20zM0 2h1v1H0zM2 2h3v1H2zM6 2h1v1H6zM8 2h1v1H8zM10 2h1v1H10zM12 2h1v1H12zM14 2h1v1H14zM16 2h3v1H16zM20,2 h1v1H20zM0 3h1v1H0zM2 3h3v1H2zM6 3h1v1H6zM8 3h2v1H8zM12 3h1v1H12zM14 3h1v1H14zM16 3h3v1H16zM20,3 h1v1H20zM0 4h1v1H0zM2 4h3v1H2zM6 4h1v1H6zM8 4h1v1H8zM11 4h1v1H11zM14 4h1v1H14zM16 4h3v1H16zM20,4 h1v1H20zM0 5h1v1H0zM6 5h1v1H6zM8 5h5v1H8zM14 5h1v1H14zM20,5 h1v1H20zM0 6h7v1H0zM8 6h1v1H8zM10 6h1v1H10zM12 6h1v1H12zM14,6 h7v1H14zM9 7h1v1H9zM12 7h1v1H12zM2 8h1v1H2zM5 8h7v1H5zM13 8h1v1H13zM15 8h5v1H15zM0 9h2v1H0zM3 9h3v1H3zM7 9h1v1H7zM9 9h3v1H9zM18,9 h3v1H18zM0 10h4v1H0zM5 10h2v1H5zM8 10h2v1H8zM11 10h3v1H11zM17 10h3v1H17zM0 11h2v1H0zM3 11h3v1H3zM7 11h1v1H7zM9 11h4v1H9zM16 11h1v1H16zM19,11 h2v1H19zM0 12h3v1H0zM4 12h4v1H4zM9 12h2v1H9zM12 12h3v1H12zM19 12h1v1H19zM8 13h3v1H8zM13 13h1v1H13zM15 13h1v1H15zM0 14h7v1H0zM8 14h1v1H8zM10 14h1v1H10zM12 14h1v1H12zM15 14h2v1H15zM0 15h1v1H0zM6 15h1v1H6zM8 15h3v1H8zM15 15h1v1H15zM20,15 h1v1H20zM0 16h1v1H0zM2 16h3v1H2zM6 16h1v1H6zM10 16h1v1H10zM14,16 h7v1H14zM0 17h1v1H0zM2 17h3v1H2zM6 17h1v1H6zM12 17h3v1H12zM0 18h1v1H0zM2 18h3v1H2zM6 18h1v1H6zM8 18h1v1H8zM11 18h2v1H11zM14 18h1v1H14zM17,18 h4v1H17zM0 19h1v1H0zM6 19h1v1H6zM10 19h2v1H10zM16 19h1v1H16zM20,19 h1v1H20zM0 20h7v1H0zM12 20h1v1H12zM14 20h1v1H14zM17,20 h4v1H17z"
-                                shapeRendering="crispEdges"
-                              ></path>
-                            </svg>
-                          </div>
-                          <div className="text-left font-black text-[#123f59] border-r-2 border-slate-900 pr-4 h-full flex flex-col justify-center">
-                            <div className="text-xs uppercase tracking-widest text-[#94a3b8] mb-0.5">
-                              Page
-                            </div>
-                            <div className="text-lg leading-none print:hidden">
-                              1 <span className="text-slate-300 mx-1">/</span> 1
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* معلومات الاتصال */}
-                    <div className="mt-4 pt-4 border-t border-[#d8b46a]/25 flex flex-col sm:flex-row items-center justify-between text-[10px] text-[#64748b] font-bold gap-2">
-                      <div className="flex gap-3 flex-wrap">
-                        <span className="flex min-w-0 items-center gap-1">
-                          <Phone className="w-3 h-3" /> 0547267500
-                        </span>
-                        <span className="flex min-w-0 items-center gap-1">
-                          <Mail className="w-3 h-3" /> info@blackcube.sa
-                        </span>
-                        <span className="flex min-w-0 items-center gap-1">
-                          <Globe className="w-3 h-3" /> www.blackcube.sa
-                        </span>
-                      </div>
-                      <div className="flex min-w-0 items-center gap-1.5 text-[#0f766e] bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100/50">
-                        <ShieldCheck className="w-3 h-3" />
-                        <span className="uppercase tracking-widest text-[8px] font-black">
-                          Secure Digital Original
-                        </span>
-                      </div>
-                    </div>
+                    {/* الفوتر الرسمي */}
+                    <DetailsPrintFooter accentColor="#0f5570" />
                   </div>
                 </div>
               )}

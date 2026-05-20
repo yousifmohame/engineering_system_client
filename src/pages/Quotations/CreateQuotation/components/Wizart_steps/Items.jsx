@@ -47,7 +47,7 @@ export const Step3Items = ({ props }) => {
   } = props;
 
   return (
-    <div className="animate-in fade-in duration-300 flex flex-col h-full">
+    <div className="animate-in fade-in duration-300 flex flex-col h-full text-[#123f59]">
       <div className="flex min-w-0 justify-between items-center mb-3">
         
         <div className="flex gap-1.5">
@@ -56,7 +56,7 @@ export const Step3Items = ({ props }) => {
           ) : (
             <select
               onChange={addItemFromLibrary}
-              className="px-2 py-1.5 bg-blue-50 text-[#123f59] border border-blue-200 rounded-lg text-[10px] font-bold outline-none cursor-pointer max-w-[150px]"
+              className="px-2 py-1.5 bg-[#eef7f6] text-[#123f59] border border-[#d8b46a]/35 rounded-xl text-[10px] font-bold outline-none cursor-pointer max-w-[150px]"
             >
               <option value="">+ إضافة من المكتبة</option>
               {serverItems?.map((i) => (
@@ -81,14 +81,14 @@ export const Step3Items = ({ props }) => {
                 },
               ])
             }
-            className="px-3 py-1.5 bg-[#123f59] text-white rounded-lg text-[11px] font-bold flex min-w-0 items-center gap-1 hover:bg-[#0f3448]"
+            className="px-3 py-1.5 bg-[#123f59] text-white rounded-xl text-[11px] font-bold flex min-w-0 items-center gap-1 hover:bg-[#0f3448]"
           >
             <Plus className="w-3 h-3" /> بند حر
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-[#d8b46a]/25 p-3 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex-1">
+      <div className="bg-white rounded-xl border border-[#d8b46a]/25 p-3 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex-1">
         <div className="overflow-x-auto custom-scrollbar-slim">
           <table className="w-full text-right border-collapse min-w-[600px]">
             <thead>

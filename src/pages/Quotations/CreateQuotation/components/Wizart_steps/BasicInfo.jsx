@@ -60,7 +60,7 @@ export const Step1BasicInfo = ({ props }) => {
     <div className="animate-in fade-in duration-300">
       
 
-      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 mb-3 shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
+      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 mb-3 shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <div>
             <label className="block text-[11px] font-bold text-[#475569] mb-1">
@@ -70,7 +70,7 @@ export const Step1BasicInfo = ({ props }) => {
               type="date"
               value={issueDate}
               onChange={(e) => setIssueDate(e.target.value)}
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-[#c5983c]/70"
+              className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-[#c5983c]/70"
             />
           </div>
           <div>
@@ -82,7 +82,7 @@ export const Step1BasicInfo = ({ props }) => {
               value={validityDays === "unlimited" ? "غير محدد" : validityDays}
               onChange={(e) => setValidityDays(e.target.value)}
               readOnly={validityDays === "unlimited"}
-              className={`w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-[#c5983c]/70 ${validityDays === "unlimited" ? "bg-slate-100 font-bold" : ""}`}
+              className={`w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-[#c5983c]/70 ${validityDays === "unlimited" ? "bg-[#fbf8f1] font-bold" : ""}`}
             />
           </div>
         </div>
@@ -92,10 +92,10 @@ export const Step1BasicInfo = ({ props }) => {
             <button
               key={val}
               onClick={() => setValidityDays(val)}
-              className={`px-4 py-1.5 rounded-md text-[11px] font-bold cursor-pointer border transition-colors ${
+              className={`px-4 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer border transition-colors ${
                 validityDays === val
                   ? "bg-slate-800 text-white border-slate-800 shadow-[0_8px_18px_rgba(18,63,89,0.08)]"
-                  : "bg-white text-[#475569] border-slate-300 hover:bg-[#fbf8f1]"
+                  : "bg-white text-[#475569] border-[#d8b46a]/25 hover:bg-[#fbf8f1]"
               }`}
             >
               {val === "unlimited" ? "غير محدد" : `${val} أيام`}
@@ -112,7 +112,7 @@ export const Step1BasicInfo = ({ props }) => {
             className={`px-4 py-1 rounded-full text-[10px] font-bold cursor-pointer border transition-colors ${
               isRenewable
                 ? "bg-emerald-50 text-[#0f766e] border-emerald-200"
-                : "bg-slate-100 text-[#94a3b8] border-[#d8b46a]/25 hover:bg-slate-200"
+                : "bg-[#fbf8f1] text-[#94a3b8] border-[#d8b46a]/25 hover:bg-[#eef7f6]"
             }`}
           >
             {isRenewable ? "نعم" : "لا"}
@@ -120,7 +120,7 @@ export const Step1BasicInfo = ({ props }) => {
         </div>
       </div>
 
-      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 border-r-[3px] border-r-cyan-600 mb-3 shadow-[0_6px_18px_rgba(18,63,89,0.05)] relative">
+      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 border-r-[3px] border-r-cyan-600 mb-3 shadow-[0_8px_22px_rgba(18,63,89,0.06)] relative">
         <div className="text-xs font-bold text-cyan-700 mb-3 flex min-w-0 items-center gap-1.5">
           <IconWithText icon={FileSearch} iconClassName="w-3.5 h-3.5" /> بيانات الخدمة والرخصة
         </div>
@@ -133,7 +133,7 @@ export const Step1BasicInfo = ({ props }) => {
             <select
               value={transactionType}
               onChange={(e) => setTransactionType(e.target.value)}
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-[#c5983c]/70 bg-white"
+              className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-[#c5983c]/70 bg-white"
             >
               <option value="">— اختر المعاملة —</option>
               <option value="إفراغ عقاري">إفراغ عقاري</option>
@@ -150,7 +150,7 @@ export const Step1BasicInfo = ({ props }) => {
               type="text"
               value={serviceNumber}
               onChange={(e) => setServiceNumber(e.target.value)}
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono outline-none focus:border-[#c5983c]/70"
+              className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs font-mono outline-none focus:border-[#c5983c]/70"
             />
           </div>
 
@@ -161,7 +161,7 @@ export const Step1BasicInfo = ({ props }) => {
             <select
               value={serviceYear}
               onChange={(e) => setServiceYear(e.target.value)}
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono outline-none focus:border-[#c5983c]/70 bg-white"
+              className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs font-mono outline-none focus:border-[#c5983c]/70 bg-white"
             >
               <option value="">— اختر السنة —</option>
               {serviceYearsList?.map((year) => (
@@ -182,7 +182,7 @@ export const Step1BasicInfo = ({ props }) => {
               type="text"
               value={licenseNumber}
               onChange={(e) => setLicenseNumber(e.target.value)}
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono outline-none focus:border-[#c5983c]/70"
+              className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs font-mono outline-none focus:border-[#c5983c]/70"
             />
           </div>
 
@@ -193,10 +193,10 @@ export const Step1BasicInfo = ({ props }) => {
             <select
               value={licenseYear}
               onChange={(e) => setLicenseYear(e.target.value)}
-              className={`w-full p-2 border rounded-lg text-xs font-mono outline-none bg-white transition-colors ${
+              className={`w-full p-2 border rounded-xl text-xs font-mono outline-none bg-white transition-colors ${
                 transactionType === "تصحيح وضع مبنى قائم"
                   ? "border-amber-400 focus:border-amber-500 bg-amber-50/30"
-                  : "border-slate-300 focus:border-[#c5983c]/70"
+                  : "border-[#d8b46a]/25 focus:border-[#c5983c]/70"
               }`}
             >
               <option value="">— اختر السنة —</option>

@@ -43,7 +43,7 @@ const IconWithText = ({
 // ==========================================
 const StatusBadge = ({ status }) => {
   const config = {
-    DRAFT: { label: "مسودة", bg: "bg-slate-100", text: "text-[#64748b]" },
+    DRAFT: { label: "مسودة", bg: "bg-[#fbf8f1]", text: "text-[#64748b]" },
     PENDING_APPROVAL: { label: "تحت المراجعة", bg: "bg-blue-100", text: "text-[#123f59]" },
     REJECTED: { label: "مرفوض", bg: "bg-orange-100", text: "text-orange-700" },
     SENT: { label: "بانتظار التوقيع", bg: "bg-amber-100", text: "text-amber-700" },
@@ -55,7 +55,7 @@ const StatusBadge = ({ status }) => {
   };
   const current = config[status] || config.DRAFT;
   return (
-    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${current.bg} ${current.text}`}>
+    <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold ${current.bg} ${current.text}`}>
       {current.label}
     </span>
   );
@@ -187,10 +187,10 @@ const QuotationsPayments = () => {
         <div className="bg-white rounded-[20px] p-3 w-full max-w-[480px] shadow-[0_20px_55px_rgba(18,63,89,0.18)] animate-in zoom-in-95">
           <div className="flex min-w-0 justify-between items-center mb-3">
             <div className="text-base font-bold text-[#123f59]">تسجيل دفعة — {selectedQuote.number}</div>
-            <button onClick={closeModal} className="p-1 hover:bg-slate-100 rounded-lg text-[#94a3b8]"><X className="w-5 h-5" /></button>
+            <button onClick={closeModal} className="p-1 hover:bg-[#fbf8f1] rounded-xl text-[#94a3b8]"><X className="w-5 h-5" /></button>
           </div>
 
-          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-green-50 border border-green-200 rounded-lg mb-3 text-xs text-green-700">
+          <div className="p-3 bg-green-50 border border-green-200 rounded-xl mb-3 text-xs text-green-700">
             المتبقي: <strong className="text-sm">{selectedQuote.remaining.toLocaleString()} ر.س</strong> — إجمالي العرض: {selectedQuote.quoteTotal.toLocaleString()} ر.س
           </div>
 
@@ -202,7 +202,7 @@ const QuotationsPayments = () => {
                 value={paymentForm.amount}
                 onChange={e => setPaymentForm({...paymentForm, amount: e.target.value})}
                 placeholder={`الحد الأقصى: ${selectedQuote.remaining.toLocaleString()}`} 
-                className="w-full p-2.5 border border-slate-300 rounded-lg text-sm font-mono outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200"
+                className="w-full p-2.5 border border-[#d8b46a]/25 rounded-xl text-sm font-mono outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200"
               />
             </div>
             <div>
@@ -210,7 +210,7 @@ const QuotationsPayments = () => {
               <select 
                 value={paymentForm.method}
                 onChange={e => setPaymentForm({...paymentForm, method: e.target.value})}
-                className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-green-500"
+                className="w-full p-2.5 border border-[#d8b46a]/25 rounded-xl text-sm outline-none focus:border-green-500"
               >
                 <option value="transfer">تحويل بنكي</option>
                 <option value="cash">نقد</option>
@@ -225,16 +225,16 @@ const QuotationsPayments = () => {
                 value={paymentForm.reference}
                 onChange={e => setPaymentForm({...paymentForm, reference: e.target.value})}
                 placeholder="رقم الحوالة / الشيك..." 
-                className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-green-500"
+                className="w-full p-2.5 border border-[#d8b46a]/25 rounded-xl text-sm outline-none focus:border-green-500"
               />
             </div>
           </div>
 
           <div className="flex gap-2 mt-4">
-            <button onClick={handleSavePayment} disabled={recordPaymentMutation.isPending} className="px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-green-700 flex min-w-0 items-center gap-1.5 disabled:opacity-50">
+            <button onClick={handleSavePayment} disabled={recordPaymentMutation.isPending} className="px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold shadow-[0_8px_18px_rgba(18,63,89,0.08)] hover:bg-green-700 flex min-w-0 items-center gap-1.5 disabled:opacity-50">
               {recordPaymentMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin"/> : <CircleCheckBig className="w-4 h-4" />} تسجيل الدفعة
             </button>
-            <button onClick={closeModal} className="px-4 py-2.5 bg-slate-100 text-slate-600 border border-[#d8b46a]/25 rounded-lg text-sm hover:bg-slate-200 font-bold">إلغاء</button>
+            <button onClick={closeModal} className="px-4 py-2.5 bg-[#fbf8f1] text-[#64748b] border border-[#d8b46a]/25 rounded-xl text-sm hover:bg-[#eef7f6] font-bold">إلغاء</button>
           </div>
         </div>
       </div>
@@ -245,42 +245,42 @@ const QuotationsPayments = () => {
   // Main Render
   // ==========================================
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim overflow-x-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-[Tajawal] h-full" dir="rtl">
+    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-[Tajawal] h-full" dir="rtl">
       <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 md:p-3 max-w-7xl mx-auto">
         
         {/* Top Statistics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
-          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-500 flex min-w-0 items-center justify-center"><DollarSign className="w-5 h-5" /></div>
+          <div className="p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex min-w-0 items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-500 flex min-w-0 items-center justify-center"><DollarSign className="w-5 h-5" /></div>
             <div><div className="text-[10px] text-[#64748b]">إجمالي المستحقات</div><div className="text-base font-bold text-[#123f59] font-mono">{totalDues.toLocaleString()} ر.س</div></div>
           </div>
-          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-green-50 text-green-600 flex min-w-0 items-center justify-center"><ArrowDownRight className="w-5 h-5" /></div>
+          <div className="p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex min-w-0 items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-green-50 text-green-600 flex min-w-0 items-center justify-center"><ArrowDownRight className="w-5 h-5" /></div>
             <div><div className="text-[10px] text-[#64748b]">إجمالي المحصّل</div><div className="text-base font-bold text-[#123f59] font-mono">{totalCollected.toLocaleString()} ر.س</div></div>
           </div>
-          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-orange-50 text-orange-500 flex min-w-0 items-center justify-center"><ArrowUpRight className="w-5 h-5" /></div>
+          <div className="p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex min-w-0 items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-orange-50 text-orange-500 flex min-w-0 items-center justify-center"><ArrowUpRight className="w-5 h-5" /></div>
             <div><div className="text-[10px] text-[#64748b]">المتبقي</div><div className="text-base font-bold text-[#123f59] font-mono">{totalRemaining.toLocaleString()} ر.س</div></div>
           </div>
-          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-green-50 text-green-600 flex min-w-0 items-center justify-center"><CircleCheckBig className="w-5 h-5" /></div>
+          <div className="p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex min-w-0 items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-green-50 text-green-600 flex min-w-0 items-center justify-center"><CircleCheckBig className="w-5 h-5" /></div>
             <div><div className="text-[10px] text-[#64748b]">مسددة بالكامل</div><div className="text-base font-bold text-[#123f59]">{fullyPaidCount}</div></div>
           </div>
-          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-yellow-50 text-yellow-600 flex min-w-0 items-center justify-center"><Clock className="w-5 h-5" /></div>
+          <div className="p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex min-w-0 items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-yellow-50 text-yellow-600 flex min-w-0 items-center justify-center"><Clock className="w-5 h-5" /></div>
             <div><div className="text-[10px] text-[#64748b]">مسددة جزئياً</div><div className="text-base font-bold text-[#123f59]">{partiallyPaidCount}</div></div>
           </div>
-          <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex min-w-0 items-center justify-center"><TriangleAlert className="w-5 h-5" /></div>
+          <div className="p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex min-w-0 items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-red-50 text-red-600 flex min-w-0 items-center justify-center"><TriangleAlert className="w-5 h-5" /></div>
             <div><div className="text-[10px] text-[#64748b]">بانتظار الدفع</div><div className="text-base font-bold text-[#123f59]">{pendingPaymentCount}</div></div>
           </div>
         </div>
 
         {/* Toolbar */}
-        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] mb-3 flex flex-wrap items-center gap-3">
+        <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] mb-3 flex flex-wrap items-center gap-3">
           <CreditCard className="w-5 h-5 text-[#0f766e] mr-1" />
           <span className="text-sm font-bold text-[#123f59]">الدفعات والتحصيل</span>
-          <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-[#0f766e]">{filteredData.length}</span>
+          <span className="px-2.5 py-0.5 rounded-xl text-[10px] font-bold bg-emerald-50 text-[#0f766e]">{filteredData.length}</span>
           
           <div className="flex-1"></div>
           
@@ -290,39 +290,39 @@ const QuotationsPayments = () => {
               placeholder="بحث بالكود أو العميل..." 
               value={searchTerm}
               onChange={e=>setSearchTerm(e.target.value)}
-              className="py-1.5 pr-9 pl-3 border border-slate-300 rounded-lg text-xs w-[220px] outline-none focus:border-[#c5983c]/70" 
+              className="py-1.5 pr-9 pl-3 border border-[#d8b46a]/25 rounded-xl text-xs w-[220px] outline-none focus:border-[#c5983c]/70" 
             />
           </div>
           
-          <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} className="py-1.5 px-3 border border-slate-300 rounded-lg text-xs outline-none focus:border-[#c5983c]/70 cursor-pointer bg-white">
+          <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} className="py-1.5 px-3 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-[#c5983c]/70 cursor-pointer bg-white">
             <option value="all">جميع الحالات</option>
             <option value="approved_pending_payment">بانتظار الدفع</option>
             <option value="partially_paid">مسددة جزئياً</option>
             <option value="fully_paid">مسددة بالكامل</option>
           </select>
           
-          <button className="px-3 py-1.5 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white text-[#64748b] border border-[#d8b46a]/25 rounded-lg text-[11px] font-bold hover:bg-slate-100 flex min-w-0 items-center gap-1.5">
+          <button className="px-3 py-1.5 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white text-[#64748b] border border-[#d8b46a]/25 rounded-xl text-[11px] font-bold hover:bg-[#fbf8f1] flex min-w-0 items-center gap-1.5">
             <IconWithText icon={Download} text="تصدير" iconClassName="w-3 h-3" />
           </button>
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] overflow-hidden">
-          <div className="overflow-x-auto min-h-[300px]">
+        <div className="bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] overflow-hidden">
+          <div className="overflow-x-auto custom-scrollbar-slim min-h-[300px]">
             {isLoading ? (
                <div className="flex flex-col items-center justify-center h-40 text-[#94a3b8]"><Loader2 className="w-8 h-8 animate-spin mb-2" /> جاري التحميل...</div>
             ) : (
               <table className="w-full text-right border-collapse min-w-[1000px]">
                 <thead>
                   <tr className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-b-2 border-[#d8b46a]/25">
-                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">الكود</th>
-                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">العميل</th>
-                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">إجمالي العرض</th>
-                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">المسدد</th>
-                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">المتبقي</th>
-                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">نسبة التحصيل</th>
-                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">الحالة</th>
-                    <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap text-center">إجراءات</th>
+                    <th className="p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">الكود</th>
+                    <th className="p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">العميل</th>
+                    <th className="p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">إجمالي العرض</th>
+                    <th className="p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">المسدد</th>
+                    <th className="p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">المتبقي</th>
+                    <th className="p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">نسبة التحصيل</th>
+                    <th className="p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap">الحالة</th>
+                    <th className="p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap text-center">إجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -334,23 +334,23 @@ const QuotationsPayments = () => {
 
                     return (
                       <tr key={q.id} className="border-b border-[#e8ddc8] hover:bg-[#fbf8f1]/50 transition-colors">
-                        <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-[#123f59] font-mono">{q.number}</td>
-                        <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-[#475569] font-bold">{getClientName(q.client)}</td>
-                        <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-[#475569] font-mono">{q.quoteTotal.toLocaleString()}</td>
-                        <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-green-600 font-mono font-bold">{q.collected.toLocaleString()}</td>
-                        <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-red-600 font-mono font-bold">{q.remaining.toLocaleString()}</td>
+                        <td className="p-3 text-xs font-bold text-[#123f59] font-mono">{q.number}</td>
+                        <td className="p-3 text-xs text-[#475569] font-bold">{getClientName(q.client)}</td>
+                        <td className="p-3 text-xs text-[#475569] font-mono">{q.quoteTotal.toLocaleString()}</td>
+                        <td className="p-3 text-xs text-green-600 font-mono font-bold">{q.collected.toLocaleString()}</td>
+                        <td className="p-3 text-xs text-red-600 font-mono font-bold">{q.remaining.toLocaleString()}</td>
                         <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3">
                           <div className="flex min-w-0 items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div className="flex-1 h-1.5 bg-[#eef7f6] rounded-full overflow-hidden">
                               <div className={`h-full ${progressColor} transition-all duration-500`} style={{ width: `${q.progress}%` }}></div>
                             </div>
                             <span className="text-[10px] font-bold text-[#64748b] min-w-[32px]">{q.progress}%</span>
                           </div>
                         </td>
                         <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3"><StatusBadge status={q.status} /></td>
-                        <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-center">
+                        <td className="p-3 text-center">
                           {q.remaining > 0 ? (
-                            <button onClick={() => openPaymentModal(q)} className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg text-[10px] font-bold hover:bg-green-100 flex min-w-0 items-center gap-1.5 mx-auto">
+                            <button onClick={() => openPaymentModal(q)} className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-xl text-[10px] font-bold hover:bg-green-100 flex min-w-0 items-center gap-1.5 mx-auto">
                               <CreditCard className="w-3 h-3" /> تسجيل دفعة
                             </button>
                           ) : (
@@ -360,7 +360,7 @@ const QuotationsPayments = () => {
                       </tr>
                     )
                   })}
-                  {filteredData.length === 0 && <tr><td colSpan={8} className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-center text-[#94a3b8] text-sm">لا توجد عروض لعرضها هنا</td></tr>}
+                  {filteredData.length === 0 && <tr><td colSpan={8} className="p-3 text-center text-[#94a3b8] text-sm">لا توجد عروض لعرضها هنا</td></tr>}
                 </tbody>
               </table>
             )}

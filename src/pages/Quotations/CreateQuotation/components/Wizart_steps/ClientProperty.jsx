@@ -72,13 +72,13 @@ export const Step0ClientProperty = ({ props }) => {
   } = props;
 
   return (
-    <div className="animate-in fade-in duration-300 flex flex-col h-full">
+    <div className="animate-in fade-in duration-300 flex flex-col h-full text-[#123f59]">
       {/* شبكة 2x2 للشاشات الكبيرة لتكثيف العرض */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* ========================================== */}
         {/* 1️⃣ اختيار الملكية (سماوي) */}
         {/* ========================================== */}
-        <div className="bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] relative overflow-hidden flex flex-col h-[230px]">
+        <div className="bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] relative overflow-hidden flex flex-col h-[230px]">
           <div className="absolute top-0 bottom-0 right-0 w-1 bg-cyan-500"></div>
 
           <div className="flex min-w-0 justify-between items-center mb-2.5 pl-1">
@@ -100,7 +100,7 @@ export const Step0ClientProperty = ({ props }) => {
               value={propertySearch}
               onChange={(e) => setPropertySearch(e.target.value)}
               placeholder="بحث برقم الصك، الكود..."
-              className="w-full py-1.5 pr-8 pl-2 border border-[#d8b46a]/25 rounded-lg text-[11px] focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
+              className="w-full py-1.5 pr-8 pl-2 border border-[#d8b46a]/25 rounded-xl text-[11px] focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
             />
           </div>
 
@@ -120,9 +120,9 @@ export const Step0ClientProperty = ({ props }) => {
                       const relatedClientId = prop.clientId || prop.client?.id;
                       if (relatedClientId) setSelectedClient(relatedClientId);
                     }}
-                    className={`flex flex-col p-2 rounded-lg cursor-pointer border transition-all ${
+                    className={`flex flex-col p-2 rounded-xl cursor-pointer border transition-all ${
                       isSelected
-                        ? "border-cyan-400 bg-cyan-50/50 shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
+                        ? "border-cyan-400 bg-cyan-50/50 shadow-[0_8px_22px_rgba(18,63,89,0.06)]"
                         : "border-[#e8ddc8] bg-white hover:border-cyan-200"
                     }`}
                   >
@@ -131,7 +131,7 @@ export const Step0ClientProperty = ({ props }) => {
                         {isSelected ? (
                           <CheckCircle2 className="w-3.5 h-3.5 text-cyan-600" />
                         ) : (
-                          <div className="w-3.5 h-3.5 rounded-full border border-slate-300" />
+                          <div className="w-3.5 h-3.5 rounded-full border border-[#d8b46a]/25" />
                         )}
                         <span
                           className={`font-bold text-[11px] ${isSelected ? "text-cyan-800" : "text-[#475569]"}`}
@@ -163,16 +163,16 @@ export const Step0ClientProperty = ({ props }) => {
         {/* ========================================== */}
         {/* 2️⃣ اختيار العميل (أزرق) */}
         {/* ========================================== */}
-        <div className="bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] relative overflow-hidden flex flex-col h-[230px]">
-          <div className="absolute top-0 bottom-0 right-0 w-1 bg-blue-500"></div>
+        <div className="bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] relative overflow-hidden flex flex-col h-[230px]">
+          <div className="absolute top-0 bottom-0 right-0 w-1 bg-[#0e7490]"></div>
 
           <div className="flex min-w-0 justify-between items-center mb-2.5 pl-1">
             <div className="text-xs font-bold text-[#475569] flex min-w-0 items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-blue-500" /> تحديد ملف العميل{" "}
+              <Users className="w-3.5 h-3.5 text-[#0e7490]" /> تحديد ملف العميل{" "}
               <span className="text-red-500">*</span>
             </div>
             {selectedClient && (
-              <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-[#123f59] rounded font-bold">
+              <span className="text-[9px] px-1.5 py-0.5 bg-[#eef7f6] text-[#123f59] rounded font-bold">
                 تم التحديد
               </span>
             )}
@@ -185,7 +185,7 @@ export const Step0ClientProperty = ({ props }) => {
               value={clientSearch}
               onChange={(e) => setClientSearch(e.target.value)}
               placeholder="بحث بالاسم، الهوية، الجوال..."
-              className="w-full py-1.5 pr-8 pl-2 border border-[#d8b46a]/25 rounded-lg text-[11px] focus:outline-none focus:border-[#c5983c]/70 focus:ring-1 focus:ring-blue-200 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
+              className="w-full py-1.5 pr-8 pl-2 border border-[#d8b46a]/25 rounded-xl text-[11px] focus:outline-none focus:border-[#c5983c]/70 focus:ring-1 focus:ring-[#d8b46a]/25 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
             />
           </div>
 
@@ -201,10 +201,10 @@ export const Step0ClientProperty = ({ props }) => {
                   <div
                     key={client.id}
                     onClick={() => setSelectedClient(client.id)}
-                    className={`flex flex-col p-2 rounded-lg cursor-pointer border transition-all ${
+                    className={`flex flex-col p-2 rounded-xl cursor-pointer border transition-all ${
                       isSelected
-                        ? "border-blue-400 bg-blue-50/50 shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
-                        : "border-[#e8ddc8] bg-white hover:border-blue-200"
+                        ? "border-blue-400 bg-[#eef7f6]/50 shadow-[0_8px_22px_rgba(18,63,89,0.06)]"
+                        : "border-[#e8ddc8] bg-white hover:border-[#d8b46a]/35"
                     }`}
                   >
                     <div className="flex min-w-0 justify-between items-center mb-1">
@@ -212,10 +212,10 @@ export const Step0ClientProperty = ({ props }) => {
                         {isSelected ? (
                           <CheckCircle2 className="w-3.5 h-3.5 text-[#123f59]" />
                         ) : (
-                          <div className="w-3.5 h-3.5 rounded-full border border-slate-300" />
+                          <div className="w-3.5 h-3.5 rounded-full border border-[#d8b46a]/25" />
                         )}
                         <span
-                          className={`font-bold text-[11px] ${isSelected ? "text-blue-800" : "text-[#475569]"}`}
+                          className={`font-bold text-[11px] ${isSelected ? "text-[#123f59]" : "text-[#475569]"}`}
                         >
                           {getClientName(client)}
                         </span>
@@ -250,7 +250,7 @@ export const Step0ClientProperty = ({ props }) => {
         {/* ========================================== */}
         {/* 3️⃣ اختيار المعاملة (بنفسجي - اختياري) */}
         {/* ========================================== */}
-        <div className="bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] relative overflow-hidden flex flex-col h-[180px]">
+        <div className="bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] relative overflow-hidden flex flex-col h-[180px]">
           <div className="absolute top-0 bottom-0 right-0 w-1 bg-purple-500"></div>
 
           <div className="flex min-w-0 justify-between items-center mb-2.5 pl-1">
@@ -258,7 +258,7 @@ export const Step0ClientProperty = ({ props }) => {
               <FolderOpen className="w-3.5 h-3.5 text-purple-500" /> ربط بمعاملة
               قائمة
             </div>
-            <span className="text-[8px] font-bold px-1.5 py-0.5 bg-slate-100 text-[#64748b] rounded">
+            <span className="text-[8px] font-bold px-1.5 py-0.5 bg-[#fbf8f1] text-[#64748b] rounded">
               اختياري
             </span>
           </div>
@@ -272,7 +272,7 @@ export const Step0ClientProperty = ({ props }) => {
                 setTransactionSearch && setTransactionSearch(e.target.value)
               }
               placeholder="بحث برقم المعاملة، الوصف..."
-              className="w-full py-1.5 pr-8 pl-2 border border-[#d8b46a]/25 rounded-lg text-[10px] focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
+              className="w-full py-1.5 pr-8 pl-2 border border-[#d8b46a]/25 rounded-xl text-[10px] focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
             />
           </div>
 
@@ -292,9 +292,9 @@ export const Step0ClientProperty = ({ props }) => {
                     onClick={() =>
                       setSelectedTransaction && setSelectedTransaction(txn.id)
                     }
-                    className={`flex min-w-0 justify-between items-center p-2 rounded-lg cursor-pointer border transition-all ${
+                    className={`flex min-w-0 justify-between items-center p-2 rounded-xl cursor-pointer border transition-all ${
                       isSelected
-                        ? "border-purple-400 bg-purple-50/50 shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
+                        ? "border-purple-400 bg-purple-50/50 shadow-[0_8px_22px_rgba(18,63,89,0.06)]"
                         : "border-[#e8ddc8] bg-white hover:border-purple-200"
                     }`}
                   >
@@ -302,7 +302,7 @@ export const Step0ClientProperty = ({ props }) => {
                       {isSelected ? (
                         <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />
                       ) : (
-                        <div className="w-3.5 h-3.5 rounded-full border border-slate-300" />
+                        <div className="w-3.5 h-3.5 rounded-full border border-[#d8b46a]/25" />
                       )}
                       <span
                         className={`font-bold text-[10px] truncate max-w-[140px] ${isSelected ? "text-purple-800" : "text-[#475569]"}`}
@@ -327,7 +327,7 @@ export const Step0ClientProperty = ({ props }) => {
         {/* ========================================== */}
         {/* 4️⃣ اختيار محضر الاجتماع (أصفر - اختياري) */}
         {/* ========================================== */}
-        <div className="bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] relative overflow-hidden flex flex-col h-[180px]">
+        <div className="bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] relative overflow-hidden flex flex-col h-[180px]">
           <div className="absolute top-0 bottom-0 right-0 w-1 bg-amber-500"></div>
 
           <div className="flex min-w-0 justify-between items-center mb-2.5 pl-1">
@@ -335,7 +335,7 @@ export const Step0ClientProperty = ({ props }) => {
               <ClipboardList className="w-3.5 h-3.5 text-amber-500" /> الاستناد
               لمحضر اجتماع
             </div>
-            <span className="text-[8px] font-bold px-1.5 py-0.5 bg-slate-100 text-[#64748b] rounded">
+            <span className="text-[8px] font-bold px-1.5 py-0.5 bg-[#fbf8f1] text-[#64748b] rounded">
               اختياري
             </span>
           </div>
@@ -349,7 +349,7 @@ export const Step0ClientProperty = ({ props }) => {
                 setMeetingSearch && setMeetingSearch(e.target.value)
               }
               placeholder="بحث بعنوان المحضر، التاريخ..."
-              className="w-full py-1.5 pr-8 pl-2 border border-[#d8b46a]/25 rounded-lg text-[10px] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-200 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
+              className="w-full py-1.5 pr-8 pl-2 border border-[#d8b46a]/25 rounded-xl text-[10px] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-200 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
             />
           </div>
 
@@ -367,9 +367,9 @@ export const Step0ClientProperty = ({ props }) => {
                     onClick={() =>
                       setSelectedMeeting && setSelectedMeeting(meeting.id)
                     }
-                    className={`flex min-w-0 justify-between items-center p-2 rounded-lg cursor-pointer border transition-all ${
+                    className={`flex min-w-0 justify-between items-center p-2 rounded-xl cursor-pointer border transition-all ${
                       isSelected
-                        ? "border-amber-400 bg-amber-50/50 shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
+                        ? "border-amber-400 bg-amber-50/50 shadow-[0_8px_22px_rgba(18,63,89,0.06)]"
                         : "border-[#e8ddc8] bg-white hover:border-amber-200"
                     }`}
                   >
@@ -377,7 +377,7 @@ export const Step0ClientProperty = ({ props }) => {
                       {isSelected ? (
                         <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
                       ) : (
-                        <div className="w-3.5 h-3.5 rounded-full border border-slate-300" />
+                        <div className="w-3.5 h-3.5 rounded-full border border-[#d8b46a]/25" />
                       )}
                       <span
                         className={`font-bold text-[10px] truncate max-w-[140px] ${isSelected ? "text-amber-800" : "text-[#475569]"}`}
@@ -408,7 +408,7 @@ export const Step0ClientProperty = ({ props }) => {
       </div>
 
       {/* 💡 نصيحة السفلية (أكثر كثافة) */}
-      <div className="mt-3 p-2.5 bg-gradient-to-r from-slate-50 to-indigo-50/50 border border-indigo-100/50 rounded-lg flex min-w-0 items-center gap-2.5 text-[10.5px] text-indigo-800">
+      <div className="mt-3 p-2.5 bg-gradient-to-r from-slate-50 to-indigo-50/50 border border-indigo-100/50 rounded-xl flex min-w-0 items-center gap-2.5 text-[10.5px] text-indigo-800">
         <Sparkles className="w-4 h-4 text-indigo-500 shrink-0" />
         <div>
           <strong className="font-bold mr-1">تلميح ذكي:</strong>

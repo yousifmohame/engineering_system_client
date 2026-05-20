@@ -421,89 +421,205 @@ const CreateQuotationWizard = (incomingProps) => {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-[Tajawal]" dir="rtl">
+    <div
+      className="
+        flex h-full min-h-0 flex-col overflow-hidden
+        bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
+        p-3 font-[Tajawal] text-[#123f59]
+      "
+      dir="rtl"
+    >
       {isEditMode && isQuoteLoading && (
-        <div className="absolute inset-0 z-50 flex min-w-0 items-center justify-center bg-white/80 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-[#123f59]" />
-            <span className="text-xs font-bold text-slate-600">جاري تحميل بيانات عرض السعر...</span>
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#d8b46a]/25 bg-white px-8 py-6 shadow-[0_16px_38px_rgba(18,63,89,0.14)]">
+            <Loader2 className="h-8 w-8 animate-spin text-[#123f59]" />
+            <span className="text-xs font-black text-[#64748b]">
+              جاري تحميل بيانات عرض السعر...
+            </span>
           </div>
         </div>
       )}
 
-      <div className="flex-1 overflow-hidden p-3 md:p-3.5 flex gap-3">
-        <div className="w-[50%] flex flex-col bg-white rounded-[20px] border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] overflow-hidden">
-          <div ref={tabsContainerRef} className="flex min-w-0 items-center gap-1 p-3 border-b border-[#e8ddc8] overflow-x-auto custom-scrollbar-slim custom-scrollbar-slim bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white scroll-smooth">
-            {STEPS.map((step) => {
-              const isActive = currentStep === step.id;
-              const isCompleted = step.id < currentStep;
-              const Icon = isCompleted ? CircleCheckBig : step.icon;
-              return (
-                <button
-                  key={step.id}
-                  onClick={() => setCurrentStep(step.id)}
-                  className={`flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-lg border-none text-[10px] font-bold whitespace-nowrap transition-all ${
-                    isActive
-                      ? "bg-[#123f59] text-white shadow-[0_8px_18px_rgba(18,63,89,0.08)] shadow-blue-600/20 scale-105"
-                      : isCompleted
-                        ? "bg-emerald-100 text-[#0f766e] hover:bg-emerald-200"
-                        : "bg-slate-100 text-[#64748b] hover:bg-slate-200"
-                  }`}
+      <div className="flex min-h-0 flex-1 gap-3 overflow-hidden">
+        <section
+          className="
+            flex min-h-0 min-w-0 flex-[1.05] flex-col overflow-hidden
+            rounded-[24px] border border-[#d8b46a]/25 bg-white/95
+            shadow-[0_10px_26px_rgba(18,63,89,0.08)]
+            backdrop-blur-xl
+          "
+        >
+          <div
+            className="
+              shrink-0 border-b border-[#e8ddc8]
+              bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490]
+              px-4 py-3 text-white
+            "
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <span
+                  className="
+                    grid h-11 w-11 shrink-0 place-items-center
+                    rounded-2xl border border-[#e2bf74]/35
+                    bg-white/10 text-[#e2bf74]
+                    shadow-md backdrop-blur-xl
+                  "
                 >
-                  <Icon className="w-3.5 h-3.5" /> <span>{step.label}</span>
-                </button>
-              );
-            })}
-          </div>
+                  <IconWithText
+                    icon={Save}
+                    text="عرض"
+                    vertical
+                    iconClassName="h-5 w-5"
+                    textClassName="text-[7px] font-black leading-none"
+                  />
+                </span>
 
-          <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 custom-scrollbar-slim bg-[#fbf8f1]/30">
-            {currentStep === 0 && <Step2Template props={stepProps} />}
-            {currentStep === 1 && <Step0ClientProperty props={stepProps} />}
-            {currentStep === 2 && <Step1BasicInfo props={stepProps} />}
-            {currentStep === 3 && <Step3Items props={stepProps} />}
-            {currentStep === 4 && <Step4Tax props={stepProps} />}
-            {currentStep === 5 && <Step5Payments props={stepProps} />}
-            {currentStep === 6 && <Step6Attachments props={stepProps} />}
-            {currentStep === 7 && <Step7Terms props={stepProps} />}
-            {currentStep === 8 && <Step8Review props={stepProps} />}
-          </div>
+                <div className="min-w-0">
+                  <h2 className="truncate text-lg font-black">
+                    {isEditMode ? "تعديل عرض سعر" : "إنشاء عرض سعر"}
+                  </h2>
+                  <p className="mt-0.5 truncate text-[11px] font-bold text-white/60">
+                    بناء العرض، اختيار النموذج، البنود، الضريبة، الدفعات والمراجعة.
+                  </p>
+                </div>
+              </div>
 
-          <div className="flex min-w-0 justify-between items-center p-3 border-t border-[#d8b46a]/25 bg-white shrink-0">
-            <button
-              disabled={currentStep === 0}
-              onClick={() => setCurrentStep((p) => p - 1)}
-              className="px-3.5 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold flex min-w-0 items-center gap-1.5 hover:bg-slate-200 disabled:opacity-40 transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" /> السابق
-            </button>
-            <div className="text-[10px] font-bold text-[#64748b] bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white px-3 py-1 rounded-full border border-[#d8b46a]/25">
-              الخطوة {currentStep + 1} من {STEPS.length}
+              <span className="shrink-0 rounded-xl border border-[#e2bf74]/35 bg-white/10 px-3 py-1.5 text-[10px] font-black text-[#e2bf74]">
+                الخطوة {currentStep + 1} / {STEPS.length}
+              </span>
             </div>
-
-            {currentStep === STEPS.length - 1 ? (
-              <div className="w-[100px]"></div>
-            ) : currentStep === STEPS.length - 2 ? (
-              <button
-                onClick={handleNextOrSave}
-                className="px-3.5 py-2.5 bg-[#123f59] text-white rounded-xl text-xs font-bold flex min-w-0 items-center gap-1.5 hover:bg-[#0f3448] transition-colors shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
-              >
-                <IconWithText icon={Save} text="مراجعة وحفظ" iconClassName="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                onClick={handleNextOrSave}
-                className="px-3.5 py-2.5 bg-[#123f59] text-white rounded-xl text-xs font-bold flex min-w-0 items-center gap-1.5 hover:bg-[#0f3448] transition-colors shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
-              >
-                التالي <ChevronLeft className="w-4 h-4" />
-              </button>
-            )}
           </div>
-        </div>
 
-        <LivePreview data={previewData} />
+          <div
+            ref={tabsContainerRef}
+            className="
+              shrink-0 overflow-x-auto border-b border-[#e8ddc8]
+              bg-gradient-to-l from-[#fbf8f1] via-white to-[#eef7f6]
+              p-2 custom-scrollbar-slim
+            "
+          >
+            <div className="flex min-w-max items-center gap-1.5">
+              {STEPS.map((step) => {
+                const isActive = currentStep === step.id;
+                const isCompleted = step.id < currentStep;
+                const Icon = isCompleted ? CircleCheckBig : step.icon;
+
+                return (
+                  <button
+                    key={step.id}
+                    onClick={() => setCurrentStep(step.id)}
+                    className={`
+                      group inline-flex h-10 shrink-0 items-center justify-center gap-1.5
+                      rounded-2xl border px-3 text-[10px] font-black
+                      transition-all duration-200
+                      ${
+                        isActive
+                          ? "border-[#e2bf74]/55 bg-[#123f59] text-white shadow-[0_10px_22px_rgba(18,63,89,0.18)]"
+                          : isCompleted
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            : "border-[#d8b46a]/25 bg-white text-[#64748b] hover:bg-[#fbf8f1] hover:text-[#123f59]"
+                      }
+                    `}
+                    type="button"
+                    title={step.label}
+                  >
+                    <Icon
+                      className={`
+                        h-4 w-4 shrink-0
+                        ${isActive ? "text-[#e2bf74]" : ""}
+                      `}
+                    />
+                    <span className="whitespace-nowrap">{step.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[#fbf8f1]/40 p-3 custom-scrollbar-slim">
+            <div className="mx-auto max-w-4xl">
+              {currentStep === 0 && <Step2Template props={stepProps} />}
+              {currentStep === 1 && <Step0ClientProperty props={stepProps} />}
+              {currentStep === 2 && <Step1BasicInfo props={stepProps} />}
+              {currentStep === 3 && <Step3Items props={stepProps} />}
+              {currentStep === 4 && <Step4Tax props={stepProps} />}
+              {currentStep === 5 && <Step5Payments props={stepProps} />}
+              {currentStep === 6 && <Step6Attachments props={stepProps} />}
+              {currentStep === 7 && <Step7Terms props={stepProps} />}
+              {currentStep === 8 && <Step8Review props={stepProps} />}
+            </div>
+          </div>
+
+          <div className="shrink-0 border-t border-[#e8ddc8] bg-white/95 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <button
+                disabled={currentStep === 0}
+                onClick={() => setCurrentStep((p) => p - 1)}
+                className="
+                  inline-flex h-10 items-center justify-center gap-1.5
+                  rounded-xl border border-[#d8b46a]/25 bg-[#fbf8f1]
+                  px-4 text-xs font-black text-[#64748b]
+                  transition hover:bg-[#f8efe0]
+                  disabled:cursor-not-allowed disabled:opacity-40
+                "
+                type="button"
+              >
+                <ChevronRight className="h-4 w-4" />
+                السابق
+              </button>
+
+              <div className="rounded-xl border border-[#d8b46a]/25 bg-[#fbf8f1] px-4 py-2 text-[10px] font-black text-[#64748b]">
+                {STEPS[currentStep]?.label || "خطوة"}
+              </div>
+
+              {currentStep === STEPS.length - 1 ? (
+                <div className="h-10 w-[110px]" />
+              ) : currentStep === STEPS.length - 2 ? (
+                <button
+                  onClick={handleNextOrSave}
+                  className="
+                    inline-flex h-10 items-center justify-center gap-1.5
+                    rounded-xl bg-gradient-to-l from-[#123f59] via-[#15536f] to-[#0e7490]
+                    px-4 text-xs font-black text-white
+                    shadow-[0_10px_24px_rgba(18,63,89,0.18)]
+                    transition hover:-translate-y-[1px]
+                  "
+                  type="button"
+                >
+                  <IconWithText
+                    icon={Save}
+                    text="مراجعة وحفظ"
+                    iconClassName="h-4 w-4 text-[#e2bf74]"
+                  />
+                </button>
+              ) : (
+                <button
+                  onClick={handleNextOrSave}
+                  className="
+                    inline-flex h-10 items-center justify-center gap-1.5
+                    rounded-xl bg-gradient-to-l from-[#123f59] via-[#15536f] to-[#0e7490]
+                    px-4 text-xs font-black text-white
+                    shadow-[0_10px_24px_rgba(18,63,89,0.18)]
+                    transition hover:-translate-y-[1px]
+                  "
+                  type="button"
+                >
+                  التالي
+                  <ChevronLeft className="h-4 w-4 text-[#e2bf74]" />
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <aside className="min-h-0 min-w-0 flex-[0.95] overflow-hidden">
+          <LivePreview data={previewData} />
+        </aside>
       </div>
     </div>
   );
 };
 
 export default CreateQuotationWizard;
+

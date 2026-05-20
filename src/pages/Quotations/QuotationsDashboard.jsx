@@ -579,7 +579,7 @@ const QuickButton = ({
       {badge > 0 && (
         <span
           className="
-            mr-1 rounded-lg bg-rose-600 px-1.5 py-0.5
+            mr-1 rounded-xl bg-rose-600 px-1.5 py-0.5
             text-[8px] font-black text-white
           "
         >
@@ -590,7 +590,7 @@ const QuickButton = ({
       {shortcut && (
         <span
           className="
-            mr-1 hidden rounded-lg border border-[#d8b46a]/25
+            mr-1 hidden rounded-xl border border-[#d8b46a]/25
             bg-[#fbf8f1] px-1.5 py-0.5
             font-mono text-[8px] font-black text-[#64748b]
             sm:inline-flex
@@ -827,10 +827,10 @@ const DashboardButton = ({
         <span
           className="
             absolute right-1.5 top-1.5
-            rounded-lg bg-[#123f59]
+            rounded-xl bg-[#123f59]
             px-1.5 py-0.5
             text-[8px] font-black leading-none text-[#e2bf74]
-            shadow-sm
+            shadow-[0_8px_18px_rgba(18,63,89,0.05)]
           "
         >
           {badge}
@@ -869,7 +869,7 @@ const DashboardButton = ({
 
       <span
         className="
-          mt-0.5 rounded-md bg-[#fbf8f1]
+          mt-0.5 rounded-xl bg-[#fbf8f1]
           px-1.5 py-0.5
           font-mono text-[7.5px] font-black text-[#94a3b8]
         "

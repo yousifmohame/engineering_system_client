@@ -59,7 +59,7 @@ const STATUS_CONFIG = {
     color: "bg-[#fbf8f1]0",
     text: "text-[#475569]",
     bar: "bg-[#fbf8f1]0",
-    badgeBg: "bg-slate-100",
+    badgeBg: "bg-[#fbf8f1]",
   },
   PENDING_APPROVAL: {
     label: "تحت المراجعة",
@@ -286,6 +286,50 @@ const QuotationsReports = () => {
       monthlyArray,
     };
   }, [quotations, filterStatus, dateFrom, dateTo]);
+  const formatDualReportDate = (value = new Date()) => {
+    const toArabicDigits = (input) =>
+      String(input ?? "").replace(/\d/g, (digit) => "٠١٢٣٤٥٦٧٨٩"[Number(digit)]);
+
+    const getDatePart = (formatter, date, type) =>
+      formatter.formatToParts(date).find((part) => part.type === type)?.value || "";
+
+    const date = value ? new Date(value) : new Date();
+
+    if (Number.isNaN(date.getTime())) {
+      return String(value || "");
+    }
+
+    const gregorianFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-gregory", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+
+    const hijriFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+
+    const gregorian = toArabicDigits(
+      `${getDatePart(gregorianFormatter, date, "day")}/${getDatePart(
+        gregorianFormatter,
+        date,
+        "month",
+      )}/${getDatePart(gregorianFormatter, date, "year")}`,
+    );
+
+    const hijri = toArabicDigits(
+      `${getDatePart(hijriFormatter, date, "day")}/${getDatePart(
+        hijriFormatter,
+        date,
+        "month",
+      )}/${getDatePart(hijriFormatter, date, "year")}`,
+    );
+
+    return `ميلادي: ${gregorian} / هجري: ${hijri}`;
+  };
+
 
   // ==========================================
   // دالة الطباعة (HTML PDF Export)
@@ -318,7 +362,7 @@ const QuotationsReports = () => {
         <style>
           body { font-family: 'Tajawal', sans-serif; background: #fff; padding: 40px; color: #1f2937; }
           .rpt-header { display: flex; justify-content: space-between; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; }
-          .logo-box { width: 50px; height: 50px; background: #1e3a8a; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 8px; font-size: 20px; margin-left: 15px;}
+          .rpt-logo { width: 170px; height: 64px; object-fit: contain; display: block; }
           .rpt-title-bar { background: #f8fafc; padding: 15px 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #e2e8f0; }
           .rpt-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
           .rpt-kpi { border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; text-align: center; }
@@ -326,18 +370,21 @@ const QuotationsReports = () => {
           .rpt-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 30px;}
           .rpt-table th { background: #f1f5f9; padding: 10px; text-align: right; border-bottom: 2px solid #e2e8f0; }
           .rpt-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
+          .details-footer { position: fixed; bottom: 9mm; left: 12mm; right: 12mm; border-top: 2.5px solid #0f5570; padding-top: 5px; color: #0f5570; font-size: 10.5px; font-weight: 900; line-height: 1.35; }
+          .details-footer-inner { display: flex; align-items: flex-start; gap: 8px; direction: ltr; }
+          .details-qr { width: 16mm; height: 16mm; flex-shrink: 0; }
+          .details-qr img { width: 100%; height: 100%; object-fit: contain; display: block; }
+          .details-ar { text-align: right; direction: rtl; white-space: nowrap; }
+          .details-en { text-align: left; direction: ltr; white-space: nowrap; margin-top: 2px; }
+          @media print { body { padding-bottom: 35mm !important; } }
         </style>
       </head>
       <body>
         <div class="rpt-header">
           <div style="display:flex; align-items:center;">
-            <div class="logo-box">خ م</div>
-            <div>
-              <div style="font-size:16px;font-weight:800;color:#1e3a8a">مكتب الخبراء المتحدون للاستشارات</div>
-              <div style="font-size:10px;color:#6b7280">سجل تجاري: 1010XXXXXX</div>
-            </div>
+            <img class="rpt-logo" src="/logo.jpeg" alt="Details Consulting Engineers" />
           </div>
-          <div style="text-align:left;font-size:10px;color:#4b5563;">تاريخ الإصدار: ${format(new Date(), "yyyy-MM-dd HH:mm")}</div>
+          <div style="text-align:left;font-size:10px;color:#4b5563;">تاريخ الإصدار: ${formatDualReportDate(new Date())}</div>
         </div>
 
         <div class="rpt-title-bar">
@@ -358,7 +405,20 @@ const QuotationsReports = () => {
           <tbody>${clientRows}</tbody>
         </table>
         
-        <script>setTimeout(() => { window.print(); }, 500);</script>
+
+        
+        <div class="details-footer">
+          <div class="details-footer-inner">
+            <div class="details-qr">
+              <img src="/qrcode.png" alt="QR Code" />
+            </div>
+            <div style="flex:1;">
+              <div class="details-ar">📍 حي الملك فهد - الرياض - المملكة العربية السعودية - الرمز البريدي : ١٢٢٧٤ · جوال : ٠٥٩٠٧٢٢٨٢٧ · الرقم الوطني الموحد : ٧٠٥٢٣٠٣٨٢٨</div>
+              <div class="details-en">📍 King Fahd Dist - RIYADH - Kingdom of Saudi Arabia -POSTAL CODE :12274 ☎ 0590722827 - N.N: 7052303828 ✉ info@details-consults.sa</div>
+            </div>
+          </div>
+        </div>
+<script>setTimeout(() => { window.print(); }, 500);</script>
       </body>
       </html>
     `;
@@ -372,13 +432,13 @@ const QuotationsReports = () => {
 
   const renderOverview = () => (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-3 animate-in fade-in">
-      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] text-center">
+      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] text-center">
         <div className="text-[20px] font-bold text-[#123f59] font-mono">
           {processedData.filtered.length}
         </div>
         <div className="text-[10px] text-[#64748b] mt-0.5">إجمالي العروض</div>
       </div>
-      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] text-center">
+      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] text-center">
         <div className="text-[20px] font-bold text-indigo-700 font-mono">
           {processedData.totalValue.toLocaleString()}
         </div>
@@ -386,19 +446,19 @@ const QuotationsReports = () => {
           القيمة الإجمالية (ر.س)
         </div>
       </div>
-      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] text-center">
+      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] text-center">
         <div className="text-[20px] font-bold text-[#0f766e] font-mono">
           {processedData.totalCollected.toLocaleString()}
         </div>
         <div className="text-[10px] text-[#64748b] mt-0.5">المحصّل (ر.س)</div>
       </div>
-      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] text-center">
+      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] text-center">
         <div className="text-[20px] font-bold text-red-600 font-mono">
           {processedData.totalUncollected.toLocaleString()}
         </div>
         <div className="text-[10px] text-[#64748b] mt-0.5">غير محصّل (ر.س)</div>
       </div>
-      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] text-center">
+      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] text-center">
         <div className="text-[20px] font-bold text-purple-600 font-mono">
           {Math.round(processedData.avgValue).toLocaleString()}
         </div>
@@ -406,7 +466,7 @@ const QuotationsReports = () => {
           متوسط قيمة العرض
         </div>
       </div>
-      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] text-center">
+      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] text-center">
         <div className="text-[20px] font-bold text-cyan-600 font-mono">
           {processedData.conversionRate}%
         </div>
@@ -418,7 +478,7 @@ const QuotationsReports = () => {
   );
 
   const renderStatus = () => (
-    <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] animate-in fade-in max-w-3xl">
+    <div className="p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] animate-in fade-in max-w-3xl">
       <div className="text-[13px] font-bold text-[#123f59] mb-3">
         توزيع حسب الحالة
       </div>
@@ -443,7 +503,7 @@ const QuotationsReports = () => {
                     </strong>
                   </span>
                 </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-2 bg-[#fbf8f1] rounded-full overflow-hidden">
                   <div
                     className={`h-full ${config.bar} transition-all duration-500`}
                     style={{ width: `${percentage}%` }}
@@ -459,8 +519,8 @@ const QuotationsReports = () => {
   const renderFinancial = () => (
     <div className="animate-in fade-in">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
-        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-500 flex min-w-0 items-center justify-center">
+        <div className="p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex min-w-0 items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-500 flex min-w-0 items-center justify-center">
             <DollarSign className="w-5 h-5" />
           </div>
           <div>
@@ -470,8 +530,8 @@ const QuotationsReports = () => {
             </div>
           </div>
         </div>
-        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-green-50 text-green-600 flex min-w-0 items-center justify-center">
+        <div className="p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex min-w-0 items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-green-50 text-green-600 flex min-w-0 items-center justify-center">
             <ArrowDownRight className="w-5 h-5" />
           </div>
           <div>
@@ -481,8 +541,8 @@ const QuotationsReports = () => {
             </div>
           </div>
         </div>
-        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-orange-50 text-orange-500 flex min-w-0 items-center justify-center">
+        <div className="p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex min-w-0 items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-orange-50 text-orange-500 flex min-w-0 items-center justify-center">
             <ArrowUpRight className="w-5 h-5" />
           </div>
           <div>
@@ -492,8 +552,8 @@ const QuotationsReports = () => {
             </div>
           </div>
         </div>
-        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-green-50 text-green-600 flex min-w-0 items-center justify-center">
+        <div className="p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex min-w-0 items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-green-50 text-green-600 flex min-w-0 items-center justify-center">
             <CircleCheckBig className="w-5 h-5" />
           </div>
           <div>
@@ -503,8 +563,8 @@ const QuotationsReports = () => {
             </div>
           </div>
         </div>
-        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-yellow-50 text-yellow-600 flex min-w-0 items-center justify-center">
+        <div className="p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex min-w-0 items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-yellow-50 text-yellow-600 flex min-w-0 items-center justify-center">
             <Clock className="w-5 h-5" />
           </div>
           <div>
@@ -514,8 +574,8 @@ const QuotationsReports = () => {
             </div>
           </div>
         </div>
-        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] flex min-w-0 items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex min-w-0 items-center justify-center">
+        <div className="p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex min-w-0 items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-red-50 text-red-600 flex min-w-0 items-center justify-center">
             <TriangleAlert className="w-5 h-5" />
           </div>
           <div>
@@ -527,36 +587,36 @@ const QuotationsReports = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] overflow-hidden">
-        <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 border-b border-[#d8b46a]/25 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white flex min-w-0 items-center gap-2">
+      <div className="bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] overflow-hidden">
+        <div className="p-3 border-b border-[#d8b46a]/25 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white flex min-w-0 items-center gap-2">
           <CreditCard className="w-4 h-4 text-[#0f766e]" />
           <span className="text-xs font-bold text-[#475569]">
             تفاصيل الدفعات والتحصيل
           </span>
         </div>
-        <div className="overflow-x-auto max-h-[400px] custom-scrollbar-slim">
+        <div className="overflow-x-auto custom-scrollbar-slim max-h-[400px] custom-scrollbar-slim">
           <table className="w-full text-right border-collapse">
             <thead>
               <tr className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white">
-                <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
+                <th className="p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
                   الكود
                 </th>
-                <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
+                <th className="p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
                   العميل
                 </th>
-                <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
+                <th className="p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
                   إجمالي العرض
                 </th>
-                <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
+                <th className="p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
                   المسدد
                 </th>
-                <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
+                <th className="p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
                   المتبقي
                 </th>
-                <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
+                <th className="p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
                   نسبة التحصيل
                 </th>
-                <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
+                <th className="p-3 text-[11px] text-[#64748b] font-bold whitespace-nowrap sticky top-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
                   الحالة
                 </th>
               </tr>
@@ -572,24 +632,24 @@ const QuotationsReports = () => {
                     key={q.id}
                     className="border-b border-[#e8ddc8] hover:bg-[#fbf8f1]/50 transition-colors"
                   >
-                    <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-[#123f59] font-mono">
+                    <td className="p-3 text-xs font-bold text-[#123f59] font-mono">
                       {q.number}
                     </td>
-                    <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-[#475569] font-bold">
+                    <td className="p-3 text-xs text-[#475569] font-bold">
                       {getClientName(q.client)}
                     </td>
-                    <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-[#475569] font-mono">
+                    <td className="p-3 text-xs text-[#475569] font-mono">
                       {q.quoteTotal.toLocaleString()}
                     </td>
-                    <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-green-600 font-mono font-bold">
+                    <td className="p-3 text-xs text-green-600 font-mono font-bold">
                       {q.collected.toLocaleString()}
                     </td>
-                    <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-red-600 font-mono font-bold">
+                    <td className="p-3 text-xs text-red-600 font-mono font-bold">
                       {q.remaining.toLocaleString()}
                     </td>
                     <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3">
                       <div className="flex min-w-0 items-center gap-2">
-                        <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden w-16">
+                        <div className="flex-1 h-1.5 bg-[#eef7f6] rounded-full overflow-hidden w-16">
                           <div
                             className={`h-full ${progressColor} transition-all duration-500`}
                             style={{ width: `${q.progress}%` }}
@@ -614,28 +674,28 @@ const QuotationsReports = () => {
   );
 
   const renderClient = () => (
-    <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] animate-in fade-in">
+    <div className="p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] animate-in fade-in">
       <div className="text-[13px] font-bold text-[#123f59] mb-3">
         تحليل حسب العميل
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto custom-scrollbar-slim">
         <table className="w-full text-right border-collapse">
           <thead>
             <tr className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-b border-[#d8b46a]/25">
-              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">#</th>
-              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
+              <th className="p-3 text-[11px] text-[#64748b] font-bold">#</th>
+              <th className="p-3 text-[11px] text-[#64748b] font-bold">
                 العميل
               </th>
-              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
+              <th className="p-3 text-[11px] text-[#64748b] font-bold">
                 عدد العروض
               </th>
-              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
+              <th className="p-3 text-[11px] text-[#64748b] font-bold">
                 إجمالي القيمة
               </th>
-              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
+              <th className="p-3 text-[11px] text-[#64748b] font-bold">
                 المحصّل
               </th>
-              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
+              <th className="p-3 text-[11px] text-[#64748b] font-bold">
                 المتبقي
               </th>
             </tr>
@@ -646,22 +706,22 @@ const QuotationsReports = () => {
                 key={c.name}
                 className="border-b border-[#e8ddc8] hover:bg-[#fbf8f1]"
               >
-                <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[10px] text-[#94a3b8] font-mono">
+                <td className="p-3 text-[10px] text-[#94a3b8] font-mono">
                   {idx + 1}
                 </td>
-                <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-[#475569]">
+                <td className="p-3 text-xs font-bold text-[#475569]">
                   {c.name}
                 </td>
-                <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-slate-600 font-mono">
+                <td className="p-3 text-xs text-[#64748b] font-mono">
                   {c.count}
                 </td>
-                <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-[#123f59] font-mono">
+                <td className="p-3 text-xs font-bold text-[#123f59] font-mono">
                   {c.total.toLocaleString()} ر.س
                 </td>
-                <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-green-600 font-mono">
+                <td className="p-3 text-xs font-bold text-green-600 font-mono">
                   {c.collected.toLocaleString()} ر.س
                 </td>
-                <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-red-600 font-mono">
+                <td className="p-3 text-xs font-bold text-red-600 font-mono">
                   {c.remaining.toLocaleString()} ر.س
                 </td>
               </tr>
@@ -670,7 +730,7 @@ const QuotationsReports = () => {
               <tr>
                 <td
                   colSpan={6}
-                  className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-center text-[#94a3b8] text-xs"
+                  className="p-3 text-center text-[#94a3b8] text-xs"
                 >
                   لا توجد بيانات متاحة
                 </td>
@@ -683,30 +743,30 @@ const QuotationsReports = () => {
   );
 
   const renderMonthly = () => (
-    <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] animate-in fade-in max-w-4xl">
+    <div className="p-3.5 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] animate-in fade-in max-w-4xl">
       <div className="text-[13px] font-bold text-[#123f59] mb-3">
         التحليل الشهري
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto custom-scrollbar-slim">
         <table className="w-full text-right border-collapse">
           <thead>
             <tr className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-b border-[#d8b46a]/25">
-              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
+              <th className="p-3 text-[11px] text-[#64748b] font-bold">
                 الشهر
               </th>
-              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
+              <th className="p-3 text-[11px] text-[#64748b] font-bold">
                 العدد
               </th>
-              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
+              <th className="p-3 text-[11px] text-[#64748b] font-bold">
                 القيمة
               </th>
-              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
+              <th className="p-3 text-[11px] text-[#64748b] font-bold">
                 المحصّل
               </th>
-              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
+              <th className="p-3 text-[11px] text-[#64748b] font-bold">
                 المتبقي
               </th>
-              <th className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-[11px] text-[#64748b] font-bold">
+              <th className="p-3 text-[11px] text-[#64748b] font-bold">
                 نسبة التحصيل
               </th>
             </tr>
@@ -720,24 +780,24 @@ const QuotationsReports = () => {
                   key={m.month}
                   className="border-b border-[#e8ddc8] hover:bg-[#fbf8f1]"
                 >
-                  <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-[#475569] font-mono">
+                  <td className="p-3 text-xs font-bold text-[#475569] font-mono">
                     {m.month}
                   </td>
-                  <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs text-slate-600 font-mono">
+                  <td className="p-3 text-xs text-[#64748b] font-mono">
                     {m.count}
                   </td>
-                  <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-[#123f59] font-mono">
+                  <td className="p-3 text-xs font-bold text-[#123f59] font-mono">
                     {m.value.toLocaleString()} ر.س
                   </td>
-                  <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-green-600 font-mono">
+                  <td className="p-3 text-xs font-bold text-green-600 font-mono">
                     {m.collected.toLocaleString()} ر.س
                   </td>
-                  <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 text-xs font-bold text-red-600 font-mono">
+                  <td className="p-3 text-xs font-bold text-red-600 font-mono">
                     {m.remaining.toLocaleString()} ر.س
                   </td>
                   <td className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3">
                     <div className="flex min-w-0 items-center gap-2">
-                      <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden w-16">
+                      <div className="flex-1 h-1.5 bg-[#eef7f6] rounded-full overflow-hidden w-16">
                         <div
                           className={`h-full bg-blue-500 transition-all duration-500`}
                           style={{ width: `${progress}%` }}
@@ -769,7 +829,7 @@ const QuotationsReports = () => {
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim overflow-x-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white" dir="rtl">
+    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white" dir="rtl">
       <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3.5 md:p-3 font-[Tajawal] max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex min-w-0 justify-between items-center mb-3">
@@ -783,18 +843,18 @@ const QuotationsReports = () => {
           <div className="flex gap-2">
             <button
               onClick={handlePrint}
-              className="px-3 py-1.5 bg-blue-50 text-[#123f59] border border-blue-200 rounded-md text-[11px] font-bold cursor-pointer flex min-w-0 items-center gap-1.5 hover:bg-blue-100 transition-colors"
+              className="px-3 py-1.5 bg-blue-50 text-[#123f59] border border-blue-200 rounded-xl text-[11px] font-bold cursor-pointer flex min-w-0 items-center gap-1.5 hover:bg-blue-100 transition-colors"
             >
               <IconWithText icon={Printer} text="طباعة تقرير احترافي" iconClassName="w-3.5 h-3.5" />
             </button>
-            <button className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-md text-[11px] font-bold cursor-pointer flex min-w-0 items-center gap-1.5 hover:bg-green-100 transition-colors">
+            <button className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-xl text-[11px] font-bold cursor-pointer flex min-w-0 items-center gap-1.5 hover:bg-green-100 transition-colors">
               <IconWithText icon={Download} text="Excel" iconClassName="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="flex gap-3 mb-3 items-end flex-wrap p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
+        <div className="flex gap-3 mb-3 items-end flex-wrap p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
           <div>
             <label className="text-[10px] font-bold text-[#64748b] block mb-1">
               الحالة
@@ -802,7 +862,7 @@ const QuotationsReports = () => {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-2 py-1.5 border border-slate-300 rounded-md text-[11px] outline-none min-w-[150px]"
+              className="px-2 py-1.5 border border-[#d8b46a]/25 rounded-xl text-[11px] outline-none min-w-[150px]"
             >
               <option value="all">جميع الحالات</option>
               {Object.keys(STATUS_CONFIG).map((key) => (
@@ -820,7 +880,7 @@ const QuotationsReports = () => {
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="px-2 py-1 border border-slate-300 rounded-md text-[11px] outline-none"
+              className="px-2 py-1 border border-[#d8b46a]/25 rounded-xl text-[11px] outline-none"
             />
           </div>
           <div>
@@ -831,7 +891,7 @@ const QuotationsReports = () => {
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="px-2 py-1 border border-slate-300 rounded-md text-[11px] outline-none"
+              className="px-2 py-1 border border-[#d8b46a]/25 rounded-xl text-[11px] outline-none"
             />
           </div>
         </div>

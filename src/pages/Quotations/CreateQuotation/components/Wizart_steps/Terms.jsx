@@ -85,9 +85,9 @@ export const Step7Terms = ({ props }) => {
     <div className="animate-in fade-in duration-300 h-full flex flex-col gap-3 max-w-4xl mx-auto">
       
       {/* 1️⃣ قسم معلومات النموذج وزر الاستعادة (أعلى الصفحة) */}
-      <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex min-w-0 items-center justify-between shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
+      <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex min-w-0 items-center justify-between shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="p-2 bg-white rounded-lg shadow-[0_6px_18px_rgba(18,63,89,0.05)]">
+          <div className="p-2 bg-white rounded-xl shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
             <FileCheck2 className="w-4 h-4 text-indigo-600" />
           </div>
           <div>
@@ -98,14 +98,14 @@ export const Step7Terms = ({ props }) => {
         <button
           onClick={handleRestoreTemplateTerms}
           disabled={!activeTemplate}
-          className="flex min-w-0 items-center gap-2 px-3 py-1.5 bg-white border border-indigo-200 text-indigo-600 text-[10px] font-bold rounded-lg hover:bg-indigo-600 hover:text-white transition-all disabled:opacity-50 shadow-[0_6px_18px_rgba(18,63,89,0.05)]"
+          className="flex min-w-0 items-center gap-2 px-3 py-1.5 bg-white border border-indigo-200 text-indigo-600 text-[10px] font-bold rounded-xl hover:bg-indigo-600 hover:text-white transition-all disabled:opacity-50 shadow-[0_8px_22px_rgba(18,63,89,0.06)]"
         >
           <IconWithText icon={RotateCcw} text="استعادة النص الأصلي للنموذج" iconClassName="w-3.5 h-3.5" />
         </button>
       </div>
 
       {/* 2️⃣ محرر الشروط والأحكام (يأخذ المساحة الرئيسية) */}
-      <div className="flex flex-col bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] overflow-hidden min-h-[300px]">
+      <div className="flex flex-col bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] overflow-hidden min-h-[300px]">
         <div className="px-4 py-2.5 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-b border-[#d8b46a]/25 flex min-w-0 justify-between items-center">
           <label className="text-xs font-bold text-[#475569] flex min-w-0 items-center gap-2">
             <ScrollText className="w-4 h-4 text-[#64748b]" /> مراجعة وتعديل بنود العرض
@@ -120,14 +120,14 @@ export const Step7Terms = ({ props }) => {
           value={termsText}
           onChange={(e) => setTermsText(e.target.value)}
           placeholder="أدخل الشروط والأحكام الخاصة بهذا العرض هنا..."
-          className="w-full flex-1 p-3 text-sm outline-none focus:bg-blue-50/5 resize-none leading-relaxed text-[#475569] custom-scrollbar-slim"
+          className="w-full flex-1 p-3 text-sm outline-none focus:bg-[#eef7f6]/5 resize-none leading-relaxed text-[#475569] custom-scrollbar-slim"
         />
       </div>
 
       {/* 3️⃣ قسم اللقب المستهدف (تنسيق عمودي) */}
-      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] space-y-3">
+      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] space-y-3">
         <div className="flex min-w-0 items-center gap-2 text-xs font-bold text-[#475569] pb-2 border-b border-slate-50">
-          <UserCheck className="w-4 h-4 text-blue-500" /> لقب العميل المستهدف في مقدمة العرض:
+          <UserCheck className="w-4 h-4 text-[#0e7490]" /> لقب العميل المستهدف في مقدمة العرض:
         </div>
         
         <div className="flex flex-wrap gap-2">
@@ -135,10 +135,10 @@ export const Step7Terms = ({ props }) => {
             <button
               key={title}
               onClick={() => handleTitleClick(title)}
-              className={`px-4 py-1.5 text-[11px] font-bold rounded-lg border transition-all ${
+              className={`px-4 py-1.5 text-[11px] font-bold rounded-xl border transition-all ${
                 clientTitle === title && !isCustomTitle
                   ? "bg-slate-800 text-white border-slate-800 shadow-[0_8px_18px_rgba(18,63,89,0.08)]"
-                  : "bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white text-slate-600 border-[#d8b46a]/25 hover:border-slate-400"
+                  : "bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white text-[#64748b] border-[#d8b46a]/25 hover:border-[#d8b46a]/35"
               }`}
             >
               {title}
@@ -149,10 +149,10 @@ export const Step7Terms = ({ props }) => {
               setIsCustomTitle(true);
               setClientTitle("");
             }}
-            className={`px-4 py-1.5 text-[11px] font-bold rounded-lg border transition-all ${
+            className={`px-4 py-1.5 text-[11px] font-bold rounded-xl border transition-all ${
               isCustomTitle
-                ? "bg-[#123f59] text-white border-blue-600 shadow-[0_8px_18px_rgba(18,63,89,0.08)]"
-                : "bg-blue-50 text-[#123f59] border-blue-100 hover:bg-blue-100"
+                ? "bg-[#123f59] text-white border-[#15536f] shadow-[0_8px_18px_rgba(18,63,89,0.08)]"
+                : "bg-[#eef7f6] text-[#123f59] border-[#d8b46a]/25 hover:bg-[#eef7f6]"
             }`}
           >
             لقب مخصص...
@@ -168,14 +168,14 @@ export const Step7Terms = ({ props }) => {
               value={clientTitle}
               onChange={(e) => setClientTitle(e.target.value)}
               placeholder="اكتب اللقب المخصص هنا (مثال: سعادة المهندس /)"
-              className="w-full pr-9 pl-3 py-2 bg-blue-50/30 border border-blue-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold text-blue-900"
+              className="w-full pr-9 pl-3 py-2 bg-[#eef7f6]/30 border border-[#d8b46a]/35 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[#0e7490] font-bold text-[#123f59]"
             />
           </div>
         )}
       </div>
 
       {/* 4️⃣ قسم أسلوب التعامل والتفويض (تنسيق عمودي) */}
-      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] space-y-3 mb-3">
+      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] space-y-3 mb-3">
         <div className="flex min-w-0 items-center gap-2 text-xs font-bold text-[#475569] pb-2 border-b border-slate-50">
           <ShieldCheck className="w-4 h-4 text-emerald-500" /> أسلوب التعامل والتفويض القانوني:
         </div>
@@ -184,10 +184,10 @@ export const Step7Terms = ({ props }) => {
             <button
               key={method}
               onClick={() => setHandlingMethod(method)}
-              className={`px-3.5 py-2 text-[11px] font-bold rounded-lg border transition-all ${
+              className={`px-3.5 py-2 text-[11px] font-bold rounded-xl border transition-all ${
                 handlingMethod === method
                   ? "bg-[#123f59] text-white border-emerald-600 shadow-[0_8px_18px_rgba(18,63,89,0.08)] scale-[1.02]"
-                  : "bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white text-slate-600 border-[#d8b46a]/25 hover:border-emerald-300"
+                  : "bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white text-[#64748b] border-[#d8b46a]/25 hover:border-emerald-300"
               }`}
             >
               {method}

@@ -60,7 +60,7 @@ export const Step8Review = ({ props }) => {
       
       {/* 1️⃣ رسالة توجيهية */}
       <div className="text-center mb-2 flex-shrink-0">
-        <div className="inline-flex p-3 bg-blue-50 rounded-full mb-3">
+        <div className="inline-flex p-3 bg-[#eef7f6] rounded-full mb-3">
           <IconWithText icon={ShieldCheck} iconClassName="w-8 h-8 text-[#123f59]" />
         </div>
         <h3 className="text-base font-black text-[#123f59] mb-1">المراجعة النهائية والمصادقة</h3>
@@ -70,10 +70,10 @@ export const Step8Review = ({ props }) => {
       </div>
 
       {/* 2️⃣ خيارات الختم والأمان */}
-      <div className="bg-white rounded-[20px] border border-[#d8b46a]/25 shadow-[0_6px_18px_rgba(18,63,89,0.05)] overflow-hidden flex flex-col flex-shrink-0">
+      <div className="bg-white rounded-[20px] border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] overflow-hidden flex flex-col flex-shrink-0">
         <div className="px-3.5 py-3 bg-[#fbf8f1]/80 border-b border-[#d8b46a]/25 flex min-w-0 items-center justify-between">
           <div className="flex min-w-0 items-center gap-2">
-            <Stamp className="w-4 h-4 text-slate-600" />
+            <Stamp className="w-4 h-4 text-[#64748b]" />
             <span className="text-sm font-bold text-[#123f59]">طريقة المصادقة والختم</span>
           </div>
           {stampType !== "NONE" && (
@@ -90,15 +90,15 @@ export const Step8Review = ({ props }) => {
             onClick={() => setStampType && setStampType("NONE")}
             className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex min-w-0 items-center gap-3 ${
               stampType === "NONE" 
-                ? "border-slate-400 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_6px_18px_rgba(18,63,89,0.05)]" 
+                ? "border-[#d8b46a]/35 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_8px_22px_rgba(18,63,89,0.06)]" 
                 : "border-[#e8ddc8] bg-white hover:border-[#d8b46a]/25"
             }`}
           >
             <div className="flex-shrink-0">
-               {stampType === "NONE" ? <CheckCircle2 className="w-6 h-6 text-slate-600" /> : <div className="w-6 h-6 rounded-full border-2 border-[#d8b46a]/25" />}
+               {stampType === "NONE" ? <CheckCircle2 className="w-6 h-6 text-[#64748b]" /> : <div className="w-6 h-6 rounded-full border-2 border-[#d8b46a]/25" />}
             </div>
             <div>
-              <div className={`text-sm font-bold ${stampType === "NONE" ? "text-[#123f59]" : "text-slate-600"}`}>بدون ختم إلكتروني</div>
+              <div className={`text-sm font-bold ${stampType === "NONE" ? "text-[#123f59]" : "text-[#64748b]"}`}>بدون ختم إلكتروني</div>
               <div className="text-[11px] text-[#64748b] mt-0.5 font-medium">عرض سعر "مسودة" للاستخدام الداخلي فقط ولا يحمل صفة رسمية.</div>
             </div>
           </div>
@@ -108,8 +108,8 @@ export const Step8Review = ({ props }) => {
             onClick={() => setStampType && setStampType("SECURE_QR")}
             className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex flex-col relative overflow-hidden ${
               stampType === "SECURE_QR" 
-                ? "border-blue-600 bg-blue-50/20 shadow-[0_8px_18px_rgba(18,63,89,0.08)]" 
-                : "border-[#e8ddc8] bg-white hover:border-blue-100"
+                ? "border-[#15536f] bg-[#eef7f6]/20 shadow-[0_8px_18px_rgba(18,63,89,0.08)]" 
+                : "border-[#e8ddc8] bg-white hover:border-[#d8b46a]/25"
             }`}
           >
             {/* الخلفية الجمالية */}
@@ -120,11 +120,11 @@ export const Step8Review = ({ props }) => {
                  {stampType === "SECURE_QR" ? <CheckCircle2 className="w-6 h-6 text-[#123f59]" /> : <div className="w-6 h-6 rounded-full border-2 border-[#d8b46a]/25" />}
               </div>
               <div className="flex-1">
-                <div className={`text-sm font-bold flex min-w-0 items-center gap-2 ${stampType === "SECURE_QR" ? "text-blue-900" : "text-[#475569]"}`}>
+                <div className={`text-sm font-bold flex min-w-0 items-center gap-2 ${stampType === "SECURE_QR" ? "text-[#123f59]" : "text-[#475569]"}`}>
                   <FileLock2 className="w-4 h-4" /> ختم المكتب المشفّر (نظام التحقق الذكي)
                   <span className="px-2 py-0.5 bg-[#123f59] text-white text-[9px] font-black rounded uppercase tracking-wider">رسمي</span>
                 </div>
-                <p className="text-[11px] text-slate-600 mt-1 font-medium leading-relaxed">
+                <p className="text-[11px] text-[#64748b] mt-1 font-medium leading-relaxed">
                   سيتم توليد بصمة رقمية فريدة لكل وثيقة مرتبطة بـ QR Code لا يمكن تكراره أو التلاعب به.
                 </p>
               </div>
@@ -132,7 +132,7 @@ export const Step8Review = ({ props }) => {
             
             {/* معاينة الختم البرمجي - تظهر فقط عند الاختيار */}
             {stampType === "SECURE_QR" && (
-              <div className="mt-2 p-3 bg-white rounded-xl border border-blue-100 shadow-inner animate-in slide-in-from-top-2 duration-300">
+              <div className="mt-2 p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-inner animate-in slide-in-from-top-2 duration-300">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                   {/* استدعاء مكون الختم SVG */}
                   <div className="flex flex-col items-center gap-2">
@@ -142,14 +142,14 @@ export const Step8Review = ({ props }) => {
 
                   {/* تفاصيل التشفير */}
                   <div className="flex-1 space-y-2 w-full">
-                    <div className="flex min-w-0 items-center gap-3 p-2 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-lg border border-[#e8ddc8] group">
+                    <div className="flex min-w-0 items-center gap-3 p-2 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-xl border border-[#e8ddc8] group">
                       <QrCode className="w-8 h-8 text-[#123f59]" />
                       <div className="flex flex-col">
                         <span className="text-[10px] font-black text-[#123f59]">QR-Verification Code</span>
                         <span className="text-[8px] font-mono text-[#64748b]">HTTPS://VERIFY.BLACKCUBE.SA/QT-8492</span>
                       </div>
                     </div>
-                    <div className="flex min-w-0 items-center gap-3 p-2 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-lg border border-[#e8ddc8]">
+                    <div className="flex min-w-0 items-center gap-3 p-2 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-xl border border-[#e8ddc8]">
                       <ScanBarcode className="w-8 h-8 text-[#123f59]" />
                       <div className="flex flex-col">
                         <span className="text-[10px] font-black text-[#123f59]">Digital Barcode</span>
@@ -175,7 +175,7 @@ export const Step8Review = ({ props }) => {
           <button
             onClick={() => handleSave(true)}
             disabled={saveMutation?.isPending}
-            className="w-full py-3 px-4 bg-white border-2 border-[#d8b46a]/25 text-[#475569] hover:bg-[#fbf8f1] hover:border-slate-300 rounded-[20px] text-xs font-black cursor-pointer flex justify-center items-center gap-2 transition-all disabled:opacity-50"
+            className="w-full py-3 px-4 bg-white border-2 border-[#d8b46a]/25 text-[#475569] hover:bg-[#fbf8f1] hover:border-[#d8b46a]/25 rounded-[20px] text-xs font-black cursor-pointer flex justify-center items-center gap-2 transition-all disabled:opacity-50"
           >
             <Save className="w-4 h-4" /> حفظ كمسودة
           </button>
@@ -183,7 +183,7 @@ export const Step8Review = ({ props }) => {
           <button
             onClick={() => handleSave(false)}
             disabled={saveMutation?.isPending}
-            className="w-full py-3 px-4 bg-[#123f59] text-white hover:bg-[#0f3448] shadow-[0_10px_24px_rgba(18,63,89,0.10)] shadow-blue-600/20 border-none rounded-[20px] text-xs font-black cursor-pointer flex justify-center items-center gap-2 transition-all hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
+            className="w-full py-3 px-4 bg-[#123f59] text-white hover:bg-[#0f3448] shadow-[0_10px_24px_rgba(18,63,89,0.10)]  border-none rounded-[20px] text-xs font-black cursor-pointer flex justify-center items-center gap-2 transition-all hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
           >
             {saveMutation?.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />

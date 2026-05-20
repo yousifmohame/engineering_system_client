@@ -15,6 +15,9 @@ import {
   Percent,
   Signature,
   CheckSquare,
+  Palette,
+  SlidersHorizontal,
+  Maximize2,
 } from "lucide-react";
 import { DYNAMIC_VARIABLES } from "../constants";
 
@@ -67,6 +70,7 @@ export default function BuilderSidebar({
     { id: "table", label: "الجدول", icon: TableIcon },
     { id: "terms", label: "الشروط", icon: ListChecks },
     { id: "header", label: "الترويسة", icon: ImageIcon },
+    { id: "style", label: "ستايل A4", icon: Palette },
   ];
 
   return (
@@ -124,7 +128,7 @@ export default function BuilderSidebar({
       </div>
 
       <div className="shrink-0 border-b border-[#d8b46a]/25 bg-white px-2 pt-2">
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-5 gap-1">
           {tabs.map((tab) => {
             const active = activeTab === tab.id;
             return (
@@ -201,7 +205,7 @@ export default function BuilderSidebar({
                       <button
                         key={v.value}
                         onClick={() => insertVariable("text", v.value)}
-                        className="rounded-lg border border-violet-200 bg-white px-2 py-1 text-[9px] font-black text-violet-700 transition hover:bg-violet-100"
+                        className="rounded-xl border border-violet-200 bg-white px-2 py-1 text-[9px] font-black text-violet-700 transition hover:bg-violet-100"
                         type="button"
                       >
                         + {v.label}
@@ -459,6 +463,173 @@ export default function BuilderSidebar({
             </EditorSection>
           </div>
         )}
+
+        {activeTab === "style" && (
+          <div className="space-y-3 animate-in fade-in slide-in-from-right-4">
+            <EditorSection
+              icon={Palette}
+              title="ستايل صفحة A4"
+              subtitle="الألوان، حجم الخط، كثافة الصفحة، والإطار."
+            >
+              <div className="space-y-3">
+                <Field label="ستايل جاهز">
+                  <select
+                    value={template.pageStyle?.preset || "classic"}
+                    onChange={(e) => {
+                      const presets = {
+                        classic: {
+                          preset: "classic",
+                          accentColor: "#123f59",
+                          goldColor: "#c5983c",
+                          paperTone: "white",
+                        },
+                        teal: {
+                          preset: "teal",
+                          accentColor: "#0e7490",
+                          goldColor: "#d8b46a",
+                          paperTone: "white",
+                        },
+                        emerald: {
+                          preset: "emerald",
+                          accentColor: "#0f766e",
+                          goldColor: "#c5983c",
+                          paperTone: "white",
+                        },
+                        graphite: {
+                          preset: "graphite",
+                          accentColor: "#1f2937",
+                          goldColor: "#b0893c",
+                          paperTone: "soft",
+                        },
+                      };
+
+                      setTemplate({
+                        ...template,
+                        pageStyle: {
+                          ...(template.pageStyle || {}),
+                          ...presets[e.target.value],
+                        },
+                      });
+                    }}
+                    className={INPUT_CLASS}
+                  >
+                    <option value="classic">كلاسيكي أزرق / ذهبي</option>
+                    <option value="teal">تركواز رسمي</option>
+                    <option value="emerald">أخضر احترافي</option>
+                    <option value="graphite">رسمي داكن</option>
+                  </select>
+                </Field>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="لون العنوان">
+                    <input
+                      type="color"
+                      value={template.pageStyle?.accentColor || "#123f59"}
+                      onChange={(e) =>
+                        setTemplate({
+                          ...template,
+                          pageStyle: {
+                            ...(template.pageStyle || {}),
+                            accentColor: e.target.value,
+                          },
+                        })
+                      }
+                      className="h-10 w-full cursor-pointer rounded-xl border border-[#d8b46a]/25 bg-white p-1"
+                    />
+                  </Field>
+
+                  <Field label="لون التمييز">
+                    <input
+                      type="color"
+                      value={template.pageStyle?.goldColor || "#c5983c"}
+                      onChange={(e) =>
+                        setTemplate({
+                          ...template,
+                          pageStyle: {
+                            ...(template.pageStyle || {}),
+                            goldColor: e.target.value,
+                          },
+                        })
+                      }
+                      className="h-10 w-full cursor-pointer rounded-xl border border-[#d8b46a]/25 bg-white p-1"
+                    />
+                  </Field>
+                </div>
+
+                <Field label="حجم خط المستند">
+                  <select
+                    value={String(template.pageStyle?.fontScale || 1)}
+                    onChange={(e) =>
+                      setTemplate({
+                        ...template,
+                        pageStyle: {
+                          ...(template.pageStyle || {}),
+                          fontScale: Number(e.target.value),
+                        },
+                      })
+                    }
+                    className={INPUT_CLASS}
+                  >
+                    <option value="0.92">صغير ومكثف</option>
+                    <option value="1">عادي</option>
+                    <option value="1.08">كبير وواضح</option>
+                  </select>
+                </Field>
+
+                <Field label="كثافة الصفحة">
+                  <select
+                    value={template.pageStyle?.density || "normal"}
+                    onChange={(e) =>
+                      setTemplate({
+                        ...template,
+                        pageStyle: {
+                          ...(template.pageStyle || {}),
+                          density: e.target.value,
+                          pagePaddingMm:
+                            e.target.value === "compact"
+                              ? 11
+                              : e.target.value === "wide"
+                                ? 18
+                                : 15,
+                        },
+                      })
+                    }
+                    className={INPUT_CLASS}
+                  >
+                    <option value="compact">مضغوط</option>
+                    <option value="normal">عادي</option>
+                    <option value="wide">واسع</option>
+                  </select>
+                </Field>
+
+                <ToggleRow
+                  checked={Boolean(template.pageStyle?.showOuterBorder)}
+                  label="إظهار إطار خارجي للصفحة"
+                  onChange={(checked) =>
+                    setTemplate({
+                      ...template,
+                      pageStyle: {
+                        ...(template.pageStyle || {}),
+                        showOuterBorder: checked,
+                      },
+                    })
+                  }
+                />
+
+                <div className="rounded-2xl border border-[#d8b46a]/25 bg-[#fbf8f1]/75 p-3">
+                  <div className="mb-2 flex items-center gap-2 text-[10px] font-black text-[#123f59]">
+                    <SlidersHorizontal className="h-4 w-4 text-[#c5983c]" />
+                    ملاحظة
+                  </div>
+                  <p className="text-[10px] font-bold leading-5 text-[#64748b]">
+                    هذه الإعدادات تُحفظ مع النموذج وتظهر مباشرة في معاينة A4 والطباعة.
+                  </p>
+                </div>
+              </div>
+            </EditorSection>
+          </div>
+        )}
+
       </div>
 
       <div className="shrink-0 border-t border-[#d8b46a]/25 bg-white p-3">
@@ -540,7 +711,7 @@ const SignatureRow = ({ checked, label, value, onToggle, onChange }) => {
         value={value}
         disabled={!checked}
         onChange={(e) => onChange(e.target.value)}
-        className={`${INPUT_CLASS} mt-2 disabled:bg-slate-100 disabled:text-slate-400`}
+        className={`${INPUT_CLASS} mt-2 disabled:bg-[#fbf8f1]/80 disabled:text-[#94a3b8]`}
       />
     </div>
   );
@@ -550,7 +721,7 @@ const INPUT_CLASS = `
   h-10 w-full rounded-xl
   border border-[#d8b46a]/25 bg-white
   px-3 text-xs font-bold text-[#123f59]
-  shadow-sm outline-none transition-all
+  shadow-[0_8px_18px_rgba(18,63,89,0.05)] outline-none transition-all
   placeholder:text-[#94a3b8]
   focus:border-[#c5983c]/70
   focus:bg-white
