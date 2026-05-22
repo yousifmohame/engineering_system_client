@@ -97,11 +97,24 @@ export default function DocumentSettingsModal({
         setIsLoading(true);
         try {
           const res = await api.get(`/doc-templates/${templateId}`);
-          setFormData({
+
+          // تأمين المصفوفات لضمان عدم وجود Null
+          const safeData = {
             ...defaultState,
             ...res.data,
             dueDate: res.data.dueDate ? res.data.dueDate.split("T")[0] : "",
-          });
+            allowedSizes: res.data.allowedSizes || [],
+            allowedOrientations: res.data.allowedOrientations || [],
+            allowedExtensions: res.data.allowedExtensions || [],
+            slaStages: res.data.slaStages || [],
+            blocks: res.data.blocks || [],
+            rules: res.data.rules || [],
+            obligations: res.data.obligations || [],
+            notes: res.data.notes || [],
+            exceptions: res.data.exceptions || [],
+          };
+
+          setFormData(safeData);
         } catch (error) {
           console.error("Error fetching template:", error);
         } finally {
@@ -113,6 +126,135 @@ export default function DocumentSettingsModal({
       setFormData(defaultState);
     }
   }, [isOpen, templateId]);
+
+  // ==========================================
+  // 4. مكون المعاينة الحية (Live Preview)
+  // ==========================================
+  const renderLivePreview = () => {
+    const isLandscape = formData.orientation === "landscape";
+    const isA3 = formData.pageSize === "A3";
+    const width = isLandscape
+      ? isA3
+        ? "420mm"
+        : "297mm"
+      : isA3
+        ? "297mm"
+        : "210mm";
+    const height = isLandscape
+      ? isA3
+        ? "297mm"
+        : "210mm"
+      : isA3
+        ? "420mm"
+        : "297mm";
+    const scale = isA3 ? "scale-[0.40]" : "scale-[0.50]";
+
+    // تأمين الوصول للمصفوفات هنا
+    const obligations = formData.obligations || [];
+    const notes = formData.notes || [];
+    const exceptions = formData.exceptions || [];
+
+    const hasTerms =
+      obligations.length > 0 || notes.length > 0 || exceptions.length > 0;
+
+    return (
+      <div className="w-[380px] bg-slate-100 p-6 flex flex-col items-center overflow-y-auto border-r border-slate-200 shrink-0 hidden lg:flex">
+        <h3 className="text-xs font-black text-slate-500 mb-4 w-full text-right flex justify-between items-center">
+          <span>معاينة حية للمستند</span>
+          <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-mono text-[9px]">
+            {formData.pageSize} {isLandscape ? "أفقي" : "رأسي"}
+          </span>
+        </h3>
+        <div
+          className={`bg-white shadow-xl text-slate-800 border border-slate-200 origin-top transition-all duration-500 ease-out flex flex-col relative ${scale}`}
+          style={{ width, height, minHeight: height }}
+        >
+          {/* خلفية مائية وهمية للمسودة */}
+          {!formData.requiresApproval && (
+            <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none z-0">
+              <span className="text-8xl font-black rotate-[-45deg]">مسودة</span>
+            </div>
+          )}
+
+          <div className="relative z-10 flex flex-col h-full p-10">
+            <div className="border-b-2 border-slate-900 pb-4 mb-6 flex justify-between items-start">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
+                  {formData.title || "عنوان المستند"}
+                </h2>
+                {formData.showDate && (
+                  <p className="text-xs font-bold text-slate-500">
+                    التاريخ: {new Date().toLocaleDateString("ar-SA")}
+                  </p>
+                )}
+              </div>
+              <div className="w-20 h-20 bg-slate-100 rounded-lg"></div>
+            </div>
+
+            <div className="flex-1 flex flex-col gap-6">
+              {!formData.hideTableHeader && (
+                <div className="h-12 bg-slate-100 rounded-md w-full"></div>
+              )}
+              <div className="space-y-4 opacity-50">
+                <div className="h-4 bg-slate-200 rounded w-full"></div>
+                <div className="h-4 bg-slate-200 rounded w-5/6"></div>
+                <div className="h-4 bg-slate-200 rounded w-4/6"></div>
+              </div>
+
+              {hasTerms && (
+                <div className="mt-8 border-t border-dashed border-slate-300 pt-6">
+                  <h3 className="text-lg font-black mb-4 text-slate-700">
+                    البنود والشروط
+                  </h3>
+                  <div className="space-y-3">
+                    {obligations.map((ob, i) => (
+                      <div
+                        key={`ob-${i}`}
+                        className="text-sm text-slate-600 flex gap-2"
+                      >
+                        <CheckCircle2 className="w-5 h-5 text-indigo-500 shrink-0" />{" "}
+                        {ob}
+                      </div>
+                    ))}
+                    {notes.map((nt, i) => (
+                      <div
+                        key={`nt-${i}`}
+                        className="text-sm text-slate-600 flex gap-2"
+                      >
+                        <Info className="w-5 h-5 text-blue-500 shrink-0" /> {nt}
+                      </div>
+                    ))}
+                    {exceptions.map((ex, i) => (
+                      <div
+                        key={`ex-${i}`}
+                        className="text-sm text-slate-600 flex gap-2"
+                      >
+                        <TriangleAlert className="w-5 h-5 text-rose-500 shrink-0" />{" "}
+                        {ex}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-auto pt-6 border-t border-slate-200 flex justify-between items-center text-xs font-bold text-slate-400">
+              <p>الرمز: {formData.code || "سيتم التوليد"}</p>
+              {formData.showPageNumber && <p>صفحة 1 من 1</p>}
+            </div>
+
+            {formData.requiresApproval && (
+              <div className="absolute bottom-32 left-16 w-40 h-40 rounded-full border-4 border-rose-500/20 flex items-center justify-center rotate-[-15deg] opacity-60">
+                <span className="text-rose-500 font-black text-3xl">
+                  مُعتمد
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   if (!isOpen) return null;
 
@@ -215,129 +357,6 @@ export default function DocumentSettingsModal({
     } finally {
       setIsSaving(false);
     }
-  };
-
-  // ==========================================
-  // 4. مكون المعاينة الحية (Live Preview)
-  // ==========================================
-  const renderLivePreview = () => {
-    const isLandscape = formData.orientation === "landscape";
-    const isA3 = formData.pageSize === "A3";
-    const width = isLandscape
-      ? isA3
-        ? "420mm"
-        : "297mm"
-      : isA3
-        ? "297mm"
-        : "210mm";
-    const height = isLandscape
-      ? isA3
-        ? "297mm"
-        : "210mm"
-      : isA3
-        ? "420mm"
-        : "297mm";
-    const scale = isA3 ? "scale-[0.40]" : "scale-[0.50]";
-
-    return (
-      <div className="w-[380px] bg-slate-100 p-6 flex flex-col items-center overflow-y-auto border-r border-slate-200 shrink-0 hidden lg:flex">
-        <h3 className="text-xs font-black text-slate-500 mb-4 w-full text-right flex justify-between items-center">
-          <span>معاينة حية للمستند</span>
-          <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-mono text-[9px]">
-            {formData.pageSize} {isLandscape ? "أفقي" : "رأسي"}
-          </span>
-        </h3>
-        <div
-          className={`bg-white shadow-xl text-slate-800 border border-slate-200 origin-top transition-all duration-500 ease-out flex flex-col relative ${scale}`}
-          style={{ width, height, minHeight: height }}
-        >
-          {/* خلفية مائية وهمية للمسودة */}
-          {!formData.requiresApproval && (
-            <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none z-0">
-              <span className="text-8xl font-black rotate-[-45deg]">مسودة</span>
-            </div>
-          )}
-
-          <div className="relative z-10 flex flex-col h-full p-10">
-            <div className="border-b-2 border-slate-900 pb-4 mb-6 flex justify-between items-start">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
-                  {formData.title || "عنوان المستند"}
-                </h2>
-                {formData.showDate && (
-                  <p className="text-xs font-bold text-slate-500">
-                    التاريخ: {new Date().toLocaleDateString("ar-SA")}
-                  </p>
-                )}
-              </div>
-              <div className="w-20 h-20 bg-slate-100 rounded-lg"></div>
-            </div>
-
-            <div className="flex-1 flex flex-col gap-6">
-              {!formData.hideTableHeader && (
-                <div className="h-12 bg-slate-100 rounded-md w-full"></div>
-              )}
-              <div className="space-y-4 opacity-50">
-                <div className="h-4 bg-slate-200 rounded w-full"></div>
-                <div className="h-4 bg-slate-200 rounded w-5/6"></div>
-                <div className="h-4 bg-slate-200 rounded w-4/6"></div>
-              </div>
-
-              {(formData.obligations.length > 0 ||
-                formData.notes.length > 0 ||
-                formData.exceptions.length > 0) && (
-                <div className="mt-8 border-t border-dashed border-slate-300 pt-6">
-                  <h3 className="text-lg font-black mb-4 text-slate-700">
-                    البنود والشروط
-                  </h3>
-                  <div className="space-y-3">
-                    {formData.obligations.map((ob, i) => (
-                      <div
-                        key={`ob-${i}`}
-                        className="text-sm text-slate-600 flex gap-2"
-                      >
-                        <CheckCircle2 className="w-5 h-5 text-indigo-500 shrink-0" />{" "}
-                        {ob}
-                      </div>
-                    ))}
-                    {formData.notes.map((nt, i) => (
-                      <div
-                        key={`nt-${i}`}
-                        className="text-sm text-slate-600 flex gap-2"
-                      >
-                        <Info className="w-5 h-5 text-blue-500 shrink-0" /> {nt}
-                      </div>
-                    ))}
-                    {formData.exceptions.map((ex, i) => (
-                      <div
-                        key={`ex-${i}`}
-                        className="text-sm text-slate-600 flex gap-2"
-                      >
-                        <TriangleAlert className="w-5 h-5 text-rose-500 shrink-0" />{" "}
-                        {ex}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-auto pt-6 border-t border-slate-200 flex justify-between items-center text-xs font-bold text-slate-400">
-              <p>الرمز: {formData.code || "سيتم التوليد"}</p>
-              {formData.showPageNumber && <p>صفحة 1 من 1</p>}
-            </div>
-
-            {formData.requiresApproval && (
-              <div className="absolute bottom-32 left-16 w-40 h-40 rounded-full border-4 border-rose-500/20 flex items-center justify-center rotate-[-15deg] opacity-60">
-                <span className="text-rose-500 font-black text-3xl">
-                  مُعتمد
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
   };
 
   // ==========================================
@@ -941,19 +960,31 @@ export default function DocumentSettingsModal({
   const renderRules = () => (
     <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar animate-in slide-in-from-right-4 duration-300">
       <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-        <h3 className="text-xs font-black text-indigo-800 mb-5 pb-2 border-b border-slate-100">محددات الاستخدام (قواعد الإلزام والظهور)</h3>
-        
+        <h3 className="text-xs font-black text-indigo-800 mb-5 pb-2 border-b border-slate-100">
+          محددات الاستخدام (قواعد الإلزام والظهور)
+        </h3>
+
         {[
-          { label: 'حالة المعاملة', name: 'ruleTransactionStatus' },
-          { label: 'نوع المعاملة', name: 'ruleTransactionType' },
-          { label: 'الحي', name: 'ruleDistrict' },
-          { label: 'القطاع', name: 'ruleSector' },
-          { label: 'نوع المالك', name: 'ruleOwnerType' },
-          { label: 'نوع مقدم الطلب', name: 'ruleApplicantType' }
+          { label: "حالة المعاملة", name: "ruleTransactionStatus" },
+          { label: "نوع المعاملة", name: "ruleTransactionType" },
+          { label: "الحي", name: "ruleDistrict" },
+          { label: "القطاع", name: "ruleSector" },
+          { label: "نوع المالك", name: "ruleOwnerType" },
+          { label: "نوع مقدم الطلب", name: "ruleApplicantType" },
         ].map((item, idx) => (
-          <div key={idx} className="grid grid-cols-[180px_1fr] items-center gap-4 py-3 border-b border-slate-100 last:border-0">
-            <label className="text-[11px] font-black text-slate-500">{item.label}</label>
-            <select name={item.name} value={formData[item.name]} onChange={handleChange} className="w-full p-2.5 text-xs font-bold border border-slate-200 rounded-lg focus:border-indigo-500 outline-none bg-slate-50 cursor-pointer">
+          <div
+            key={idx}
+            className="grid grid-cols-[180px_1fr] items-center gap-4 py-3 border-b border-slate-100 last:border-0"
+          >
+            <label className="text-[11px] font-black text-slate-500">
+              {item.label}
+            </label>
+            <select
+              name={item.name}
+              value={formData[item.name]}
+              onChange={handleChange}
+              className="w-full p-2.5 text-xs font-bold border border-slate-200 rounded-lg focus:border-indigo-500 outline-none bg-slate-50 cursor-pointer"
+            >
               <option value="غير مستخدم">غير مستخدم</option>
               <option value="أي قيمة">أي قيمة</option>
               <option value="قيمة واحدة">قيمة واحدة</option>
@@ -964,35 +995,84 @@ export default function DocumentSettingsModal({
 
         {/* عرض الشارع - مع ربط حقيقي */}
         <div className="grid grid-cols-[180px_1fr] items-center gap-4 py-3 border-b border-slate-100">
-          <label className="text-[11px] font-black text-slate-500">عرض الشارع</label>
+          <label className="text-[11px] font-black text-slate-500">
+            عرض الشارع
+          </label>
           <div className="flex gap-2">
-            <select name="ruleStreetWidthLogic" value={formData.ruleStreetWidthLogic} onChange={handleChange} className="flex-1 p-2.5 text-xs font-bold border border-slate-200 rounded-lg focus:border-indigo-500 outline-none bg-slate-50">
+            <select
+              name="ruleStreetWidthLogic"
+              value={formData.ruleStreetWidthLogic}
+              onChange={handleChange}
+              className="flex-1 p-2.5 text-xs font-bold border border-slate-200 rounded-lg focus:border-indigo-500 outline-none bg-slate-50"
+            >
               <option value="غير مستخدم">غير مستخدم</option>
               <option value="أي قيمة">أي قيمة</option>
               <option value="مدى رقمي">مدى رقمي</option>
             </select>
-            <input name="ruleStreetWidthFrom" type="number" value={formData.ruleStreetWidthFrom} onChange={handleChange} placeholder="من" className="w-20 p-2.5 text-xs font-bold border border-slate-200 rounded-lg focus:border-indigo-500 outline-none" />
-            <input name="ruleStreetWidthTo" type="number" value={formData.ruleStreetWidthTo} onChange={handleChange} placeholder="إلى" className="w-20 p-2.5 text-xs font-bold border border-slate-200 rounded-lg focus:border-indigo-500 outline-none" />
+            <input
+              name="ruleStreetWidthFrom"
+              type="number"
+              value={formData.ruleStreetWidthFrom}
+              onChange={handleChange}
+              placeholder="من"
+              className="w-20 p-2.5 text-xs font-bold border border-slate-200 rounded-lg focus:border-indigo-500 outline-none"
+            />
+            <input
+              name="ruleStreetWidthTo"
+              type="number"
+              value={formData.ruleStreetWidthTo}
+              onChange={handleChange}
+              placeholder="إلى"
+              className="w-20 p-2.5 text-xs font-bold border border-slate-200 rounded-lg focus:border-indigo-500 outline-none"
+            />
           </div>
         </div>
 
         {/* عدد الأدوار - مع ربط حقيقي */}
         <div className="grid grid-cols-[180px_1fr] items-center gap-4 py-3 border-b border-slate-100">
-          <label className="text-[11px] font-black text-slate-500">عدد الأدوار</label>
+          <label className="text-[11px] font-black text-slate-500">
+            عدد الأدوار
+          </label>
           <div className="flex gap-2">
-            <select name="ruleFloorsLogic" value={formData.ruleFloorsLogic} onChange={handleChange} className="flex-1 p-2.5 text-xs font-bold border border-slate-200 rounded-lg focus:border-indigo-500 outline-none bg-slate-50">
+            <select
+              name="ruleFloorsLogic"
+              value={formData.ruleFloorsLogic}
+              onChange={handleChange}
+              className="flex-1 p-2.5 text-xs font-bold border border-slate-200 rounded-lg focus:border-indigo-500 outline-none bg-slate-50"
+            >
               <option value="غير مستخدم">غير مستخدم</option>
               <option value="أي قيمة">أي قيمة</option>
               <option value="مدى رقمي">مدى رقمي</option>
             </select>
-            <input name="ruleFloorsFrom" type="number" value={formData.ruleFloorsFrom} onChange={handleChange} placeholder="من" className="w-20 p-2.5 text-xs font-bold border border-slate-200 rounded-lg focus:border-indigo-500 outline-none" />
-            <input name="ruleFloorsTo" type="number" value={formData.ruleFloorsTo} onChange={handleChange} placeholder="إلى" className="w-20 p-2.5 text-xs font-bold border border-slate-200 rounded-lg focus:border-indigo-500 outline-none" />
+            <input
+              name="ruleFloorsFrom"
+              type="number"
+              value={formData.ruleFloorsFrom}
+              onChange={handleChange}
+              placeholder="من"
+              className="w-20 p-2.5 text-xs font-bold border border-slate-200 rounded-lg focus:border-indigo-500 outline-none"
+            />
+            <input
+              name="ruleFloorsTo"
+              type="number"
+              value={formData.ruleFloorsTo}
+              onChange={handleChange}
+              placeholder="إلى"
+              className="w-20 p-2.5 text-xs font-bold border border-slate-200 rounded-lg focus:border-indigo-500 outline-none"
+            />
           </div>
         </div>
 
         <div className="grid grid-cols-[180px_1fr] items-center gap-4 py-3 border-b border-slate-100">
-          <label className="text-[11px] font-black text-slate-500">منطق الشروط</label>
-          <select name="ruleConditionLogic" value={formData.ruleConditionLogic} onChange={handleChange} className="w-full p-2.5 text-xs font-bold border border-slate-200 rounded-lg focus:border-indigo-500 outline-none bg-slate-50">
+          <label className="text-[11px] font-black text-slate-500">
+            منطق الشروط
+          </label>
+          <select
+            name="ruleConditionLogic"
+            value={formData.ruleConditionLogic}
+            onChange={handleChange}
+            className="w-full p-2.5 text-xs font-bold border border-slate-200 rounded-lg focus:border-indigo-500 outline-none bg-slate-50"
+          >
             <option value="إلزامية">إلزامية</option>
             <option value="اختيارية">اختيارية</option>
             <option value="مركبة">مركبة</option>
