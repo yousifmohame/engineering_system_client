@@ -48,6 +48,8 @@ import ProjectsArchiveScreen from "./pages/Archives_and_records/ProjectsArchive/
 import AiDashboard from "./pages/AiScreen/AiDashboard";
 import HubScreen from "./pages/Archives_and_records/ArchivesHubWrapper";
 import AccountsScreenWrapper from "./pages/AccountsCenter/AccountsScreenWrapper";
+import OfficeServicesScreen from "./pages/ServicesOffices/EngineeringOfficeServices";
+import DocumentCenterScreen from "./pages/DocsStation/DocsStation";
 
 // --- Icons & Context ---
 import { Wrench } from "lucide-react"; // 👈 استيراد أيقونة شاشة الصيانة
@@ -152,7 +154,9 @@ const AppContent = () => {
     "11",
     "52",
     "12",
-    "04"
+    "04",
+    "13",
+    "17"
   ];
   // فحص هل الشاشة المطلوبة مبرمجة أم لا
   const isImplemented = implementedScreens.includes(activeScreenId);
@@ -348,6 +352,17 @@ const AppContent = () => {
             >
               <AccountsScreenWrapper />
             </div>
+            <div
+              className={activeScreenId === "13" ? "block h-full" : "hidden"}
+            >
+              <OfficeServicesScreen />
+            </div>
+            <div
+              className={activeScreenId === "17" ? "block h-full" : "hidden"}
+            >
+              <DocumentCenterScreen />
+            </div>
+
 
 
             {/* --- 👈 السحر هنا: شاشة Fallback لأي كود غير مبرمج --- */}

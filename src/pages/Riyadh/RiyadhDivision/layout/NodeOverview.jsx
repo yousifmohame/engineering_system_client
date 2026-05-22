@@ -11,15 +11,41 @@ import {
   Copy,
   ExternalLink,
   PenLine,
-  Download,
-  CircleCheck,
   Loader2,
-  Landmark,
-  ChevronRight,
-  Edit,
   ImageIcon,
   CircleAlert,
+  Landmark,
+  Edit,
+  CircleCheck,
+  X,
 } from "lucide-react";
+
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`
+        inline-flex items-center justify-center
+        ${vertical ? "flex-col gap-0.5" : "gap-1.5"}
+        ${className}
+      `}
+    >
+      {Icon && <Icon className={iconClassName || "h-3.5 w-3.5 shrink-0"} />}
+
+      {text && (
+        <span className={textClassName || "text-[10px] font-black leading-none"}>
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
 
 const NodeOverview = ({
   selectedNode,
@@ -28,182 +54,403 @@ const NodeOverview = ({
   onEditRequest,
 }) => {
   const queryClient = useQueryClient();
-  const [editingField, setEditingField] = useState(null); // 'mapImage' | 'satelliteImage' | 'officialLink'
+
+  const [editingField, setEditingField] = useState(null);
   const [tempValue, setTempValue] = useState("");
 
-  // دالة التحديث السريع (Inline Update)
   const quickUpdateMutation = useMutation({
     mutationFn: async ({ id, type, data }) => {
       const endpoint =
         type === "sector"
           ? `/riyadh-streets/sectors/${id}`
           : `/riyadh-streets/districts/${id}`;
+
       return await api.put(endpoint, data);
     },
     onSuccess: () => {
       toast.success("تم التحديث بنجاح");
-      queryClient.invalidateQueries(["riyadh-tree"]);
+
+      queryClient.invalidateQueries({ queryKey: ["riyadh-tree"] });
+      queryClient.invalidateQueries({ queryKey: ["sectors-list"] });
+      queryClient.invalidateQueries({ queryKey: ["districts-list"] });
+
       setEditingField(null);
+      setTempValue("");
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "فشل التحديث");
     },
   });
+
+  const handleStartEditing = (field) => {
+    setTempValue(selectedNode?.[field] || "");
+    setEditingField(field);
+  };
+
+  const handleCancelEditing = () => {
+    setEditingField(null);
+    setTempValue("");
+  };
 
   const handleSaveInline = (field) => {
     quickUpdateMutation.mutate({
       id: selectedNode.id,
       type: selectedType,
-      data: { [field]: tempValue },
+      data: {
+        [field]: tempValue,
+      },
     });
   };
 
-  const copyToClipboard = (text) => {
+  const copyToClipboard = async (text) => {
     if (!text) return;
-    navigator.clipboard.writeText(text);
-    toast.success("تم نسخ الرابط");
+
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("تم نسخ الرابط");
+    } catch {
+      toast.error("تعذر نسخ الرابط");
+    }
   };
 
-  // 👈 هذه هي الدالة التي كانت مفقودة وتسببت في الخطأ
+  const isSector = selectedType === "sector";
+
+  const nodeTitle = isSector
+    ? `قطاع ${selectedNode?.name || ""}`
+    : `حي ${selectedNode?.name || ""}`;
+
+  const mainCountLabel = isSector ? "الأحياء التابعة" : "الشوارع الموثقة";
+  const mainCountValue = isSector
+    ? selectedNode?.neighborhoods?.length || 0
+    : selectedNode?.streets?.length || 0;
+
   const renderImageCard = (title, icon, dbField, placeholderText) => {
     const Icon = icon;
     const isEditing = editingField === dbField;
-    const hasImage = !!selectedNode[dbField];
+    const hasImage = Boolean(selectedNode?.[dbField]);
 
     return (
-      <div className="bg-white rounded-xl border border-stone-200/80 p-3 flex-1 min-w-[250px] shadow-sm flex flex-col transition-all hover:border-blue-200">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-1.5 text-blue-700">
-            <Icon className="w-4 h-4" />{" "}
-            <span className="text-[12px] font-bold">{title}</span>
+      <article
+        className="
+          flex min-w-[240px] flex-1 flex-col overflow-hidden
+          rounded-[16px] border border-[#d8b46a]/25
+          bg-white/90 shadow-[0_8px_22px_rgba(18,63,89,0.06)]
+          backdrop-blur-xl transition-all
+          hover:-translate-y-[1px] hover:shadow-[0_14px_30px_rgba(18,63,89,0.10)]
+        "
+      >
+        <div
+          className="
+            flex items-center justify-between gap-3
+            border-b border-[#e8ddc8]
+            bg-gradient-to-l from-[#fbf8f1] via-white to-[#eef7f6]
+            px-4 py-3
+          "
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <span
+              className="
+                inline-flex h-8 shrink-0 items-center justify-center gap-1.5 px-2.5
+                rounded-xl bg-[#123f59] text-[#e2bf74]
+              "
+            >
+              <Icon className="h-4 w-4" />
+            </span>
+
+            <div className="min-w-0">
+              <h4 className="truncate text-xs font-black text-[#123f59]">
+                {title}
+              </h4>
+
+              <p className="mt-0.5 text-[9px] font-bold text-[#94a3b8]">
+                {hasImage ? "صورة مرتبطة بالسجل" : "لم يتم إدراج صورة بعد"}
+              </p>
+            </div>
           </div>
 
           {!isEditing && (
             <button
-              onClick={() => {
-                setTempValue(selectedNode[dbField] || "");
-                setEditingField(dbField);
-              }}
-              className="text-[10px] font-bold text-stone-500 hover:text-blue-600 flex items-center gap-1 bg-stone-50 px-2 py-1 rounded-md transition-colors"
+              onClick={() => handleStartEditing(dbField)}
+              className="
+                inline-flex h-8 shrink-0 items-center justify-center gap-1
+                rounded-lg border border-[#d8b46a]/25
+                bg-[#fbf8f1] px-2.5
+                text-[9px] font-black text-[#123f59]
+                transition hover:bg-[#f8efe0]
+              "
+              type="button"
             >
-              <PenLine className="w-3 h-3" />{" "}
-              {hasImage ? "تغيير الصورة" : "إضافة صورة"}
+              <PenLine className="h-3.5 w-3.5 text-[#c5983c]" />
+              {hasImage ? "تغيير" : "إضافة"}
             </button>
           )}
         </div>
 
-        {isEditing ? (
-          <div className="flex flex-col gap-2 flex-1 justify-center bg-blue-50/50 p-2 rounded-lg border border-blue-100">
-            <input
-              type="url"
-              dir="ltr"
-              placeholder="أدخل رابط الصورة مباشر..."
-              value={tempValue}
-              onChange={(e) => setTempValue(e.target.value)}
-              className="w-full px-3 py-2 text-[11px] font-mono border border-blue-300 rounded outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleSaveInline(dbField)}
-                disabled={quickUpdateMutation.isPending}
-                className="flex-1 bg-blue-600 text-white text-[10px] font-bold py-1.5 rounded flex items-center justify-center gap-1 hover:bg-blue-700"
-              >
-                {quickUpdateMutation.isPending ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  "حفظ"
-                )}
-              </button>
-              <button
-                onClick={() => setEditingField(null)}
-                className="flex-1 bg-white border border-stone-300 text-stone-600 text-[10px] font-bold py-1.5 rounded hover:bg-stone-50"
-              >
-                إلغاء
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="h-32 bg-stone-50 rounded-lg border-2 border-dashed border-stone-200 flex items-center justify-center relative overflow-hidden group">
-            {hasImage ? (
-              <img
-                src={selectedNode[dbField]}
-                alt={title}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.style.display = "none";
-                }}
+        <div className="flex flex-1 flex-col p-3">
+          {isEditing ? (
+            <div
+              className="
+                flex min-h-[130px] flex-col justify-center gap-2
+                rounded-2xl border border-[#d8b46a]/35
+                bg-[#eef7f6]/60 p-3
+              "
+            >
+              <input
+                type="url"
+                dir="ltr"
+                placeholder="أدخل رابط الصورة المباشر..."
+                value={tempValue}
+                onChange={(e) => setTempValue(e.target.value)}
+                className={INPUT_CLASS}
               />
-            ) : (
-              <div className="flex flex-col items-center gap-2 text-stone-400">
-                <ImageIcon className="w-6 h-6 opacity-30" />
-                <span className="text-[10px] font-bold">{placeholderText}</span>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleSaveInline(dbField)}
+                  disabled={quickUpdateMutation.isPending}
+                  className="
+                    inline-flex h-9 flex-1 items-center justify-center gap-1.5
+                    rounded-xl bg-gradient-to-l from-[#123f59] via-[#15536f] to-[#0e7490]
+                    text-[10px] font-black text-white
+                    shadow-[0_10px_22px_rgba(18,63,89,0.16)]
+                    transition hover:-translate-y-[1px]
+                    disabled:cursor-not-allowed disabled:opacity-50
+                  "
+                  type="button"
+                >
+                  {quickUpdateMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-[#e2bf74]" />
+                  ) : (
+                    <CircleCheck className="h-4 w-4 text-[#e2bf74]" />
+                  )}
+                  حفظ
+                </button>
+
+                <button
+                  onClick={handleCancelEditing}
+                  className="
+                    h-9 flex-1 rounded-xl border border-[#d8b46a]/30
+                    bg-white text-[10px] font-black text-[#64748b]
+                    transition hover:bg-[#fbf8f1]
+                  "
+                  type="button"
+                >
+                  إلغاء
+                </button>
               </div>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          ) : (
+            <div
+              className="
+                group relative h-[135px] overflow-hidden
+                rounded-2xl border border-[#123f59]/15
+                bg-[#06111d]
+              "
+            >
+              {hasImage ? (
+                <>
+                  <img
+                    src={selectedNode[dbField]}
+                    alt={title}
+                    className="
+                      h-full w-full object-cover opacity-80
+                      transition duration-300 group-hover:scale-105 group-hover:opacity-65
+                    "
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+
+                  <div
+                    className="
+                      absolute bottom-2 right-2 rounded-lg
+                      bg-black/45 px-2 py-0.5
+                      text-[8px] font-black text-white
+                      backdrop-blur-md
+                    "
+                  >
+                    {title}
+                  </div>
+                </>
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-white/65">
+                  <ImageIcon className="mb-1 h-7 w-7 opacity-60" />
+                  <span className="text-[10px] font-black">
+                    {placeholderText}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </article>
     );
   };
 
-  return (
-    <div className="max-w-5xl mx-auto space-y-2 animate-in fade-in" dir="rtl">
-      {/* 1. قسم كروت الـ KPI */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
-        {selectedType === "sector" ? (
-          <div className="bg-white p-1 rounded-xl border border-stone-200 shadow-sm border-r-4 border-r-emerald-500">
-            <span className="text-[9px] font-bold text-stone-500 block mb-1">
-              الأحياء التابعة
-            </span>
-            <span className="text-sm font-black text-stone-800">
-              {selectedNode.neighborhoods?.length || 0}
-            </span>
-          </div>
-        ) : (
-          <div className="bg-white p-1 rounded-xl border border-stone-200 shadow-sm border-r-4 border-r-orange-500">
-            <span className="text-[9px] font-bold text-stone-500 block mb-1">
-              الشوارع الموثقة
-            </span>
-            <span className="text-sm font-black text-stone-800">
-              {selectedNode.streets?.length || 0}
-            </span>
-          </div>
-        )}
-        <div className="bg-white p-1 rounded-xl border border-stone-200 shadow-sm border-r-4 border-r-blue-500">
-          <span className="text-[9px] font-bold text-stone-500 block mb-1">
-            المعاملات
-          </span>
-          <span className="text-sm font-black text-stone-800">
-            {selectedNode.stats?.transactions || 0}
-          </span>
-        </div>
-        <div className="bg-white p-1 rounded-xl border border-stone-200 shadow-sm border-r-4 border-r-indigo-500">
-          <span className="text-[9px] font-bold text-stone-500 block mb-1">
-            الملكيات
-          </span>
-          <span className="text-sm font-black text-stone-800">
-            {selectedNode.stats?.properties || 0}
-          </span>
-        </div>
-        <div className="bg-white p-1 rounded-xl border border-stone-200 shadow-sm border-r-4 border-r-purple-500">
-          <span className="text-[9px] font-bold text-stone-500 block mb-1">
-            العملاء
-          </span>
-          <span className="text-sm font-black text-stone-800">
-            {selectedNode.stats?.clients || 0}
-          </span>
-        </div>
-      </div>
+  if (!selectedNode) {
+    return (
+      <div
+        className="
+          mx-auto flex max-w-4xl flex-col items-center justify-center
+          rounded-[18px] border border-dashed border-[#d8b46a]/40
+          bg-white/75 py-12 text-center shadow-[0_6px_14px_rgba(18,63,89,0.04)]
+        "
+        dir="rtl"
+      >
+        <CircleAlert className="mb-3 h-10 w-10 text-[#c5983c]" />
 
-      {/* 2. قسم الخرائط والبيانات المكانية */}
-      <div>
-        <h3 className="text-[13px] font-extrabold text-stone-800 mb-3 flex items-center gap-2">
-          <Map className="w-4 h-4 text-emerald-500" /> الخرائط والبيانات
-          المكانية
+        <h3 className="text-sm font-black text-[#123f59]">
+          لم يتم اختيار عنصر
         </h3>
-        <div className="flex gap-4 flex-col lg:flex-row">
+
+        <p className="mt-1 text-xs font-bold text-[#94a3b8]">
+          اختر قطاعاً أو حياً من الشجرة لعرض التفاصيل.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="
+        mx-auto max-w-5xl space-y-2.5
+        font-[Tajawal] text-right text-[#123f59]
+        animate-in fade-in
+      "
+      dir="rtl"
+    >
+      {/* Compact Header */}
+      <section
+        className="
+          relative overflow-hidden rounded-[18px]
+          border border-[#d8b46a]/25
+          bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490]
+          px-4 py-3 text-white
+          shadow-[0_10px_24px_rgba(18,63,89,0.16)]
+        "
+      >
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute right-[-60px] top-[-70px] h-36 w-36 rounded-full bg-[#e2bf74]/16 blur-3xl" />
+          <div className="absolute left-[-70px] bottom-[-80px] h-44 w-44 rounded-full bg-cyan-400/16 blur-3xl" />
+        </div>
+
+        <div className="relative z-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <div
+              className="
+                inline-flex h-8 shrink-0 items-center justify-center gap-1.5 px-2.5
+                rounded-2xl border border-[#e2bf74]/35
+                bg-white/10 text-[#e2bf74]
+                shadow-[0_8px_18px_rgba(18,63,89,0.05)] backdrop-blur-xl
+              "
+            >
+              <IconWithText
+                icon={isSector ? Landmark : Map}
+                text={isSector ? "قطاع" : "حي"}
+                vertical
+                iconClassName="h-5 w-5"
+                textClassName="text-[7px] font-black leading-none"
+              />
+            </div>
+
+            <div className="min-w-0">
+              <h2 className="truncate text-sm font-black md:text-sm">
+                {nodeTitle}
+              </h2>
+
+              <p className="mt-0.5 truncate text-[11px] font-bold text-white/60">
+                نظرة عامة على البيانات المكانية، الخرائط، والرابط الرسمي.
+              </p>
+            </div>
+          </div>
+
+          {onEditRequest && (
+            <button
+              onClick={onEditRequest}
+              className="
+                inline-flex h-8 shrink-0 items-center justify-center gap-1.5
+                rounded-xl border border-[#e2bf74]/40
+                bg-[#e2bf74] px-2.5
+                text-[10px] font-black text-[#082032]
+                shadow-[0_8px_16px_rgba(226,191,116,0.14)]
+                transition hover:-translate-y-[1px] hover:bg-[#f5d99b]
+              "
+              type="button"
+            >
+              <IconWithText icon={Edit} text="تعديل البيانات" iconClassName="h-3.5 w-3.5" /></button>
+          )}
+        </div>
+      </section>
+
+      {/* KPI */}
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <KpiCard
+          label={mainCountLabel}
+          value={mainCountValue}
+          tone={isSector ? "emerald" : "amber"}
+        />
+
+        <KpiCard
+          label="المعاملات"
+          value={selectedNode.stats?.transactions || 0}
+          tone="blue"
+        />
+
+        <KpiCard
+          label="الملكيات"
+          value={selectedNode.stats?.properties || 0}
+          tone="indigo"
+        />
+
+        <KpiCard
+          label="العملاء"
+          value={selectedNode.stats?.clients || 0}
+          tone="violet"
+        />
+      </section>
+
+      {/* Maps */}
+      <section
+        className="
+          rounded-[18px] border border-[#d8b46a]/25
+          bg-white/75 p-3
+          shadow-[0_8px_22px_rgba(18,63,89,0.06)]
+          backdrop-blur-xl
+        "
+      >
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <span
+              className="
+                inline-flex h-8 shrink-0 items-center justify-center gap-1.5 px-2.5
+                rounded-xl bg-[#123f59] text-[#e2bf74]
+              "
+            >
+              <Map className="h-4 w-4" />
+            </span>
+
+            <div className="min-w-0">
+              <h3 className="truncate text-sm font-black text-[#123f59]">
+                الخرائط والبيانات المكانية
+              </h3>
+
+              <p className="mt-0.5 text-[10px] font-bold text-[#94a3b8]">
+                صور البوابة المكانية والقمر الصناعي.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 lg:flex-row">
           {renderImageCard(
             "صورة البوابة المكانية",
             Map,
             "mapImage",
             "لا توجد صورة بوابة",
           )}
+
           {renderImageCard(
             "صورة القمر الصناعي",
             Satellite,
@@ -211,93 +458,243 @@ const NodeOverview = ({
             "لا توجد صورة قمر",
           )}
         </div>
-      </div>
+      </section>
 
-      {/* 3. قسم الرابط والـ QR Code */}
-      <div className="bg-white rounded-xl border border-stone-200 p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-stone-800 font-bold text-[13px] flex items-center gap-2">
-            <Link2 className="w-4 h-4 text-blue-600" /> رابط الخريطة التفاعلية
-          </span>
+      {/* Official Link */}
+      <section
+        className="
+          overflow-hidden rounded-[18px]
+          border border-[#d8b46a]/25
+          bg-white/90
+          shadow-[0_8px_22px_rgba(18,63,89,0.06)]
+          backdrop-blur-xl
+        "
+      >
+        <div
+          className="
+            flex items-center justify-between gap-3
+            border-b border-[#e8ddc8]
+            bg-gradient-to-l from-[#fbf8f1] via-white to-[#eef7f6]
+            px-4 py-3
+          "
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <span
+              className="
+                inline-flex h-8 shrink-0 items-center justify-center gap-1.5 px-2.5
+                rounded-xl bg-[#123f59] text-[#e2bf74]
+              "
+            >
+              <Link2 className="h-4 w-4" />
+            </span>
+
+            <div className="min-w-0">
+              <h3 className="truncate text-sm font-black text-[#123f59]">
+                رابط الخريطة التفاعلية
+              </h3>
+
+              <p className="mt-0.5 text-[10px] font-bold text-[#94a3b8]">
+                الرابط الرسمي المستخدم للعرض والـ QR.
+              </p>
+            </div>
+          </div>
+
           {editingField !== "officialLink" && (
             <button
-              onClick={() => {
-                setTempValue(selectedNode.officialLink || "");
-                setEditingField("officialLink");
-              }}
-              className="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg"
+              onClick={() => handleStartEditing("officialLink")}
+              className="
+                inline-flex h-8 shrink-0 items-center justify-center gap-1
+                rounded-lg border border-[#d8b46a]/35
+                bg-[#eef7f6] px-2.5
+                text-[9px] font-black text-[#15536f]
+                transition hover:bg-[#d8b46a]/25
+              "
+              type="button"
             >
+              <PenLine className="h-3.5 w-3.5" />
               تعديل الرابط
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="flex-1">
+        <div className="grid grid-cols-1 gap-2.5 p-4 lg:grid-cols-[minmax(0,1fr)_100px]">
+          <div className="min-w-0">
             {editingField === "officialLink" ? (
-              <div className="flex gap-2 bg-blue-50 p-2 rounded-xl">
-                <input
-                  dir="ltr"
-                  value={tempValue}
-                  onChange={(e) => setTempValue(e.target.value)}
-                  className="flex-1 px-3 py-2 text-[12px] border rounded-lg outline-none"
-                  placeholder="https://maps.google.com/..."
-                />
-                <button
-                  onClick={() => handleSaveInline("officialLink")}
-                  className="bg-blue-600 text-white px-4 rounded-lg text-[11px] font-bold"
-                >
-                  حفظ
-                </button>
-                <button
-                  onClick={() => setEditingField(null)}
-                  className="bg-white border px-4 rounded-lg text-[11px]"
-                >
-                  إلغاء
-                </button>
+              <div
+                className="
+                  rounded-2xl border border-[#d8b46a]/35
+                  bg-[#eef7f6]/60 p-3
+                "
+              >
+                <div className="flex flex-col gap-2 md:flex-row">
+                  <input
+                    dir="ltr"
+                    type="url"
+                    value={tempValue}
+                    onChange={(e) => setTempValue(e.target.value)}
+                    className={INPUT_CLASS}
+                    placeholder="https://maps.google.com/..."
+                  />
+
+                  <button
+                    onClick={() => handleSaveInline("officialLink")}
+                    disabled={quickUpdateMutation.isPending}
+                    className="
+                      inline-flex h-10 items-center justify-center gap-1.5
+                      rounded-xl bg-gradient-to-l from-[#123f59] via-[#15536f] to-[#0e7490]
+                      px-3 text-xs font-black text-white
+                      shadow-[0_10px_22px_rgba(18,63,89,0.16)]
+                      transition hover:-translate-y-[1px]
+                      disabled:cursor-not-allowed disabled:opacity-50
+                    "
+                    type="button"
+                  >
+                    {quickUpdateMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-[#e2bf74]" />
+                    ) : (
+                      <CircleCheck className="h-4 w-4 text-[#e2bf74]" />
+                    )}
+                    حفظ
+                  </button>
+
+                  <button
+                    onClick={handleCancelEditing}
+                    className="
+                      h-10 rounded-xl border border-[#d8b46a]/30
+                      bg-white px-3 text-xs font-black text-[#64748b]
+                      transition hover:bg-[#fbf8f1]
+                    "
+                    type="button"
+                  >
+                    إلغاء
+                  </button>
+                </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-2 md:flex-row">
                 <input
                   readOnly
                   value={selectedNode.officialLink || "لا يوجد رابط مسجل"}
-                  className="flex-1 px-4 py-3 text-[12px] font-mono bg-stone-50 border border-stone-200 rounded-xl"
+                  className="
+                    h-10 min-w-0 flex-1 rounded-xl
+                    border border-[#d8b46a]/25
+                    bg-[#fbf8f1]/80 px-3
+                    font-mono text-xs font-bold text-[#123f59]
+                    outline-none
+                  "
                   dir="ltr"
                 />
+
                 {selectedNode.officialLink && (
-                  <>
+                  <div className="flex gap-2">
                     <button
                       onClick={() => copyToClipboard(selectedNode.officialLink)}
-                      className="p-3 bg-stone-100 rounded-xl hover:bg-stone-200 transition-colors"
+                      className="
+                        grid h-10 w-10 place-items-center
+                        rounded-xl border border-[#d8b46a]/25
+                        bg-[#fbf8f1] text-[#123f59]
+                        transition hover:bg-[#f8efe0]
+                      "
+                      title="نسخ الرابط"
+                      type="button"
                     >
-                      <Copy className="w-4 h-4" />
+                      <Copy className="h-4 w-4" />
                     </button>
+
                     <a
                       href={selectedNode.officialLink}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100"
+                      className="
+                        grid h-10 w-10 place-items-center
+                        rounded-xl border border-[#d8b46a]/35
+                        bg-[#eef7f6] text-[#15536f]
+                        transition hover:bg-[#d8b46a]/25
+                      "
+                      title="فتح الرابط"
                     >
-                      <ExternalLink className="w-4 h-4" />
+                      <ExternalLink className="h-4 w-4" />
                     </a>
-                  </>
+                  </div>
                 )}
               </div>
             )}
           </div>
-          <div className="w-[90px] h-[90px] bg-white border border-stone-200 rounded-2xl flex items-center justify-center shrink-0 shadow-sm relative group overflow-hidden">
+
+          <div
+            className="
+              grid h-[92px] w-[92px] place-items-center
+              rounded-2xl border border-[#d8b46a]/25
+              bg-white p-2 shadow-[0_6px_14px_rgba(18,63,89,0.04)]
+              justify-self-center lg:justify-self-end
+            "
+          >
             {selectedNode.officialLink ? (
-              <QRCodeSVG value={selectedNode.officialLink} size={70} />
+              <QRCodeSVG value={selectedNode.officialLink} size={68} />
             ) : (
-              <div className="text-stone-300 text-[8px] text-center px-1">
+              <div className="px-2 text-center text-[8px] font-black text-[#94a3b8]">
                 لا يوجد رابط للـ QR
               </div>
             )}
           </div>
         </div>
+      </section>
+    </div>
+  );
+};
+
+const KpiCard = ({ label, value, tone = "blue" }) => {
+  const tones = {
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    blue: "border-[#d8b46a]/35 bg-[#eef7f6] text-[#15536f]",
+    indigo: "border-[#d8b46a]/35 bg-[#eef7f6] text-[#15536f]",
+    violet: "border-[#d8b46a]/35 bg-[#eef7f6] text-[#15536f]",
+  };
+
+  return (
+    <div
+      className="
+        relative overflow-hidden rounded-[18px]
+        border border-[#d8b46a]/25
+        bg-white/90 p-3
+        shadow-[0_8px_22px_rgba(18,63,89,0.06)]
+        backdrop-blur-xl
+      "
+    >
+      <div className="absolute -left-8 -top-4 h-20 w-20 rounded-full bg-[#e2bf74]/10 blur-2xl" />
+
+      <div className="relative z-10 flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-[10px] font-black text-[#64748b]">
+            {label}
+          </p>
+
+          <p className="mt-1 text-sm font-black leading-none text-[#123f59]">
+            {value}
+          </p>
+        </div>
+
+        <span
+          className={`
+            h-2.5 w-2.5 shrink-0 rounded-full border
+            ${tones[tone] || tones.blue}
+          `}
+        />
       </div>
     </div>
   );
 };
+
+const INPUT_CLASS = `
+  h-10 w-full rounded-xl
+  border border-[#d8b46a]/25 bg-white
+  px-3 text-xs font-bold text-[#123f59]
+  shadow-[0_6px_14px_rgba(18,63,89,0.04)] outline-none transition-all
+  placeholder:text-[#94a3b8]
+  focus:border-[#c5983c]/70
+  focus:bg-white
+  focus:ring-4 focus:ring-[#c5983c]/10
+`;
 
 export default NodeOverview;

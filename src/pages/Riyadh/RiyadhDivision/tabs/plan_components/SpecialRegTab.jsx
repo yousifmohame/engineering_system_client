@@ -14,6 +14,37 @@ import { useAuth } from "../../../../../context/AuthContext"; // تأكد من �
 export default function SpecialRegTab({ planModal, setPlanModal }) {
   const { user: currentUser } = useAuth();
   
+
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`inline-flex min-w-0 items-center justify-center ${
+        vertical ? "flex-col gap-0.5" : "gap-1.5"
+      } ${className}`}
+    >
+      {Icon && <Icon className={iconClassName || "h-3.5 w-3.5 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 whitespace-nowrap text-[10px] font-black leading-none"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
+
+
   // 💡 State محلية خاصة بهذا التاب فقط لإدارة المدخلات الجديدة
   const [newReg, setNewReg] = useState({ text: "", files: [] });
   const [fileInputKey, setFileInputKey] = useState(Date.now());
@@ -90,30 +121,30 @@ export default function SpecialRegTab({ planModal, setPlanModal }) {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in h-full flex flex-col overflow-hidden p-6" dir="rtl">
+    <div className="space-y-3 animate-in fade-in h-full flex flex-col overflow-hidden p-3" dir="rtl">
       
       {/* ------------------ Header ------------------ */}
-      <div className="flex items-center gap-3 border-b border-slate-200 pb-4 shrink-0">
-        <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center shadow-inner">
+      <div className="flex items-center gap-3 border-b border-[#e8ddc8] pb-4 shrink-0">
+        <div className="w-10 h-10 bg-[#eef7f6] text-[#0e7490] rounded-xl flex items-center justify-center shadow-inner">
           <ShieldAlert className="w-5 h-5" />
         </div>
         <div>
-          <h4 className="text-sm font-black text-slate-800">
+          <h4 className="text-sm font-black text-[#123f59]">
             التنظيمات الخاصة والاستثناءات
           </h4>
-          <p className="text-xs font-bold text-slate-500 mt-0.5">
+          <p className="text-xs font-bold text-[#94a3b8] mt-0.5">
             سجل هنا أي قرارات أو اشتراطات أو استثناءات تخص هذا المخطط بالتحديد.
           </p>
         </div>
       </div>
 
       {/* ------------------ إدخال تنظيم جديد ------------------ */}
-      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-inner shrink-0">
+      <div className="bg-[#fbf8f1] border border-[#e8ddc8] rounded-2xl p-3 shadow-inner shrink-0">
         <textarea
           placeholder="اكتب نص التنظيم، القرار، أو التعليق هنا..."
           value={newReg.text}
           onChange={(e) => setNewReg((prev) => ({ ...prev, text: e.target.value }))}
-          className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 min-h-[100px] resize-none transition-all shadow-sm"
+          className="w-full bg-white border border-[#e8ddc8] rounded-xl p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-[#0e7490] min-h-[100px] resize-none transition-all shadow-[0_6px_14px_rgba(18,63,89,0.04)]"
         />
 
         {/* عرض الملفات المرفوعة للتنظيم الجديد قبل الحفظ */}
@@ -122,7 +153,7 @@ export default function SpecialRegTab({ planModal, setPlanModal }) {
             {newReg.files.map((f) => (
               <div
                 key={f.id}
-                className="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 flex items-center gap-2 shadow-sm"
+                className="bg-white border border-[#e8ddc8] px-3 py-1.5 rounded-lg text-xs font-bold text-[#64748b] flex items-center gap-2 shadow-[0_6px_14px_rgba(18,63,89,0.04)]"
               >
                 <span className="truncate max-w-[120px]" dir="ltr">
                   {f.name}
@@ -135,7 +166,7 @@ export default function SpecialRegTab({ planModal, setPlanModal }) {
                       files: (p.files || []).filter((file) => file.id !== f.id),
                     }))
                   }
-                  className="text-slate-400 hover:text-rose-500 transition-colors"
+                  className="text-[#94a3b8] hover:text-rose-500 transition-colors"
                 >
                   <X size={14} />
                 </button>
@@ -144,11 +175,11 @@ export default function SpecialRegTab({ planModal, setPlanModal }) {
           </div>
         )}
 
-        <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200/50">
+        <div className="flex justify-between items-center mt-4 pt-4 border-t border-[#e8ddc8]/50">
           <div className="relative">
             <button
               type="button"
-              className="flex items-center gap-2 text-xs font-black text-purple-700 bg-purple-100 hover:bg-purple-200 px-4 py-2 rounded-xl transition-colors pointer-events-none"
+              className="flex items-center gap-2 text-xs font-black text-[#15536f] bg-[#d8b46a]/25 hover:bg-[#d8b46a]/35 px-4 py-2 rounded-xl transition-colors pointer-events-none"
             >
               <Paperclip size={16} /> إرفاق ملفات داعمة (قرارات/تعاميم)
             </button>
@@ -164,7 +195,7 @@ export default function SpecialRegTab({ planModal, setPlanModal }) {
             type="button"
             onClick={handleAddRegulation}
             disabled={!newReg.text.trim() && (newReg.files || []).length === 0}
-            className="px-6 py-2.5 bg-purple-600 text-white text-xs font-black rounded-xl hover:bg-purple-700 disabled:opacity-50 disabled:bg-slate-300 shadow-md transition-all active:scale-95"
+            className="px-3 py-2.5 bg-[#0e7490] text-white text-xs font-black rounded-xl hover:bg-[#15536f] disabled:opacity-50 disabled:bg-[#cbd5e1] shadow-[0_8px_18px_rgba(18,63,89,0.05)] transition-all active:scale-95"
           >
             حفظ التنظيم في السجل
           </button>
@@ -172,22 +203,22 @@ export default function SpecialRegTab({ planModal, setPlanModal }) {
       </div>
 
       {/* ------------------ عرض التنظيمات السابقة ------------------ */}
-      <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto custom-scrollbar-slim space-y-2.5 pr-2 custom-scrollbar">
         {(planModal.data.specialRegulations || []).map((reg) => (
           <div
             key={reg.id}
-            className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative group hover:border-purple-200 transition-colors"
+            className="bg-white border border-[#e8ddc8] rounded-2xl p-3 shadow-[0_6px_14px_rgba(18,63,89,0.04)] relative group hover:border-[#d8b46a]/35 transition-colors"
           >
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 shadow-inner">
+                <div className="w-9 h-9 bg-[#fbf8f1] rounded-full flex items-center justify-center text-[#94a3b8] shadow-inner">
                   <User size={16} />
                 </div>
                 <div>
-                  <div className="text-xs font-black text-slate-800">
+                  <div className="text-xs font-black text-[#123f59]">
                     {reg.authorName}
                   </div>
-                  <div className="text-[10px] text-slate-400 font-mono font-bold flex items-center gap-1 mt-0.5">
+                  <div className="text-[10px] text-[#94a3b8] font-mono font-bold flex items-center gap-1 mt-0.5">
                     <Clock size={10} />{" "}
                     {new Date(reg.createdAt).toLocaleString("ar-SA")}
                   </div>
@@ -196,7 +227,7 @@ export default function SpecialRegTab({ planModal, setPlanModal }) {
               <button
                 type="button"
                 onClick={() => handleDeleteRegulation(reg.id)}
-                className="text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-all"
+                className="text-[#cbd5e1] hover:text-rose-500 hover:bg-rose-50 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-all"
                 title="حذف هذا التنظيم"
               >
                 <Trash2 size={16} />
@@ -204,31 +235,31 @@ export default function SpecialRegTab({ planModal, setPlanModal }) {
             </div>
             
             {reg.text && (
-              <p className="text-sm font-bold text-slate-700 leading-loose whitespace-pre-wrap border-r-2 border-purple-300 pr-4">
+              <p className="text-sm font-bold text-[#475569] leading-loose whitespace-pre-wrap border-r-2 border-[#d8b46a]/40 pr-4">
                 {reg.text}
               </p>
             )}
 
             {reg.files && reg.files.length > 0 && (
-              <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap gap-2">
+              <div className="mt-5 pt-4 border-t border-[#fbf8f1] flex flex-wrap gap-2">
                 {reg.files.map((file, i) => (
                   <a
                     key={i}
                     href={file.url}
                     download={file.name}
-                    className="flex items-center gap-2 bg-slate-50 hover:bg-purple-50 border border-slate-200 hover:border-purple-200 px-3 py-2 rounded-xl transition-colors group/file"
+                    className="flex items-center gap-2 bg-[#fbf8f1] hover:bg-[#eef7f6] border border-[#e8ddc8] hover:border-[#d8b46a]/35 px-3 py-2 rounded-xl transition-colors group/file"
                   >
                     <FolderOpen
                       size={14}
-                      className="text-slate-400 group-hover/file:text-purple-500"
+                      className="text-[#94a3b8] group-hover/file:text-[#0e7490]"
                     />
                     <span
-                      className="text-[11px] font-black text-slate-600 truncate max-w-[150px]"
+                      className="text-[11px] font-black text-[#64748b] truncate max-w-[150px]"
                       dir="ltr"
                     >
                       {file.name}
                     </span>
-                    <Download size={14} className="text-slate-400" />
+                    <Download size={14} className="text-[#94a3b8]" />
                   </a>
                 ))}
               </div>
@@ -238,8 +269,8 @@ export default function SpecialRegTab({ planModal, setPlanModal }) {
         
         {/* حالة عدم وجود تنظيمات */}
         {(planModal.data.specialRegulations || []).length === 0 && (
-          <div className="text-center py-16 text-slate-400 flex flex-col items-center">
-            <ShieldAlert className="w-12 h-12 mb-3 opacity-20" />
+          <div className="text-center py-16 text-[#94a3b8] flex flex-col items-center">
+            <ShieldAlert className="w-9 h-9 mb-3 opacity-20" />
             <span className="text-xs font-bold">
               لا توجد تنظيمات خاصة مسجلة لهذا المخطط حتى الآن.
             </span>

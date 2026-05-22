@@ -14,6 +14,37 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`inline-flex min-w-0 items-center justify-center ${
+        vertical ? "flex-col gap-0.5" : "gap-1.5"
+      } ${className}`}
+    >
+      {Icon && <Icon className={iconClassName || "h-3.5 w-3.5 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 whitespace-nowrap text-[10px] font-black leading-none"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
+
+
 export default function FilesTab({ planModal, setPlanModal, setPreviewFile }) {
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(Date.now());
@@ -26,8 +57,8 @@ export default function FilesTab({ planModal, setPlanModal, setPreviewFile }) {
     if (["pdf"].includes(t)) 
       return <FileText className="w-6 h-6 mb-1 text-rose-500" />;
     if (["dwg", "dxf"].includes(t)) 
-      return <FileCode className="w-6 h-6 mb-1 text-indigo-500" />;
-    return <File className="w-6 h-6 mb-1 text-slate-400" />;
+      return <FileCode className="w-6 h-6 mb-1 text-[#0e7490]" />;
+    return <File className="w-6 h-6 mb-1 text-[#94a3b8]" />;
   };
 
   // 🔗 دالة لتجهيز الرابط سواء كان Base64 جديد أو رابط من السيرفر
@@ -102,24 +133,23 @@ export default function FilesTab({ planModal, setPlanModal, setPreviewFile }) {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6 animate-in fade-in custom-scrollbar" dir="rtl">
+    <div className="flex-1 overflow-y-auto custom-scrollbar-slim p-3 space-y-3 animate-in fade-in custom-scrollbar" dir="rtl">
       
       {/* ---------------- Header ---------------- */}
-      <div className="flex flex-wrap md:flex-nowrap justify-between items-end border-b border-slate-200 pb-4 gap-4">
+      <div className="flex flex-wrap md:flex-nowrap justify-between items-end border-b border-[#e8ddc8] pb-4 gap-2.5">
         <div>
-          <h4 className="text-base font-black text-slate-800 flex items-center gap-2">
+          <h4 className="text-sm font-black text-[#123f59] flex items-center gap-2">
             ملفات المخطط والمرفقات الهندسية
           </h4>
-          <p className="text-xs font-bold text-slate-500 mt-1.5 flex items-center gap-1">
-            <Info className="w-3.5 h-3.5 text-blue-500" />
+          <p className="text-xs font-bold text-[#94a3b8] mt-1.5 flex items-center gap-1">
+            <Info className="w-3.5 h-3.5 text-[#0e7490]" />
             يدعم الصور (JPG, PNG)، ملفات الأوتوكاد (DWG)، وملفات PDF.
           </p>
         </div>
         
         <div className="relative shrink-0">
-          <button type="button" className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-black flex items-center gap-2 hover:bg-blue-700 shadow-md shadow-blue-600/20 transition-all pointer-events-none">
-            <FileUp className="w-4 h-4" /> تصفح وإضافة ملفات
-          </button>
+          <button type="button" className="px-3 py-2.5 bg-[#0e7490] text-white rounded-xl text-xs font-black flex items-center gap-2 hover:bg-[#15536f] shadow-[0_8px_18px_rgba(18,63,89,0.05)] shadow-[0_8px_18px_rgba(18,63,89,0.06)]/20 transition-all pointer-events-none">
+            <IconWithText icon={FileUp} text="تصفح وإضافة ملفات" iconClassName="w-4 h-4" /></button>
           <input 
             key={fileInputKey}
             type="file" 
@@ -137,21 +167,21 @@ export default function FilesTab({ planModal, setPlanModal, setPreviewFile }) {
 
       {/* ---------------- Drop Zone ---------------- */}
       <div
-        className={`w-full py-12 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all relative group focus:outline-none focus:ring-4 focus:ring-blue-500/20
-          ${isDraggingFiles ? "border-blue-500 bg-blue-50 scale-[0.99]" : "border-slate-300 bg-slate-50 hover:border-blue-400 hover:bg-blue-50/50"}`}
+        className={`w-full py-12 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all relative group focus:outline-none focus:ring-4 focus:ring-[#0e7490]/20
+          ${isDraggingFiles ? "border-[#0e7490] bg-[#eef7f6] scale-[0.99]" : "border-[#cbd5e1] bg-[#fbf8f1] hover:border-[#0e7490] hover:bg-[#eef7f6]/50"}`}
         onDragOver={(e) => { e.preventDefault(); setIsDraggingFiles(true); }}
         onDragLeave={() => setIsDraggingFiles(false)}
         onDrop={(e) => { e.preventDefault(); setIsDraggingFiles(false); processFiles(e.dataTransfer.files); }}
         onPaste={handlePasteEvent}
         tabIndex="0" // ليقبل الـ Focus ويستطيع التقاط عملية اللصق
       >
-        <div className={`p-4 rounded-full mb-3 transition-colors ${isDraggingFiles ? "bg-blue-100 text-blue-600" : "bg-white text-slate-400 shadow-sm group-hover:text-blue-500 group-hover:bg-white"}`}>
+        <div className={`p-4 rounded-full mb-3 transition-colors ${isDraggingFiles ? "bg-[#d8b46a]/25 text-[#0e7490]" : "bg-white text-[#94a3b8] shadow-[0_6px_14px_rgba(18,63,89,0.04)] group-hover:text-[#0e7490] group-hover:bg-white"}`}>
           <UploadCloud className="w-10 h-10" />
         </div>
-        <span className="text-sm font-black text-slate-700 mb-1">
+        <span className="text-sm font-black text-[#475569] mb-1">
           اسحب وأفلت الملفات هنا
         </span>
-        <span className="text-xs font-bold text-slate-400">
+        <span className="text-xs font-bold text-[#94a3b8]">
           أو اضغط (Ctrl + V) للصق الصور والملفات مباشرة
         </span>
       </div>
@@ -161,19 +191,19 @@ export default function FilesTab({ planModal, setPlanModal, setPreviewFile }) {
         {(planModal.data.files || []).map((file) => (
           <div 
             key={file.id} 
-            className="flex flex-wrap sm:flex-nowrap gap-4 p-4 bg-white border border-slate-200 rounded-xl items-start shadow-sm transition-all hover:border-blue-300 hover:shadow-md group"
+            className="flex flex-wrap sm:flex-nowrap gap-2.5 p-4 bg-white border border-[#e8ddc8] rounded-xl items-start shadow-[0_6px_14px_rgba(18,63,89,0.04)] transition-all hover:border-[#d8b46a]/40 hover:shadow-[0_8px_18px_rgba(18,63,89,0.05)] group"
           >
             {/* File Icon */}
-            <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-xl flex flex-col items-center justify-center shrink-0 shadow-inner group-hover:bg-white transition-colors">
+            <div className="w-10 h-10 bg-[#fbf8f1] border border-[#fbf8f1] rounded-xl flex flex-col items-center justify-center shrink-0 shadow-inner group-hover:bg-white transition-colors">
               {getFileIcon(file.type)}
-              <span className="text-[9px] font-black text-slate-500 tracking-wider">
+              <span className="text-[9px] font-black text-[#94a3b8] tracking-wider">
                 {file.type || "FILE"}
               </span>
             </div>
 
             {/* File Details & Description Input */}
             <div className="flex-1 space-y-2.5 min-w-[200px]">
-              <div className="text-xs font-black text-slate-800 truncate" dir="ltr" title={file.name}>
+              <div className="text-xs font-black text-[#123f59] truncate" dir="ltr" title={file.name}>
                 {file.name}
               </div>
               <input 
@@ -188,7 +218,7 @@ export default function FilesTab({ planModal, setPlanModal, setPreviewFile }) {
                     setPlanModal((p) => ({ ...p, data: { ...p.data, files: nF } })); 
                   } 
                 }} 
-                className="w-full px-3 py-2 text-xs font-bold border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-slate-50 focus:bg-white transition-all" 
+                className="w-full px-3 py-2 text-xs font-bold border border-[#e8ddc8] rounded-lg outline-none focus:border-[#0e7490] focus:ring-2 focus:ring-[#0e7490]/20 bg-[#fbf8f1] focus:bg-white transition-all" 
               />
             </div>
 
@@ -202,8 +232,7 @@ export default function FilesTab({ planModal, setPlanModal, setPreviewFile }) {
                   className="p-2.5 text-cyan-600 bg-cyan-50 hover:bg-cyan-600 hover:text-white rounded-lg transition-colors flex items-center justify-center"
                   title="معاينة الملف"
                 >
-                  <Eye className="w-4 h-4" />
-                </button>
+                  <IconWithText icon={Eye} text="" iconClassName="w-4 h-4" /></button>
               )}
 
               {/* Download Button */}
@@ -212,7 +241,7 @@ export default function FilesTab({ planModal, setPlanModal, setPreviewFile }) {
                 download={file.name}
                 target="_blank"
                 rel="noreferrer"
-                className="p-2.5 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-lg transition-colors flex items-center justify-center"
+                className="p-2.5 text-[#0e7490] bg-[#eef7f6] hover:bg-[#0e7490] hover:text-white rounded-lg transition-colors flex items-center justify-center"
                 title="تنزيل الملف"
               >
                 <Download className="w-4 h-4" />
@@ -225,15 +254,14 @@ export default function FilesTab({ planModal, setPlanModal, setPreviewFile }) {
                 className="p-2.5 text-rose-600 bg-rose-50 hover:bg-rose-600 hover:text-white rounded-lg transition-colors flex items-center justify-center"
                 title="حذف الملف"
               >
-                <Trash2 className="w-4 h-4" />
-              </button>
+                <IconWithText icon={Trash2} text="حذف" iconClassName="w-4 h-4" /></button>
             </div>
           </div>
         ))}
 
         {/* Empty State */}
         {(planModal.data.files || []).length === 0 && (
-          <div className="text-center py-10 bg-slate-50/50 rounded-xl border border-dashed border-slate-200 text-slate-400">
+          <div className="text-center py-4 bg-[#fbf8f1]/50 rounded-xl border border-dashed border-[#e8ddc8] text-[#94a3b8]">
             <FolderOpen className="w-10 h-10 mx-auto mb-2 opacity-30" />
             <p className="text-xs font-bold">لا توجد ملفات مرفقة بهذا المخطط حتى الآن.</p>
           </div>

@@ -32,6 +32,37 @@ import NotesTab from "./plan_components/NotesTab";
 import ReferenceDetailsModal from "../../../Archives_and_records/ProjectsArchive/ReferenceDetails/ReferenceDetailsModal";
 import ClientFileDetails from "../../../Clients/ClientFileDetails";
 
+
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`inline-flex min-w-0 items-center justify-center ${
+        vertical ? "flex-col gap-0.5" : "gap-1.5"
+      } ${className}`}
+    >
+      {Icon && <Icon className={iconClassName || "h-3.5 w-3.5 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 whitespace-nowrap text-[10px] font-black leading-none"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
+
+
 const MODAL_TABS = [
   { id: "general", label: "معلومات عامة", icon: Info },
   { id: "stats", label: "الإحصائيات", icon: PieChart },
@@ -144,11 +175,11 @@ const PlansTab = () => {
 
   const getSortIcon = (key) => {
     if (sortConfig.key !== key)
-      return <ArrowUpDown className="w-3.5 h-3.5 text-slate-300" />;
+      return <ArrowUpDown className="w-3.5 h-3.5 text-[#cbd5e1]" />;
     return sortConfig.direction === "asc" ? (
-      <ArrowUp className="w-3.5 h-3.5 text-indigo-600" />
+      <ArrowUp className="w-3.5 h-3.5 text-[#0e7490]" />
     ) : (
-      <ArrowDown className="w-3.5 h-3.5 text-indigo-600" />
+      <ArrowDown className="w-3.5 h-3.5 text-[#0e7490]" />
     );
   };
 
@@ -193,27 +224,27 @@ const PlansTab = () => {
 
   if (isLoading)
     return (
-      <div className="flex justify-center p-10 h-full items-center">
-        <Loader2 className="animate-spin text-indigo-600 w-10 h-10" />
+      <div className="flex justify-center p-4 h-full items-center">
+        <Loader2 className="animate-spin text-[#0e7490] w-10 h-10" />
       </div>
     );
 
   return (
     <div
-      className="flex-1 overflow-hidden m-2 rounded-xl bg-slate-50 border border-slate-200 shadow-sm flex flex-col"
+      className="flex-1 overflow-hidden m-2 rounded-xl bg-[#fbf8f1] border border-[#e8ddc8] shadow-[0_6px_14px_rgba(18,63,89,0.04)] flex flex-col"
       dir="rtl"
     >
       {/* ----------------- Header ----------------- */}
-      <div className="p-4 border-b border-slate-200 bg-white shrink-0 flex flex-wrap gap-4 items-center justify-between shadow-sm z-10">
+      <div className="p-4 border-b border-[#e8ddc8] bg-white shrink-0 flex flex-wrap gap-2.5 items-center justify-between shadow-[0_6px_14px_rgba(18,63,89,0.04)] z-10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center shadow-inner">
+          <div className="w-10 h-10 bg-[#eef7f6] text-[#0e7490] rounded-lg flex items-center justify-center shadow-inner">
             <Layers className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-base text-slate-800 font-black">
+            <h2 className="text-sm text-[#123f59] font-black">
               مخططات الرياض المعتمدة
             </h2>
-            <p className="text-[11px] text-slate-500 font-bold mt-0.5">
+            <p className="text-[11px] text-[#94a3b8] font-bold mt-0.5">
               إدارة المخططات، والبحث فيها أو في قطعها
             </p>
           </div>
@@ -221,13 +252,13 @@ const PlansTab = () => {
 
         {/* 🔍 شريط البحث */}
         <div className="relative w-full md:w-72">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
           <input
             type="text"
             placeholder="ابحث برقم المخطط أو رقم القطعة..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-100 border border-transparent focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50 rounded-xl pr-9 pl-4 py-2.5 text-xs font-bold outline-none transition-all"
+            className="w-full bg-[#fbf8f1] border border-transparent focus:border-[#d8b46a]/40 focus:bg-white focus:ring-4 focus:ring-[#eef7f6] rounded-xl pr-9 pl-4 py-2.5 text-xs font-bold outline-none transition-all"
           />
         </div>
 
@@ -260,20 +291,19 @@ const PlansTab = () => {
               },
             })
           }
-          className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black hover:bg-indigo-700 shadow-md shadow-indigo-600/20 transition-all active:scale-95"
+          className="flex items-center gap-2 px-3 py-2.5 bg-[#123f59] text-white rounded-xl text-xs font-black hover:bg-[#0f3448] shadow-[0_8px_18px_rgba(18,63,89,0.05)] shadow-[0_8px_18px_rgba(18,63,89,0.06)]/20 transition-all active:scale-95"
         >
-          <Plus className="w-4 h-4" /> تسجيل مخطط جديد
-        </button>
+          <IconWithText icon={Plus} text="تسجيل مخطط جديد" iconClassName="w-4 h-4" /></button>
       </div>
 
       {/* ----------------- Main Table ----------------- */}
-      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-        <div className="border border-slate-200 bg-white rounded-2xl overflow-hidden shadow-sm">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-4 custom-scrollbar">
+        <div className="border border-[#e8ddc8] bg-white rounded-2xl overflow-hidden shadow-[0_6px_14px_rgba(18,63,89,0.04)]">
           <table className="w-full text-sm text-right whitespace-nowrap">
-            <thead className="bg-slate-800 text-white font-bold text-xs">
+            <thead className="bg-[#123f59] text-white font-bold text-xs">
               <tr>
                 <th
-                  className="py-4 px-5 cursor-pointer hover:bg-slate-700 transition-colors"
+                  className="py-4 px-3 cursor-pointer hover:bg-[#475569] transition-colors"
                   onClick={() => handleSort("planNumber")}
                 >
                   <div className="flex items-center gap-2">
@@ -281,7 +311,7 @@ const PlansTab = () => {
                   </div>
                 </th>
                 <th
-                  className="py-4 px-5 cursor-pointer hover:bg-slate-700 transition-colors"
+                  className="py-4 px-3 cursor-pointer hover:bg-[#475569] transition-colors"
                   onClick={() => handleSort("hijriYear")}
                 >
                   <div className="flex items-center gap-2">
@@ -289,7 +319,7 @@ const PlansTab = () => {
                   </div>
                 </th>
                 <th
-                  className="py-4 px-5 cursor-pointer hover:bg-slate-700 transition-colors"
+                  className="py-4 px-3 cursor-pointer hover:bg-[#475569] transition-colors"
                   onClick={() => handleSort("areaM")}
                 >
                   <div className="flex items-center gap-2">
@@ -297,7 +327,7 @@ const PlansTab = () => {
                   </div>
                 </th>
                 <th
-                  className="py-4 px-5 cursor-pointer hover:bg-slate-700 transition-colors text-center"
+                  className="py-4 px-3 cursor-pointer hover:bg-[#475569] transition-colors text-center"
                   onClick={() => handleSort("plotCount")}
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -305,10 +335,10 @@ const PlansTab = () => {
                   </div>
                 </th>
                 {/* 🚀 تم فصل الإجراءات لعمودين حسب الصورة */}
-                <th className="py-4 px-5 text-center w-20 border-r border-slate-700">
+                <th className="py-4 px-3 text-center w-20 border-r border-[#475569]">
                   تعديل
                 </th>
-                <th className="py-4 px-5 text-center w-20 border-r border-slate-700 text-rose-300">
+                <th className="py-4 px-3 text-center w-20 border-r border-[#475569] text-rose-300">
                   حذف
                 </th>
               </tr>
@@ -330,29 +360,29 @@ const PlansTab = () => {
                         data: plan,
                       })
                     }
-                    className="hover:bg-indigo-50/50 hover:cursor-pointer transition-colors group"
+                    className="hover:bg-[#eef7f6]/50 hover:cursor-pointer transition-colors group"
                   >
-                    <td className="py-3 px-5 font-black text-indigo-700">
+                    <td className="py-3 px-3 font-black text-[#15536f]">
                       {plan.planNumber}
                     </td>
-                    <td className="py-3 px-5 text-slate-600 font-bold">
+                    <td className="py-3 px-3 text-[#64748b] font-bold">
                       {plan.hijriYear || "---"}
                     </td>
-                    <td className="py-3 px-5 font-mono font-bold text-slate-600">
+                    <td className="py-3 px-3 font-mono font-bold text-[#64748b]">
                       {plan.areaM ? Number(plan.areaM).toLocaleString() : "---"}
                     </td>
 
                     {/* عرض عدد القطع من الداتابيز */}
-                    <td className="py-3 px-5 text-center">
+                    <td className="py-3 px-3 text-center">
                       <span
-                        className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-black ${dbPlotCount > 0 ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-500"}`}
+                        className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-black ${dbPlotCount > 0 ? "bg-emerald-100 text-emerald-800" : "bg-[#fbf8f1] text-[#94a3b8]"}`}
                       >
                         {dbPlotCount} قطعة
                       </span>
                     </td>
 
                     {/* عمود التعديل */}
-                    <td className="py-3 px-5 text-center border-r border-slate-100">
+                    <td className="py-3 px-3 text-center border-r border-[#fbf8f1]">
                       <button
                         onClick={() =>
                           setPlanModal({
@@ -362,22 +392,20 @@ const PlansTab = () => {
                             data: plan,
                           })
                         }
-                        className="p-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-all shadow-sm mx-auto flex"
+                        className="p-2 bg-white border border-[#e8ddc8] rounded-lg text-[#94a3b8] hover:text-[#0e7490] hover:border-[#d8b46a]/35 hover:bg-[#eef7f6] transition-all shadow-[0_6px_14px_rgba(18,63,89,0.04)] mx-auto flex"
                         title="تعديل المخطط"
                       >
-                        <Edit className="w-4 h-4" />
-                      </button>
+                        <IconWithText icon={Edit} text="تعديل" iconClassName="w-4 h-4" /></button>
                     </td>
 
                     {/* عمود الحذف (منفصل) */}
-                    <td className="py-3 px-5 text-center border-r border-slate-100 bg-rose-50/20">
+                    <td className="py-3 px-3 text-center border-r border-[#fbf8f1] bg-rose-50/20">
                       <button
                         onClick={(e) => handleDelete(e, plan.id)}
-                        className="p-2 bg-white border border-rose-200 rounded-lg text-rose-500 hover:text-white hover:bg-rose-500 transition-all shadow-sm mx-auto flex"
+                        className="p-2 bg-white border border-rose-200 rounded-lg text-rose-500 hover:text-white hover:bg-rose-500 transition-all shadow-[0_6px_14px_rgba(18,63,89,0.04)] mx-auto flex"
                         title="حذف المخطط نهائياً"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        <IconWithText icon={Trash2} text="حذف" iconClassName="w-4 h-4" /></button>
                     </td>
                   </tr>
                 );
@@ -386,9 +414,9 @@ const PlansTab = () => {
                 <tr>
                   <td
                     colSpan="6"
-                    className="text-center py-20 text-slate-400 font-bold bg-slate-50"
+                    className="text-center py-20 text-[#94a3b8] font-bold bg-[#fbf8f1]"
                   >
-                    <Layers className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                    <Layers className="w-9 h-9 mx-auto mb-3 opacity-20" />
                     لا توجد مخططات مطابقة للبحث أو مسجلة حالياً
                   </td>
                 </tr>
@@ -400,16 +428,16 @@ const PlansTab = () => {
 
       {/* ----------------- Wide Modal Shell ----------------- */}
       {planModal.isOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 lg:p-6 animate-in fade-in">
-          <div className="bg-slate-50 rounded-3xl w-full max-w-7xl h-[95vh] shadow-2xl flex flex-col overflow-hidden ring-1 ring-white/20 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 bg-[#123f59]/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 lg:p-3 animate-in fade-in">
+          <div className="bg-[#fbf8f1] rounded-2xl w-full max-w-7xl h-[95vh] shadow-2xl flex flex-col overflow-hidden ring-1 ring-white/20 animate-in zoom-in-95 duration-300">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-200 bg-white flex justify-between items-center shrink-0">
+            <div className="px-3 py-4 border-b border-[#e8ddc8] bg-white flex justify-between items-center shrink-0">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-indigo-600 text-white rounded-xl shadow-inner">
+                <div className="p-2.5 bg-[#123f59] text-white rounded-xl shadow-inner">
                   <Layers className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-800 text-lg tracking-tight">
+                  <h3 className="font-black text-[#123f59] text-sm tracking-tight">
                     {planModal.mode === "create"
                       ? "إضافة مخطط جديد"
                       : `تعديل المخطط: ${planModal.data.planNumber}`}
@@ -418,16 +446,15 @@ const PlansTab = () => {
               </div>
               <button
                 onClick={() => setPlanModal({ ...planModal, isOpen: false })}
-                className="p-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all"
+                className="p-2 bg-[#fbf8f1] border border-[#e8ddc8] rounded-xl text-[#94a3b8] hover:bg-rose-50 hover:text-rose-600 transition-all"
               >
-                <X className="w-5 h-5" />
-              </button>
+                <IconWithText icon={X} text="إغلاق" iconClassName="w-5 h-5" /></button>
             </div>
 
             {/* Modal Body */}
             <div className="flex-1 flex overflow-hidden">
               {/* Sidebar */}
-              <div className="w-64 bg-white border-l border-slate-200 p-4 flex flex-col gap-1.5 shrink-0 overflow-y-auto custom-scrollbar-slim">
+              <div className="w-64 bg-white border-l border-[#e8ddc8] p-4 flex flex-col gap-1.5 shrink-0 overflow-y-auto overflow-x-hidden custom-scrollbar-slim">
                 {MODAL_TABS.map((tab) => {
                   const isActive = planModal.activeTab === tab.id;
                   return (
@@ -436,13 +463,13 @@ const PlansTab = () => {
                       onClick={() =>
                         setPlanModal((prev) => ({ ...prev, activeTab: tab.id }))
                       }
-                      className={`flex items-center gap-3 w-full p-3.5 rounded-xl text-sm font-bold transition-all relative overflow-hidden ${isActive ? "bg-indigo-50 text-indigo-700 shadow-sm border border-indigo-100" : "text-slate-600 hover:bg-slate-50 border border-transparent"}`}
+                      className={`flex items-center gap-3 w-full p-3.5 rounded-xl text-sm font-bold transition-all relative overflow-hidden ${isActive ? "bg-[#eef7f6] text-[#15536f] shadow-[0_6px_14px_rgba(18,63,89,0.04)] border border-[#d8b46a]/25" : "text-[#64748b] hover:bg-[#fbf8f1] border border-transparent"}`}
                     >
                       {isActive && (
-                        <div className="absolute right-0 top-2 bottom-2 w-1 bg-indigo-600 rounded-l-full"></div>
+                        <div className="absolute right-0 top-2 bottom-2 w-1 bg-[#0e7490] rounded-l-full"></div>
                       )}
                       <tab.icon
-                        className={`w-4 h-4 ${isActive ? "text-indigo-600" : "text-slate-400"}`}
+                        className={`w-4 h-4 ${isActive ? "text-[#0e7490]" : "text-[#94a3b8]"}`}
                       />
                       {tab.label}
                     </button>
@@ -451,11 +478,11 @@ const PlansTab = () => {
               </div>
 
               {/* Content Area */}
-              <div className="flex-1 flex p-5 flex-col overflow-hidden bg-slate-50">
+              <div className="flex-1 flex p-3 flex-col overflow-hidden bg-[#fbf8f1]">
                 <form
                   id="planComplexForm"
                   onSubmit={handleSubmit}
-                  className="flex-1 flex flex-col overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-sm"
+                  className="flex-1 flex flex-col overflow-hidden bg-white border border-[#e8ddc8] rounded-2xl shadow-[0_6px_14px_rgba(18,63,89,0.04)]"
                 >
                   {planModal.activeTab === "general" && (
                     <GeneralInfoTab
@@ -501,13 +528,13 @@ const PlansTab = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-5 border-t border-slate-200 bg-white flex gap-4 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
+            <div className="p-3 border-t border-[#e8ddc8] bg-white flex gap-2.5 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
               <button
                 type="button"
                 onClick={() =>
                   setPlanModal((prev) => ({ ...prev, isOpen: false }))
                 }
-                className="px-8 py-3 bg-slate-100 text-slate-700 font-black rounded-xl w-40 hover:bg-slate-200 transition-colors"
+                className="px-4 py-3 bg-[#fbf8f1] text-[#475569] font-black rounded-xl w-40 hover:bg-[#e8ddc8] transition-colors"
               >
                 إغلاق
               </button>
@@ -516,7 +543,7 @@ const PlansTab = () => {
                   document.getElementById("planComplexForm").requestSubmit()
                 }
                 disabled={planMutation.isPending}
-                className="flex-1 px-8 py-3 bg-indigo-600 text-white font-black rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all active:scale-95"
+                className="flex-1 px-4 py-3 bg-[#123f59] text-white font-black rounded-xl flex items-center justify-center gap-2 hover:bg-[#0f3448] transition-all active:scale-95"
               >
                 حفظ جميع بيانات المخطط
               </button>
@@ -542,44 +569,43 @@ const PlansTab = () => {
       )}
       {/* ----------------- Modal معاينة الملفات ----------------- */}
       {previewFile && (
-        <div className="fixed inset-0 z-[200] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4 lg:p-8 animate-in fade-in" dir="rtl">
-          <div className="bg-white w-full max-w-5xl h-[90vh] rounded-3xl flex flex-col overflow-hidden shadow-2xl ring-1 ring-white/10 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[200] bg-[#123f59]/90 backdrop-blur-sm flex items-center justify-center p-4 lg:p-4 animate-in fade-in" dir="rtl">
+          <div className="bg-white w-full max-w-5xl h-[90vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl ring-1 ring-white/10 animate-in zoom-in-95 duration-300">
             {/* Header المعاينة */}
-            <div className="px-6 py-4 bg-slate-800 flex justify-between items-center shrink-0 shadow-md z-10">
+            <div className="px-3 py-4 bg-[#123f59] flex justify-between items-center shrink-0 shadow-[0_8px_18px_rgba(18,63,89,0.05)] z-10">
               <div className="flex items-center gap-3 text-white">
                 <div>
                   <h3 className="font-bold text-sm line-clamp-1" dir="ltr">{previewFile.name}</h3>
-                  <p className="text-[10px] text-slate-400 font-mono mt-0.5">معاينة مباشرة (Preview)</p>
+                  <p className="text-[10px] text-[#94a3b8] font-mono mt-0.5">معاينة مباشرة (Preview)</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <a
                   href={previewFile.url}
                   download={previewFile.name}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black transition-all flex items-center gap-2"
+                  className="inline-flex h-8 items-center justify-center gap-1.5 rounded-xl bg-[#0e7490] px-2.5 text-[10px] font-black text-white transition hover:bg-[#123f59]"
                 >
-                  تنزيل
+                  تنزيل الملف
                 </a>
                 <button
                   onClick={() => setPreviewFile(null)}
-                  className="p-2 bg-slate-700 hover:bg-rose-500 text-white rounded-xl transition-all"
+                  className="p-2 bg-[#475569] hover:bg-rose-500 text-white rounded-xl transition-all"
                 >
-                  <X className="w-5 h-5" />
-                </button>
+                  <IconWithText icon={X} text="إغلاق" iconClassName="w-5 h-5" /></button>
               </div>
             </div>
 
             {/* Content المعاينة */}
-            <div className="flex-1 bg-slate-100 relative overflow-hidden flex justify-center items-center p-4 custom-scrollbar">
+            <div className="flex-1 bg-[#fbf8f1] relative overflow-hidden flex justify-center items-center p-4 custom-scrollbar">
               {["pdf"].includes(previewFile.type?.toLowerCase()) ? (
-                <iframe src={previewFile.url} className="w-full h-full rounded-2xl shadow-sm bg-white" title={previewFile.name} />
+                <iframe src={previewFile.url} className="w-full h-full rounded-2xl shadow-[0_6px_14px_rgba(18,63,89,0.04)] bg-white" title={previewFile.name} />
               ) : ["jpg", "jpeg", "png", "webp", "gif"].includes(previewFile.type?.toLowerCase()) ? (
-                <img src={previewFile.url} alt={previewFile.name} className="max-w-full max-h-full object-contain rounded-2xl shadow-sm p-2 bg-white" />
+                <img src={previewFile.url} alt={previewFile.name} className="max-w-full max-h-full object-contain rounded-2xl shadow-[0_6px_14px_rgba(18,63,89,0.04)] p-2 bg-white" />
               ) : (
-                <div className="text-center text-slate-500 bg-white p-10 rounded-3xl shadow-sm max-w-sm">
-                  <h3 className="font-black text-slate-800 text-lg mb-2">المعاينة غير متاحة</h3>
+                <div className="text-center text-[#94a3b8] bg-white p-4 rounded-2xl shadow-[0_6px_14px_rgba(18,63,89,0.04)] max-w-sm">
+                  <h3 className="font-black text-[#123f59] text-sm mb-2">المعاينة غير متاحة</h3>
                   <p className="text-xs font-bold leading-relaxed mb-6">المتصفح لا يدعم المعاينة المباشرة لهذا النوع من الملفات ({previewFile.type}).</p>
-                  <a href={previewFile.url} download={previewFile.name} className="inline-flex px-6 py-3 bg-blue-600 text-white rounded-xl text-sm font-black hover:bg-blue-700 transition-all shadow-md">
+                  <a href={previewFile.url} download={previewFile.name} className="inline-flex px-3 py-3 bg-[#123f59] text-white rounded-xl text-sm font-black hover:bg-[#0f3448] transition-all shadow-[0_8px_18px_rgba(18,63,89,0.05)]">
                     تنزيل الملف للعرض
                   </a>
                 </div>
