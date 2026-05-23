@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import api from '../../api/axios';
 import { 
   FileText, Search, Settings, Hash, Funnel, PenLine, 
-  Printer, X, Plus, Loader2, Trash2, Edit
+  Printer, X, Plus, Loader2, Trash2, Edit, FolderOpen,
+  Copy, Download, Upload, Eye, Filter, SortAsc, Grid3X3,
+  List, ChevronLeft, ChevronRight, Star, Archive, Clock,
+  CheckCircle, AlertCircle, MoreVertical, Tag, Calendar, User
 } from 'lucide-react';
 
 // استيراد مودال الإعدادات الذي قمنا بإنشائه مسبقاً
@@ -15,15 +18,28 @@ const mockGeneratedDocs = [
   { id: 3, serial: 'DOC-TRX5001-2026-05-01-001', type: 'التقرير الفني الموحد', transaction: 'TRX-5001', status: 'مكتمل', statusColor: 'emerald', user: 'م. خالد', date: '2026-05-01 10:30' }
 ];
 
+// فئات المستندات للتصنيف
+const DOCUMENT_CATEGORIES = [
+  { id: 'all', name: 'جميع القوالب', icon: FolderOpen, color: 'slate' },
+  { id: 'contracts', name: 'العقود', icon: FileText, color: 'blue' },
+  { id: 'reports', name: 'التقارير', icon: FileText, color: 'green' },
+  { id: 'certificates', name: 'الشهادات', icon: FileText, color: 'purple' },
+  { id: 'letters', name: 'الخطابات', icon: FileText, color: 'orange' },
+  { id: 'forms', name: 'النماذج', icon: FileText, color: 'pink' },
+];
+
 export default function DocumentCenterScreen() {
   // 1. حالات التنقل والبحث
   const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'log'
   const [catalogSearch, setCatalogSearch] = useState('');
   const [logSearch, setLogSearch] = useState('');
-
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+  
   // 2. حالات البيانات (Data States)
   const [templates, setTemplates] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [favorites, setFavorites] = useState([]);
   
   // 3. حالات المودال (الإضافة / التعديل)
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,6 +48,10 @@ export default function DocumentCenterScreen() {
   
   // للمعاينة الحية في الشاشة الرئيسية
   const [previewTemplate, setPreviewTemplate] = useState(null);
+  const [selectedTemplateForAction, setSelectedTemplateForAction] = useState(null);
+  
+  // حالة القائمة المنسدلة للإجراءات
+  const [activeDropdown, setActiveDropdown] = useState(null);
 
   // ==========================================
   // دوال الاتصال بالخادم (API Calls)
@@ -78,121 +98,364 @@ export default function DocumentCenterScreen() {
     setIsModalOpen(true);
   };
 
+  // تبديل المفضلة
+  const toggleFavorite = (e, templateId) => {
+    e.stopPropagation();
+    setFavorites(prev => 
+      prev.includes(templateId) 
+        ? prev.filter(id => id !== templateId)
+        : [...prev, templateId]
+    );
+  };
+
+  // تصفية القوالب حسب الفئة والبحث
+  const filteredTemplates = useMemo(() => {
+    return templates.filter(doc => {
+      const matchesSearch = doc.title?.includes(catalogSearch) || doc.code?.includes(catalogSearch);
+      const matchesCategory = selectedCategory === 'all' || doc.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [templates, catalogSearch, selectedCategory]);
+
+  // ==========================================
+  // مكون: بطاقة القالب (Template Card)
+  // ==========================================
+  const TemplateCard = ({ doc, isCompact = false }) => {
+    const isFav = favorites.includes(doc.id);
+    const isActive = previewTemplate?.id === doc.id;
+    
+    return (
+      <div 
+        onClick={() => setPreviewTemplate(doc)}
+        className={`group relative bg-white rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden ${
+          isActive 
+            ? 'border-indigo-500 shadow-lg shadow-indigo-100 ring-2 ring-indigo-100' 
+            : 'border-slate-200 hover:border-indigo-300 hover:shadow-md'
+        } ${isCompact ? 'p-3' : 'p-5'}`}
+      >
+        {/* شريط الحالة العلوي */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+        
+        {/* زر المفضلة */}
+        <button 
+          onClick={(e) => toggleFavorite(e, doc.id)}
+          className={`absolute top-3 left-3 p-1.5 rounded-full transition-all z-10 ${
+            isFav 
+              ? 'bg-amber-50 text-amber-500' 
+              : 'bg-white/80 text-slate-300 opacity-0 group-hover:opacity-100 hover:text-amber-500'
+          }`}
+        >
+          <Star className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
+        </button>
+
+        {/* قائمة الإجراءات */}
+        <div className="absolute top-3 right-3 flex items-center gap-1">
+          <div className={`flex items-center gap-1 transition-all ${isCompact ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+            <button 
+              onClick={(e) => openSettingsModal(e, doc)} 
+              className="p-1.5 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-lg transition-colors" 
+              title="إعدادات"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={(e) => handleDeleteTemplate(e, doc.id)} 
+              className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors" 
+              title="حذف"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* أيقونة المستند */}
+        <div className={`mb-4 flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 group-hover:from-indigo-100 group-hover:to-purple-100 transition-colors ${isCompact ? 'w-10 h-10 mb-2' : ''}`}>
+          <FileText className="w-7 h-7 text-indigo-600" />
+        </div>
+
+        {/* معلومات القالب */}
+        <div className="space-y-2">
+          <h4 className={`font-black text-slate-800 group-hover:text-indigo-700 transition-colors line-clamp-2 ${isCompact ? 'text-xs' : 'text-sm'}`}>
+            {doc.title}
+          </h4>
+          
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-500">
+              {doc.code || '---'}
+            </span>
+            {doc.category && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-600">
+                {doc.category}
+              </span>
+            )}
+          </div>
+
+          {!isCompact && (
+            <div className="pt-3 flex items-center justify-between text-[10px] text-slate-400">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString('ar-SA') : '-'}
+              </span>
+              <span className="flex items-center gap-1">
+                <User className="w-3 h-3" />
+                {doc.createdBy || 'النظام'}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // ==========================================
   // مكون: شاشة عرض القوالب/الكتالوج (Catalog View)
   // ==========================================
   const renderCatalogView = () => {
-    const filteredDocs = templates.filter(doc => 
-      doc.title?.includes(catalogSearch) || doc.code?.includes(catalogSearch)
-    );
-
     return (
-      <div className="h-full flex flex-col md:flex-row overflow-hidden animate-in fade-in">
+      <div className="h-full flex overflow-hidden bg-slate-50">
         
-        {/* Sidebar - قائمة القوالب */}
-        <div className="w-full md:w-[350px] bg-white border-l border-slate-200 flex flex-col shrink-0 z-10 shadow-[2px_0_10px_rgba(0,0,0,0.02)]">
-          
-          <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-black text-slate-700">أنواع المستندات</h3>
-              <button 
-                onClick={(e) => openSettingsModal(e)}
-                className="p-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
-                title="إضافة نوع جديد"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute right-3 top-2.5" />
-              <input 
-                placeholder="بحث برمز أو اسم المستند..." 
-                className="w-full pl-3 pr-9 py-2 bg-white border border-slate-200 rounded-lg text-xs font-black focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all" 
-                type="text" 
-                value={catalogSearch}
-                onChange={(e) => setCatalogSearch(e.target.value)}
-              />
+        {/* Sidebar - قائمة الفئات */}
+        <div className="w-64 bg-white border-l border-slate-200 flex flex-col shrink-0 z-10">
+          {/* هيدر القائمة الجانبية */}
+          <div className="p-5 border-b border-slate-100">
+            <h3 className="text-xs font-black text-slate-700 mb-4 flex items-center gap-2">
+              <FolderOpen className="w-4 h-4 text-indigo-500" />
+              تصنيفات المستندات
+            </h3>
+            
+            {/* أزرار الفئات */}
+            <div className="space-y-1.5">
+              {DOCUMENT_CATEGORIES.map((cat) => {
+                const Icon = cat.icon;
+                const isActive = selectedCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive
+                        ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50 border border-transparent'
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                    {cat.name}
+                    {isActive && <ChevronLeft className="w-3 h-3 mr-auto text-indigo-400" />}
+                  </button>
+                );
+              })}
             </div>
           </div>
-          
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
-            {isLoading ? (
-              <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 text-indigo-500 animate-spin" /></div>
-            ) : filteredDocs.length === 0 ? (
-              <div className="text-center py-10 text-xs font-bold text-slate-400">لا توجد مستندات، أضف مستنداً جديداً.</div>
-            ) : (
-              filteredDocs.map((doc) => {
-                const isActive = previewTemplate?.id === doc.id;
-                return (
-                  <div 
-                    key={doc.id} 
-                    onClick={() => setPreviewTemplate(doc)}
-                    className={`w-full text-right p-3 rounded-xl border transition-all flex items-start gap-3 cursor-pointer group ${isActive ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-transparent border-slate-100 hover:bg-slate-50 hover:border-slate-200'}`}
-                  >
-                    <div className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 transition-colors ${isActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 group-hover:text-indigo-500'}`}>
-                      <FileText className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <h4 className={`text-xs font-black truncate ${isActive ? 'text-indigo-900' : 'text-slate-800'}`}>
-                          {doc.title}
-                        </h4>
-                        
-                        {/* أزرار الإجراءات (تظهر عند الـ Hover أو التفعيل) */}
-                        <div className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ${isActive ? 'opacity-100' : ''}`}>
-                          <button onClick={(e) => openSettingsModal(e, doc)} className="p-1 hover:bg-indigo-100 text-indigo-500 rounded transition-colors" title="إعدادات المستند">
-                            <Settings className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={(e) => handleDeleteTemplate(e, doc.id)} className="p-1 hover:bg-rose-100 text-rose-500 rounded transition-colors" title="حذف">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
 
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border ${isActive ? 'bg-white text-indigo-600 border-indigo-100' : 'text-slate-400 bg-slate-50 border-slate-200'}`}>
-                          {doc.code}
-                        </span>
-                        <p className="text-[9px] font-bold text-slate-500 truncate">{doc.category || 'غير مصنف'}</p>
-                      </div>
-                    </div>
+          {/* إحصائيات سريعة */}
+          <div className="mt-auto p-4 border-t border-slate-100 bg-slate-50/50">
+            <div className="bg-white rounded-xl p-3 border border-slate-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold text-slate-500">إجمالي القوالب</span>
+                <Star className="w-3 h-3 text-amber-500" />
+              </div>
+              <div className="text-lg font-black text-slate-800">{templates.length}</div>
+              <div className="text-[9px] text-slate-400 mt-1">
+                {favorites.length} في المفضلة
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* منطقة المحتوى الرئيسية */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          
+          {/* شريط الأدوات العلوي */}
+          <div className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
+            {/* البحث والفلاتر */}
+            <div className="flex items-center gap-3 flex-1">
+              <div className="relative w-80">
+                <Search className="w-4 h-4 text-slate-400 absolute right-3 top-2.5" />
+                <input 
+                  placeholder="ابحث باسم القالب أو الرمز..." 
+                  className="w-full pl-4 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all" 
+                  type="text" 
+                  value={catalogSearch}
+                  onChange={(e) => setCatalogSearch(e.target.value)}
+                />
+              </div>
+              
+              <div className="h-8 w-px bg-slate-200 mx-2" />
+              
+              {/* أزرار عرض الشبكة/القائمة */}
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+                <button 
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 rounded-md transition-all ${
+                    viewMode === 'grid' 
+                      ? 'bg-white text-indigo-600 shadow-sm' 
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  <Grid3X3 className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded-md transition-all ${
+                    viewMode === 'list' 
+                      ? 'bg-white text-indigo-600 shadow-sm' 
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* زر إضافة جديد */}
+            <button 
+              onClick={(e) => openSettingsModal(e)}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-200"
+            >
+              <Plus className="w-4 h-4" />
+              قالب جديد
+            </button>
+          </div>
+
+          {/* شبكة القوالب */}
+          <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-3" />
+                <span className="text-xs font-bold">جاري تحميل القوالب...</span>
+              </div>
+            ) : filteredTemplates.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                  <FileText className="w-10 h-10 text-slate-300" />
+                </div>
+                <h3 className="text-sm font-black text-slate-600 mb-2">لا توجد قوالب مطابقة</h3>
+                <p className="text-xs text-slate-400 max-w-xs text-center">
+                  {catalogSearch || selectedCategory !== 'all'
+                    ? 'حاول تغيير معايير البحث أو الفئة'
+                    : 'ابدأ بإضافة أول قالب للمستندات'}
+                </p>
+                {!catalogSearch && selectedCategory === 'all' && (
+                  <button 
+                    onClick={(e) => openSettingsModal(e)}
+                    className="mt-4 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors"
+                  >
+                    إضافة قالب جديد
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                {viewMode === 'grid' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredTemplates.map((doc) => (
+                      <TemplateCard key={doc.id} doc={doc} />
+                    ))}
                   </div>
-                )
-              })
+                ) : (
+                  <div className="space-y-2">
+                    {filteredTemplates.map((doc) => (
+                      <TemplateCard key={doc.id} doc={doc} isCompact />
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
 
-        {/* مساحة العرض الرئيسية لمعاينة المستند المختار */}
-        <div className="flex-1 bg-slate-50/50 flex flex-col overflow-hidden relative">
-          {previewTemplate ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-600 p-6 text-center animate-in zoom-in-95">
-              <div className="w-20 h-20 bg-white border border-indigo-100 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-indigo-100/50">
-                <FileText className="w-10 h-10 text-indigo-500" />
-              </div>
-              <h2 className="text-xl font-black text-slate-800 mb-2">{previewTemplate.title}</h2>
-              <p className="text-sm font-bold text-slate-500 max-w-sm mb-6">
-                هذا القالب مخصص لـ ({previewTemplate.category || 'عام'}) وله الرمز المرجعي <span className="font-mono text-indigo-600">{previewTemplate.code}</span>
-              </p>
-              <div className="flex gap-3">
-                <button onClick={(e) => openSettingsModal(e, previewTemplate)} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black shadow-md hover:bg-indigo-700 transition-colors flex items-center gap-2">
-                  <Settings className="w-4 h-4" /> تعديل الإعدادات
-                </button>
-                <button className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-black shadow-sm hover:bg-slate-50 transition-colors flex items-center gap-2">
-                  <PenLine className="w-4 h-4" /> إنشاء مسودة 
-                </button>
-              </div>
+        {/* لوحة المعاينة الجانبية */}
+        {previewTemplate && (
+          <div className="w-[400px] bg-white border-r border-slate-200 flex flex-col shrink-0 z-10 shadow-[-4px_0_20px_rgba(0,0,0,0.03)]">
+            {/* هيدر المعاينة */}
+            <div className="h-14 border-b border-slate-100 flex items-center justify-between px-5 shrink-0">
+              <h3 className="text-xs font-black text-slate-700 flex items-center gap-2">
+                <Eye className="w-4 h-4 text-indigo-500" />
+                معاينة القالب
+              </h3>
+              <button 
+                onClick={() => setPreviewTemplate(null)}
+                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-6 text-center">
-              <div className="w-16 h-16 bg-white border border-slate-200 rounded-2xl flex items-center justify-center mb-4 shadow-sm">
-                <FileText className="w-8 h-8 text-slate-300" />
-              </div>
-              <h2 className="text-sm font-black text-slate-600 mb-2">الرجاء اختيار نوع المستند للبدء</h2>
-            </div>
-          )}
-        </div>
 
+            {/* محتوى المعاينة */}
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 border border-indigo-100 mb-6">
+                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-sm mx-auto">
+                  <FileText className="w-8 h-8 text-indigo-600" />
+                </div>
+                <h2 className="text-lg font-black text-slate-800 text-center mb-2">
+                  {previewTemplate.title}
+                </h2>
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white text-slate-500 border border-slate-200">
+                    {previewTemplate.code || '---'}
+                  </span>
+                  {previewTemplate.category && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-600">
+                      {previewTemplate.category}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* معلومات إضافية */}
+              <div className="space-y-4">
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                  <h4 className="text-[10px] font-black text-slate-500 uppercase mb-3">تفاصيل القالب</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-500 font-bold">الحالة</span>
+                      <span className="text-emerald-600 font-black bg-emerald-50 px-2 py-0.5 rounded-full text-[10px]">
+                        {previewTemplate.status || 'نشط'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-500 font-bold">مستوى الأمان</span>
+                      <span className="text-slate-700 font-bold">
+                        {previewTemplate.securityLevel || 'عام'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-500 font-bold">حجم الصفحة</span>
+                      <span className="text-slate-700 font-bold">
+                        {previewTemplate.pageSize || 'A4'} {previewTemplate.orientation === 'landscape' ? '(أفقي)' : '(رأسي)'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* إجراءات سريعة */}
+                <div className="space-y-2">
+                  <button 
+                    onClick={(e) => openSettingsModal(e, previewTemplate)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black hover:bg-indigo-700 transition-colors shadow-md"
+                  >
+                    <Settings className="w-4 h-4" />
+                    تعديل الإعدادات
+                  </button>
+                  <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white border-2 border-slate-200 text-slate-700 rounded-xl text-xs font-black hover:border-indigo-300 hover:bg-indigo-50 transition-all">
+                    <PenLine className="w-4 h-4" />
+                    إنشاء مسودة جديدة
+                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-bold hover:bg-slate-50 transition-colors">
+                      <Printer className="w-3.5 h-3.5" />
+                      طباعة
+                    </button>
+                    <button className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-bold hover:bg-slate-50 transition-colors">
+                      <Download className="w-3.5 h-3.5" />
+                      تصدير
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
