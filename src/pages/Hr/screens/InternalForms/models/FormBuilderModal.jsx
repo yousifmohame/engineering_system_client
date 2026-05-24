@@ -45,6 +45,37 @@ import {
 import { toast } from "sonner";
 import api from "../../../../../api/axios";
 
+
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`inline-flex min-w-0 items-center justify-center ${
+        vertical ? "flex-col gap-0.5" : "gap-1.5"
+      } ${className}`}
+    >
+      {Icon && <Icon className={iconClassName || "h-3.5 w-3.5 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 whitespace-nowrap text-[10px] font-black leading-none"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
+
+
 // ==========================================
 // 💡 ثوابت أبعاد الورقة
 // ==========================================
@@ -61,8 +92,8 @@ const FORM_BLOCKS = [
     label: "عنوان النموذج",
     desc: "عنوان رئيسي",
     icon: Type,
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
+    color: "text-[#0e7490]",
+    bg: "bg-[#0e7490]/10",
   },
   {
     id: 2,
@@ -70,8 +101,8 @@ const FORM_BLOCKS = [
     label: "رقم الإصدار",
     desc: "v1.0",
     icon: Hash,
-    color: "text-violet-500",
-    bg: "bg-violet-500/10",
+    color: "text-[#0e7490]",
+    bg: "bg-[#0e7490]/10",
   },
   {
     id: 3,
@@ -79,8 +110,8 @@ const FORM_BLOCKS = [
     label: "الموضوع",
     desc: "موضوع النموذج",
     icon: AlignLeft,
-    color: "text-sky-500",
-    bg: "bg-sky-500/10",
+    color: "text-[#0e7490]",
+    bg: "bg-[#eef7f6]",
   },
   {
     id: 4,
@@ -88,8 +119,8 @@ const FORM_BLOCKS = [
     label: "رقم الخطاب",
     desc: "ترقيم داخلي",
     icon: Hash,
-    color: "text-pink-500",
-    bg: "bg-pink-500/10",
+    color: "text-[#0e7490]",
+    bg: "bg-[#eef7f6]",
   },
   {
     id: 5,
@@ -97,8 +128,8 @@ const FORM_BLOCKS = [
     label: "تاريخ ميلادي",
     desc: "تاريخ ميلادي",
     icon: Calendar,
-    color: "text-amber-500",
-    bg: "bg-amber-500/10",
+    color: "text-[#e2bf74]",
+    bg: "bg-[#fff8e7]/10",
   },
   {
     id: 6,
@@ -115,8 +146,8 @@ const FORM_BLOCKS = [
     label: "تاريخ قابل للتعديل",
     desc: "تاريخ من تقويم",
     icon: CalendarClock,
-    color: "text-orange-500",
-    bg: "bg-orange-500/10",
+    color: "text-[#c5983c]",
+    bg: "bg-[#c5983c]/10",
   },
   {
     id: 8,
@@ -124,8 +155,8 @@ const FORM_BLOCKS = [
     label: "الوقت",
     desc: "وقت بالساعة والدقيقة",
     icon: Clock,
-    color: "text-cyan-500",
-    bg: "bg-cyan-500/10",
+    color: "text-[#0e7490]",
+    bg: "bg-[#eef7f6]",
   },
   {
     id: 9,
@@ -133,8 +164,8 @@ const FORM_BLOCKS = [
     label: "بيانات موظف",
     desc: "معلومات كاملة",
     icon: User,
-    color: "text-indigo-500",
-    bg: "bg-indigo-500/10",
+    color: "text-[#0e7490]",
+    bg: "bg-[#0e7490]/10",
   },
   {
     id: 10,
@@ -151,8 +182,8 @@ const FORM_BLOCKS = [
     label: "توقيع المكتب",
     desc: "توقيع رسمي",
     icon: FilePenLine,
-    color: "text-cyan-600",
-    bg: "bg-cyan-600/10",
+    color: "text-[#0e7490]",
+    bg: "bg-[#eef7f6]",
   },
   {
     id: 12,
@@ -169,8 +200,8 @@ const FORM_BLOCKS = [
     label: "بصمة إصبع",
     desc: "بصمة حبر",
     icon: User,
-    color: "text-lime-500",
-    bg: "bg-lime-500/10",
+    color: "text-[#0e7490]",
+    bg: "bg-[#eef7f6]",
   },
   {
     id: 14,
@@ -178,8 +209,8 @@ const FORM_BLOCKS = [
     label: "حقل نصي",
     desc: "حقل نص قصير",
     icon: Type,
-    color: "text-slate-500",
-    bg: "bg-slate-500/10",
+    color: "text-[#94a3b8]",
+    bg: "bg-[#fbf8f1]0/10",
   },
   {
     id: 15,
@@ -187,8 +218,8 @@ const FORM_BLOCKS = [
     label: "منطقة نصية",
     desc: "نص طويل",
     icon: FileText,
-    color: "text-stone-500",
-    bg: "bg-stone-500/10",
+    color: "text-[#94a3b8]",
+    bg: "bg-[#fbf8f1]0/10",
   },
   {
     id: 16,
@@ -205,8 +236,8 @@ const FORM_BLOCKS = [
     label: "جدول",
     desc: "جدول بيانات",
     icon: Table,
-    color: "text-orange-500",
-    bg: "bg-orange-500/10",
+    color: "text-[#c5983c]",
+    bg: "bg-[#c5983c]/10",
   },
   {
     id: 18,
@@ -214,8 +245,8 @@ const FORM_BLOCKS = [
     label: "خانة اختيار",
     desc: "checkbox",
     icon: SquareCheckBig,
-    color: "text-purple-500",
-    bg: "bg-purple-500/10",
+    color: "text-[#0e7490]",
+    bg: "bg-[#0e7490]/10",
   },
   {
     id: 19,
@@ -223,8 +254,8 @@ const FORM_BLOCKS = [
     label: "فاصل",
     desc: "خط فاصل",
     icon: Minus,
-    color: "text-slate-400",
-    bg: "bg-slate-400/10",
+    color: "text-[#94a3b8]",
+    bg: "bg-[#0e7490]/10",
   },
   {
     id: 20,
@@ -232,8 +263,8 @@ const FORM_BLOCKS = [
     label: "مسافة",
     desc: "مسافة فارغة",
     icon: Maximize2,
-    color: "text-slate-300",
-    bg: "bg-slate-300/10",
+    color: "text-[#cbd5e1]",
+    bg: "bg-[#e8ddc8]/10",
   },
   {
     id: 21,
@@ -241,8 +272,8 @@ const FORM_BLOCKS = [
     label: "صورة الهيدر",
     desc: "صورة أعلى الصفحة",
     icon: ImageIcon,
-    color: "text-blue-800",
-    bg: "bg-blue-800/10",
+    color: "text-[#123f59]",
+    bg: "bg-[#0e7490]/10",
   },
   {
     id: 22,
@@ -250,8 +281,8 @@ const FORM_BLOCKS = [
     label: "صورة الفوتر",
     desc: "صورة أسفل الصفحة",
     icon: ImageIcon,
-    color: "text-slate-900",
-    bg: "bg-slate-900/10",
+    color: "text-[#123f59]",
+    bg: "bg-[#06111d]/10",
   },
   {
     id: 23,
@@ -259,8 +290,8 @@ const FORM_BLOCKS = [
     label: "صورة الخلفية",
     desc: "صورة خلف المحتوى",
     icon: ImageIcon,
-    color: "text-slate-500",
-    bg: "bg-slate-500/10",
+    color: "text-[#94a3b8]",
+    bg: "bg-[#fbf8f1]0/10",
   },
   {
     id: 24,
@@ -268,8 +299,8 @@ const FORM_BLOCKS = [
     label: "علامة مائية",
     desc: "نص أو صورة شفافة",
     icon: Droplet,
-    color: "text-sky-600",
-    bg: "bg-sky-600/10",
+    color: "text-[#0e7490]",
+    bg: "bg-[#eef7f6]",
   },
   {
     id: 25,
@@ -277,8 +308,8 @@ const FORM_BLOCKS = [
     label: "إرفاق صورة",
     desc: "مربع لرفع صورة",
     icon: ImagePlus,
-    color: "text-fuchsia-500",
-    bg: "bg-fuchsia-500/10",
+    color: "text-[#0e7490]",
+    bg: "bg-[#eef7f6]",
   },
   {
     id: 26,
@@ -286,8 +317,8 @@ const FORM_BLOCKS = [
     label: "لوجو الشركة",
     desc: "صورة شعار الشركة",
     icon: Building2,
-    color: "text-indigo-600",
-    bg: "bg-indigo-600/10",
+    color: "text-[#0e7490]",
+    bg: "bg-[#0e7490]/10",
   },
   {
     id: 27,
@@ -295,8 +326,8 @@ const FORM_BLOCKS = [
     label: "فاصل رأسي",
     desc: "خط فاصل عمودي",
     icon: SeparatorVertical, // 👈 الأيقونة الجديدة
-    color: "text-slate-400",
-    bg: "bg-slate-400/10",
+    color: "text-[#94a3b8]",
+    bg: "bg-[#0e7490]/10",
   },
   {
     id: 28,
@@ -304,8 +335,8 @@ const FORM_BLOCKS = [
     label: "إطار مربع",
     desc: "مربع شفاف بحدود",
     icon: Square, // 👈 استخدمنا أيقونة Square المستوردة مسبقاً
-    color: "text-slate-700",
-    bg: "bg-slate-700/10",
+    color: "text-[#475569]",
+    bg: "bg-[#0e7490]/10",
   },
 ];
 
@@ -353,7 +384,7 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
             ...alignStyles,
             fontSize: block.style?.fontSize ? fontSizeStyle : "24px",
           }}
-          className={`font-bold w-full h-full overflow-hidden whitespace-pre-wrap break-words ${formSettings.colorMode === "color" ? "text-blue-900" : "text-black"}`}
+          className={`font-bold w-full h-full overflow-hidden whitespace-pre-wrap break-words ${formSettings.colorMode === "color" ? "text-[#123f59]" : "text-black"}`}
         >
           {block.defaultValue || formSettings.name || "عنوان النموذج"}
         </h2>
@@ -362,7 +393,7 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
       return (
         <div
           style={{ ...alignStyles, fontSize: fontSizeStyle }}
-          className="text-slate-500 font-mono w-full h-full overflow-hidden"
+          className="text-[#94a3b8] font-mono w-full h-full overflow-hidden"
         >
           الإصدار: {formSettings.version || "1.0"}
         </div>
@@ -374,7 +405,7 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
           className="font-bold flex w-full h-full gap-2 items-start overflow-hidden"
         >
           <span className="whitespace-nowrap shrink-0">{block.label}:</span>
-          <span className="border-b border-slate-400 flex-1 border-dashed text-slate-400 font-normal">
+          <span className="border-b border-[#d8b46a]/35 flex-1 border-dashed text-[#94a3b8] font-normal">
             نص الموضوع
           </span>
         </div>
@@ -383,7 +414,7 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
       return (
         <div
           style={{ ...alignStyles, fontSize: fontSizeStyle }}
-          className="text-slate-500 font-mono w-full h-full overflow-hidden"
+          className="text-[#94a3b8] font-mono w-full h-full overflow-hidden"
         >
           {block.label}: {formSettings.code || "FRM-XXX"}-2026-001
         </div>
@@ -402,7 +433,7 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
           className="flex items-center gap-2 overflow-hidden"
         >
           <span className="font-bold shrink-0">{block.label}:</span>
-          <div className="border border-slate-300 bg-slate-50 rounded px-3 py-1.5 text-slate-500 flex items-center gap-2 min-w-[120px] whitespace-nowrap">
+          <div className="border border-[#d8b46a]/25 bg-[#fbf8f1] rounded px-3 py-1.5 text-[#94a3b8] flex items-center gap-2 min-w-[120px] whitespace-nowrap">
             ____ / __ / __ <CalendarClock size={16} />
           </div>
         </div>
@@ -420,7 +451,7 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
         >
           <span className="font-bold shrink-0">{block.label}:</span>
           <span
-            className="font-mono bg-slate-50 border border-slate-200 px-3 py-1 rounded whitespace-nowrap"
+            className="font-mono bg-[#fbf8f1] border border-[#e8ddc8] px-3 py-1 rounded whitespace-nowrap"
             dir="ltr"
           >
             10:30 AM
@@ -438,10 +469,10 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
           }}
           className="flex items-center gap-2 overflow-hidden"
         >
-          <label className="font-bold text-slate-700 whitespace-nowrap shrink-0">
+          <label className="font-bold text-[#475569] whitespace-nowrap shrink-0">
             {block.label}
           </label>
-          <div className="border-b border-slate-300 flex-1 h-6 border-dashed"></div>
+          <div className="border-b border-[#d8b46a]/25 flex-1 h-6 border-dashed"></div>
         </div>
       );
     case "text_area":
@@ -457,12 +488,12 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
           className="flex flex-col overflow-hidden"
         >
           {block.type === "text_area" && (
-            <label className="font-bold text-slate-700 mb-1.5 shrink-0">
+            <label className="font-bold text-[#475569] mb-1.5 shrink-0">
               {block.label}
             </label>
           )}
           <div
-            className={`${block.type === "text_area" ? "border border-slate-300 rounded bg-slate-50 p-2 text-slate-500" : "font-bold text-slate-800"} w-full h-full flex-1 overflow-hidden whitespace-pre-wrap break-words`}
+            className={`${block.type === "text_area" ? "border border-[#d8b46a]/25 rounded bg-[#fbf8f1] p-2 text-[#94a3b8]" : "font-bold text-[#123f59]"} w-full h-full min-w-0 flex-1 overflow-hidden whitespace-pre-wrap break-words`}
           >
             {block.defaultValue ||
               (block.type === "text_area"
@@ -493,7 +524,7 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
             block.type !== "footer_image" && (
               <label
                 style={{ fontSize: fontSizeStyle }}
-                className="font-bold text-slate-700 mb-1.5 shrink-0 z-10"
+                className="font-bold text-[#475569] mb-1.5 shrink-0 z-10"
               >
                 {block.label}
               </label>
@@ -513,7 +544,7 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
               />
             </div>
           ) : (
-            <div className="border-2 border-dashed border-blue-300 rounded-lg bg-blue-50/30 w-full h-full flex flex-col items-center justify-center text-blue-400">
+            <div className="border-2 border-dashed border-[#d8b46a]/40 rounded-lg bg-[#eef7f6]/30 w-full h-full flex flex-col items-center justify-center text-[#94a3b8]">
               <ImageIcon size={32} className="mb-2 opacity-50" />
               <span style={{ fontSize: "10px" }} className="font-bold">
                 مساحة {block.label}
@@ -530,16 +561,16 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
             height: heightStyle,
             fontSize: fontSizeStyle,
           }}
-          className="border border-indigo-200 bg-indigo-50/30 rounded-xl p-4 overflow-hidden"
+          className="border border-[#d8b46a]/35 bg-[#eef7f6]/30 rounded-xl p-4 overflow-hidden"
         >
-          <div className="font-bold text-indigo-800 mb-3 flex items-center gap-2">
+          <div className="font-bold text-[#123f59] mb-3 flex items-center gap-2">
             <User size={18} /> {block.label}
           </div>
-          <div className="grid grid-cols-2 gap-3 text-slate-500">
-            <div className="bg-white p-2 border border-indigo-100 rounded-lg truncate">
+          <div className="grid min-w-0 grid-cols-2 gap-2.5 text-[#94a3b8]">
+            <div className="bg-white/95 p-2 border border-[#e8ddc8] rounded-lg truncate">
               الاسم: ----------------
             </div>
-            <div className="bg-white p-2 border border-indigo-100 rounded-lg truncate">
+            <div className="bg-white/95 p-2 border border-[#e8ddc8] rounded-lg truncate">
               الرقم الوظيفي: ---------
             </div>
           </div>
@@ -553,25 +584,25 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
             height: heightStyle,
             fontSize: fontSizeStyle,
           }}
-          className="border border-slate-300 rounded-lg overflow-hidden flex flex-col"
+          className="border border-[#d8b46a]/25 rounded-lg overflow-hidden flex flex-col"
         >
           <table className="w-full text-center bg-white flex-1">
-            <thead className="bg-slate-100 border-b border-slate-300">
+            <thead className="bg-[#fbf8f1] border-b border-[#d8b46a]/25">
               <tr>
-                <th className="p-2 border-r">العمود 1</th>
-                <th className="p-2 border-r">العمود 2</th>
+                <th className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 border-r">العمود 1</th>
+                <th className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 border-r">العمود 2</th>
                 <th className="p-2">العمود 3</th>
               </tr>
             </thead>
-            <tbody className="text-slate-400">
-              <tr className="border-b border-slate-200">
-                <td className="p-2 border-r">—</td>
-                <td className="p-2 border-r">—</td>
+            <tbody className="text-[#94a3b8]">
+              <tr className="border-b border-[#e8ddc8]">
+                <td className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 border-r">—</td>
+                <td className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 border-r">—</td>
                 <td className="p-2">—</td>
               </tr>
               <tr>
-                <td className="p-2 border-r">—</td>
-                <td className="p-2 border-r">—</td>
+                <td className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 border-r">—</td>
+                <td className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 border-r">—</td>
                 <td className="p-2">—</td>
               </tr>
             </tbody>
@@ -587,10 +618,10 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
             height: heightStyle,
             fontSize: fontSizeStyle,
           }}
-          className="flex items-center gap-3 overflow-hidden"
+          className="flex items-center gap-2.5 overflow-hidden"
         >
-          <div className="w-4 h-4 border-2 border-slate-400 rounded-sm shrink-0"></div>
-          <span className="font-bold text-slate-700 truncate">
+          <div className="w-4 h-4 border-2 border-[#d8b46a]/35 rounded-sm shrink-0"></div>
+          <span className="font-bold text-[#475569] truncate">
             {block.label}
           </span>
         </div>
@@ -614,7 +645,7 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
           >
             {block.label}:
           </div>
-          <div className="w-full flex-1 border-2 border-slate-300 border-dashed rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
+          <div className="w-full flex-1 border-2 border-[#d8b46a]/25 border-dashed rounded-xl bg-[#fbf8f1] flex items-center justify-center text-[#94a3b8]">
             {block.type === "office_stamp" ? (
               <Stamp size={32} />
             ) : block.type === "fingerprint" ? (
@@ -627,16 +658,16 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
       );
     case "separator":
       return (
-        <hr className="my-2 border-t-2 border-slate-300 w-full shrink-0" />
+        <hr className="my-2 border-t-2 border-[#d8b46a]/25 w-full shrink-0" />
       );
     case "spacer":
       return (
-        <div className="w-full h-full border border-dashed border-slate-200 bg-slate-50/50"></div>
+        <div className="w-full h-full border border-dashed border-[#e8ddc8] bg-[#fbf8f1]/50"></div>
       );
     // 👇 الكود الجديد الخاص بالفاصل الرأسي
     case "vertical_separator":
       return (
-        <div className="mx-auto w-0 h-full border-r-2 border-slate-300 shrink-0"></div>
+        <div className="mx-auto w-0 h-full border-r-2 border-[#d8b46a]/25 shrink-0"></div>
       );
     // 👇 الكود الخاص بالإطار المربع
     case "square_frame":
@@ -654,7 +685,7 @@ const StaticBuilderRenderer = React.memo(({ block, formSettings }) => {
       );
     default:
       return (
-        <div className="p-3 border border-dashed border-blue-300 bg-blue-50 text-blue-800 text-center rounded-lg w-full h-full font-bold">
+        <div className="p-3 border border-dashed border-[#d8b46a]/40 bg-[#eef7f6] text-[#123f59] text-center rounded-lg w-full h-full font-bold">
           {block.label}
         </div>
       );
@@ -1105,21 +1136,21 @@ export default function FormBuilderModal({
 
   return (
     <div
-      className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in"
+      className="fixed inset-0 bg-[#06111d]/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in"
       dir="rtl"
     >
-      <div className="bg-white rounded-xl w-full max-w-[1600px] h-[92vh] flex flex-col shadow-2xl overflow-hidden font-[Tajawal]">
+      <div className="bg-white/95 rounded-xl w-full max-w-[1600px] h-[92vh] flex flex-col shadow-2xl overflow-hidden font-[Tajawal]">
         {/* ── Header ── */}
-        <div className="px-5 py-3.5 border-b-2 border-slate-200 flex items-center justify-between bg-slate-50 shrink-0 z-20">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center shadow-md shadow-blue-600/20 text-white">
+        <div className="px-3 py-3.5 border-b-2 border-[#e8ddc8] flex items-center justify-between bg-[#fbf8f1] shrink-0 z-20">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-lg bg-[#0e7490] flex items-center justify-center shadow-[0_8px_18px_rgba(18,63,89,0.05)] shadow-[0_8px_18px_rgba(18,63,89,0.08)] text-white">
               <Layers size={20} />
             </div>
             <div>
-              <div className="text-[15px] font-bold text-slate-900">
+              <div className="text-[15px] font-bold text-[#123f59]">
                 مُنشئ النماذج الذكي
               </div>
-              <div className="text-[10px] text-slate-500">
+              <div className="text-[10px] text-[#94a3b8]">
                 سحب وإفلات، تحجيم بالحواف، وتخصيص دقيق
               </div>
             </div>
@@ -1128,16 +1159,16 @@ export default function FormBuilderModal({
             <button
               onClick={handleSaveToBackend}
               disabled={isSaving}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 text-white font-bold text-[13px] transition-all ${isSaving ? "opacity-70" : "hover:bg-emerald-700 shadow-md shadow-emerald-600/20"}`}
+              className={`flex items-center gap-2 px-2.5 py-2 rounded-lg bg-emerald-600 text-white font-bold text-[13px] transition-all ${isSaving ? "opacity-70" : "hover:bg-emerald-700 shadow-[0_8px_18px_rgba(18,63,89,0.05)] shadow-emerald-600/20"}`}
             >
               <Save size={16} className={isSaving ? "animate-pulse" : ""} />{" "}
               <span>{isSaving ? "جاري الحفظ..." : "حفظ التصميم"}</span>
             </button>
             <button
               onClick={onClose}
-              className="p-2.5 rounded-lg border border-slate-200 hover:bg-red-50 hover:text-red-600 transition-colors"
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#e8ddc8] bg-white px-2.5 text-[10px] font-black text-[#64748b] transition hover:bg-red-50 hover:text-red-600"
             >
-              <X size={18} />
+              <IconWithText icon={X} text="إغلاق" iconClassName="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
@@ -1145,26 +1176,26 @@ export default function FormBuilderModal({
         {/* ── Main Layout Split ── */}
         <div className="flex-1 flex overflow-hidden">
           {/* ── Sidebar (Right) ── */}
-          <div className="w-[400px] border-l border-slate-300 flex flex-col bg-slate-50 shrink-0 z-10">
+          <div className="w-[400px] border-l border-[#d8b46a]/25 flex flex-col bg-[#fbf8f1] shrink-0 z-10">
             <div className="flex-1 overflow-auto p-4 custom-scrollbar">
-              <div className="bg-white rounded-xl border border-slate-200 mb-4 shadow-sm overflow-hidden">
+              <div className="bg-white/95 rounded-xl border border-[#e8ddc8] mb-4 shadow-[0_6px_14px_rgba(18,63,89,0.04)] overflow-hidden">
                 <button
                   onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                  className="w-full p-3.5 flex items-center justify-between bg-transparent hover:bg-slate-50 transition-colors border-b border-slate-100"
+                  className="w-full p-3.5 flex items-center justify-between bg-transparent hover:bg-[#fbf8f1] transition-colors border-b border-[#e8ddc8]"
                 >
-                  <div className="flex items-center gap-2 text-blue-700 font-bold text-[13px]">
+                  <div className="flex items-center gap-2 text-[#15536f] font-bold text-[13px]">
                     <Settings size={16} /> الإعدادات الأساسية
                   </div>
                   {isSettingsOpen ? (
-                    <ChevronUp size={16} className="text-slate-400" />
+                    <ChevronUp size={16} className="text-[#94a3b8]" />
                   ) : (
-                    <ChevronDown size={16} className="text-slate-400" />
+                    <ChevronDown size={16} className="text-[#94a3b8]" />
                   )}
                 </button>
                 {isSettingsOpen && (
-                  <div className="p-4 flex flex-col gap-3">
+                  <div className="p-4 flex flex-col gap-2.5">
                     <div>
-                      <label className="text-[11px] font-bold text-slate-600 block mb-1.5">
+                      <label className="text-[11px] font-bold text-[#64748b] block mb-1.5">
                         اسم النموذج *
                       </label>
                       <input
@@ -1176,11 +1207,11 @@ export default function FormBuilderModal({
                             name: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-[#d8b46a]/25 rounded-lg text-xs outline-none focus:border-[#0e7490]"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-bold text-slate-600 block mb-1.5">
+                      <label className="text-[11px] font-bold text-[#64748b] block mb-1.5">
                         وصف النموذج (مختصر)
                       </label>
                       <textarea
@@ -1191,12 +1222,12 @@ export default function FormBuilderModal({
                             description: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 min-h-[60px] resize-none"
+                        className="w-full px-3 py-2 border border-[#d8b46a]/25 rounded-lg text-xs outline-none focus:border-[#0e7490] min-h-[60px] resize-none"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid min-w-0 grid-cols-2 gap-2.5">
                       <div>
-                        <label className="text-[11px] font-bold text-slate-600 block mb-1.5">
+                        <label className="text-[11px] font-bold text-[#64748b] block mb-1.5">
                           كود النموذج *
                         </label>
                         <div className="flex gap-1">
@@ -1209,18 +1240,18 @@ export default function FormBuilderModal({
                                 code: e.target.value,
                               })
                             }
-                            className="w-full px-2 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500 font-mono uppercase"
+                            className="w-full px-2 py-2 border border-[#d8b46a]/25 rounded-lg text-xs outline-none focus:border-[#0e7490] font-mono uppercase"
                           />
                           <button
                             onClick={handleGenerateAICode}
-                            className="p-2 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-200"
+                            className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 bg-[#eef7f6] text-[#0e7490] rounded-lg border border-[#d8b46a]/35"
                           >
-                            <Sparkles size={16} />
+                            <IconWithText icon={Sparkles} text="توليد" iconClassName="h-3.5 w-3.5" />
                           </button>
                         </div>
                       </div>
                       <div>
-                        <label className="text-[11px] font-bold text-slate-600 block mb-1.5">
+                        <label className="text-[11px] font-bold text-[#64748b] block mb-1.5">
                           التصنيف
                         </label>
                         <select
@@ -1231,7 +1262,7 @@ export default function FormBuilderModal({
                               category: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500"
+                          className="w-full px-3 py-2 border border-[#d8b46a]/25 rounded-lg text-xs outline-none focus:border-[#0e7490]"
                         >
                           <option value="hr">موارد بشرية</option>
                           <option value="financial">مالية</option>
@@ -1243,28 +1274,28 @@ export default function FormBuilderModal({
                 )}
               </div>
 
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col mb-4">
+              <div className="bg-white/95 rounded-xl border border-[#e8ddc8] shadow-[0_6px_14px_rgba(18,63,89,0.04)] overflow-hidden flex flex-col mb-4">
                 <button
                   onClick={() => setIsBlocksOpen(!isBlocksOpen)}
-                  className="w-full p-3.5 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                  className="w-full p-3.5 flex items-center justify-between hover:bg-[#fbf8f1] transition-colors"
                 >
-                  <div className="flex items-center gap-2 text-indigo-700 font-bold text-[13px]">
+                  <div className="flex items-center gap-2 text-[#64748b] font-bold text-[13px]">
                     <Grid3x3 size={16} /> إضافة البلوكات للورقة
                   </div>
                   {isBlocksOpen ? (
-                    <ChevronUp size={16} className="text-slate-400" />
+                    <ChevronUp size={16} className="text-[#94a3b8]" />
                   ) : (
-                    <ChevronDown size={16} className="text-slate-400" />
+                    <ChevronDown size={16} className="text-[#94a3b8]" />
                   )}
                 </button>
                 {isBlocksOpen && (
-                  <div className="p-3 border-t border-slate-100 grid grid-cols-2 gap-2 bg-slate-50/50">
+                  <div className="p-3 border-t border-[#e8ddc8] grid min-w-0 grid-cols-2 gap-2 bg-[#fbf8f1]/50">
                     {FORM_BLOCKS.filter((b) => b.type !== "watermark").map(
                       (blockDef) => (
                         <button
                           key={blockDef.id}
                           onClick={() => handleAddBlock(blockDef)}
-                          className={`flex flex-col items-start gap-2 p-3 bg-white border-2 rounded-xl transition-all group ${canvasBlocks.some((b) => b.type === blockDef.type && ["title", "version", "reference_number", "subject", "company_logo", "background_image"].includes(b.type)) ? "opacity-50 cursor-not-allowed border-slate-100" : "hover:border-blue-400 hover:shadow-sm border-slate-200"}`}
+                          className={`flex flex-col items-start gap-2 p-3 bg-white/95 border-2 rounded-xl transition-all group ${canvasBlocks.some((b) => b.type === blockDef.type && ["title", "version", "reference_number", "subject", "company_logo", "background_image"].includes(b.type)) ? "opacity-50 cursor-not-allowed border-[#e8ddc8]" : "hover:border-[#d8b46a]/35 hover:shadow-[0_6px_14px_rgba(18,63,89,0.04)] border-[#e8ddc8]"}`}
                           disabled={canvasBlocks.some(
                             (b) =>
                               b.type === blockDef.type &&
@@ -1286,7 +1317,7 @@ export default function FormBuilderModal({
                               className={blockDef.color}
                             />
                           </div>
-                          <div className="text-[11px] font-bold text-slate-800 text-right">
+                          <div className="text-[11px] font-bold text-[#123f59] text-right">
                             {blockDef.label}
                           </div>
                         </button>
@@ -1300,28 +1331,28 @@ export default function FormBuilderModal({
 
           {/* ── Live Preview Area ── */}
           <div
-            className="flex-1 flex flex-col bg-slate-200/80 relative"
+            className="flex-1 flex flex-col bg-[#eef7f6]/80 relative"
             onClick={() => setSelectedBlockId(null)}
           >
             {/* Toolbar */}
             <div
-              className="absolute top-4 left-6 flex items-center gap-1 bg-white shadow-sm p-1 rounded-xl z-20 border border-slate-200"
+              className="absolute top-4 left-6 flex items-center gap-1 bg-white shadow-[0_6px_14px_rgba(18,63,89,0.04)] p-1 rounded-xl z-20 border border-[#e8ddc8]"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setZoomLevel((p) => Math.max(p - 10, 50))}
-                className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+                className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 hover:bg-[#fbf8f1] rounded-lg text-[#64748b]"
               >
-                <ZoomOut size={18} />
+                <IconWithText icon={ZoomOut} text="تصغير" iconClassName="h-3.5 w-3.5" />
               </button>
-              <span className="text-[13px] font-bold font-mono text-slate-700 min-w-[50px] text-center">
+              <span className="text-[13px] font-bold font-mono text-[#475569] min-w-[50px] text-center">
                 {zoomLevel}%
               </span>
               <button
                 onClick={() => setZoomLevel((p) => Math.min(p + 10, 150))}
-                className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+                className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 hover:bg-[#fbf8f1] rounded-lg text-[#64748b]"
               >
-                <ZoomIn size={18} />
+                <IconWithText icon={ZoomIn} text="تكبير" iconClassName="h-3.5 w-3.5" />
               </button>
             </div>
             <div
@@ -1330,19 +1361,19 @@ export default function FormBuilderModal({
             >
               <button
                 onClick={() => setIsBorderSettingsOpen(true)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all border shadow-sm ${formSettings.borderSettings?.active ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"}`}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all border shadow-[0_6px_14px_rgba(18,63,89,0.04)] ${formSettings.borderSettings?.active ? "bg-[#123f59] text-white border-[#d8b46a]/35" : "bg-white text-[#64748b] border-[#d8b46a]/25 hover:bg-[#fbf8f1]"}`}
               >
                 <Square size={14} /> إطار الورقة
               </button>
               <button
                 onClick={() => setIsWmSettingsOpen(true)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all border shadow-sm ${formSettings.watermark?.active ? "bg-blue-600 text-white border-blue-600" : "bg-white text-blue-600 border-blue-300 hover:bg-blue-50"}`}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all border shadow-[0_6px_14px_rgba(18,63,89,0.04)] ${formSettings.watermark?.active ? "bg-[#0e7490] text-white border-[#d8b46a]/35" : "bg-white text-[#0e7490] border-[#d8b46a]/40 hover:bg-[#eef7f6]"}`}
               >
                 <Droplet size={14} /> علامة مائية
               </button>
             </div>
 
-            <div className="flex-1 overflow-auto flex items-start justify-center pt-24 pb-12 px-8 custom-scrollbar">
+            <div className="flex-1 overflow-auto flex items-start justify-center pt-24 pb-3 px-4 custom-scrollbar">
               <div
                 ref={paperRef}
                 className="bg-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] relative flex flex-col origin-top transition-transform duration-300"
@@ -1424,13 +1455,13 @@ export default function FormBuilderModal({
 
                 {/* Blocks Area */}
                 {canvasBlocks.length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-slate-400 opacity-60 z-10">
+                  <div className="flex-1 flex flex-col items-center justify-center text-[#94a3b8] opacity-60 z-10">
                     <Grid3x3
                       size={64}
-                      className="mb-4 text-slate-300"
+                      className="mb-4 text-[#cbd5e1]"
                       strokeWidth={1}
                     />
-                    <div className="text-lg font-bold mb-2 text-slate-600">
+                    <div className="text-lg font-bold mb-2 text-[#64748b]">
                       الورقة فارغة تماماً
                     </div>
                     <div className="text-sm">
@@ -1452,7 +1483,7 @@ export default function FormBuilderModal({
                             e.stopPropagation();
                             setSelectedBlockId(block.uid);
                           }}
-                          className={`absolute group outline-none ${isActive ? "ring-2 ring-blue-500 z-50 bg-blue-50/10 shadow-lg" : "hover:ring-1 hover:ring-slate-300 z-10 bg-transparent"}`}
+                          className={`absolute group outline-none ${isActive ? "ring-2 ring-[#d8b46a]/100 z-50 bg-[#eef7f6]/10 shadow-[0_8px_22px_rgba(18,63,89,0.06)]" : "hover:ring-1 hover:ring-[#d8b46a]/35 z-10 bg-transparent"}`}
                           style={{
                             left: `${block.position.x}px`,
                             top: `${block.position.y}px`,
@@ -1510,7 +1541,7 @@ export default function FormBuilderModal({
                               />
 
                               <div
-                                className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-full cursor-nw-resize z-[70]"
+                                className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white/95 border-2 border-[#d8b46a]/35 rounded-full cursor-nw-resize z-[70]"
                                 onMouseDown={(e) =>
                                   onMouseDownResize(
                                     e,
@@ -1521,7 +1552,7 @@ export default function FormBuilderModal({
                                 }
                               />
                               <div
-                                className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-full cursor-ne-resize z-[70]"
+                                className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white/95 border-2 border-[#d8b46a]/35 rounded-full cursor-ne-resize z-[70]"
                                 onMouseDown={(e) =>
                                   onMouseDownResize(
                                     e,
@@ -1532,7 +1563,7 @@ export default function FormBuilderModal({
                                 }
                               />
                               <div
-                                className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-full cursor-sw-resize z-[70]"
+                                className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white/95 border-2 border-[#d8b46a]/35 rounded-full cursor-sw-resize z-[70]"
                                 onMouseDown={(e) =>
                                   onMouseDownResize(
                                     e,
@@ -1543,7 +1574,7 @@ export default function FormBuilderModal({
                                 }
                               />
                               <div
-                                className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-full cursor-se-resize z-[70]"
+                                className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white/95 border-2 border-[#d8b46a]/35 rounded-full cursor-se-resize z-[70]"
                                 onMouseDown={(e) =>
                                   onMouseDownResize(
                                     e,
@@ -1557,13 +1588,13 @@ export default function FormBuilderModal({
                           )}
 
                           {isActive && (
-                            <div className="absolute -top-6 right-0 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded shadow-sm font-bold truncate max-w-full">
+                            <div className="absolute -top-3 right-0 bg-[#0e7490] text-white text-[10px] px-2 py-0.5 rounded shadow-[0_6px_14px_rgba(18,63,89,0.04)] font-bold truncate max-w-full">
                               {block.label}
                             </div>
                           )}
 
                           <div
-                            className={`absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white p-1 rounded-full shadow-lg cursor-move transition-opacity z-[80] ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                            className={`absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 bg-[#0e7490] text-white p-1 rounded-full shadow-[0_8px_22px_rgba(18,63,89,0.06)] cursor-move transition-opacity z-[80] ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
                             onMouseDown={(e) =>
                               onMouseDownDrag(e, block.uid, block.position)
                             }
@@ -1572,13 +1603,13 @@ export default function FormBuilderModal({
                           </div>
 
                           {isActive && (
-                            <div className="absolute -top-8 left-0 flex gap-1 z-[80]">
+                            <div className="absolute -top-4 left-0 flex gap-1 z-[80]">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   openEditDialog(block);
                                 }}
-                                className="p-1.5 bg-white text-blue-600 hover:bg-blue-50 border border-slate-200 rounded shadow"
+                                className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 bg-white text-[#0e7490] hover:bg-[#eef7f6] border border-[#e8ddc8] rounded shadow"
                               >
                                 <Edit2 size={12} />
                               </button>
@@ -1587,9 +1618,9 @@ export default function FormBuilderModal({
                                   e.stopPropagation();
                                   handleRemoveBlock(block.uid);
                                 }}
-                                className="p-1.5 bg-white text-red-600 hover:bg-red-50 border border-slate-200 rounded shadow"
+                                className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 bg-white text-red-600 hover:bg-red-50 border border-[#e8ddc8] rounded shadow"
                               >
-                                <Trash2 size={12} />
+                                <IconWithText icon={Trash2} text="حذف" iconClassName="h-3 w-3" />
                               </button>
                             </div>
                           )}
@@ -1607,7 +1638,7 @@ export default function FormBuilderModal({
                 )}
 
                 <div
-                  className="absolute left-[20mm] right-[20mm] flex justify-between text-[10px] text-slate-400 font-mono pointer-events-none"
+                  className="absolute left-[20mm] right-[20mm] flex justify-between text-[10px] text-[#94a3b8] font-mono pointer-events-none"
                   style={{ top: `${A4_HEIGHT_PX - 40}px` }}
                 >
                   <span dir="ltr">{formSettings.code || "FRM-XXX"}</span>
@@ -1622,24 +1653,24 @@ export default function FormBuilderModal({
 
       {/* ── Editor Dialog (تعديل خصائص البلوك) ── */}
       {editingBlock && (
-        <div className="fixed inset-0 bg-slate-900/40 z-[10000] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-[450px] shadow-2xl flex flex-col font-[Tajawal] overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Settings size={16} className="text-blue-600" /> إعدادات:{" "}
+        <div className="fixed inset-0 bg-[#06111d]/40 z-[10000] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white/95 rounded-2xl w-full max-w-[450px] shadow-2xl flex flex-col font-[Tajawal] overflow-hidden">
+            <div className="px-3 py-4 border-b border-[#e8ddc8] flex items-center justify-between bg-[#fbf8f1]">
+              <div className="text-sm font-bold text-[#123f59] flex items-center gap-2">
+                <Settings size={16} className="text-[#0e7490]" /> إعدادات:{" "}
                 {originalBlock?.label}
               </div>
               <button
                 onClick={cancelEdit}
-                className="p-1.5 text-slate-500 hover:bg-slate-200 rounded-lg"
+                className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 text-[#94a3b8] hover:bg-[#eef7f6] rounded-lg"
               >
-                <X size={16} />
+                <IconWithText icon={X} text="إلغاء" iconClassName="h-3.5 w-3.5" />
               </button>
             </div>
 
-            <div className="p-5 flex flex-col gap-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <div className="p-3 flex flex-col gap-2.5 max-h-[70vh] overflow-y-auto overflow-x-hidden custom-scrollbar-slim-slim custom-scrollbar">
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                <label className="text-xs font-bold text-[#475569] block mb-1.5">
                   التسمية (تظهر للمستخدم)
                 </label>
                 <input
@@ -1648,7 +1679,7 @@ export default function FormBuilderModal({
                   onChange={(e) =>
                     updateEditingBlock({ label: e.target.value })
                   }
-                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500"
+                  className="w-full p-2.5 border border-[#d8b46a]/25 rounded-lg text-sm outline-none focus:border-[#0e7490]"
                 />
               </div>
 
@@ -1659,17 +1690,17 @@ export default function FormBuilderModal({
                 "footer_image",
                 "background_image",
               ].includes(editingBlock.type) && (
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                  <label className="text-xs font-bold text-blue-800 block mb-2 flex items-center gap-1">
+                <div className="bg-[#eef7f6] p-3 rounded-lg border border-[#d8b46a]/25">
+                  <label className="text-xs font-bold text-[#123f59] block mb-2 flex items-center gap-1">
                     <ImagePlus size={14} /> إرفاق ورفع الصورة
                   </label>
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleImageUploadForBlock}
-                    className="w-full text-xs file:mr-2 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+                    className="w-full text-xs file:mr-2 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-[#0e7490] file:text-white hover:file:bg-[#0e7490] cursor-pointer"
                   />
-                  <p className="text-[10px] text-slate-500 mt-2">
+                  <p className="text-[10px] text-[#94a3b8] mt-2">
                     ستكون هذه الصورة هي الافتراضية في هذا النموذج. (يمكن لاحقاً
                     تعديلها من الموظف أثناء تعبئة النموذج)
                   </p>
@@ -1679,7 +1710,7 @@ export default function FormBuilderModal({
               {/* 💡 تحكم سماكة الإطار المربع */}
               {editingBlock.type === "square_frame" && (
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                  <label className="text-xs font-bold text-[#475569] block mb-1.5">
                     سماكة خط الإطار (Px)
                   </label>
                   <input
@@ -1695,7 +1726,7 @@ export default function FormBuilderModal({
                         },
                       })
                     }
-                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500"
+                    className="w-full p-2.5 border border-[#d8b46a]/25 rounded-lg text-sm outline-none focus:border-[#0e7490]"
                   />
                 </div>
               )}
@@ -1703,7 +1734,7 @@ export default function FormBuilderModal({
               {/* 💡 تحكم شفافية الخلفية */}
               {editingBlock.type === "background_image" && (
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                  <label className="text-xs font-bold text-[#475569] block mb-1.5">
                     شفافية الخلفية:{" "}
                     {typeof editingBlock.defaultValue === "object"
                       ? (editingBlock.defaultValue?.opacity ?? 1)
@@ -1743,7 +1774,7 @@ export default function FormBuilderModal({
                 "text_field",
               ].includes(editingBlock.type) && (
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                  <label className="text-xs font-bold text-[#475569] block mb-1.5">
                     النص / القيمة الافتراضية
                   </label>
                   <textarea
@@ -1751,15 +1782,15 @@ export default function FormBuilderModal({
                     onChange={(e) =>
                       updateEditingBlock({ defaultValue: e.target.value })
                     }
-                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500 min-h-[80px]"
+                    className="w-full p-2.5 border border-[#d8b46a]/25 rounded-lg text-sm outline-none focus:border-[#0e7490] min-h-[80px]"
                     placeholder="اكتب النص الثابت هنا..."
                   />
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid min-w-0 grid-cols-2 gap-2.5">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                  <label className="text-xs font-bold text-[#475569] block mb-1.5">
                     العرض (Px)
                   </label>
                   <input
@@ -1773,11 +1804,11 @@ export default function FormBuilderModal({
                         },
                       })
                     }
-                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500"
+                    className="w-full p-2.5 border border-[#d8b46a]/25 rounded-lg text-sm outline-none focus:border-[#0e7490]"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                  <label className="text-xs font-bold text-[#475569] block mb-1.5">
                     الارتفاع (Px)
                   </label>
                   <input
@@ -1791,13 +1822,13 @@ export default function FormBuilderModal({
                         },
                       })
                     }
-                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500"
+                    className="w-full p-2.5 border border-[#d8b46a]/25 rounded-lg text-sm outline-none focus:border-[#0e7490]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                <label className="text-xs font-bold text-[#475569] block mb-1.5">
                   حجم الخط الأساسي (Px)
                 </label>
                 <input
@@ -1813,15 +1844,15 @@ export default function FormBuilderModal({
                       },
                     })
                   }
-                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500"
+                  className="w-full p-2.5 border border-[#d8b46a]/25 rounded-lg text-sm outline-none focus:border-[#0e7490]"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                <label className="text-xs font-bold text-[#475569] block mb-1.5">
                   المحاذاة داخل الحاوية
                 </label>
-                <div className="flex bg-slate-100 p-1 rounded-lg">
+                <div className="flex bg-[#fbf8f1] p-1 rounded-lg">
                   {["right", "center", "left"].map((align) => (
                     <button
                       key={align}
@@ -1830,7 +1861,7 @@ export default function FormBuilderModal({
                           style: { ...editingBlock.style, alignment: align },
                         })
                       }
-                      className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${editingBlock.style?.alignment === align ? "bg-white shadow-sm text-blue-600" : "text-slate-500 hover:text-slate-700"}`}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${editingBlock.style?.alignment === align ? "bg-white shadow-[0_6px_14px_rgba(18,63,89,0.04)] text-[#0e7490]" : "text-[#94a3b8] hover:text-[#475569]"}`}
                     >
                       {align === "right"
                         ? "يمين"
@@ -1843,10 +1874,10 @@ export default function FormBuilderModal({
               </div>
             </div>
 
-            <div className="px-5 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+            <div className="px-3 py-4 border-t border-[#e8ddc8] bg-[#fbf8f1] flex justify-end gap-2.5">
               <button
                 onClick={cancelEdit}
-                className="px-5 py-2.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-xs font-bold text-slate-700"
+                className="px-2.5 py-2 rounded-lg bg-white/95 border border-[#d8b46a]/25 hover:bg-[#fbf8f1] text-xs font-bold text-[#475569]"
               >
                 إلغاء التعديلات
               </button>
@@ -1855,7 +1886,7 @@ export default function FormBuilderModal({
                   setEditingBlock(null);
                   setOriginalBlock(null);
                 }}
-                className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20"
+                className="px-2.5 py-2 rounded-lg bg-[#0e7490] hover:bg-[#0e7490] text-white text-xs font-bold shadow-[0_8px_18px_rgba(18,63,89,0.05)] shadow-[0_8px_18px_rgba(18,63,89,0.08)]"
               >
                 حفظ التغييرات
               </button>
@@ -1867,19 +1898,19 @@ export default function FormBuilderModal({
       {/* ── Settings Modals (Watermark & Border) ── */}
       {isWmSettingsOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/30 flex items-center justify-center z-[10001] backdrop-blur-sm"
+          className="fixed inset-0 bg-[#06111d]/30 flex items-center justify-center z-[10001] backdrop-blur-sm"
           onClick={() => setIsWmSettingsOpen(false)}
         >
           <div
-            className="bg-white w-[400px] rounded-2xl shadow-2xl p-6"
+            className="bg-white w-[400px] rounded-2xl shadow-2xl p-3"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-                <Settings2 size={20} className="text-blue-500" /> العلامة
+              <h3 className="font-bold text-[#123f59] text-lg flex items-center gap-2">
+                <Settings2 size={20} className="text-[#0e7490]" /> العلامة
                 المائية
               </h3>
-              <label className="flex items-center gap-2 cursor-pointer bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
+              <label className="flex items-center gap-2 cursor-pointer bg-[#eef7f6] px-3 py-1.5 rounded-lg border border-[#d8b46a]/35">
                 <input
                   type="checkbox"
                   checked={formSettings.watermark?.active}
@@ -1894,13 +1925,13 @@ export default function FormBuilderModal({
                   }
                   className="accent-blue-600"
                 />
-                <span className="text-xs font-bold text-blue-800">تفعيل</span>
+                <span className="text-xs font-bold text-[#123f59]">تفعيل</span>
               </label>
             </div>
             <div
               className={`transition-opacity ${formSettings.watermark?.active ? "opacity-100" : "opacity-40 pointer-events-none"}`}
             >
-              <div className="flex bg-slate-100 p-1 rounded-lg mb-4">
+              <div className="flex bg-[#fbf8f1] p-1 rounded-lg mb-4">
                 <button
                   onClick={() =>
                     setFormSettings({
@@ -1908,7 +1939,7 @@ export default function FormBuilderModal({
                       watermark: { ...formSettings.watermark, isImage: false },
                     })
                   }
-                  className={`flex-1 py-1.5 text-sm font-bold rounded-md ${!formSettings.watermark?.isImage ? "bg-white shadow text-blue-600" : "text-slate-600"}`}
+                  className={`flex-1 py-1.5 text-sm font-bold rounded-md ${!formSettings.watermark?.isImage ? "bg-white shadow text-[#0e7490]" : "text-[#64748b]"}`}
                 >
                   نص
                 </button>
@@ -1919,7 +1950,7 @@ export default function FormBuilderModal({
                       watermark: { ...formSettings.watermark, isImage: true },
                     })
                   }
-                  className={`flex-1 py-1.5 text-sm font-bold rounded-md ${formSettings.watermark?.isImage ? "bg-white shadow text-blue-600" : "text-slate-600"}`}
+                  className={`flex-1 py-1.5 text-sm font-bold rounded-md ${formSettings.watermark?.isImage ? "bg-white shadow text-[#0e7490]" : "text-[#64748b]"}`}
                 >
                   صورة
                 </button>
@@ -1943,7 +1974,7 @@ export default function FormBuilderModal({
                             },
                           })
                         }
-                        className="w-full border rounded p-2 text-sm outline-none focus:border-blue-500"
+                        className="w-full border rounded p-2 text-sm outline-none focus:border-[#0e7490]"
                       />
                     </div>
                     <div className="flex gap-2">
@@ -1963,7 +1994,7 @@ export default function FormBuilderModal({
                               },
                             })
                           }
-                          className="w-full border rounded p-2 text-sm outline-none focus:border-blue-500"
+                          className="w-full border rounded p-2 text-sm outline-none focus:border-[#0e7490]"
                         />
                       </div>
                       <div className="flex-1">
@@ -2031,7 +2062,7 @@ export default function FormBuilderModal({
                             r.readAsDataURL(e.target.files[0]);
                           }
                         }}
-                        className="w-full border rounded p-1 text-sm outline-none bg-slate-50"
+                        className="w-full border rounded p-1 text-sm outline-none bg-[#fbf8f1]"
                       />
                     </div>
                     <div>
@@ -2080,7 +2111,7 @@ export default function FormBuilderModal({
                     className="w-full accent-blue-500"
                   />
                 </div>
-                <label className="flex items-center gap-2 cursor-pointer mt-2 bg-slate-50 p-2 rounded border border-slate-200">
+                <label className="flex items-center gap-2 cursor-pointer mt-2 bg-[#fbf8f1] p-2 rounded border border-[#e8ddc8]">
                   <input
                     type="checkbox"
                     checked={formSettings.watermark?.repeat}
@@ -2103,7 +2134,7 @@ export default function FormBuilderModal({
             </div>
             <button
               onClick={() => setIsWmSettingsOpen(false)}
-              className="w-full mt-6 bg-blue-600 text-white font-bold py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
+              className="w-full mt-3 bg-[#0e7490] text-white font-bold py-2.5 rounded-xl hover:bg-[#0e7490] transition-colors"
             >
               تطبيق الإعدادات
             </button>
@@ -2113,19 +2144,19 @@ export default function FormBuilderModal({
 
       {isBorderSettingsOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/30 flex items-center justify-center z-[10001] backdrop-blur-sm"
+          className="fixed inset-0 bg-[#06111d]/30 flex items-center justify-center z-[10001] backdrop-blur-sm"
           onClick={() => setIsBorderSettingsOpen(false)}
         >
           <div
-            className="bg-white w-[400px] rounded-2xl shadow-2xl p-6"
+            className="bg-white w-[400px] rounded-2xl shadow-2xl p-3"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-                <Square size={20} className="text-slate-700" /> إطار الصفحة
+              <h3 className="font-bold text-[#123f59] text-lg flex items-center gap-2">
+                <Square size={20} className="text-[#475569]" /> إطار الصفحة
                 الخارجي
               </h3>
-              <label className="flex items-center gap-2 cursor-pointer bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
+              <label className="flex items-center gap-2 cursor-pointer bg-[#eef7f6] px-3 py-1.5 rounded-lg border border-[#d8b46a]/35">
                 <input
                   type="checkbox"
                   checked={formSettings.borderSettings?.active}
@@ -2140,15 +2171,15 @@ export default function FormBuilderModal({
                   }
                   className="accent-blue-600"
                 />
-                <span className="text-xs font-bold text-blue-800">
+                <span className="text-xs font-bold text-[#123f59]">
                   إظهار الإطار
                 </span>
               </label>
             </div>
             <div
-              className={`transition-opacity space-y-5 ${formSettings.borderSettings?.active ? "opacity-100" : "opacity-40 pointer-events-none"}`}
+              className={`transition-opacity space-y-3 ${formSettings.borderSettings?.active ? "opacity-100" : "opacity-40 pointer-events-none"}`}
             >
-              <div className="flex gap-3">
+              <div className="flex gap-2.5">
                 <div className="flex-1">
                   <label className="text-xs font-bold block mb-1">
                     سُمك الخط (Px):
@@ -2167,7 +2198,7 @@ export default function FormBuilderModal({
                         },
                       })
                     }
-                    className="w-full border border-slate-300 rounded p-2 text-sm outline-none focus:border-blue-500"
+                    className="w-full border border-[#d8b46a]/25 rounded p-2 text-sm outline-none focus:border-[#0e7490]"
                   />
                 </div>
                 <div className="flex-1">
@@ -2186,7 +2217,7 @@ export default function FormBuilderModal({
                         },
                       })
                     }
-                    className="w-full h-[38px] border border-slate-300 rounded p-1 cursor-pointer"
+                    className="w-full h-[38px] border border-[#d8b46a]/25 rounded p-1 cursor-pointer"
                   />
                 </div>
               </div>
@@ -2215,7 +2246,7 @@ export default function FormBuilderModal({
             </div>
             <button
               onClick={() => setIsBorderSettingsOpen(false)}
-              className="w-full mt-6 bg-slate-800 text-white font-bold py-2.5 rounded-xl hover:bg-slate-900 transition-colors"
+              className="w-full mt-3 bg-[#123f59] text-white font-bold py-2.5 rounded-xl hover:bg-[#06111d] transition-colors"
             >
               تطبيق وحفظ
             </button>

@@ -13,8 +13,36 @@ import {
 import DashboardTab from "./components/DashboardTab";
 import DailyLogTab from "./components/DailyLogTab";
 import ReportsTab from "./components/ReportsTab";
-
 import PoliciesTab from "./components/PoliciesTab";
+
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`inline-flex min-w-0 items-center justify-center ${
+        vertical ? "flex-col gap-0.5" : "gap-1.5"
+      } ${className}`}
+    >
+      {Icon && <Icon className={iconClassName || "h-3.5 w-3.5 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 whitespace-nowrap text-[10px] font-black leading-none"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
 
 export default function AttendanceCenter({ onClose }) {
   const [activeTab, setActiveTab] = useState("DASHBOARD");
@@ -32,33 +60,33 @@ export default function AttendanceCenter({ onClose }) {
 
   return (
     <div
-      className="w-full h-full flex flex-col overflow-hidden relative bg-slate-50 font-cairo animate-in fade-in duration-300"
+      className="relative flex h-full w-full max-w-full min-w-0 flex-col overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-cairo animate-in fade-in duration-300"
       dir="rtl"
     >
       {/* ─── Sticky Sub-Header ─── */}
-      <div className="bg-white/80 backdrop-blur-xl px-6 py-5 border-b border-slate-200/60 shadow-sm flex justify-between items-center shrink-0 z-20">
+      <div className="z-20 flex shrink-0 items-center justify-between border-b border-[#d8b46a]/25 bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490] px-2.5 py-2 text-white shadow-[0_8px_22px_rgba(18,63,89,0.10)]">
         <div>
-          <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
-            <div className="p-2 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl text-white shadow-lg shadow-amber-500/20">
+          <h2 className="text-base font-black text-[#123f59] flex items-center gap-2">
+            <div className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 bg-gradient-to-br from-[#e2bf74] to-[#c5983c] rounded-xl text-white shadow-[0_8px_22px_rgba(18,63,89,0.06)] shadow-[0_8px_18px_rgba(226,191,116,0.16)]">
               <Clock className="w-5 h-5" />
             </div>
             مركز الحضور والانصراف المتقدم
           </h2>
-          <p className="text-xs font-bold text-slate-500 mt-1.5 flex items-center gap-1.5">
-            <BrainCircuit className="w-3.5 h-3.5 text-indigo-500" />
+          <p className="text-xs font-bold text-[#94a3b8] mt-1.5 flex items-center gap-1.5">
+            <BrainCircuit className="w-3.5 h-3.5 text-[#0e7490]" />
             مدعوم بالذكاء الاصطناعي لتحليل السلوك والانضباط (متصل بـ ZKTeco)
           </p>
         </div>
         <button
           onClick={onClose}
-          className="p-2 text-slate-400 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 rounded-full transition-colors"
+          className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 text-[#94a3b8] hover:text-rose-600 bg-[#fbf8f1] hover:bg-rose-50 rounded-xl transition-colors"
         >
-          <X className="w-5 h-5" />
+          <IconWithText icon={X} text="إغلاق" iconClassName="w-5 h-5" />
         </button>
       </div>
 
       {/* ─── Tabs ─── */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 px-6 shrink-0 flex gap-6 overflow-x-auto custom-scrollbar-slim z-10">
+      <div className="bg-white/80 backdrop-blur-xl border-b border-[#e8ddc8]/60 px-3 shrink-0 flex gap-2.5 overflow-x-auto custom-scrollbar-slim z-10">
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
@@ -66,18 +94,20 @@ export default function AttendanceCenter({ onClose }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`py-4 relative flex items-center gap-2 text-sm font-bold transition-colors whitespace-nowrap ${
+              className={`relative inline-flex h-8 min-w-0 items-center justify-center rounded-lg px-2 text-[10px] font-black transition-colors ${
                 isActive
-                  ? "text-amber-600"
-                  : "text-slate-500 hover:text-slate-800"
+                  ? "bg-[#eef7f6] text-[#123f59] border border-[#d8b46a]/35"
+                  : "text-[#94a3b8] hover:bg-[#fbf8f1] hover:text-[#123f59]"
               }`}
             >
-              <Icon
-                className={`w-4 h-4 ${isActive ? "text-amber-500" : "text-slate-400"}`}
+              <IconWithText
+                icon={Icon}
+                text={tab.label}
+                iconClassName={`w-4 h-4 ${isActive ? "text-[#e2bf74]" : "text-[#94a3b8]"}`}
+                textClassName="min-w-0 whitespace-nowrap text-xs font-black leading-none"
               />
-              {tab.label}
               {isActive && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500 rounded-t-full animate-in slide-in-from-bottom-1" />
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fff8e7]0 rounded-t-full animate-in slide-in-from-bottom-1" />
               )}
             </button>
           );
@@ -85,11 +115,12 @@ export default function AttendanceCenter({ onClose }) {
       </div>
 
       {/* ─── Content Area ─── */}
-      <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar relative">
-        <div className="absolute top-0 right-0 w-1/2 h-96 bg-amber-50 rounded-bl-[100px] -z-10 blur-3xl opacity-50"></div>
+      <div className="min-w-0 flex-1 overflow-y-auto custom-scrollbar-slim p-3 md:p-4 custom-scrollbar relative">
+        <div className="absolute top-0 right-0 w-1/2 h-96 bg-[#fff8e7] rounded-bl-[100px] -z-10 blur-3xl opacity-50"></div>
         {activeTab === "DASHBOARD" && <DashboardTab />}
         {activeTab === "DAILY" && <DailyLogTab />}
         {activeTab === "REPORTS" && <ReportsTab />}
+
         {activeTab === "POLICIES" && <PoliciesTab />}
       </div>
     </div>

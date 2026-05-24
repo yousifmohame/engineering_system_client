@@ -20,6 +20,37 @@ import FormPreviewModal from "./FormPreviewModal";
 import FormFillModal from "./FormFillModal";
 import FormCard from "./FormCard";
 
+
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`inline-flex min-w-0 items-center justify-center ${
+        vertical ? "flex-col gap-0.5" : "gap-1.5"
+      } ${className}`}
+    >
+      {Icon && <Icon className={iconClassName || "h-3.5 w-3.5 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 whitespace-nowrap text-[10px] font-black leading-none"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
+
+
 export default function InternalFormsTab() {
   // ── States ──
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -129,8 +160,8 @@ export default function InternalFormsTab() {
         title: "إجمالي النماذج",
         value: total,
         icon: FileText,
-        color: "text-blue-600",
-        bg: "bg-blue-50 border-blue-200",
+        color: "text-[#0e7490]",
+        bg: "bg-[#eef7f6] border-[#d8b46a]/35",
       },
       {
         id: 2,
@@ -145,16 +176,16 @@ export default function InternalFormsTab() {
         title: "استخدامات اليوم",
         value: todayUses,
         icon: Activity,
-        color: "text-violet-600",
-        bg: "bg-violet-50 border-violet-200",
+        color: "text-[#0e7490]",
+        bg: "bg-[#eef7f6] border-[#d8b46a]/35",
       },
       {
         id: 4,
         title: "إجمالي الاستخدامات",
         value: totalUses,
         icon: ChartColumn,
-        color: "text-amber-600",
-        bg: "bg-amber-50 border-amber-200",
+        color: "text-[#c5983c]",
+        bg: "bg-[#fff8e7] border-[#e2bf74]/45",
       },
     ];
   }, [templates]);
@@ -175,17 +206,17 @@ export default function InternalFormsTab() {
   }, [templates, searchQuery, categoryFilter, statusFilter]);
 
   // 💡 التغيير الجوهري هنا: الحاوية الأب يجب أن تكون `absolute inset-0` أو `h-full overflow-hidden`
-  // لضمان عمل الـ `flex-1 overflow-y-auto` بشكل صحيح في الحاويات الأبناء.
+  // لضمان عمل الـ `min-w-0 flex-1 overflow-y-auto custom-scrollbar-slim` بشكل صحيح في الحاويات الأبناء.
   return (
     <div
-      className="absolute inset-0 flex flex-col font-cairo bg-slate-50/50"
+      className="absolute inset-0 flex flex-col font-cairo bg-[#fbf8f1]/50"
       dir="rtl"
     >
-      <div className="flex flex-col gap-2.5 p-2 md:p-3 h-full w-full max-w-7xl mx-auto">
+      <div className="flex h-full w-full max-w-full min-w-0 flex-col gap-2.5 p-2 md:p-3">
         {/* ── Header Ultra Dense ── */}
-        <div className="flex flex-col sm:flex-row items-center justify-between p-2.5 bg-white border border-slate-200 rounded-xl shadow-sm shrink-0 gap-3">
+        <div className="flex flex-col sm:flex-row items-center justify-between p-2.5 bg-white/95 border border-[#e8ddc8] rounded-xl shadow-[0_6px_14px_rgba(18,63,89,0.04)] shrink-0 gap-2.5">
           <div className="flex items-center gap-2.5 w-full sm:w-auto">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-700 to-blue-500 flex items-center justify-center shadow-sm shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#123f59] to-[#0e7490] flex items-center justify-center shadow-[0_6px_14px_rgba(18,63,89,0.04)] shrink-0">
               <ClipboardList
                 size={18}
                 className="text-white"
@@ -193,10 +224,10 @@ export default function InternalFormsTab() {
               />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-[13px] font-black text-slate-800 leading-tight">
+              <h1 className="text-[13px] font-black text-[#123f59] leading-tight">
                 النماذج الداخلية المتقدمة
               </h1>
-              <p className="text-[9px] font-bold text-slate-500 mt-0.5 tracking-wide">
+              <p className="text-[9px] font-bold text-[#94a3b8] mt-0.5 tracking-wide">
                 تصميم، طباعة، وسجل متكامل للنماذج الرسمية
               </p>
             </div>
@@ -208,7 +239,7 @@ export default function InternalFormsTab() {
                 setFormToEdit(null);
                 setIsModalOpen(true);
               }}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-black shadow-sm transition-all"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-[#0e7490] hover:bg-[#0e7490] text-white rounded-lg text-[11px] font-black shadow-[0_6px_14px_rgba(18,63,89,0.04)] transition-all"
             >
               <FilePlus size={14} strokeWidth={2.5} /> إنشاء نموذج
             </button>
@@ -218,24 +249,24 @@ export default function InternalFormsTab() {
         {/* ── Filters & Stats Row (Ultra Dense) ── */}
         <div className="flex flex-col xl:flex-row gap-2 shrink-0">
           {/* الفلاتر */}
-          <div className="flex flex-wrap md:flex-nowrap items-center gap-2 p-2 bg-white border border-slate-200 rounded-xl shadow-sm xl:w-2/5">
-            <div className="flex items-center gap-1.5 flex-1 min-w-[150px] px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-md focus-within:border-blue-400 transition-colors">
-              <Search size={14} className="text-slate-400 shrink-0" />
+          <div className="flex flex-wrap md:flex-nowrap items-center gap-2 p-2 bg-white/95 border border-[#e8ddc8] rounded-xl shadow-[0_6px_14px_rgba(18,63,89,0.04)] xl:w-2/5">
+            <div className="flex items-center gap-1.5 flex-1 min-w-0 px-2 py-1.5 bg-[#fbf8f1] border border-[#e8ddc8] rounded-md focus-within:border-[#d8b46a]/35 transition-colors">
+              <Search size={14} className="text-[#94a3b8] shrink-0" />
               <input
                 type="text"
                 placeholder="بحث (اسم، كود)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent border-none outline-none text-[11px] font-bold text-slate-700 placeholder:text-slate-400 placeholder:font-medium"
+                className="w-full bg-transparent border-none outline-none text-[11px] font-bold text-[#475569] placeholder:text-[#94a3b8] placeholder:font-medium"
               />
             </div>
 
-            <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-md px-1.5 min-w-[110px]">
-              <Filter size={12} className="text-slate-400 shrink-0" />
+            <div className="flex items-center gap-1 bg-[#fbf8f1] border border-[#e8ddc8] rounded-md px-1.5 min-w-[110px]">
+              <Filter size={12} className="text-[#94a3b8] shrink-0" />
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full bg-transparent border-none py-1.5 text-[10px] font-bold text-slate-600 outline-none cursor-pointer"
+                className="w-full bg-transparent border-none py-1.5 text-[10px] font-bold text-[#64748b] outline-none cursor-pointer"
               >
                 <option value="all">كل التصنيفات</option>
                 <option value="hr">موارد بشرية</option>
@@ -248,7 +279,7 @@ export default function InternalFormsTab() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-md px-2 py-1.5 text-[10px] font-bold text-slate-600 outline-none cursor-pointer min-w-[90px]"
+              className="bg-[#fbf8f1] border border-[#e8ddc8] rounded-md px-2 py-1.5 text-[10px] font-bold text-[#64748b] outline-none cursor-pointer min-w-[90px]"
             >
               <option value="all">الحالة: الكل</option>
               <option value="active">نشط فقط</option>
@@ -257,14 +288,14 @@ export default function InternalFormsTab() {
           </div>
 
           {/* الإحصائيات (مصغرة) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-1">
+          <div className="grid min-w-0 grid-cols-2 sm:grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 flex-1">
             {stats.map((stat) => (
               <div
                 key={stat.id}
-                className={`flex items-center justify-between p-2 rounded-xl border ${stat.bg} shadow-sm`}
+                className={`flex items-center justify-between p-2 rounded-xl border ${stat.bg} shadow-[0_6px_14px_rgba(18,63,89,0.04)]`}
               >
                 <div className="flex flex-col">
-                  <span className="text-[9px] font-bold text-slate-500 mb-0.5">
+                  <span className="text-[9px] font-bold text-[#94a3b8] mb-0.5">
                     {stat.title}
                   </span>
                   <span
@@ -284,10 +315,10 @@ export default function InternalFormsTab() {
         </div>
 
         {/* ── Forms Grid Area (Scrollable) ── */}
-        <div className="flex-1 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col relative min-h-0">
+        <div className="flex-1 bg-white/95 border border-[#e8ddc8] rounded-xl shadow-[0_6px_14px_rgba(18,63,89,0.04)] overflow-hidden flex flex-col relative min-h-0">
           {/* رأس قسم النماذج */}
-          <div className="bg-slate-50/80 px-3 py-2 border-b border-slate-100 flex items-center justify-between shrink-0">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+          <div className="bg-[#fbf8f1]/80 px-3 py-2 border-b border-[#e8ddc8] flex items-center justify-between shrink-0">
+            <span className="text-[10px] font-black text-[#94a3b8] uppercase tracking-wider">
               {isLoading
                 ? "جاري التحميل..."
                 : `النماذج المتاحة (${filteredTemplates.length})`}
@@ -295,22 +326,22 @@ export default function InternalFormsTab() {
           </div>
 
           {/* منطقة التمرير الفعلية */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-3 relative">
+          <div className="min-w-0 flex-1 overflow-y-auto custom-scrollbar-slim custom-scrollbar p-3 relative">
             {isLoading ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-blue-500 bg-white/50 backdrop-blur-sm z-10">
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-[#0e7490] bg-white/50 backdrop-blur-sm z-10">
                 <Loader2 size={32} className="animate-spin mb-3" />
-                <p className="text-xs font-bold text-slate-600">
+                <p className="text-xs font-bold text-[#64748b]">
                   جاري تحميل النماذج...
                 </p>
               </div>
             ) : filteredTemplates.length === 0 ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-[#94a3b8]">
                 <FileText
                   size={48}
                   className="mb-3 opacity-20"
                   strokeWidth={1.5}
                 />
-                <p className="text-sm font-bold text-slate-500">
+                <p className="text-sm font-bold text-[#94a3b8]">
                   لا توجد نماذج مطابقة للبحث أو الفلاتر
                 </p>
                 <button
@@ -319,13 +350,13 @@ export default function InternalFormsTab() {
                     setCategoryFilter("all");
                     setStatusFilter("all");
                   }}
-                  className="mt-3 px-4 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors"
+                  className="mt-3 px-4 py-1.5 bg-[#fbf8f1] text-[#64748b] rounded-lg text-xs font-bold hover:bg-[#eef7f6] transition-colors"
                 >
                   مسح الفلاتر
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 items-start pb-4">
+              <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5 items-start pb-4">
                 {filteredTemplates.map((form) => (
                   <FormCard
                     key={form.id}

@@ -39,8 +39,39 @@ import {
   CalendarClock,
 } from "lucide-react";
 import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import { toast } from "sonner";
+
+
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`inline-flex min-w-0 items-center justify-center ${
+        vertical ? "flex-col gap-0.5" : "gap-1.5"
+      } ${className}`}
+    >
+      {Icon && <Icon className={iconClassName || "h-3.5 w-3.5 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 whitespace-nowrap text-[10px] font-black leading-none"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
+
 
 // ==========================================
 // 💡 دوال مساعدة للتواريخ والأوقات
@@ -96,6 +127,32 @@ const formatTime12Hour = (timeStr) => {
 // ==========================================
 // 💡 محرر النصوص الغني المباشر
 // ==========================================
+
+const getBlockHelperText = (block) => {
+  const label = block?.label || "هذا الحقل";
+
+  switch (block?.type) {
+    case "subject":
+      return "يستعمل لكتابة موضوع الخطاب أو العنوان المختصر الذي يظهر في الورقة.";
+    case "text_field":
+      return `اكتب قيمة ${label} هنا، وسيتم تحديثها مباشرة داخل المستند.`;
+    case "date_gregorian":
+    case "date_editable":
+      return "اختر التاريخ الميلادي، ويمكن استخدام زر اليوم للتعبئة السريعة.";
+    case "date_hijri":
+      return "اكتب التاريخ الهجري يدوياً أو اختر تاريخاً ميلادياً لتحويله تلقائياً.";
+    case "time":
+      return "حدد الوقت بصيغة 24 ساعة، أو استخدم زر الآن للتعبئة التلقائية.";
+    case "employee_info":
+      return "أدخل اسم الموظف ورقمه الوظيفي ليظهرا في القسم المخصص داخل الورقة.";
+    case "checkbox":
+      return "فعّل هذا الخيار عند الحاجة، ويمكن تعديل نص الخيار قبل الطباعة.";
+    default:
+      return "هذا الحقل قابل للتعبئة ويظهر أثره مباشرة داخل معاينة المستند.";
+  }
+};
+
+
 const CanvasRichText = ({
   value,
   onChange,
@@ -116,7 +173,7 @@ const CanvasRichText = ({
 
   return (
     <div
-      className={`relative w-full h-full group ${isForPrint ? "bg-transparent" : ""} ${!isForPrint && isFocused ? "ring-2 ring-blue-400 bg-blue-50/20 rounded z-50" : ""}`}
+      className={`relative w-full h-full group ${isForPrint ? "bg-transparent" : ""} ${!isForPrint && isFocused ? "ring-2 ring-[#0e7490] bg-[#eef7f6]/20 rounded z-50" : ""}`}
       onFocus={() => setIsFocused(true)}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) {
@@ -128,12 +185,12 @@ const CanvasRichText = ({
     >
       {!isForPrint && isFocused && (
         <div
-          className="absolute -top-12 left-0 right-0 mx-auto w-max bg-slate-900 text-white rounded-lg shadow-xl flex items-center gap-1 p-1 z-[100] animate-in slide-in-from-bottom-2"
+          className="absolute -top-4 left-0 right-0 mx-auto w-max bg-[#06111d] text-white rounded-lg shadow-[0_10px_24px_rgba(18,63,89,0.08)] flex items-center gap-1 p-1 z-[100] animate-in slide-in-from-bottom-2"
           contentEditable={false}
         >
           <select
             onChange={(e) => handleFormat(e, "fontSize", e.target.value)}
-            className="bg-slate-700 text-white text-[10px] px-1 py-1 rounded outline-none cursor-pointer"
+            className="bg-[#0e7490] text-white text-[10px] px-1 py-1 rounded outline-none cursor-pointer"
             defaultValue="3"
           >
             <option value="1">صغير جداً</option>
@@ -143,47 +200,47 @@ const CanvasRichText = ({
             <option value="5">كبير</option>
             <option value="6">ضخم</option>
           </select>
-          <div className="w-px h-3 bg-slate-700 mx-0.5"></div>
+          <div className="w-px h-3 bg-[#0e7490] mx-0.5"></div>
           <button
             onMouseDown={(e) => handleFormat(e, "bold")}
-            className="p-1 hover:bg-slate-700 rounded"
+            className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 hover:bg-[#0e7490] rounded"
           >
             <Bold size={12} />
           </button>
           <button
             onMouseDown={(e) => handleFormat(e, "italic")}
-            className="p-1 hover:bg-slate-700 rounded"
+            className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 hover:bg-[#0e7490] rounded"
           >
             <Italic size={12} />
           </button>
           <button
             onMouseDown={(e) => handleFormat(e, "underline")}
-            className="p-1 hover:bg-slate-700 rounded"
+            className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 hover:bg-[#0e7490] rounded"
           >
             <Underline size={12} />
           </button>
-          <div className="w-px h-3 bg-slate-700 mx-0.5"></div>
+          <div className="w-px h-3 bg-[#0e7490] mx-0.5"></div>
           <input
             type="color"
             onInput={(e) => handleFormat(e, "foreColor", e.target.value)}
             className="w-5 h-5 p-0 border-0 rounded cursor-pointer bg-transparent"
           />
-          <div className="w-px h-3 bg-slate-700 mx-0.5"></div>
+          <div className="w-px h-3 bg-[#0e7490] mx-0.5"></div>
           <button
             onMouseDown={(e) => handleFormat(e, "justifyRight")}
-            className="p-1 hover:bg-slate-700 rounded"
+            className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 hover:bg-[#0e7490] rounded"
           >
             <AlignRight size={12} />
           </button>
           <button
             onMouseDown={(e) => handleFormat(e, "justifyCenter")}
-            className="p-1 hover:bg-slate-700 rounded"
+            className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 hover:bg-[#0e7490] rounded"
           >
             <AlignCenter size={12} />
           </button>
           <button
             onMouseDown={(e) => handleFormat(e, "justifyLeft")}
-            className="p-1 hover:bg-slate-700 rounded"
+            className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 hover:bg-[#0e7490] rounded"
           >
             <AlignLeft size={12} />
           </button>
@@ -193,7 +250,7 @@ const CanvasRichText = ({
       <div
         ref={contentRef}
         contentEditable={!isForPrint}
-        className={`rich-text-editor outline-none ${isForPrint ? "bg-transparent border-transparent" : inline ? "border-b border-dashed border-slate-400" : ""} ${inline ? "inline-block min-w-[50px]" : "w-full h-full whitespace-pre-wrap break-words"}`}
+        className={`rich-text-editor outline-none ${isForPrint ? "bg-transparent border-transparent" : inline ? "border-b border-dashed border-[#d8b46a]/35" : ""} ${inline ? "inline-block min-w-[50px]" : "w-full h-full whitespace-pre-wrap break-words"}`}
         style={{
           minHeight: inline ? "auto" : "100%",
           wordBreak: "break-word",
@@ -367,7 +424,7 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
       style={{ backgroundColor: isForPrint ? "transparent" : tableBgColor }}
     >
       {!isForPrint && onChange && (
-        <div className="flex gap-1 mb-1 opacity-30 hover:opacity-100 focus-within:opacity-100 transition-opacity flex-wrap items-center bg-white/80 p-1 rounded backdrop-blur-sm border border-slate-200">
+        <div className="flex gap-1 mb-1 opacity-30 hover:opacity-100 focus-within:opacity-100 transition-opacity flex-wrap items-center bg-white/80 p-1 rounded backdrop-blur-sm border border-[#e8ddc8]">
           <button
             onClick={addRow}
             className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[9px] font-bold flex items-center gap-0.5"
@@ -380,10 +437,10 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
           >
             <Minus size={10} /> صف
           </button>
-          <div className="w-px h-3 bg-slate-300 mx-1"></div>
+          <div className="w-px h-3 bg-[#e8ddc8] mx-1"></div>
           <button
             onClick={addCol}
-            className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold flex items-center gap-0.5"
+            className="px-1.5 py-0.5 bg-[#eef7f6] text-[#15536f] rounded text-[9px] font-bold flex items-center gap-0.5"
           >
             <Plus size={10} /> عمود
           </button>
@@ -393,14 +450,14 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
           >
             <Minus size={10} /> عمود
           </button>
-          <div className="w-px h-3 bg-slate-300 mx-1"></div>
+          <div className="w-px h-3 bg-[#e8ddc8] mx-1"></div>
           <div className="flex items-center gap-1 px-1 rounded">
-            <span className="text-[8px] font-bold text-slate-500">
+            <span className="text-[8px] font-bold text-[#94a3b8]">
               خلفية الجدول:
             </span>
             <button
               onClick={() => changeTableBg("transparent")}
-              className={`text-[8px] px-1 rounded ${tableState.bg === "transparent" ? "bg-slate-300 text-white" : "text-slate-600 bg-slate-100"}`}
+              className={`text-[8px] px-1 rounded ${tableState.bg === "transparent" ? "bg-[#e8ddc8] text-white" : "text-[#64748b] bg-[#fbf8f1]"}`}
             >
               شفاف
             </button>
@@ -410,7 +467,7 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
                 tableState.bg !== "transparent" ? tableState.bg : "#ffffff"
               }
               onChange={(e) => changeTableBg(e.target.value)}
-              className="w-4 h-4 p-0 border border-slate-300 rounded-full cursor-pointer"
+              className="w-4 h-4 p-0 border border-[#d8b46a]/25 rounded-full cursor-pointer"
               title="لون الجدول"
             />
             <input
@@ -420,7 +477,7 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
               step="0.1"
               value={tableState.opacity}
               onChange={(e) => changeTableOpacity(Number(e.target.value))}
-              className="w-12 h-1 accent-blue-500"
+              className="w-9 h-1 accent-blue-500"
               title="شفافية الجدول"
               disabled={tableState.bg === "transparent"}
             />
@@ -431,10 +488,10 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
         className="flex-1 w-full overflow-visible"
         style={{ backgroundColor: tableBgColor }}
       >
-        <table className="w-full h-full text-center border-collapse border border-slate-800 bg-transparent table-fixed">
+        <table className="w-full h-full text-center border-collapse border border-[#d8b46a]/35 bg-transparent table-fixed">
           <tbody>
             {tableData.map((row, rIdx) => (
-              <tr key={rIdx} className="border-t border-slate-800">
+              <tr key={rIdx} className="border-t border-[#d8b46a]/35">
                 {row.map((cell, cIdx) => {
                   if (cell.cs === 0 || cell.rs === 0) return null;
                   return (
@@ -442,7 +499,7 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
                       key={cIdx}
                       colSpan={cell.cs}
                       rowSpan={cell.rs}
-                      className="border border-slate-800 p-0 relative group/cell align-top"
+                      className="border border-[#d8b46a]/35 p-0 relative group/cell align-top"
                       style={{
                         backgroundColor:
                           cell.bg !== "transparent" ? cell.bg : "inherit",
@@ -453,17 +510,17 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
                       <textarea
                         value={cell.v}
                         onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
-                        className={`w-full h-full min-h-[30px] p-2 bg-transparent outline-none text-center resize-none ${isForPrint ? "bg-transparent border-none" : "focus:bg-blue-50/30"} ${cell.b ? "font-bold" : "font-normal"}`}
+                        className={`w-full h-full min-h-[30px] p-2 bg-transparent outline-none text-center resize-none ${isForPrint ? "bg-transparent border-none" : "focus:bg-[#eef7f6]/30"} ${cell.b ? "font-bold" : "font-normal"}`}
                         readOnly={isForPrint || !onChange}
                       />
                       {!isForPrint && onChange && (
-                        <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 bg-slate-800 text-white rounded p-1 flex gap-1 hidden group-focus-within/cell:flex z-[60] shadow-xl opacity-95 items-center w-max">
+                        <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 bg-[#123f59] text-white rounded p-1 flex gap-1 hidden group-focus-within/cell:flex z-[60] shadow-[0_10px_24px_rgba(18,63,89,0.08)] opacity-95 items-center w-max">
                           <button
                             onMouseDown={(e) => {
                               e.preventDefault();
                               toggleBold(rIdx, cIdx);
                             }}
-                            className={`p-0.5 rounded ${cell.b ? "bg-blue-500" : "hover:bg-slate-600"}`}
+                            className={`p-0.5 rounded ${cell.b ? "bg-[#0e7490]" : "hover:bg-[#0e7490]"}`}
                             title="نص عريض"
                           >
                             <Bold size={10} />
@@ -484,17 +541,17 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
                               e.preventDefault();
                               changeCellBg(rIdx, cIdx, "transparent");
                             }}
-                            className="text-[7px] bg-slate-600 px-1 rounded hover:bg-slate-500"
+                            className="text-[7px] bg-[#0e7490] px-1 rounded hover:bg-[#fbf8f1]0"
                           >
                             شفاف
                           </button>
-                          <div className="w-px h-3 bg-slate-600 mx-0.5"></div>
+                          <div className="w-px h-3 bg-[#0e7490] mx-0.5"></div>
                           <button
                             onMouseDown={(e) => {
                               e.preventDefault();
                               mergeRight(rIdx, cIdx);
                             }}
-                            className="text-[8px] px-1 hover:bg-slate-600 rounded"
+                            className="text-[8px] px-1 hover:bg-[#0e7490] rounded"
                           >
                             دمج ➡️
                           </button>
@@ -503,7 +560,7 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
                               e.preventDefault();
                               mergeDown(rIdx, cIdx);
                             }}
-                            className="text-[8px] px-1 hover:bg-slate-600 rounded"
+                            className="text-[8px] px-1 hover:bg-[#0e7490] rounded"
                           >
                             دمج ⬇️
                           </button>
@@ -513,18 +570,18 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
                                 e.preventDefault();
                                 unmerge(rIdx, cIdx);
                               }}
-                              className="text-[8px] px-1 hover:bg-slate-600 rounded text-red-300"
+                              className="text-[8px] px-1 hover:bg-[#0e7490] rounded text-red-300"
                             >
                               ✖ فك
                             </button>
                           )}
-                          <div className="w-px h-3 bg-slate-600 mx-0.5"></div>
+                          <div className="w-px h-3 bg-[#0e7490] mx-0.5"></div>
                           <button
                             onMouseDown={(e) => {
                               e.preventDefault();
                               resizeColumn(cIdx, "expand");
                             }}
-                            className="p-0.5 hover:bg-slate-600 rounded"
+                            className="p-0.5 hover:bg-[#0e7490] rounded"
                             title="توسيع العمود"
                           >
                             ↔️
@@ -534,7 +591,7 @@ const InteractiveTable = ({ value, onChange, isForPrint }) => {
                               e.preventDefault();
                               resizeColumn(cIdx, "shrink");
                             }}
-                            className="p-0.5 hover:bg-slate-600 rounded"
+                            className="p-0.5 hover:bg-[#0e7490] rounded"
                             title="تضييق العمود"
                           >
                             ↔️
@@ -576,6 +633,12 @@ const DraggableImageBlock = ({
     imgData.url = value;
   }
 
+  const defaultLogoUrl = block.type === "company_logo" ? "/logo.jpeg" : null;
+  const effectiveImgData =
+    imgData.url || !defaultLogoUrl
+      ? imgData
+      : { ...imgData, url: defaultLogoUrl, fit: "contain", opacity: 1, isDefaultLogo: true };
+
   return (
     <div
       className={`w-full h-full flex flex-col relative group ${isForPrint ? "bg-transparent" : ""}`}
@@ -593,17 +656,42 @@ const DraggableImageBlock = ({
       )}
 
       <div
-        className={`w-full flex-1 flex items-center justify-center overflow-hidden relative ${isForPrint ? "bg-transparent border-none" : imgData.url || isBackground ? "bg-transparent border-transparent" : "border-2 border-dashed border-blue-300 bg-blue-50/50 rounded-xl"}`}
+        className={`w-full flex-1 flex items-center justify-center overflow-hidden relative ${isForPrint ? "bg-transparent border-none" : effectiveImgData.url || isBackground ? "bg-transparent border-transparent" : "border-2 border-dashed border-[#d8b46a]/40 bg-[#eef7f6]/50 rounded-xl"}`}
       >
-        {imgData.url ? (
-          <img
-            src={imgData.url}
-            alt="img"
-            style={{ objectFit: imgData.fit, opacity: imgData.opacity }}
-            className={`w-full h-full pointer-events-none ${isSignature ? "mix-blend-multiply" : ""}`}
-          />
+        {effectiveImgData.url ? (
+          <>
+            <img
+              src={effectiveImgData.url}
+              alt={block.type === "company_logo" ? "Company Logo" : "img"}
+              style={{ objectFit: effectiveImgData.fit, opacity: effectiveImgData.opacity }}
+              className={`w-full h-full pointer-events-none ${isSignature ? "mix-blend-multiply" : ""}`}
+            />
+            {!isForPrint && effectiveImgData.isDefaultLogo && (
+              <label className="absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-white/0 text-[#0e7490] opacity-0 transition-opacity hover:bg-white/70 hover:opacity-100 cursor-pointer">
+                <Upload size={20} className="mb-1" />
+                <span className="text-[10px] font-black">استبدال الشعار</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      const reader = new FileReader();
+                      reader.onload = (ev) =>
+                        onChange({
+                          url: ev.target.result,
+                          fit: "contain",
+                          opacity: 1,
+                        });
+                      reader.readAsDataURL(e.target.files[0]);
+                    }
+                  }}
+                />
+              </label>
+            )}
+          </>
         ) : !isForPrint && !isBackground ? (
-          <label className="cursor-pointer flex flex-col items-center text-blue-500 hover:text-blue-700 w-full h-full justify-center p-2 text-center">
+          <label className="cursor-pointer flex flex-col items-center text-[#0e7490] hover:text-[#15536f] w-full h-full justify-center p-2 text-center">
             <Upload size={24} className="mb-1" />
             <span className="text-[10px] font-bold">رفع {block.label}</span>
             <input
@@ -628,9 +716,9 @@ const DraggableImageBlock = ({
 
         {isSignature && !imgData.url && !isForPrint && (
           <div
-            className={`w-full h-full rounded flex flex-col items-center justify-end pb-2 border-2 border-dashed border-slate-300`}
+            className={`w-full h-full rounded flex flex-col items-center justify-end pb-2 border-2 border-dashed border-[#d8b46a]/25`}
           >
-            <span className="text-slate-400 mb-auto mt-2 text-xs">
+            <span className="text-[#94a3b8] mb-auto mt-2 text-xs">
               {block.type === "office_stamp"
                 ? "مساحة الختم"
                 : block.type === "fingerprint"
@@ -642,32 +730,32 @@ const DraggableImageBlock = ({
       </div>
 
       {!isForPrint && imgData.url && !isBackground && (
-        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white rounded-lg px-2 py-1 flex gap-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#06111d] text-white rounded-lg px-2 py-1 flex gap-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={() => onChange({ ...imgData, fit: "contain" })}
-            className={`p-1 rounded ${imgData.fit === "contain" ? "bg-blue-500" : "hover:bg-slate-700"}`}
+            className={`p-1 rounded ${imgData.fit === "contain" ? "bg-[#0e7490]" : "hover:bg-[#0e7490]"}`}
             title="احتواء"
           >
             <Frame size={12} />
           </button>
           <button
             onClick={() => onChange({ ...imgData, fit: "cover" })}
-            className={`p-1 rounded ${imgData.fit === "cover" ? "bg-blue-500" : "hover:bg-slate-700"}`}
+            className={`p-1 rounded ${imgData.fit === "cover" ? "bg-[#0e7490]" : "hover:bg-[#0e7490]"}`}
             title="تغطية"
           >
             <Maximize size={12} />
           </button>
           <button
             onClick={() => onChange({ ...imgData, fit: "fill" })}
-            className={`p-1 rounded ${imgData.fit === "fill" ? "bg-blue-500" : "hover:bg-slate-700"}`}
+            className={`p-1 rounded ${imgData.fit === "fill" ? "bg-[#0e7490]" : "hover:bg-[#0e7490]"}`}
             title="ملء"
           >
             <Grid3x3 size={12} />
           </button>
-          <div className="w-px h-3 bg-slate-600 mx-0.5 self-center"></div>
+          <div className="w-px h-3 bg-[#0e7490] mx-0.5 self-center"></div>
           <button
             onClick={() => onChange(null)}
-            className="p-1 hover:bg-red-500 rounded text-red-300 hover:text-white"
+            className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 hover:bg-red-500 rounded text-red-300 hover:text-white"
             title="حذف الصورة"
           >
             <Trash2 size={12} />
@@ -676,8 +764,8 @@ const DraggableImageBlock = ({
       )}
 
       {!isForPrint && isBackground && (
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white rounded-lg px-3 py-1.5 flex items-center gap-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity">
-          <span className="text-[10px] text-slate-300 whitespace-nowrap">
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#06111d] text-white rounded-lg px-3 py-1.5 flex items-center gap-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="text-[10px] text-[#cbd5e1] whitespace-nowrap">
             الشفافية:
           </span>
           <input
@@ -691,7 +779,7 @@ const DraggableImageBlock = ({
             }
             className="w-24 h-1 accent-blue-500 cursor-pointer"
           />
-          <span className="text-[10px] text-white font-mono w-8 text-center border-l border-slate-700 pl-2">
+          <span className="text-[10px] text-white font-mono w-8 text-center border-l border-[#d8b46a]/35 pl-2">
             {Math.round((imgData.opacity ?? 1) * 100)}%
           </span>
         </div>
@@ -803,7 +891,7 @@ const CanvasBlockRenderer = ({
             {block.label}:
           </span>
           <div
-            className={`rounded flex items-center gap-2 min-w-[120px] ${isForPrint ? "bg-transparent border-none text-black p-0" : "border border-slate-300 bg-slate-50 px-3 py-1.5 text-slate-500"}`}
+            className={`rounded flex items-center gap-2 min-w-[120px] ${isForPrint ? "bg-transparent border-none text-black p-0" : "border border-[#d8b46a]/25 bg-[#fbf8f1] px-3 py-1.5 text-[#94a3b8]"}`}
           >
             {displayDate} {!isForPrint && <CalendarClock size={14} />}
           </div>
@@ -828,7 +916,7 @@ const CanvasBlockRenderer = ({
             {block.label}:
           </span>
           <span
-            className={`font-mono px-3 py-1 rounded ${isForPrint ? "bg-transparent border-none text-black p-0" : "bg-slate-50 border border-slate-200"}`}
+            className={`font-mono px-3 py-1 rounded ${isForPrint ? "bg-transparent border-none text-black p-0" : "bg-[#fbf8f1] border border-[#e8ddc8]"}`}
             dir="ltr"
           >
             {displayTime}
@@ -841,15 +929,15 @@ const CanvasBlockRenderer = ({
       return (
         <div
           style={{ fontSize: fontSizeStyle }}
-          className={`rounded-xl h-full ${isForPrint ? "border-none bg-transparent p-0" : "border border-indigo-200 bg-indigo-50/30 p-3"}`}
+          className={`rounded-xl h-full ${isForPrint ? "border-none bg-transparent p-0" : "border border-[#d8b46a]/35 bg-[#eef7f6]/30 p-3"}`}
         >
           <div
-            className={`font-bold mb-2 flex items-center gap-2 ${isForPrint ? "text-black" : "text-indigo-800"}`}
+            className={`font-bold mb-2 flex items-center gap-2 ${isForPrint ? "text-black" : "text-[#123f59]"}`}
           >
             {!isForPrint && <User size={16} />} {block.label}
           </div>
           <div
-            className={`grid grid-cols-2 gap-2 font-semibold text-[0.9em] ${isForPrint ? "text-black" : "text-indigo-900"}`}
+            className={`grid min-w-0 grid-cols-2 gap-2 font-semibold text-[0.9em] ${isForPrint ? "text-black" : "text-[#123f59]"}`}
           >
             <div>الاسم: {empData.name || "---------"}</div>
             <div>
@@ -865,11 +953,11 @@ const CanvasBlockRenderer = ({
       return (
         <div
           style={{ ...alignStyles, fontSize: fontSizeStyle }}
-          className={`flex items-center gap-3 ${isForPrint ? "bg-transparent" : ""}`}
+          className={`flex items-center gap-2.5 ${isForPrint ? "bg-transparent" : ""}`}
         >
           <div
             onClick={() => !isForPrint && onChange(!value)}
-            className={`w-4 h-4 shrink-0 rounded flex items-center justify-center ${isForPrint ? "border" : "border-2 cursor-pointer"} ${value ? (isForPrint ? "border-black bg-black" : "border-blue-600 bg-blue-600") : isForPrint ? "border-black" : "border-slate-400"}`}
+            className={`w-4 h-4 shrink-0 rounded flex items-center justify-center ${isForPrint ? "border" : "border-2 cursor-pointer"} ${value ? (isForPrint ? "border-black bg-black" : "border-[#d8b46a]/35 bg-[#0e7490]") : isForPrint ? "border-black" : "border-[#d8b46a]/35"}`}
           >
             {value && (
               <span className="text-white text-[10px] leading-none">✓</span>
@@ -880,7 +968,7 @@ const CanvasBlockRenderer = ({
               type="text"
               value={cLabel}
               onChange={(e) => onLabelChange && onLabelChange(e.target.value)}
-              className="font-bold text-slate-700 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 outline-none w-full"
+              className="font-bold text-[#475569] bg-transparent border-b border-transparent hover:border-[#d8b46a]/25 focus:border-[#0e7490] outline-none w-full"
             />
           ) : (
             <span className="font-bold text-black">{cLabel}</span>
@@ -938,7 +1026,7 @@ const CanvasBlockRenderer = ({
     case "separator":
       return (
         <hr
-          className={`my-2 border-t-2 w-full ${isForPrint ? "border-black" : "border-slate-800"}`}
+          className={`my-2 border-t-2 w-full ${isForPrint ? "border-black" : "border-[#d8b46a]/35"}`}
         />
       );
 
@@ -1039,181 +1127,1014 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
   const dynamicHeight = calculatePaperHeight();
   const pagesCount = Math.max(1, Math.round(dynamicHeight / A4_HEIGHT_PX));
 
-  const handlePrintNatively = () => {
-    if (!componentRef.current)
-      return toast.error("لا يمكن الوصول لمحتوى الطباعة");
-    setActiveBlockId(null);
-    setIsForPrint(true);
-    const originalTransform = componentRef.current.style.transform;
-    componentRef.current.style.transform = "scale(1)";
 
-    setTimeout(() => {
-      const iframe = document.createElement("iframe");
-      iframe.style.position = "absolute";
-      iframe.style.width = "0px";
-      iframe.style.height = "0px";
-      iframe.style.border = "none";
-      document.body.appendChild(iframe);
+  const waitForRender = () =>
+    new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
 
-      const printDocument = iframe.contentWindow.document;
-      const originalContent = componentRef.current.cloneNode(true);
-      originalContent.style.transform = "none";
-      originalContent.style.boxShadow = "none";
+  const makeImageUrlsAbsolute = (rootNode) => {
+    if (typeof window === "undefined" || !rootNode) return;
 
-      const styles = Array.from(
-        document.querySelectorAll('style, link[rel="stylesheet"]'),
-      )
-        .map((el) => el.outerHTML)
-        .join("\n");
-      const htmlContent = `
-        <html dir="rtl"><head><title>${exportFileName.trim() || form?.name}</title>${styles}
-        <style>
-          @page { size: A4 ${pageSettings.orientation}; margin: 0; }
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; background: transparent; }
-        </style></head>
-        <body style="font-family: ${fontFamily}; background: transparent;">${originalContent.outerHTML}</body></html>
-      `;
+    rootNode.querySelectorAll("img").forEach((img) => {
+      const src = img.getAttribute("src");
 
-      printDocument.open();
-      printDocument.write(htmlContent);
-      printDocument.close();
-
-      iframe.onload = () => {
-        setTimeout(() => {
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-          setTimeout(() => document.body.removeChild(iframe), 1000);
-          componentRef.current.style.transform = originalTransform;
-          setIsForPrint(false);
-        }, 500);
-      };
-    }, 300);
+      if (src && src.startsWith("/")) {
+        img.setAttribute("src", `${window.location.origin}${src}`);
+      }
+    });
   };
 
-  const handleExport = async () => {
-    if (!componentRef.current) return;
-    setActiveBlockId(null);
-    setIsExporting(true);
-    toast.loading("جاري إعداد الملف بدقة فائقة...", { duration: 5000 });
+  const buildStandaloneDocument = (node, title = "النموذج") => {
+    const safeTitle = String(title || "النموذج").replace(/[<>]/g, "");
+    const clone = node.cloneNode(true);
+
+    clone.style.transform = "none";
+    clone.style.boxShadow = "none";
+    clone.style.margin = "0 auto";
+    clone.style.background = "#ffffff";
+    clone.style.transformOrigin = "top center";
+
+    makeImageUrlsAbsolute(clone);
+
+    clone.querySelectorAll("[contenteditable]").forEach((el) => {
+      el.setAttribute("contenteditable", "false");
+    });
+
+    clone.querySelectorAll("[data-no-print='true']").forEach((el) => {
+      el.remove();
+    });
+
+    const styles = Array.from(
+      document.querySelectorAll('style, link[rel="stylesheet"]'),
+    )
+      .map((el) => el.outerHTML)
+      .join("\n");
+
+    const baseHref =
+      typeof window !== "undefined" ? `${window.location.origin}/` : "/";
+
+    return `
+      <!doctype html>
+      <html lang="ar" dir="rtl">
+        <head>
+          <meta charset="utf-8" />
+          <base href="${baseHref}" />
+          <title>${safeTitle}</title>
+          ${styles}
+          <style>
+            @page { size: 210mm 297mm; margin: 0; }
+            * { box-sizing: border-box; }
+            html, body {
+              margin: 0;
+              padding: 0;
+              background: #ffffff;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              font-family: ${fontFamily || "Tajawal"}, Arial, sans-serif;
+            }
+            body {
+              width: 100%;
+              display: flex;
+              justify-content: center;
+              align-items: flex-start;
+              overflow: visible;
+            }
+            .print-shell {
+              width: ${pageSettings.orientation === "portrait" ? "210mm" : "297mm"};
+              min-height: ${pageSettings.orientation === "portrait" ? "297mm" : "210mm"};
+              background: #ffffff;
+              overflow: visible;
+            }
+            .print-shell,
+            .print-shell * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            .print-shell button,
+            .print-shell input[type="file"],
+            .print-shell select,
+            .print-shell [data-no-print="true"] {
+              display: none !important;
+            }
+          </style>
+        </head>
+        <body>
+          <main class="print-shell">${clone.outerHTML}</main>
+        </body>
+      </html>
+    `;
+  };
+
+  const waitForPopupImages = (popup) => {
+    const images = Array.from(popup.document.images || []);
+
+    if (!images.length) {
+      return Promise.resolve();
+    }
+
+    return Promise.all(
+      images.map(
+        (img) =>
+          new Promise((resolve) => {
+            if (img.complete) {
+              resolve();
+              return;
+            }
+
+            img.onload = resolve;
+            img.onerror = resolve;
+          }),
+      ),
+    );
+  };
+
+  const openPopupAndPrint = async (html, title = "النموذج") => {
+    const popup = window.open("", "_blank", "width=1200,height=900");
+
+    if (!popup) {
+      toast.error("المتصفح منع فتح نافذة الطباعة");
+      return false;
+    }
+
+    popup.document.open();
+    popup.document.write(html);
+    popup.document.close();
+
+    const hint = popup.document.createElement("div");
+    hint.textContent = "Format fixé: impression verticale A4. Décochez En-têtes et pieds de page si nécessaire.";
+    hint.style.cssText = "position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:99999;background:#123f59;color:#fff;padding:8px 14px;border-radius:12px;font:700 12px Arial;box-shadow:0 8px 22px rgba(0,0,0,.15);";
+    hint.setAttribute("data-no-print", "true");
+    popup.document.body.appendChild(hint);
+
+    await waitForPopupImages(popup);
+
+    setTimeout(() => {
+      popup.focus();
+      popup.print();
+    }, 200);
+
+    return true;
+  };
+
+
+
+  const openPreparingPopup = (title = "النموذج") => {
+    const popup = window.open("", "_blank", "width=1200,height=900");
+
+    if (!popup) {
+      return null;
+    }
+
+    popup.document.open();
+    popup.document.write(`
+      <!doctype html>
+      <html lang="ar" dir="rtl">
+        <head>
+          <meta charset="utf-8" />
+          <title>${String(title || "النموذج").replace(/[<>]/g, "")}</title>
+          <style>
+            html,
+            body {
+              margin: 0;
+              height: 100%;
+              background: #ffffff;
+              font-family: Tajawal, Arial, sans-serif;
+              color: #123f59;
+            }
+
+            body {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+
+            .loader {
+              width: 420px;
+              max-width: 90vw;
+              border: 1px solid #e8ddc8;
+              border-radius: 22px;
+              padding: 28px;
+              text-align: center;
+              box-shadow: 0 18px 48px rgba(18, 63, 89, 0.14);
+            }
+
+            .loader strong {
+              display: block;
+              font-size: 20px;
+              margin-bottom: 8px;
+            }
+
+            .loader span {
+              color: #64748b;
+              font-weight: 700;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="loader">
+            <strong>جاري تجهيز المستند...</strong>
+            <span>يرجى الانتظار لحظات قبل ظهور نافذة الطباعة.</span>
+          </div>
+        </body>
+      </html>
+    `);
+    popup.document.close();
+
+    return popup;
+  };
+
+  const getAbsoluteUrl = (src) => {
+    if (!src || src.startsWith("data:") || src.startsWith("blob:")) {
+      return src;
+    }
 
     try {
-      const element = componentRef.current;
-      const currentZoom = zoomLevel;
-      const originalTransform = element.style.transform;
+      return new URL(src, window.location.origin).href;
+    } catch {
+      return src;
+    }
+  };
 
-      setZoomLevel(100);
-      setIsForPrint(true);
-      element.style.transform = "scale(1)";
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
+  const imageToDataUrl = async (src) => {
+    if (!src || src.startsWith("data:")) {
+      return src;
+    }
 
-      const canvas = await html2canvas(element, {
-        scale: 3,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 1800);
+
+      const response = await fetch(getAbsoluteUrl(src), {
+        mode: "cors",
+        cache: "force-cache",
+        signal: controller.signal,
       });
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
-      const fileNameToSave =
-        exportFileName.trim() || `نموذج_${form?.name || "بدون_اسم"}`;
 
-      if (exportType === "image") {
-        const link = document.createElement("a");
-        link.download = `${fileNameToSave}.jpg`;
-        link.href = imgData;
-        link.click();
-        toast.success("تم التصدير بنجاح");
-      } else if (exportType === "pdf") {
-        const pdf = new jsPDF({
-          orientation: pageSettings.orientation,
-          unit: "mm",
-          format: "a4",
-          compress: true,
-        });
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfPageHeight = pdf.internal.pageSize.getHeight();
-        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-        pdf.addImage(
-          imgData,
-          "JPEG",
-          0,
-          position,
-          pdfWidth,
-          imgHeight,
-          "",
-          "FAST",
-        );
-        heightLeft -= pdfPageHeight;
-        while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(
-            imgData,
-            "JPEG",
-            0,
-            position,
-            pdfWidth,
-            imgHeight,
-            "",
-            "FAST",
-          );
-          heightLeft -= pdfPageHeight;
-        }
-        pdf.save(`${fileNameToSave}.pdf`);
-        toast.success("تم التصدير بنجاح");
-      } else if (exportType === "word") {
-        const htmlContent = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${fileNameToSave}</title></head><body style="margin: 0; padding: 0; text-align: center;"><img src="${imgData}" style="width: 100%; max-width: 210mm;" /></body></html>`;
-        const blob = new Blob(["\ufeff", htmlContent], {
-          type: "application/msword",
-        });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `${fileNameToSave}.doc`;
-        link.click();
-        toast.success("تم التصدير بنجاح");
+      clearTimeout(timer);
+
+      if (!response.ok) {
+        return src;
       }
 
-      element.style.transform = originalTransform;
-      setZoomLevel(currentZoom);
-      setIsForPrint(false);
+      const blob = await response.blob();
+
+      return await Promise.race([
+        new Promise((resolve) => {
+          const reader = new FileReader();
+
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = () => resolve(src);
+          reader.readAsDataURL(blob);
+        }),
+        new Promise((resolve) => setTimeout(() => resolve(src), 1800)),
+      ]);
+    } catch {
+      return src;
+    }
+  };
+
+  const inlineCloneImages = async (clone) => {
+    const images = Array.from(clone.querySelectorAll("img"));
+
+    await Promise.all(
+      images.map(async (img) => {
+        const src = img.getAttribute("src");
+
+        if (!src) {
+          return;
+        }
+
+        const dataUrl = await imageToDataUrl(src);
+        img.setAttribute("src", dataUrl || src);
+        img.setAttribute("crossorigin", "anonymous");
+      }),
+    );
+  };
+
+  const createExportClone = async () => {
+    if (!componentRef.current) {
+      throw new Error("MISSING_DOCUMENT_NODE");
+    }
+
+    const clone = componentRef.current.cloneNode(true);
+
+    clone.setAttribute("data-export-clone", "true");
+    clone.style.transform = "scale(1)";
+    clone.style.transformOrigin = "top right";
+    clone.style.boxShadow = "none";
+    clone.style.background = "#ffffff";
+    clone.style.margin = "0";
+    clone.style.position = "fixed";
+    clone.style.top = "0";
+    clone.style.left = "0";
+    clone.style.zIndex = "-9999";
+    clone.style.pointerEvents = "none";
+
+    clone.querySelectorAll("[contenteditable]").forEach((el) => {
+      el.setAttribute("contenteditable", "false");
+    });
+
+    clone.querySelectorAll("[data-no-print='true']").forEach((el) => {
+      el.remove();
+    });
+
+    clone.querySelectorAll("input[type='file']").forEach((el) => {
+      el.remove();
+    });
+
+    makeImageUrlsAbsolute(clone);
+    await inlineCloneImages(clone);
+
+    document.body.appendChild(clone);
+
+    await waitForRender();
+
+    return clone;
+  };
+
+
+
+  const captureDocumentCanvas = async () => {
+    const clone = await createExportClone();
+
+    try {
+      const width = Math.max(clone.scrollWidth, clone.offsetWidth, 1);
+      const height = Math.max(clone.scrollHeight, clone.offsetHeight, 1);
+
+      return await html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        imageTimeout: 15000,
+        removeContainer: true,
+        scrollX: 0,
+        scrollY: 0,
+        width,
+        height,
+        windowWidth: width,
+        windowHeight: height,
+        ignoreElements: (element) => {
+          if (!element) return false;
+
+          const tagName = element.tagName?.toLowerCase?.();
+          const noPrint = element.getAttribute?.("data-no-print") === "true";
+          const isFileInput =
+            tagName === "input" && element.getAttribute?.("type") === "file";
+
+          return noPrint || isFileInput;
+        },
+      });
+    } finally {
+      clone.remove();
+    }
+  };
+
+
+  const openImagePrintPopup = async (imageData, title = "النموذج", existingPopup = null) => {
+    const popup = existingPopup || window.open("", "_blank", "width=1200,height=900");
+
+    if (!popup) {
+      toast.error("المتصفح منع فتح نافذة الطباعة");
+      return false;
+    }
+
+    const pageWidth = "210mm";
+    const pageHeight = "297mm";
+    const safeTitle = String(title || "النموذج").replace(/[<>]/g, "");
+
+    popup.document.open();
+    popup.document.write(`
+      <!doctype html>
+      <html lang="ar" dir="rtl">
+        <head>
+          <meta charset="utf-8" />
+          <title>${safeTitle}</title>
+          <style>
+            @page {
+              size: 210mm 297mm;
+              margin: 0;
+            }
+
+            * {
+              box-sizing: border-box;
+            }
+
+            html,
+            body {
+              margin: 0;
+              padding: 0;
+              background: #ffffff;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+
+            body {
+              display: flex;
+              justify-content: center;
+              align-items: flex-start;
+              min-height: ${pageHeight};
+              overflow: visible;
+            }
+
+            .print-page {
+              width: ${pageWidth};
+              min-height: ${pageHeight};
+              background: #ffffff;
+              overflow: visible;
+            }
+
+            .print-page img {
+              display: block;
+              width: 100%;
+              height: auto;
+              object-fit: contain;
+            }
+          </style>
+        </head>
+
+        <body>
+          <main class="print-page">
+            <img src="${imageData}" alt="${safeTitle}" />
+          </main>
+        </body>
+      </html>
+    `);
+    popup.document.close();
+
+    await waitForPopupImages(popup);
+
+    setTimeout(() => {
+      popup.focus();
+      popup.print();
+    }, 250);
+
+    return true;
+  };
+
+
+
+
+
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const promiseWithTimeout = (promise, timeoutMs = 5000, fallback = null) =>
+    Promise.race([
+      promise,
+      new Promise((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
+    ]);
+
+
+  const sanitizePrintCss = (css = "") => {
+    return String(css)
+      .replace(/body\s*\*\s*\{[^}]*visibility\s*:\s*hidden[^}]*\}/gi, "")
+      .replace(/html\s*,\s*body\s*\{[^}]*visibility\s*:\s*hidden[^}]*\}/gi, "")
+      .replace(/\.print-hidden\s*\{[^}]*\}/gi, "")
+      .replace(/@media\s+print\s*\{\s*body\s*\*\s*\{[^}]*visibility\s*:\s*hidden[^}]*\}\s*\}/gi, "");
+  };
+
+  const collectInlineStyles = async () => {
+    let css = `
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; background: #ffffff; }
+      body { font-family: Tajawal, Arial, sans-serif; direction: rtl; }
+      [data-no-print='true'] { display: none !important; }
+      input[type='file'] { display: none !important; }
+      .custom-scrollbar, .custom-scrollbar-slim { scrollbar-width: none; }
+      .custom-scrollbar::-webkit-scrollbar, .custom-scrollbar-slim::-webkit-scrollbar { display: none; }
+    `;
+
+    document.querySelectorAll("style").forEach((styleTag) => {
+      css += `\n${styleTag.textContent || ""}`;
+    });
+
+    const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+
+    const linkedCss = await Promise.all(
+      links.map(async (link) => {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 1500);
+          const response = await fetch(link.href, {
+            signal: controller.signal,
+            cache: "force-cache",
+          });
+          clearTimeout(timer);
+
+          if (!response.ok) return "";
+          return await response.text();
+        } catch {
+          return "";
+        }
+      }),
+    );
+
+    css += `\n${linkedCss.join("\n")}`;
+
+    return sanitizePrintCss(css).replace(/<\/style>/gi, "<\\/style>");
+  };
+
+  const prepareExportClone = async ({ inlineImages = false } = {}) => {
+    if (!componentRef.current) {
+      throw new Error("MISSING_DOCUMENT_NODE");
+    }
+
+    const clone = componentRef.current.cloneNode(true);
+
+    clone.setAttribute("data-export-document", "true");
+    clone.style.transform = "scale(1)";
+    clone.style.transformOrigin = "top right";
+    clone.style.boxShadow = "none";
+    clone.style.background = "#ffffff";
+    clone.style.margin = "0 auto";
+    clone.style.position = "relative";
+    clone.style.top = "0";
+    clone.style.left = "0";
+    clone.style.zIndex = "1";
+    clone.style.pointerEvents = "auto";
+
+    makeImageUrlsAbsolute(clone);
+
+    clone.querySelectorAll("[contenteditable]").forEach((el) => {
+      el.setAttribute("contenteditable", "false");
+    });
+
+    clone.querySelectorAll("[data-no-print='true']").forEach((el) => {
+      el.remove();
+    });
+
+    clone.querySelectorAll("input[type='file']").forEach((el) => {
+      el.remove();
+    });
+
+    if (inlineImages) {
+      await inlineCloneImages(clone);
+    }
+
+    const sourceWidth = Math.max(
+      componentRef.current?.scrollWidth || 0,
+      componentRef.current?.offsetWidth || 0,
+      794,
+    );
+    const sourceHeight = Math.max(
+      componentRef.current?.scrollHeight || 0,
+      componentRef.current?.offsetHeight || 0,
+      A4_HEIGHT_PX,
+    );
+
+    clone.setAttribute("data-source-width", String(sourceWidth));
+    clone.setAttribute("data-source-height", String(sourceHeight));
+    clone.style.width = `${sourceWidth}px`;
+    clone.style.height = `${sourceHeight}px`;
+    clone.style.minHeight = `${sourceHeight}px`;
+
+    return clone;
+  };
+
+  const buildDirectHtmlDocument = async (title = "النموذج", { inlineImages = false } = {}) => {
+    const safeTitle = String(title || "النموذج").replace(/[<>]/g, "");
+    const css = await collectInlineStyles();
+    const clone = await prepareExportClone({ inlineImages });
+
+    const sourceWidth = Number(clone.getAttribute("data-source-width")) || 794;
+    const sourceHeight = Number(clone.getAttribute("data-source-height")) || A4_HEIGHT_PX;
+
+    const pageWidthMm = 210;
+    const pageHeightMm = 297;
+    const pageWidthPx = 794;
+    const pageHeightPx = A4_HEIGHT_PX;
+    const fitScale = Math.min(pageWidthPx / sourceWidth, pageHeightPx / sourceHeight, 1);
+
+    return `
+      <!doctype html>
+      <html lang="ar" dir="rtl">
+        <head>
+          <meta charset="utf-8" />
+          <base href="${window.location.origin}/" />
+          <title>${safeTitle}</title>
+          <style>
+            @page {
+              size: 210mm 297mm;
+              margin: 0;
+            }
+
+            ${css}
+
+            html,
+            body {
+              margin: 0 !important;
+              padding: 0 !important;
+              width: ${pageWidthMm}mm !important;
+              height: ${pageHeightMm}mm !important;
+              background: #ffffff !important;
+              overflow: hidden !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+
+            body {
+              display: block !important;
+            }
+
+            .print-shell {
+              width: ${pageWidthMm}mm !important;
+              height: ${pageHeightMm}mm !important;
+              min-height: ${pageHeightMm}mm !important;
+              max-height: ${pageHeightMm}mm !important;
+              background: #ffffff !important;
+              overflow: hidden !important;
+              position: relative !important;
+              page-break-after: avoid !important;
+              page-break-inside: avoid !important;
+            }
+
+            .print-fit {
+              position: absolute !important;
+              top: 0 !important;
+              left: 50% !important;
+              width: ${sourceWidth}px !important;
+              height: ${sourceHeight}px !important;
+              min-height: ${sourceHeight}px !important;
+              transform: translateX(-50%) scale(${fitScale}) !important;
+              transform-origin: top center !important;
+              background: #ffffff !important;
+              overflow: visible !important;
+            }
+
+            .print-shell,
+            .print-shell * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+            }
+
+            .print-shell [data-no-print='true'],
+            .print-shell button,
+            .print-shell input[type='file'],
+            .print-shell select {
+              display: none !important;
+              visibility: hidden !important;
+            }
+          </style>
+        </head>
+        <body>
+          <main class="print-shell">
+            <section class="print-fit">
+              ${clone.outerHTML}
+            </section>
+          </main>
+        </body>
+      </html>
+    `;
+  };
+
+  const writeHtmlToPopupAndPrint = async (popup, html) => {
+    if (!popup) {
+      toast.error("المتصفح منع فتح نافذة الطباعة. فعّل السماح بالنوافذ المنبثقة.");
+      return false;
+    }
+
+    popup.document.open();
+    popup.document.write(html);
+    popup.document.close();
+
+    const forceStyle = popup.document.createElement("style");
+    forceStyle.textContent = `
+      @media print {
+        html, body {
+          overflow: hidden !important;
+          width: 100% !important;
+          height: 100% !important;
+          background: #fff !important;
+        }
+        body *, .print-shell, .print-shell *, .print-fit, .print-fit * {
+          visibility: visible !important;
+          opacity: 1 !important;
+        }
+        .print-shell {
+          display: block !important;
+          position: relative !important;
+          background: #fff !important;
+          page-break-after: avoid !important;
+          page-break-before: avoid !important;
+          page-break-inside: avoid !important;
+        }
+        .print-shell [data-no-print='true'],
+        .print-shell button,
+        .print-shell input[type='file'],
+        .print-shell select {
+          display: none !important;
+          visibility: hidden !important;
+        }
+      }
+    `;
+    popup.document.head.appendChild(forceStyle);
+
+    const shell = popup.document.querySelector(".print-shell");
+    if (shell && !shell.textContent.trim() && !shell.querySelector("img")) {
+      shell.innerHTML = `
+        <div style="padding:24px; color:#123f59; font-family:Tajawal, Arial, sans-serif;">
+          تعذر تحميل محتوى النموذج داخل نافذة الطباعة.
+        </div>
+      `;
+    }
+
+    await promiseWithTimeout(waitForPopupImages(popup), 1800, null);
+    await sleep(250);
+
+    popup.focus();
+    popup.print();
+
+    return true;
+  };
+
+  const downloadBlobFile = (content, fileName, mimeType) => {
+    const blob =
+      content instanceof Blob
+        ? content
+        : new Blob(["\ufeff", content], { type: mimeType });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = fileName;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    }, 500);
+  };
+
+  const renderDocumentCanvasBySvg = async (scale = 2) => {
+    const clone = await prepareExportClone({ inlineImages: true });
+    const css = await collectInlineStyles();
+
+    const width = Math.max(
+      componentRef.current?.scrollWidth || 0,
+      componentRef.current?.offsetWidth || 0,
+      1,
+    );
+    const height = Math.max(
+      componentRef.current?.scrollHeight || 0,
+      componentRef.current?.offsetHeight || 0,
+      1,
+    );
+
+    clone.style.width = `${width}px`;
+    clone.style.minHeight = `${height}px`;
+
+    const xhtml = `
+      <div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px; min-height:${height}px; background:#ffffff;">
+        <style>${css}</style>
+        ${clone.outerHTML}
+      </div>
+    `;
+
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+        <foreignObject width="100%" height="100%">
+          ${xhtml}
+        </foreignObject>
+      </svg>
+    `;
+
+    const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image();
+
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = svgUrl;
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(width * scale);
+    canvas.height = Math.ceil(height * scale);
+
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    return canvas;
+  };
+
+
+
+  const printStandaloneDocument = async (preOpenedPopup = null) => {
+    if (!componentRef.current) {
+      toast.error("لا يمكن الوصول إلى محتوى الطباعة");
+      preOpenedPopup?.close?.();
+      return;
+    }
+
+    setIsForPrint(true);
+    setActiveBlockId(null);
+
+    try {
+      await waitForRender();
+
+      const html = await buildDirectHtmlDocument(
+        exportFileName?.trim?.() || form?.name || "النموذج",
+        { inlineImages: false },
+      );
+
+      await writeHtmlToPopupAndPrint(preOpenedPopup, html);
     } catch (error) {
-      toast.error("حدث خطأ أثناء التصدير");
+      console.error(error);
+      preOpenedPopup?.close?.();
+      toast.error("تعذرت الطباعة. تم إلغاء العملية لتفادي الصفحة البيضاء.");
+    } finally {
       setIsForPrint(false);
+    }
+  };
+
+
+  const exportCanvasImage = async (fileName, mode = "image") => {
+    if (!componentRef.current) {
+      toast.error("لا يمكن الوصول إلى محتوى التصدير");
+      return;
+    }
+
+    setIsForPrint(true);
+    setActiveBlockId(null);
+
+    try {
+      await waitForRender();
+
+      const canvas = await promiseWithTimeout(
+        renderDocumentCanvasBySvg(2),
+        9000,
+        null,
+      );
+
+      if (!canvas || !canvas.width || !canvas.height) {
+        throw new Error("CANVAS_TIMEOUT_OR_EMPTY");
+      }
+
+      const imgData = canvas.toDataURL("image/png");
+
+      if (mode === "pdf") {
+        const orientation = "p";
+        const pdf = new jsPDF(orientation, "mm", "a4");
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgHeight = (canvas.height * pdfWidth) / Math.max(canvas.width, 1);
+
+        let position = 0;
+        let heightLeft = imgHeight;
+
+        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+
+        while (heightLeft > 0) {
+          position -= pdfHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+          heightLeft -= pdfHeight;
+        }
+
+        downloadBlobFile(pdf.output("blob"), `${fileName}.pdf`, "application/pdf");
+        return;
+      }
+
+      downloadBlobFile(
+        await (await fetch(imgData)).blob(),
+        `${fileName}.png`,
+        "image/png",
+      );
+    } catch (error) {
+      console.error(error);
+
+      if (mode === "pdf") {
+        const popup = openPreparingPopup(fileName);
+        const html = await buildDirectHtmlDocument(fileName, { inlineImages: false });
+        await writeHtmlToPopupAndPrint(popup, html);
+        toast("تم فتح نافذة الطباعة. اختر Save as PDF من قائمة الطابعة.", {
+          icon: "ℹ️",
+        });
+        return;
+      }
+
+      toast.error("تعذر توليد صورة HD بسبب قيود المتصفح أو الصور. جرّب تصدير Word أو PDF.");
+      throw error;
+    } finally {
+      setIsForPrint(false);
+    }
+  };
+
+
+  const exportStandaloneDocument = async () => {
+    if (!componentRef.current) {
+      toast.error("لا يمكن الوصول إلى محتوى التصدير");
+      return;
+    }
+
+    const fileName =
+      (exportFileName?.trim?.() || form?.name || "النموذج")
+        .replace(/[\\/:*?"<>|]/g, "_");
+
+    if (exportType === "pdf") {
+      await exportCanvasImage(fileName, "pdf");
+      toast.success("تم تجهيز ملف PDF");
+      return;
+    }
+
+    if (exportType === "image") {
+      await exportCanvasImage(fileName, "image");
+      toast.success("تم تحميل الصورة HD");
+      return;
+    }
+
+    setIsForPrint(true);
+    setActiveBlockId(null);
+
+    try {
+      await waitForRender();
+
+      const html = await buildDirectHtmlDocument(fileName, { inlineImages: false });
+
+      downloadBlobFile(
+        html,
+        `${fileName}.doc`,
+        "application/msword;charset=utf-8",
+      );
+
+      toast.success("تم تحميل ملف Word بنجاح");
+    } finally {
+      setIsForPrint(false);
+    }
+  };
+
+
+  const handlePrintNatively = async () => {
+    const title = exportFileName?.trim?.() || form?.name || "النموذج";
+    const popup = openPreparingPopup(title);
+
+    if (!popup) {
+      toast.error("المتصفح منع فتح نافذة الطباعة. فعّل السماح بالنوافذ المنبثقة.");
+      return;
+    }
+
+    await printStandaloneDocument(popup);
+  };
+
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      await exportStandaloneDocument();
+    } catch (error) {
+      console.error(error);
     } finally {
       setIsExporting(false);
-      toast.dismiss();
     }
   };
 
   return (
     <div
-      className="fixed inset-0 z-[10000] bg-slate-100 flex flex-col font-[Tajawal]"
+      className="fixed inset-0 z-[10000] bg-[#fbf8f1] flex flex-col font-[Tajawal]"
       dir="rtl"
     >
       {/* ── Header ── */}
-      <div className="h-[70px] bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 shadow-sm z-20">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-200">
-            <LayoutTemplate size={24} />
+      <div className="h-[76px] bg-white/95 border-b border-[#e8ddc8] px-3 flex items-center justify-between shrink-0 shadow-[0_6px_14px_rgba(18,63,89,0.04)] z-20">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-12 w-28 shrink-0 items-center justify-center rounded-2xl border border-[#e8ddc8] bg-white p-1.5 shadow-[0_8px_18px_rgba(18,63,89,0.06)]">
+            <img
+              src="/logo.jpeg"
+              alt="Details Consulting Engineers"
+              className="max-h-full max-w-full object-contain"
+            />
           </div>
-          <div>
-            <h1 className="text-[17px] font-black text-slate-900">
+          <div className="min-w-0">
+            <div className="mb-1 inline-flex items-center gap-1 rounded-full bg-[#eef7f6] px-2 py-0.5 text-[10px] font-black text-[#0e7490]">
+              <LayoutTemplate size={13} />
+              مستند جاهز للطباعة والتصدير
+            </div>
+            <h1 className="truncate text-[16px] font-black text-[#123f59]">
               إصدار المستند: {form?.name}
             </h1>
-            <p className="text-[12px] text-slate-500 font-mono mt-0.5">
-              Code: {form?.code} • Version: {form?.version}
+            <p className="text-[11px] text-[#94a3b8] font-mono mt-0.5">
+              Code: {form?.code} • Version: {form?.version} • A4 Preview
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {/* ── حقل اسم الملف ── */}
           <input
             type="text"
             value={exportFileName}
             onChange={(e) => setExportFileName(e.target.value)}
-            className="px-3 py-2.5 border border-slate-300 rounded-xl text-[12px] font-bold text-slate-700 bg-slate-50 outline-none focus:border-blue-500 focus:bg-white transition-all w-[180px]"
+            className="px-2.5 py-2 border border-[#d8b46a]/25 rounded-xl text-[12px] font-bold text-[#475569] bg-[#fbf8f1] outline-none focus:border-[#0e7490] focus:bg-white transition-all w-[180px]"
             placeholder="اسم الملف لتصديره..."
             title="تخصيص اسم الملف قبل التصدير"
           />
@@ -1221,7 +2142,7 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
           <select
             value={exportType}
             onChange={(e) => setExportType(e.target.value)}
-            className="px-3 py-2.5 border border-slate-300 rounded-xl text-[12px] font-bold text-slate-700 bg-white outline-none cursor-pointer hover:border-slate-400"
+            className="px-2.5 py-2 border border-[#d8b46a]/25 rounded-xl text-[12px] font-bold text-[#475569] bg-white outline-none cursor-pointer hover:border-[#d8b46a]/35"
           >
             <option value="pdf">تصدير PDF</option>
             <option value="word">تصدير Word</option>
@@ -1230,23 +2151,27 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
           <button
             onClick={handleExport}
             disabled={isExporting}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-700 font-bold text-[13px] rounded-xl hover:bg-blue-100 transition-colors border border-blue-200"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-[#d8b46a]/35 bg-[#eef7f6] px-3 text-[12px] font-black text-[#15536f] transition hover:bg-white disabled:opacity-60"
           >
-            <Download size={18} />{" "}
-            {isExporting ? "جاري التجهيز..." : "تصدير الملف"}
+            <IconWithText
+              icon={Download}
+              text={isExporting ? "جاري التجهيز..." : "تصدير الملف"}
+              iconClassName="h-4 w-4"
+            />
           </button>
           <button
             onClick={handlePrintNatively}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white font-bold text-[13px] rounded-xl shadow-md hover:bg-indigo-700 transition-colors"
+            disabled={isExporting}
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#0e7490] px-3 text-[12px] font-black text-white shadow-[0_8px_18px_rgba(18,63,89,0.08)] transition hover:bg-[#15536f] disabled:opacity-60"
           >
-            <Printer size={18} /> طباعة النموذج
+            <IconWithText icon={Printer} text="طباعة النموذج" iconClassName="h-4 w-4" />
           </button>
-          <div className="w-px h-8 bg-slate-200 mx-2"></div>
+          <div className="w-px h-8 bg-[#eef7f6] mx-2"></div>
           <button
             onClick={onClose}
-            className="p-2.5 text-slate-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors"
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#e8ddc8] bg-white px-2.5 text-[10px] font-black text-[#64748b] transition hover:bg-red-50 hover:text-red-600"
           >
-            <X size={22} />
+            <IconWithText icon={X} text="إغلاق" iconClassName="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
@@ -1254,24 +2179,27 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
       {/* ── Split Screen Layout ── */}
       <div className="flex-1 flex overflow-hidden">
         {/* ── Right Panel: Form Entry ── */}
-        <div className="w-[350px] bg-white border-l border-slate-200 flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.05)] z-10 shrink-0">
-          <div className="p-5 border-b border-slate-100 bg-blue-50/50">
-            <h3 className="font-bold text-blue-900 flex items-center gap-2">
-              <Type size={18} className="text-blue-600" /> الحقول الأساسية
-            </h3>
-            <p className="text-[10px] text-blue-700/80 mt-1 font-semibold leading-relaxed">
-              تعبئة سريعة للتواريخ والحقول القصيرة.
-              <br />
-              <span className="text-red-500 font-bold">
-                للتنسيق الحر والصور والجداول:
-              </span>{" "}
-              <strong>انقر عليها داخل الورقة لتعديلها.</strong>
-            </p>
+        <div className="w-[390px] bg-white/95 border-l border-[#e8ddc8] flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.05)] z-10 shrink-0">
+          <div className="border-b border-[#e8ddc8] bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490] p-3 text-white">
+            <div className="flex items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e2bf74]/35 bg-white/10 text-[#e2bf74]">
+                <Type size={18} />
+              </span>
+              <div>
+                <h3 className="text-[15px] font-black leading-tight">الحقول القابلة للتعبئة</h3>
+                <p className="mt-0.5 text-[10px] font-bold text-white/60">
+                  كل خانة موضحة بدورها، والتعديل يظهر فوراً داخل الورقة.
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 rounded-xl border border-white/10 bg-white/10 p-2 text-[10px] font-bold leading-relaxed text-white/75">
+              للصور، الجداول، التوقيع أو النصوص الحرة: اضغط مباشرة على العنصر داخل الورقة لتعديله أو تغيير حجمه.
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar">
+          <div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 space-y-2.5">
             {sortedBlocks.length === 0 ? (
-              <div className="text-center text-slate-400 text-xs mt-10">
+              <div className="text-center text-[#94a3b8] text-xs mt-10">
                 جميع الحقول متاحة للتحرير المباشر داخل الورقة.
               </div>
             ) : (
@@ -1283,31 +2211,38 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                   <div
                     key={bId}
                     onClick={() => setActiveBlockId(bId)}
-                    className={`flex flex-col gap-1.5 p-3 rounded-lg border-2 transition-all cursor-pointer ${isActive ? "border-blue-400 bg-blue-50/30" : "border-transparent hover:border-slate-200"}`}
+                    className={`flex flex-col gap-1.5 rounded-2xl border p-3 transition-all cursor-pointer ${
+                      isActive
+                        ? "border-[#0e7490] bg-[#eef7f6]/60 shadow-[0_8px_18px_rgba(18,63,89,0.06)]"
+                        : "border-[#e8ddc8] bg-white hover:border-[#d8b46a]/45 hover:bg-[#fbf8f1]"
+                    }`}
                   >
-                    <label className="text-[12px] font-bold text-slate-800 flex items-center gap-2">
+                    <label className="text-[12px] font-black text-[#123f59] flex items-center gap-2">
                       {[
                         "date_gregorian",
                         "date_hijri",
                         "date_editable",
                       ].includes(block.type) && (
-                        <Calendar size={14} className="text-slate-400" />
+                        <Calendar size={14} className="text-[#94a3b8]" />
                       )}
                       {block.type === "time" && (
-                        <Clock size={14} className="text-slate-400" />
+                        <Clock size={14} className="text-[#94a3b8]" />
                       )}
                       {block.type === "employee_info" && (
-                        <User size={14} className="text-slate-400" />
+                        <User size={14} className="text-[#94a3b8]" />
                       )}
-                      {block.label}
+                      <span className="min-w-0 truncate">{block.label}</span>
                     </label>
+                    <p className="rounded-lg bg-[#fbf8f1] px-2 py-1 text-[10px] font-bold leading-relaxed text-[#64748b]">
+                      {getBlockHelperText(block)}
+                    </p>
 
                     {["text_field", "subject"].includes(block.type) && (
                       <input
                         type="text"
                         value={formValues[bId] || ""}
                         onChange={(e) => handleValueChange(bId, e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:bg-white focus:border-blue-500 transition-all"
+                        className="w-full px-3 py-2 bg-[#fbf8f1] border border-[#e8ddc8] rounded-lg text-sm font-semibold outline-none focus:bg-white focus:border-[#0e7490] transition-all"
                         placeholder={`اكتب ${block.label}...`}
                       />
                     )}
@@ -1322,13 +2257,13 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                           onChange={(e) =>
                             handleValueChange(bId, e.target.value)
                           }
-                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono font-semibold outline-none focus:bg-white focus:border-blue-500 transition-all"
+                          className="w-full px-3 py-2 bg-[#fbf8f1] border border-[#e8ddc8] rounded-lg text-sm font-mono font-semibold outline-none focus:bg-white focus:border-[#0e7490] transition-all"
                         />
                         <button
                           onClick={() =>
                             handleValueChange(bId, getCurrentDateStr())
                           }
-                          className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200"
+                          className="rounded-lg bg-[#eef7f6] px-3 py-2 text-xs font-black text-[#15536f] hover:bg-white border border-[#d8b46a]/25"
                         >
                           اليوم
                         </button>
@@ -1345,7 +2280,7 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                               handleValueChange(bId, e.target.value)
                             }
                             placeholder="مثال: 1445/08/15"
-                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono font-semibold outline-none focus:bg-white focus:border-blue-500 transition-all"
+                            className="w-full px-3 py-2 bg-[#fbf8f1] border border-[#e8ddc8] rounded-lg text-sm font-mono font-semibold outline-none focus:bg-white focus:border-[#0e7490] transition-all"
                           />
                           <button
                             onClick={() =>
@@ -1354,7 +2289,7 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                                 formatHijriDate(new Date()),
                               )
                             }
-                            className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 whitespace-nowrap"
+                            className="rounded-lg border border-[#d8b46a]/25 bg-[#eef7f6] px-3 py-2 text-xs font-black text-[#15536f] hover:bg-white whitespace-nowrap"
                           >
                             اليوم
                           </button>
@@ -1369,9 +2304,9 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                                   formatHijriDate(e.target.value),
                                 );
                             }}
-                            className="w-full px-3 py-1.5 text-xs text-slate-500 bg-slate-100 border border-slate-200 rounded-lg outline-none cursor-pointer"
+                            className="w-full px-3 py-1.5 text-xs text-[#94a3b8] bg-[#fbf8f1] border border-[#e8ddc8] rounded-lg outline-none cursor-pointer"
                           />
-                          <span className="absolute left-10 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">
+                          <span className="absolute left-10 top-1/2 -translate-y-1/2 text-[10px] text-[#94a3b8] pointer-events-none">
                             اختر بالميلادي للتحويل للهجري
                           </span>
                         </div>
@@ -1387,13 +2322,13 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                             onChange={(e) =>
                               handleValueChange(bId, e.target.value)
                             }
-                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono font-semibold outline-none focus:bg-white focus:border-blue-500 transition-all"
+                            className="w-full px-3 py-2 bg-[#fbf8f1] border border-[#e8ddc8] rounded-lg text-sm font-mono font-semibold outline-none focus:bg-white focus:border-[#0e7490] transition-all"
                           />
                           <button
                             onClick={() =>
                               handleValueChange(bId, getCurrentTime24())
                             }
-                            className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 whitespace-nowrap"
+                            className="rounded-lg border border-[#d8b46a]/25 bg-[#eef7f6] px-3 py-2 text-xs font-black text-[#15536f] hover:bg-white whitespace-nowrap"
                           >
                             الآن
                           </button>
@@ -1402,7 +2337,7 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                     )}
 
                     {block.type === "employee_info" && (
-                      <div className="grid grid-cols-1 gap-2 p-3 bg-indigo-50/50 border border-indigo-100 rounded-lg">
+                      <div className="grid min-w-0 grid-cols-1 gap-2 p-3 bg-[#eef7f6]/50 border border-[#e8ddc8] rounded-lg">
                         <input
                           type="text"
                           placeholder="اسم الموظف"
@@ -1413,7 +2348,7 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                               name: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-1.5 border border-indigo-200 rounded text-xs outline-none focus:border-indigo-500"
+                          className="w-full px-3 py-1.5 border border-[#d8b46a]/35 rounded text-xs outline-none focus:border-[#d8b46a]/35"
                         />
                         <input
                           type="text"
@@ -1425,22 +2360,22 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                               empId: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-1.5 border border-indigo-200 rounded text-xs outline-none focus:border-indigo-500 font-mono"
+                          className="w-full px-3 py-1.5 border border-[#d8b46a]/35 rounded text-xs outline-none focus:border-[#d8b46a]/35 font-mono"
                         />
                       </div>
                     )}
 
                     {block.type === "checkbox" && (
-                      <label className="flex items-center gap-3 p-2 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100">
+                      <label className="flex items-center gap-2.5 p-2 bg-[#fbf8f1] border border-[#e8ddc8] rounded-lg cursor-pointer hover:bg-[#fbf8f1]">
                         <input
                           type="checkbox"
                           checked={!!formValues[bId]}
                           onChange={(e) =>
                             handleValueChange(bId, e.target.checked)
                           }
-                          className="w-4 h-4 accent-blue-600 rounded cursor-pointer"
+                          className="w-4 h-4 accent-[#0e7490] rounded cursor-pointer"
                         />
-                        <span className="text-xs font-bold text-slate-700">
+                        <span className="text-xs font-bold text-[#475569]">
                           تفعيل (
                           {formValues[`${bId}_label`] !== undefined
                             ? formValues[`${bId}_label`]
@@ -1458,36 +2393,37 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
 
         {/* ── Left Panel: Live Interactive Canvas ── */}
         <div
-          className="flex-1 bg-slate-200/80 overflow-y-auto flex justify-center py-12 custom-scrollbar relative"
+          className="flex-1 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white overflow-y-auto overflow-x-hidden custom-scrollbar-slim flex justify-center py-8 custom-scrollbar relative"
           onClick={() => setActiveBlockId(null)}
         >
           {!isForPrint && (
-            <div className="absolute top-4 left-6 flex items-center gap-1 bg-white shadow-sm p-1 rounded-xl z-20 border border-slate-200">
+            <div className="absolute top-4 left-6 flex items-center gap-1 bg-white/95 shadow-[0_6px_14px_rgba(18,63,89,0.04)] p-1 rounded-xl z-20 border border-[#e8ddc8]">
               <button
                 onClick={() => setZoomLevel((p) => Math.max(p - 10, 50))}
-                className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-[10px] font-black text-[#64748b] hover:bg-[#fbf8f1]"
               >
-                <ZoomOut size={18} />
+                <IconWithText icon={ZoomOut} text="تصغير" iconClassName="h-3.5 w-3.5" />
               </button>
-              <span className="text-[13px] font-bold font-mono text-slate-700 min-w-[50px] text-center">
+              <span className="text-[13px] font-bold font-mono text-[#475569] min-w-[50px] text-center">
                 {zoomLevel}%
               </span>
               <button
                 onClick={() => setZoomLevel((p) => Math.min(p + 10, 150))}
-                className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+                className="inline-flex h-8 items-center justify-center gap-1.5 px-2.5 hover:bg-[#fbf8f1] rounded-lg text-[#64748b]"
               >
-                <ZoomIn size={18} />
+                <IconWithText icon={ZoomIn} text="تكبير" iconClassName="h-3.5 w-3.5" />
               </button>
             </div>
           )}
 
           <div
             ref={componentRef}
+            data-document-canvas="true"
             className="bg-white relative flex flex-col origin-top transition-transform duration-200"
             style={{
               width: "210mm",
               height: `${dynamicHeight}px`,
-              transform: `scale(${zoomLevel / 100})`,
+              transform: isForPrint ? "scale(1)" : `scale(${zoomLevel / 100})`,
               fontFamily: fontFamily,
               backgroundColor: isForPrint ? "transparent" : "#ffffff",
               boxShadow: isForPrint
@@ -1590,7 +2526,7 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                           e.stopPropagation();
                           setActiveBlockId(bId);
                         }}
-                        className={`absolute ${!isForPrint && isActive ? "ring-2 ring-blue-400 rounded" : !isForPrint ? "hover:ring-1 hover:ring-slate-300" : ""} ${isBackgroundLayer ? "z-0" : isActive ? "z-50" : "z-10"}`}
+                        className={`absolute ${!isForPrint && isActive ? "ring-2 ring-[#0e7490] rounded" : !isForPrint ? "hover:ring-1 hover:ring-[#d8b46a]/35" : ""} ${isBackgroundLayer ? "z-0" : isActive ? "z-50" : "z-10"}`}
                         style={{
                           left: `${customPos.x}px`,
                           top: `${customPos.y}px`,
@@ -1626,7 +2562,7 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                         }}
                       >
                         {!isForPrint && isActive && !isBackgroundLayer && (
-                          <div className="absolute -top-5 right-0 bg-blue-500 text-white text-[9px] px-2 py-0.5 rounded-t-md opacity-90">
+                          <div className="absolute -top-3 right-0 bg-[#0e7490] text-white text-[9px] px-2 py-0.5 rounded-t-md opacity-90">
                             {block.label}
                           </div>
                         )}
@@ -1645,7 +2581,7 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
                             "fingerprint",
                           ].includes(block.type) && (
                             <div
-                              className="absolute -right-6 top-1/2 -translate-y-1/2 bg-blue-600 text-white p-1 rounded shadow cursor-move z-50"
+                              className="absolute -right-6 top-1/2 -translate-y-1/2 bg-[#0e7490] text-white p-1 rounded shadow cursor-move z-50"
                               onMouseDown={(e) => {
                                 e.preventDefault();
                                 const startX = e.clientX;
@@ -1708,7 +2644,7 @@ export default function FormFillModal({ form, onClose, onSaveUsage }) {
             {Array.from({ length: pagesCount }).map((_, i) => (
               <div
                 key={`footer-${i}`}
-                className={`absolute left-[20mm] right-[20mm] flex justify-between text-[10px] font-mono pointer-events-none ${isForPrint ? "text-black" : "text-slate-500"}`}
+                className={`absolute left-[20mm] right-[20mm] flex justify-between text-[10px] font-mono pointer-events-none ${isForPrint ? "text-black" : "text-[#94a3b8]"}`}
                 style={{ top: `${(i + 1) * A4_HEIGHT_PX - 40}px` }}
               >
                 <span dir="ltr">{form?.code}</span>

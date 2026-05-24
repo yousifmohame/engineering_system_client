@@ -15,11 +15,40 @@ import {
   Globe,
   Computer,
   Bot,
-  Loader2,
-  Building2,
-  ShieldCheck
+  Loader2
 } from "lucide-react";
-import api from "../../api/axios"; // تأكد من مسار الـ API
+import api from "../../api/axios";
+
+
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`inline-flex min-w-0 items-center justify-center ${
+        vertical ? "flex-col gap-0.5" : "gap-1.5"
+      } ${className}`}
+    >
+      {Icon && <Icon className={iconClassName || "h-3.5 w-3.5 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 whitespace-nowrap text-[10px] font-black leading-none"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
+
 
 export default function HRDashboard({ onNavigate }) {
   const [dashboardStats, setDashboardStats] = useState({
@@ -60,198 +89,203 @@ export default function HRDashboard({ onNavigate }) {
     fetchStats();
   }, []);
 
-  // 💡 ألوان Premium Gradient للمربعات مع التباين العالي والتأثير الزجاجي
+  // 💡 قائمة الوحدات مطابقة تماماً للتصميم المرفق مع إضافة الإحصائيات الحية
   const HR_MODULES = useMemo(
     () => [
       {
         id: "DASHBOARD",
-        title: "لوحة المؤشرات\nالتحليلية",
+        title: "لوحة المؤشرات\n(Dashboard)",
         icon: LayoutDashboard,
-        gradient: "from-slate-800 to-slate-900 border-slate-700",
-        shadow: "shadow-slate-900/30",
+        gradient: "from-[#06111d] to-[#123f59]",
       },
       {
         id: "HR_EMPLOYEES",
-        title: "إدارة الموظفين\nوملفاتهم",
+        title: "إدارة الموظفين",
         icon: Users,
-        gradient: "from-blue-600 to-indigo-700 border-blue-500",
-        shadow: "shadow-blue-600/30",
+        gradient: "from-[#0e7490] to-[#15536f]",
         badge: dashboardStats.employeesLoading ? "LOADING" : `${dashboardStats.activeEmployeesCount} نشط`,
-        badgeColor: "bg-emerald-500/20 text-emerald-100 border-emerald-500/30"
       },
       {
         id: "ATTENDANCE_AI",
-        title: "الحضور والانصراف\n(الذكي)",
+        title: "الحضور والانصراف\n(AI Powered)",
         icon: Clock,
-        gradient: "from-amber-500 to-orange-600 border-amber-400",
-        shadow: "shadow-amber-500/30",
-        badge: "AI Powered",
-        badgeColor: "bg-white/20 text-white border-white/30"
+        gradient: "from-[#2563eb] to-[#1d4ed8]",
+        badge: "AI",
       },
       {
         id: "CONTRACTS_QIWA",
-        title: "رواتب موظفي الأوتسورس",
+        title: "العقود والاتفاقيات\n(قوى)",
         icon: FileText,
-        gradient: "from-emerald-500 to-teal-600 border-emerald-400",
-        shadow: "shadow-emerald-500/30",
-      },
-      {
-        id: "HR_PAYROLL",
-        title: "الخزنة",
-        icon: Banknote,
-        gradient: "from-cyan-600 to-blue-700 border-cyan-500",
-        shadow: "shadow-cyan-600/30",
-      },
-      {
-        id: "LEAVES_ABSENCE",
-        title: "الإجازات، السلف\nوالغياب",
-        icon: Calendar,
-        gradient: "from-rose-500 to-pink-600 border-rose-400",
-        shadow: "shadow-rose-500/30",
+        gradient: "from-[#c5983c] to-[#e2bf74]",
       },
       {
         id: "HR_REQUESTS",
-        title: "مركز الطلبات\nوالإجراءات",
+        title: "مركز الطلبات\nوالنماذج",
         icon: Inbox,
-        gradient: "from-violet-600 to-fuchsia-700 border-violet-500",
-        shadow: "shadow-violet-600/30",
-        badge: "إشعار جديد",
-        badgeColor: "bg-rose-500/20 text-rose-100 border-rose-500/30"
+        gradient: "from-[#7c3aed] to-[#5b21b6]",
+        badge: "7 إشعار",
       },
       {
         id: "MY_PORTAL",
         title: "بوابة الموظف\n(My Portal)",
         icon: SquareUserRound,
-        gradient: "from-sky-500 to-blue-600 border-sky-400",
-        shadow: "shadow-sky-500/30",
+        gradient: "from-[#0891b2] to-[#0e7490]",
       },
       {
-        id: "PROF_PLATFORMS",
-        title: "المنصات المهنية\n(مهندسين/تخصصات)",
-        icon: Award,
-        gradient: "from-yellow-500 to-amber-600 border-yellow-400",
-        shadow: "shadow-yellow-500/30",
+        id: "HR_PAYROLL",
+        title: "الرواتب والمسيرات\n(WPS)",
+        icon: Banknote,
+        gradient: "from-[#16a34a] to-[#059669]",
       },
       {
-        id: "RESIDENCY_INSURANCE",
-        title: "الإقامات والتأمين\nالطبي",
-        icon: ShieldCheck,
-        gradient: "from-teal-500 to-emerald-600 border-teal-400",
-        shadow: "shadow-teal-500/30",
-      },
-      {
-        id: "HR_INTERNAL_FORMS",
-        title: "النماذج الداخلية\nوالخطابات",
-        icon: FileText,
-        gradient: "from-purple-600 to-indigo-700 border-purple-500",
-        shadow: "shadow-purple-600/30",
-        badge: dashboardStats.formsLoading ? "LOADING" : `${dashboardStats.activeFormsCount} نموذج`,
-        badgeColor: "bg-white/20 text-white border-white/30"
-      },
-      {
-        id: "ASSETS_CUSTODY",
-        title: "العهد، الأصول\nومركبات الشركة",
-        icon: Computer,
-        gradient: "from-slate-600 to-slate-800 border-slate-500",
-        shadow: "shadow-slate-600/30",
+        id: "LEAVES_ABSENCE",
+        title: "سجل الإجازات\nوالغياب",
+        icon: Calendar,
+        gradient: "from-[#ea580c] to-[#c2410c]",
       },
       {
         id: "HR_SETTINGS",
-        title: "إعدادات الهيكل\nوالبدلات",
+        title: "إعدادات الحالات\nوالبدلات",
         icon: Settings,
-        gradient: "from-zinc-700 to-neutral-900 border-zinc-600",
-        shadow: "shadow-zinc-700/30",
+        gradient: "from-[#64748b] to-[#334155]",
+      },
+      {
+        id: "PROF_PLATFORMS",
+        title: "المنصات المهنية\nوالهيئات",
+        icon: Award,
+        gradient: "from-[#be123c] to-[#9f1239]",
+      },
+      {
+        id: "RESIDENCY_INSURANCE",
+        title: "شؤون المقيمين\nوالتأمين",
+        icon: Globe,
+        gradient: "from-[#0f766e] to-[#134e4a]",
+      },
+      {
+        id: "HR_INTERNAL_FORMS",
+        title: "النماذج الذكية",
+        icon: FileText,
+        gradient: "from-[#4f46e5] to-[#3730a3]",
+        badge: dashboardStats.formsLoading ? "LOADING" : `${dashboardStats.activeFormsCount} نموذج`,
+      },
+      {
+        id: "ASSETS_CUSTODY",
+        title: "العهد و الأصول",
+        icon: Computer,
+        gradient: "from-[#ca8a04] to-[#a16207]",
       },
       {
         id: "SMART_UPDATE",
-        title: "التحديث الذكي\n(Smart AI)",
+        title: "التحديث الذكي",
         icon: Bot,
-        gradient: "from-fuchsia-600 to-pink-700 border-fuchsia-500",
-        shadow: "shadow-fuchsia-600/30",
-        badge: "BETA",
-        badgeColor: "bg-yellow-500/20 text-yellow-100 border-yellow-500/30"
+        gradient: "from-[#dc2626] to-[#b91c1c]",
+        badge: "جديد",
       },
     ],
     [dashboardStats]
   );
 
   return (
-    // 💡 تم إصلاح الـ flex هنا لإتاحة الـ Scrolling الصحيح لكامل الصفحة
-    <div className="flex-1 w-full h-full overflow-y-auto custom-scrollbar relative font-cairo bg-slate-50" dir="rtl">
-      
-      {/* ─── الخلفيات الزخرفية (Ambient Backgrounds) ─── */}
-      <div className="absolute top-0 right-0 w-[800px] h-[600px] bg-blue-100/40 rounded-full blur-[120px] pointer-events-none -z-10 mix-blend-multiply"></div>
-      <div className="absolute bottom-0 left-0 w-[600px] h-[500px] bg-indigo-100/40 rounded-full blur-[100px] pointer-events-none -z-10 mix-blend-multiply"></div>
+    <div className="relative flex h-full min-h-0 flex-1 flex-col gap-1.5 overflow-hidden bg-[#fbf8f1]/50 p-2 font-cairo lg:p-2.5" dir="rtl">
+      {/* ─── الخلفية الجمالية (Glassmorphism Blobs) ─── */}
+      <div className="absolute top-0 right-0 w-1/2 h-96 bg-[#eef7f6] rounded-bl-[100px] -z-10 blur-3xl opacity-50"></div>
+      <div className="absolute bottom-0 left-0 w-1/2 h-96 bg-rose-50 rounded-tr-[100px] -z-10 blur-3xl opacity-50"></div>
+      {/* ─── شريط العمليات السريعة بنفس تصميم شريط الروابط السريعة ─── */}
+      <div className="relative isolate flex shrink-0 flex-col gap-1.5 overflow-hidden rounded-[20px] border border-[#d8b46a]/25 bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490] px-3 py-1.5 text-white shadow-[0_12px_28px_rgba(18,63,89,0.14)] animate-in fade-in slide-in-from-top-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-white/5 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-14 left-10 h-28 w-28 rounded-full bg-[#e2bf74]/20 blur-3xl" />
 
-      <div className="p-6 lg:p-10 max-w-[1600px] mx-auto min-h-full flex flex-col gap-10">
-        
-        {/* ─── الشريط العلوي للعمليات السريعة ─── */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between bg-white/70 backdrop-blur-2xl p-6 rounded-[2rem] border border-white shadow-[0_8px_30px_rgba(0,0,0,0.04)] shrink-0 gap-5 animate-in fade-in slide-in-from-top-4">
-          <div className="flex items-center gap-5">
-            <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20 border border-indigo-500/50">
-              <Building2 className="w-8 h-8" />
-            </div>
-            <div>
-              <h3 className="font-black text-slate-800 text-xl md:text-2xl tracking-tight">إدارة الموارد البشرية</h3>
-              <p className="text-xs font-bold text-slate-500 mt-1">بوابة العمليات السريعة والاختصارات الإدارية</p>
-            </div>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-3">
-            <button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl text-sm font-black transition-all shadow-md shadow-indigo-600/20 active:scale-95">
-              <Plus className="w-4 h-4" /> إضافة موظف
-            </button>
-            <button className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 px-6 py-3 rounded-xl text-sm font-black transition-all border border-slate-200 shadow-sm hover:border-slate-300 active:scale-95">
-              <Clock className="w-4 h-4 text-emerald-600" /> إجازة / استئذان
-            </button>
-            <button className="flex items-center gap-2 bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-700 px-6 py-3 rounded-xl text-sm font-black transition-all border border-slate-200 shadow-sm hover:border-rose-200 active:scale-95">
-              <CircleX className="w-4 h-4 text-rose-500" /> طي قيد
-            </button>
+        <div className="relative flex min-w-0 items-center gap-3">
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#e2bf74] text-[#06111d] shadow-[0_10px_24px_rgba(226,191,116,0.18)]">
+            <Users className="h-4.5 w-4.5" />
+          </span>
+          <div className="min-w-0">
+            <h3 className="truncate text-[15px] font-black leading-tight text-white">
+              العمليات السريعة
+            </h3>
+            <p className="mt-0.5 hidden text-[9px] font-bold text-white/60 md:block">
+              إجراءات مختصرة لإدارة الموارد البشرية مباشرة من اللوحة.
+            </p>
           </div>
         </div>
-
-        {/* ─── شبكة الأنظمة والوحدات ─── */}
-        <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 pb-10">
-          <div className="mb-8 pl-2">
-            <h2 className="text-2xl font-black text-slate-800 mb-2 border-r-4 border-indigo-600 pr-4">الأنظمة الفرعية والوحدات</h2>
-            <p className="text-sm font-bold text-slate-500 pr-4">انقر على أي وحدة للدخول وإدارة البيانات المتعلقة بها.</p>
-          </div>
-
-          {/* 💡 تصميم الشبكة تم تحديثه ليكون مرناً مع الشاشات ويدعم التمرير */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 sm:gap-6 justify-center">
-            {HR_MODULES.map((module) => (
-              <button
-                key={module.id}
-                onClick={() => {
-                  if (onNavigate) onNavigate(module.id);
-                }}
-                className={`bg-gradient-to-br ${module.gradient} p-5 sm:p-6 rounded-[2rem] border text-white hover:scale-[1.03] hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center justify-center gap-4 group aspect-square relative overflow-hidden shadow-lg hover:${module.shadow}`}
-              >
-                {/* ── مؤثر الإضاءة الداخلي ── */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="absolute -top-12 -right-12 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700 pointer-events-none"></div>
-                
-                {/* ── الشارات (Badges) ── */}
-                {module.badge && (
-                  <div className={`absolute top-4 right-4 ${module.badgeColor || 'bg-white/20 text-white border-white/30'} text-[9px] font-black px-2 py-1 rounded-lg backdrop-blur-md border shadow-sm flex items-center gap-1`}>
-                    {module.badge === "LOADING" ? <Loader2 className="w-3 h-3 animate-spin" /> : module.badge}
-                  </div>
-                )}
-
-                {/* ── الأيقونة ── */}
-                <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl group-hover:scale-110 group-hover:bg-white/20 transition-all duration-300 shadow-inner border border-white/10 relative z-10">
-                  <module.icon className="w-8 h-8 md:w-9 md:h-9 text-white drop-shadow-sm" strokeWidth={1.5} />
-                </div>
-
-                {/* ── العنوان ── */}
-                <div className="font-black text-xs md:text-sm text-center leading-relaxed tracking-wide drop-shadow-md z-10 px-1 mt-1">
-                  {module.title}
-                </div>
-              </button>
-            ))}
-          </div>
+<div className="relative grid grid-cols-1 gap-1.5 sm:grid-cols-3 lg:flex lg:items-center lg:justify-end">
+          <button
+            type="button"
+            onClick={() => onNavigate?.("HR_EMPLOYEES", { action: "create" })}
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-xl bg-[#e2bf74] px-3 text-[11px] font-black text-[#06111d] shadow-[0_10px_20px_rgba(226,191,116,0.18)] transition hover:-translate-y-0.5 hover:bg-[#f1d38f]"
+          >
+            <IconWithText icon={Plus} text="موظف جديد" iconClassName="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onNavigate?.("LEAVES_ABSENCE")}
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 text-[11px] font-black text-white transition hover:-translate-y-0.5 hover:bg-white/18"
+          >
+            <IconWithText icon={Clock} text="تسجيل إجازة أو إذن" iconClassName="h-4 w-4 text-emerald-300" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onNavigate?.("HR_EMPLOYEES", { action: "termination" })}
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-xl border border-rose-300/25 bg-rose-500/10 px-3 text-[11px] font-black text-white transition hover:-translate-y-0.5 hover:bg-rose-500/18"
+          >
+            <IconWithText icon={CircleX} text="إنهاء خدمات" iconClassName="h-4 w-4 text-rose-200" />
+          </button>
         </div>
       </div>
+{/* ─── شبكة الأنظمة والوحدات ─── */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden animate-in fade-in duration-500 delay-150">
+<div data-hr-modules-scroll className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim rounded-2xl border border-[#e8ddc8]/60 bg-white/50 p-1.5">
+        <div className="grid min-w-0 grid-cols-1 gap-2.5 pb-3 pr-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          {HR_MODULES.map((module) => (
+            <button
+              key={module.id}
+              onClick={() => {
+                if (onNavigate) onNavigate(module.id);
+              }}
+              className={`relative flex min-h-[104px] min-w-0 flex-col items-center justify-center gap-1.5 overflow-hidden rounded-[16px] bg-gradient-to-br ${module.gradient} p-2.5 text-white transition-all hover:-translate-y-1 hover:shadow-[0_10px_24px_rgba(18,63,89,0.14)]`}
+            >
+              {/* توهج خلفي في البطاقة */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700 pointer-events-none"></div>
+              
+              {/* الشارات (Badges) */}
+              {module.badge && (
+                <div className="absolute top-4 right-4 bg-white/20 text-white text-[10px] font-black px-2 py-1 rounded-lg backdrop-blur-md border border-white/20 shadow-[0_6px_14px_rgba(18,63,89,0.04)] animate-pulse-slow">
+                  {module.badge === "LOADING" ? <Loader2 className="w-3 h-3 animate-spin" /> : module.badge}
+                </div>
+              )}
+
+              {/* حاوية الأيقونة */}
+              <div className="rounded-xl border border-white/15 bg-white/20 p-2.5 shadow-inner backdrop-blur-sm transition-all duration-300 group-hover:scale-105 group-hover:bg-white/30">
+                <module.icon className="h-6 w-6 text-white" strokeWidth={2} />
+              </div>
+
+              {/* العنوان */}
+              <div className="z-10 text-center text-[11px] font-black leading-snug tracking-tight drop-shadow-[0_6px_14px_rgba(18,63,89,0.04)] md:text-xs">
+                {module.title}
+              </div>
+            </button>
+          ))}
+        </div>
+        </div>
+      </div>
+      <style>{`
+        [data-hr-modules-scroll]::-webkit-scrollbar {
+          width: 9px;
+        }
+        [data-hr-modules-scroll]::-webkit-scrollbar-track {
+          background: rgba(216, 180, 106, 0.18);
+          border-radius: 999px;
+        }
+        [data-hr-modules-scroll]::-webkit-scrollbar-thumb {
+          background: linear-gradient(180deg, #0e7490, #c5983c);
+          border-radius: 999px;
+          border: 2px solid rgba(255, 255, 255, 0.8);
+        }
+        [data-hr-modules-scroll] {
+          scrollbar-width: thin;
+          scrollbar-color: #0e7490 rgba(216, 180, 106, 0.18);
+        }
+      `}</style>
     </div>
   );
 }

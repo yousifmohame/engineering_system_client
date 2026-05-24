@@ -170,7 +170,7 @@ const AppContent = () => {
 
       {/* المحتوى الرئيسي */}
       {/* 👈 تم تعديل الهامش إلى mr-[280px] ليتطابق مع السايدبار الجديد */}
-      <div className="flex-1 flex flex-col mr-[280px] h-screen overflow-hidden bg-[#f3f4f6]">
+      <div className="flex-1 flex flex-col mr-[300px] h-screen overflow-hidden bg-[#f3f4f6]">
         {/* ================= Header ================= */}
         <SystemHeader />
 

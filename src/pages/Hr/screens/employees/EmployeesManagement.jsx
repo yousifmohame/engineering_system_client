@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ShieldCheck, Users, KeyRound, Plus } from "lucide-react";
@@ -21,7 +21,38 @@ import RoleModal from "./components/RoleModal";
 import EmployeesListTab from "./components/EmployeesListTab";
 import RolesPermissionsTab from "./components/RolesPermissionsTab";
 
-export default function EmployeesManagement() {
+
+const IconWithText = ({
+  icon: Icon,
+  text,
+  className = "",
+  iconClassName = "",
+  textClassName = "",
+  vertical = false,
+}) => {
+  return (
+    <span
+      className={`inline-flex min-w-0 items-center justify-center ${
+        vertical ? "flex-col gap-0.5" : "gap-1.5"
+      } ${className}`}
+    >
+      {Icon && <Icon className={iconClassName || "h-3.5 w-3.5 shrink-0"} />}
+      {text && (
+        <span
+          className={
+            textClassName ||
+            "min-w-0 whitespace-nowrap text-[10px] font-black leading-none"
+          }
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+};
+
+
+export default function EmployeesManagement({ initialAction = null }) {
   const queryClient = useQueryClient();
 
   // ── States ──
@@ -33,13 +64,24 @@ export default function EmployeesManagement() {
   const [empModal, setEmpModal] = useState({
     isOpen: false,
     mode: "create",
-    data: initialEmpData,
+    data: { ...initialEmpData },
   });
   const [roleModal, setRoleModal] = useState({
     isOpen: false,
     mode: "create",
     data: { nameAr: "", description: "" },
   });
+
+  useEffect(() => {
+    if (initialAction === "create") {
+      setActiveTab("employees");
+      setEmpModal({
+        isOpen: true,
+        mode: "create",
+        data: { ...initialEmpData },
+      });
+    }
+  }, [initialAction]);
 
   // ── Queries ──
   const { data: employees = [], isLoading: isLoadingEmployees } = useQuery({
@@ -70,7 +112,7 @@ export default function EmployeesManagement() {
         empModal.mode === "create" ? "تم الإضافة بنجاح" : "تم التعديل بنجاح",
       );
       queryClient.invalidateQueries(["employees"]);
-      setEmpModal({ isOpen: false, mode: "create", data: initialEmpData });
+      setEmpModal({ isOpen: false, mode: "create", data: { ...initialEmpData } });
     },
     onError: (err) =>
       toast.error(
@@ -173,49 +215,69 @@ export default function EmployeesManagement() {
   // 💡 الحل الجذري للتمرير: الحاوية الرئيسية `absolute inset-0 flex flex-col`
   return (
     <div
-      className="absolute inset-0 flex flex-col bg-slate-50 font-cairo"
+      className="absolute inset-0 flex min-w-0 flex-col overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-cairo"
       dir="rtl"
     >
-      {/* Header & Tabs (Ultra Dense) */}
-      <div className="bg-white border-b border-slate-200 px-3 md:px-6 pt-3 shrink-0 shadow-sm z-10">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
-          <h1 className="text-[17px] font-black text-slate-800 flex items-center gap-1.5">
-            <ShieldCheck className="w-5 h-5 text-blue-600" /> الموظفين
-            والصلاحيات
-          </h1>
-          {activeTab === "employees" && (
+      {/* Premium Compact Header */}
+      <div className="z-10 shrink-0 border-b border-[#d8b46a]/25 bg-gradient-to-l from-[#0e7490] via-[#123f59] to-[#06111d] px-2.5 py-1.5 text-white shadow-[0_8px_22px_rgba(18,63,89,0.12)]">
+        <div className="flex flex-col gap-1.5 md:flex-row md:items-center md:justify-between">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-[#e2bf74]/35 bg-white/10 text-[#e2bf74]">
+              <ShieldCheck className="h-3.5 w-3.5" />
+            </span>
+            <div className="min-w-0">
+              <h1 className="truncate text-[13px] font-black leading-tight text-white">
+                إدارة الموظفين والصلاحيات
+              </h1>
+              <p className="hidden text-[9px] font-bold text-white/55 xl:block">
+                سجل الموظفين، الحسابات، الأدوار والصلاحيات.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1">
+            {activeTab === "employees" && (
+              <button
+                onClick={() =>
+                  setEmpModal({
+                    isOpen: true,
+                    mode: "create",
+                    data: { ...initialEmpData },
+                  })
+                }
+                className="inline-flex h-7 items-center justify-center gap-1 rounded-lg bg-[#e2bf74] px-2.5 text-[9px] font-black text-[#06111d] shadow-[0_8px_18px_rgba(226,191,116,0.14)] transition hover:bg-[#f1d38f]"
+              >
+                <IconWithText icon={Plus} text="إضافة موظف" iconClassName="h-3.5 w-3.5" />
+              </button>
+            )}
+
             <button
-              onClick={() =>
-                setEmpModal({
-                  isOpen: true,
-                  mode: "create",
-                  data: initialEmpData,
-                })
-              }
-              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-[11px] font-black flex items-center gap-1.5 shadow-sm transition-colors"
+              onClick={() => setActiveTab("employees")}
+              className={`inline-flex h-7 items-center justify-center gap-1 rounded-lg border px-2 text-[9px] font-black transition ${
+                activeTab === "employees"
+                  ? "border-[#e2bf74]/45 bg-white text-[#123f59]"
+                  : "border-white/10 bg-white/10 text-white/65 hover:bg-white/15 hover:text-white"
+              }`}
             >
-              <Plus className="w-3.5 h-3.5" /> إضافة موظف
+              <IconWithText icon={Users} text="سجل الموظفين" iconClassName="h-3.5 w-3.5" />
             </button>
-          )}
-        </div>
-        <div className="flex gap-4">
-          <button
-            onClick={() => setActiveTab("employees")}
-            className={`pb-2 text-[11px] font-black flex items-center gap-1.5 border-b-[3px] transition-colors ${activeTab === "employees" ? "border-blue-600 text-blue-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}
-          >
-            <Users className="w-3.5 h-3.5" /> سجل الموظفين
-          </button>
-          <button
-            onClick={() => setActiveTab("roles")}
-            className={`pb-2 text-[11px] font-black flex items-center gap-1.5 border-b-[3px] transition-colors ${activeTab === "roles" ? "border-blue-600 text-blue-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}
-          >
-            <KeyRound className="w-3.5 h-3.5" /> الأدوار والصلاحيات
-          </button>
+
+            <button
+              onClick={() => setActiveTab("roles")}
+              className={`inline-flex h-7 items-center justify-center gap-1 rounded-lg border px-2 text-[9px] font-black transition ${
+                activeTab === "roles"
+                  ? "border-[#e2bf74]/45 bg-white text-[#123f59]"
+                  : "border-white/10 bg-white/10 text-white/65 hover:bg-white/15 hover:text-white"
+              }`}
+            >
+              <IconWithText icon={KeyRound} text="الأدوار والصلاحيات" iconClassName="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Content Area (Takes remaining space, handles own scroll) */}
-      <div className="flex-1 flex flex-col min-h-0 relative">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         {activeTab === "employees" ? (
           <EmployeesListTab
             employees={filteredEmployees}

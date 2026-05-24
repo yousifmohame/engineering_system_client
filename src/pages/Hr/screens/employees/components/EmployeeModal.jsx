@@ -12,7 +12,8 @@ import {
   EyeOff,
   Clock,
   Settings2,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
 import { DEPARTMENTS, POSITIONS, EMPLOYEE_CODES } from "../constants";
 
