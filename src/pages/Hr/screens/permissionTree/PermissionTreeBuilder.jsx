@@ -86,13 +86,13 @@ const ActionButton = ({ icon: Icon, onClick, color, tooltip, disabled = false })
     onClick={onClick}
     disabled={disabled}
     title={tooltip}
-    className={`p-2 rounded-lg transition-all duration-200 ${
+    className={`p-1.5 rounded-md transition-all duration-200 ${
       disabled
         ? 'opacity-30 cursor-not-allowed bg-slate-100'
-        : `hover:bg-${color}-50 hover:text-${color}-600 text-slate-500`
+        : `hover:bg-${color}-100 text-${color}-600 hover:text-${color}-700`
     }`}
   >
-    <Icon size={16} />
+    <Icon size={14} />
   </button>
 );
 
@@ -337,257 +337,142 @@ const PermissionTreeBuilder = () => {
   };
 
   // ==========================================
-  // TREE NODE
+  // TREE NODE RENDERER (WITH LINES)
   // ==========================================
-  const renderTreeNode = (node, depth = 0) => {
+  const renderTreeNode = (node, depth = 0, isLast = false) => {
     const isExpanded = expandedNodes.has(node.id);
     const isSelected = selectedNodes.has(node.id);
-
-    const hasChildren =
-      node.children && node.children.length > 0;
-
-    const isDraggingCurrent =
-      draggedNode?.id === node.id;
+    const hasChildren = node.children && node.children.length > 0;
+    const isDraggingCurrent = draggedNode?.id === node.id;
 
     return (
-      <div key={node.id}>
+      <div key={node.id} className="relative">
+        {/* NODE ROW */}
         <motion.div
-          initial={{ opacity: 0, x: -10 }}
+          layout
+          initial={{ opacity: 0, x: -5 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.15 }}
           draggable
-          onDragStart={(e) =>
-            handleDragStart(e, node)
-          }
+          onDragStart={(e) => handleDragStart(e, node)}
           onDragEnd={handleDragEnd}
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, node)}
-          onDragEnter={() =>
-            setDropTarget(node.id)
-          }
-          onDragLeave={() =>
-            setDropTarget(null)
-          }
+          onDragEnter={() => setDropTarget(node.id)}
+          onDragLeave={() => setDropTarget(null)}
           onClick={() => {
             toggleNodeSelection(node.id);
             setSelectedNodeDetails(node);
           }}
-          style={{
-            paddingInlineStart: `${depth * 16 + 10}px`,
-          }}
+          style={{ paddingLeft: `${depth * 24 + 12}px` }}
           className={`
-            relative
-            group
-            flex
-            items-center
-            gap-2
-            h-10
-            px-2
-            rounded-xl
-            border
-            cursor-pointer
-            transition-all
-            duration-200
-            mb-1
-
-            ${
-              isSelected
-                ? 'bg-[#eef7f6] border-[#0e7490]/30 shadow-sm'
-                : 'bg-white border-transparent hover:border-[#e8ddc8] hover:bg-[#fbf8f1]'
+            relative group flex items-center gap-3 h-11 mb-1 rounded-lg border
+            cursor-pointer transition-all duration-200 select-none
+            ${isSelected 
+              ? 'bg-cyan-50 border-cyan-200 shadow-sm ring-1 ring-cyan-100' 
+              : 'bg-white border-transparent hover:border-slate-200 hover:bg-slate-50'
             }
-
-            ${
-              isDraggingCurrent
-                ? 'opacity-40 scale-[0.98]'
-                : ''
-            }
-
-            ${
-              dropTarget === node.id
-                ? 'ring-2 ring-[#0e7490] bg-[#eef7f6]'
-                : ''
-            }
+            ${isDraggingCurrent ? 'opacity-50 scale-[0.98] bg-slate-100' : ''}
+            ${dropTarget === node.id ? 'ring-2 ring-cyan-500 bg-cyan-50' : ''}
           `}
         >
-          {/* DROP INDICATOR */}
-          {dropTarget === node.id && (
-            <div className="absolute inset-y-0 right-0 w-1 bg-[#0e7490] rounded-r-xl" />
+          {/* VERTICAL LINE CONNECTOR */}
+          {depth > 0 && !isLast && (
+            <div 
+              className="absolute w-px bg-slate-200"
+              style={{ left: `${(depth * 24) + 30}px`, top: '100%', height: 'calc(100% - 4px)' }} 
+            />
+          )}
+          
+          {/* HORIZONTAL LINE CONNECTOR */}
+          {depth > 0 && (
+            <div 
+              className="absolute h-px bg-slate-200"
+              style={{ left: `${(depth * 24) + 6}px`, top: '50%', width: '18px' }}
+            />
           )}
 
-          {/* GRIP */}
-          <div className="cursor-grab active:cursor-grabbing text-[#cbd5e1] hover:text-[#0e7490]">
+          {/* DRAG HANDLE */}
+          <div className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-600 z-10">
             <GripVertical size={14} />
           </div>
 
-          {/* EXPAND */}
-          {hasChildren ? (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleExpand(node.id);
-              }}
-              className="p-1 rounded hover:bg-[#eef7f6]"
-            >
-              {isExpanded ? (
-                <ChevronDown
-                  size={15}
-                  className="text-[#0e7490]"
-                />
-              ) : (
-                <ChevronRight
-                  size={15}
-                  className="text-[#94a3b8]"
-                />
-              )}
-            </button>
-          ) : (
-            <div className="w-5" />
-          )}
+          {/* EXPAND/COLLAPSE BUTTON */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleExpand(node.id);
+            }}
+            className={`
+              z-10 flex items-center justify-center w-5 h-5 rounded transition-colors
+              ${hasChildren ? 'text-slate-500 hover:bg-slate-200' : 'text-transparent'}
+            `}
+          >
+            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          </button>
 
           {/* ICON */}
-          {hasChildren ? (
-            isExpanded ? (
-              <FolderOpen
-                size={17}
-                className="text-[#d8b46a]"
+          <div className={`z-10 ${isSelected ? 'text-cyan-600' : 'text-slate-400'}`}>
+            {hasChildren ? (
+              isExpanded ? <FolderOpen size={18} /> : <Folder size={18} />
+            ) : (
+              <FileText size={16} />
+            )}
+          </div>
+
+          {/* CONTENT */}
+          <div className="flex-1 min-w-0 z-10">
+            {editingNode === node.id ? (
+              <input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onBlur={saveEdit}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveEdit();
+                  if (e.key === "Escape") cancelEdit();
+                }}
+                autoFocus
+                className="w-full px-2 py-1 text-sm font-bold text-slate-700 bg-white border border-cyan-300 rounded focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             ) : (
-              <Folder
-                size={17}
-                className="text-[#0e7490]"
-              />
-            )
-          ) : (
-            <FileText
-              size={15}
-              className="text-[#94a3b8]"
-            />
-          )}
-
-          {/* NAME */}
-          {editingNode === node.id ? (
-            <input
-              value={editName}
-              onChange={(e) =>
-                setEditName(e.target.value)
-              }
-              onBlur={saveEdit}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') saveEdit();
-
-                if (e.key === 'Escape')
-                  cancelEdit();
-              }}
-              autoFocus
-              className="
-                flex-1
-                h-7
-                px-2
-                rounded-lg
-                border
-                border-[#0e7490]
-                text-[11px]
-                font-black
-                outline-none
-              "
-            />
-          ) : (
-            <div className="flex-1 min-w-0">
-              <div
-                className={`
-                  truncate
-                  text-[11px]
-                  font-black
-
-                  ${
-                    hasChildren
-                      ? 'text-[#123f59]'
-                      : 'text-[#475569]'
-                  }
-                `}
-              >
-                {node.name}
-              </div>
-
-              {node.code && (
-                <div className="text-[8px] text-[#94a3b8] font-mono truncate">
-                  {node.code}
+              <>
+                <div className={`text-sm font-bold truncate ${hasChildren ? 'text-slate-800' : 'text-slate-600'}`}>
+                  {node.name}
                 </div>
-              )}
-            </div>
-          )}
+                {node.code && (
+                  <div className="text-[10px] text-slate-400 font-mono truncate">
+                    {node.code}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
 
-          {/* ACTIONS */}
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                startEditing(node);
-              }}
-              className="p-1.5 rounded-lg hover:bg-[#eef7f6]"
-            >
-              <Edit2
-                size={13}
-                className="text-[#64748b]"
-              />
-            </button>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setNewGroupParent(node.id);
-                setShowAddGroup(true);
-              }}
-              className="p-1.5 rounded-lg hover:bg-green-50"
-            >
-              <Plus
-                size={13}
-                className="text-green-600"
-              />
-            </button>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-
-                handleDelete(
-                  node.id,
-                  node.name
-                );
-              }}
-              className="p-1.5 rounded-lg hover:bg-red-50"
-            >
-              <Trash2
-                size={13}
-                className="text-red-500"
-              />
-            </button>
+          {/* ACTIONS (Hover only) */}
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 pr-2">
+            <ActionButton icon={Edit2} onClick={(e) => { e.stopPropagation(); startEditing(node); }} color="blue" tooltip="تعديل" />
+            <ActionButton icon={Plus} onClick={(e) => { e.stopPropagation(); setNewGroupParent(node.id); setShowAddGroup(true); }} color="green" tooltip="إضافة فرع" />
+            <ActionButton icon={Trash2} onClick={(e) => { e.stopPropagation(); handleDelete(node.id, node.name); }} color="red" tooltip="حذف" />
           </div>
         </motion.div>
 
-        {/* CHILDREN */}
+        {/* CHILDREN RECURSION */}
         <AnimatePresence>
           {isExpanded && hasChildren && (
             <motion.div
-              initial={{
-                opacity: 0,
-                height: 0,
-              }}
-              animate={{
-                opacity: 1,
-                height: 'auto',
-              }}
-              exit={{
-                opacity: 0,
-                height: 0,
-              }}
-              transition={{
-                duration: 0.18,
-              }}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
               className="relative"
             >
-              {node.children.map((child) =>
-                renderTreeNode(child, depth + 1)
+              {/* Vertical Guide Line for the whole branch */}
+              <div 
+                className="absolute w-px bg-slate-200"
+                style={{ left: `${depth * 24 + 24}px`, top: 0, bottom: '20px' }} 
+              />
+              
+              {node.children.map((child, index) => 
+                renderTreeNode(child, depth + 1, index === node.children.length - 1)
               )}
             </motion.div>
           )}
@@ -751,11 +636,11 @@ const PermissionTreeBuilder = () => {
         >
           {viewMode === 'tree' ? (
             filteredTree.length > 0 ? (
-              filteredTree.map((node) =>
-                renderTreeNode(node)
+              filteredTree.map((node, index) =>
+                renderTreeNode(node, 0, index === filteredTree.length - 1)
               )
             ) : (
-              <div className="h-full flex items-center justify-center text-[#94a3b8] text-[11px] font-black">
+              <div className="h-full flex items-center justify-center text-slate-400 text-sm font-bold">
                 لا توجد نتائج
               </div>
             )

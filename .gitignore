@@ -4,12 +4,6 @@
 __pycache__/
 *.o
 *.obj
-*.class
-*.exe
-*.dll
-*.so
-*.a
-*.out
 dist/
 build/
 target/
@@ -21,29 +15,23 @@ node_modules/
 .mypy_cache/
 .pytest_cache/
 .gradle/
-julia-*/
-zig*/
 
 # Logs and temp files
 *.log
 *.tmp
 *.swp
 *.swo
-*.bak
-*.cache
 
 # Environment
 .env
 .env.local
-.env.*
+*.env.*
 
 # Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# System
+# System files
 .DS_Store
 Thumbs.db
 
