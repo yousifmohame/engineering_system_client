@@ -1,39 +1,127 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Folder, FolderOpen, FileText, ChevronRight, ChevronDown,
-  Plus, Trash2, Edit2, GripVertical, Search, Layers, List,
-  CheckCircle, AlertCircle, Settings2
+import {
+  Folder,
+  FolderOpen,
+  FileText,
+  ChevronRight,
+  ChevronDown,
+  Plus,
+  Trash2,
+  Edit2,
+  GripVertical,
+  Search,
+  Layers,
+  List,
+  CheckCircle,
+  AlertCircle,
+  Settings2,
+  PanelLeft,
+  X,
 } from 'lucide-react';
+
 import usePermissionStore from '../../../../stores/usePermissionStore';
 
 const PermissionTreeBuilder = () => {
-  // --- Local State ---
-  const [viewMode, setViewMode] = useState('tree'); // 'tree' | 'flat'
+  // ==========================================
+  // STATES
+  // ==========================================
+  const [viewMode, setViewMode] = useState('tree');
   const [editingNode, setEditingNode] = useState(null);
   const [editName, setEditName] = useState('');
+
   const [showAddGroup, setShowAddGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupParent, setNewGroupParent] = useState(null);
-  
-  // --- Global Store ---
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [dropTarget, setDropTarget] = useState(null);
+
+  const [selectedNodeDetails, setSelectedNodeDetails] = useState(null);
+
+  const treeContainerRef = useRef(null);
+
+  // ==========================================
+  // STORE
+  // ==========================================
   const {
-    permissionTree, flatPermissions, expandedNodes, selectedNodes, draggedNode,
-    isLoading, error, searchQuery, toggleNodeExpansion, toggleNodeSelection,
-    setDraggedNode, expandAll, collapseAll, moveNode, addGroup, renameNode,
-    deleteNode, loadPermissionTree, loadFlatPermissions, setSearchQuery
+    permissionTree,
+    flatPermissions,
+    expandedNodes,
+    selectedNodes,
+    draggedNode,
+    isLoading,
+    error,
+    searchQuery,
+
+    toggleNodeExpansion,
+    toggleNodeSelection,
+    setDraggedNode,
+    expandAll,
+    collapseAll,
+    moveNode,
+    addGroup,
+    renameNode,
+    deleteNode,
+    loadPermissionTree,
+    loadFlatPermissions,
+    setSearchQuery,
   } = usePermissionStore();
 
-  // Load data on mount
+  // ==========================================
+  // LOAD
+  // ==========================================
   useEffect(() => {
     loadPermissionTree();
     loadFlatPermissions();
   }, [loadPermissionTree, loadFlatPermissions]);
 
-  // --- Drag & Drop Handlers ---
+  // ==========================================
+  // AUTO SCROLL WHILE DRAGGING
+  // ==========================================
+  useEffect(() => {
+    const handleAutoScroll = (e) => {
+      if (!isDragging) return;
+
+      const scrollZone = 120;
+      const scrollSpeed = 25;
+
+      if (e.clientY < scrollZone) {
+        window.scrollBy({
+          top: -scrollSpeed,
+          behavior: 'auto',
+        });
+      }
+
+      if (window.innerHeight - e.clientY < scrollZone) {
+        window.scrollBy({
+          top: scrollSpeed,
+          behavior: 'auto',
+        });
+      }
+    };
+
+    window.addEventListener('dragover', handleAutoScroll);
+
+    return () => {
+      window.removeEventListener('dragover', handleAutoScroll);
+    };
+  }, [isDragging]);
+
+  // ==========================================
+  // DRAG
+  // ==========================================
   const handleDragStart = (e, node) => {
     setDraggedNode(node);
+    setIsDragging(true);
+
     e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setDraggedNode(null);
+    setIsDragging(false);
+    setDropTarget(null);
   };
 
   const handleDragOver = (e) => {
@@ -43,13 +131,24 @@ const PermissionTreeBuilder = () => {
 
   const handleDrop = async (e, targetNode) => {
     e.preventDefault();
+    e.stopPropagation();
+
     if (draggedNode && draggedNode.id !== targetNode.id) {
       await moveNode(draggedNode.id, targetNode.id);
+
+      if (!expandedNodes.has(targetNode.id)) {
+        toggleNodeExpansion(targetNode.id);
+      }
     }
+
     setDraggedNode(null);
+    setIsDragging(false);
+    setDropTarget(null);
   };
 
-  // --- Editing Handlers ---
+  // ==========================================
+  // EDIT
+  // ==========================================
   const startEditing = (node) => {
     setEditingNode(node.id);
     setEditName(node.name);
@@ -58,7 +157,9 @@ const PermissionTreeBuilder = () => {
   const saveEdit = async () => {
     if (editingNode && editName.trim()) {
       await renameNode(editingNode, editName.trim());
-      cancelEdit();
+
+      setEditingNode(null);
+      setEditName('');
     }
   };
 
@@ -67,172 +168,325 @@ const PermissionTreeBuilder = () => {
     setEditName('');
   };
 
-  // --- Group Handlers ---
+  // ==========================================
+  // ADD GROUP
+  // ==========================================
   const handleAddGroup = async () => {
     if (newGroupName.trim()) {
-      await addGroup(newGroupName.trim(), 'sub_module', newGroupParent);
+      await addGroup(
+        newGroupName.trim(),
+        'sub_module',
+        newGroupParent
+      );
+
       setNewGroupName('');
       setNewGroupParent(null);
       setShowAddGroup(false);
     }
   };
 
+  // ==========================================
+  // DELETE
+  // ==========================================
   const handleDelete = async (nodeId, nodeName) => {
-    if (window.confirm(`هل أنت متأكد من حذف "${nodeName}"؟`)) {
+    if (
+      window.confirm(`هل أنت متأكد من حذف "${nodeName}" ؟`)
+    ) {
       await deleteNode(nodeId);
     }
   };
 
-  // --- Search & Filter ---
+  // ==========================================
+  // SEARCH
+  // ==========================================
   const filterTree = useCallback((nodes, query) => {
     if (!query) return nodes;
-    
+
     return nodes.reduce((acc, node) => {
-      const matchesSearch = node.name.toLowerCase().includes(query.toLowerCase());
-      const filteredChildren = node.children ? filterTree(node.children, query) : [];
-      
+      const matchesSearch = node.name
+        .toLowerCase()
+        .includes(query.toLowerCase());
+
+      const filteredChildren = node.children
+        ? filterTree(node.children, query)
+        : [];
+
       if (matchesSearch || filteredChildren.length > 0) {
-        acc.push({ ...node, children: filteredChildren });
+        acc.push({
+          ...node,
+          children: filteredChildren,
+        });
       }
+
       return acc;
     }, []);
   }, []);
 
-  const filteredTree = filterTree(permissionTree, searchQuery);
+  const filteredTree = filterTree(
+    permissionTree,
+    searchQuery
+  );
 
   // ==========================================
-  // Render: Tree Node (Recursive Component)
+  // SMART EXPAND
+  // ==========================================
+  const handleExpand = (nodeId) => {
+    toggleNodeExpansion(nodeId);
+  };
+
+  // ==========================================
+  // TREE NODE
   // ==========================================
   const renderTreeNode = (node, depth = 0) => {
     const isExpanded = expandedNodes.has(node.id);
     const isSelected = selectedNodes.has(node.id);
-    const isDragging = draggedNode?.id === node.id;
-    const hasChildren = node.children && node.children.length > 0;
-    const isPermission = node.type === 'permission';
+
+    const hasChildren =
+      node.children && node.children.length > 0;
+
+    const isDraggingCurrent =
+      draggedNode?.id === node.id;
 
     return (
-      <div key={node.id} className="select-none">
+      <div key={node.id}>
         <motion.div
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.15 }}
+          draggable
+          onDragStart={(e) =>
+            handleDragStart(e, node)
+          }
+          onDragEnd={handleDragEnd}
+          onDragOver={handleDragOver}
+          onDrop={(e) => handleDrop(e, node)}
+          onDragEnter={() =>
+            setDropTarget(node.id)
+          }
+          onDragLeave={() =>
+            setDropTarget(null)
+          }
+          onClick={() => {
+            toggleNodeSelection(node.id);
+            setSelectedNodeDetails(node);
+          }}
+          style={{
+            paddingInlineStart: `${depth * 16 + 10}px`,
+          }}
           className={`
-            group flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all duration-200 border
-            ${isDragging ? 'opacity-50 bg-[#eef7f6] border-[#0e7490]/30 border-dashed' : ''}
-            ${isSelected ? 'bg-[#fbf8f1] border-[#d8b46a]/40 shadow-sm' : 'border-transparent hover:bg-white hover:border-[#e8ddc8] hover:shadow-[0_2px_8px_rgba(18,63,89,0.04)]'}
-            ${!isPermission ? 'drop-target' : ''}
+            relative
+            group
+            flex
+            items-center
+            gap-2
+            h-10
+            px-2
+            rounded-xl
+            border
+            cursor-pointer
+            transition-all
+            duration-200
+            mb-1
+
+            ${
+              isSelected
+                ? 'bg-[#eef7f6] border-[#0e7490]/30 shadow-sm'
+                : 'bg-white border-transparent hover:border-[#e8ddc8] hover:bg-[#fbf8f1]'
+            }
+
+            ${
+              isDraggingCurrent
+                ? 'opacity-40 scale-[0.98]'
+                : ''
+            }
+
+            ${
+              dropTarget === node.id
+                ? 'ring-2 ring-[#0e7490] bg-[#eef7f6]'
+                : ''
+            }
           `}
-          // إصلاح مشكلة الـ RTL باستخدام paddingInlineStart بدلاً من marginLeft
-          style={{ paddingInlineStart: `${(depth * 20) + 8}px` }}
-          draggable={!isPermission}
-          onDragStart={(e) => handleDragStart(e, node)}
-          onDragOver={(e) => !isPermission && handleDragOver(e)}
-          onDrop={(e) => !isPermission && handleDrop(e, node)}
-          onClick={() => toggleNodeSelection(node.id)}
         >
-          {/* مقبض السحب (Drag Handle) للمجلدات فقط */}
-          {!isPermission ? (
-            <div className="cursor-grab active:cursor-grabbing text-[#cbd5e1] hover:text-[#0e7490] transition-colors p-1">
-              <GripVertical size={14} />
-            </div>
-          ) : (
-            <div className="w-5 h-5 flex items-center justify-center text-[#cbd5e1]">
-              <div className="w-1 h-1 rounded-full bg-[#cbd5e1]" />
-            </div>
+          {/* DROP INDICATOR */}
+          {dropTarget === node.id && (
+            <div className="absolute inset-y-0 right-0 w-1 bg-[#0e7490] rounded-r-xl" />
           )}
 
-          {/* زر التوسيع / الطي */}
-          {!isPermission && (
+          {/* GRIP */}
+          <div className="cursor-grab active:cursor-grabbing text-[#cbd5e1] hover:text-[#0e7490]">
+            <GripVertical size={14} />
+          </div>
+
+          {/* EXPAND */}
+          {hasChildren ? (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                toggleNodeExpansion(node.id);
+                handleExpand(node.id);
               }}
-              className={`p-0.5 rounded transition-colors ${isExpanded ? 'text-[#0e7490]' : 'text-[#94a3b8] hover:bg-[#eef7f6] hover:text-[#0e7490]'}`}
+              className="p-1 rounded hover:bg-[#eef7f6]"
             >
-              {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} className="rtl:rotate-180" />}
+              {isExpanded ? (
+                <ChevronDown
+                  size={15}
+                  className="text-[#0e7490]"
+                />
+              ) : (
+                <ChevronRight
+                  size={15}
+                  className="text-[#94a3b8]"
+                />
+              )}
             </button>
-          )}
-          
-          {/* الأيقونة */}
-          {isPermission ? (
-            <FileText size={16} className="text-[#94a3b8]" />
-          ) : isExpanded ? (
-            <FolderOpen size={18} className="text-[#d8b46a]" />
           ) : (
-            <Folder size={18} className="text-[#0e7490]" />
+            <div className="w-5" />
           )}
-          
-          {/* اسم العقدة أو حقل التعديل */}
+
+          {/* ICON */}
+          {hasChildren ? (
+            isExpanded ? (
+              <FolderOpen
+                size={17}
+                className="text-[#d8b46a]"
+              />
+            ) : (
+              <Folder
+                size={17}
+                className="text-[#0e7490]"
+              />
+            )
+          ) : (
+            <FileText
+              size={15}
+              className="text-[#94a3b8]"
+            />
+          )}
+
+          {/* NAME */}
           {editingNode === node.id ? (
             <input
-              type="text"
               value={editName}
-              onChange={(e) => setEditName(e.target.value)}
+              onChange={(e) =>
+                setEditName(e.target.value)
+              }
               onBlur={saveEdit}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') saveEdit();
-                if (e.key === 'Escape') cancelEdit();
+
+                if (e.key === 'Escape')
+                  cancelEdit();
               }}
-              className="flex-1 px-2 py-1 text-[12px] font-black text-[#123f59] border border-[#0e7490] rounded bg-white focus:outline-none focus:ring-2 focus:ring-[#0e7490]/20"
               autoFocus
+              className="
+                flex-1
+                h-7
+                px-2
+                rounded-lg
+                border
+                border-[#0e7490]
+                text-[11px]
+                font-black
+                outline-none
+              "
             />
           ) : (
-            <span className={`flex-1 text-[12px] font-black mt-0.5 ${isPermission ? 'text-[#475569]' : 'text-[#123f59]'}`}>
-              {node.name}
-            </span>
+            <div className="flex-1 min-w-0">
+              <div
+                className={`
+                  truncate
+                  text-[11px]
+                  font-black
+
+                  ${
+                    hasChildren
+                      ? 'text-[#123f59]'
+                      : 'text-[#475569]'
+                  }
+                `}
+              >
+                {node.name}
+              </div>
+
+              {node.code && (
+                <div className="text-[8px] text-[#94a3b8] font-mono truncate">
+                  {node.code}
+                </div>
+              )}
+            </div>
           )}
-          
-          {/* أزرار الإجراءات (تظهر عند الـ Hover) */}
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
-            {!isPermission && (
-              <>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    startEditing(node);
-                  }}
-                  className="p-1.5 hover:bg-[#eef7f6] rounded text-[#94a3b8] hover:text-[#0e7490] transition-colors"
-                  title="تعديل الاسم"
-                >
-                  <Edit2 size={13} />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setNewGroupParent(node.id);
-                    setShowAddGroup(true);
-                  }}
-                  className="p-1.5 hover:bg-[#eef7f6] rounded text-[#94a3b8] hover:text-green-600 transition-colors"
-                  title="إضافة مجموعة فرعية"
-                >
-                  <Plus size={13} />
-                </button>
-              </>
-            )}
+
+          {/* ACTIONS */}
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handleDelete(node.id, node.name);
+                startEditing(node);
               }}
-              className="p-1.5 hover:bg-red-50 rounded text-[#94a3b8] hover:text-red-500 transition-colors"
-              title="حذف"
+              className="p-1.5 rounded-lg hover:bg-[#eef7f6]"
             >
-              <Trash2 size={13} />
+              <Edit2
+                size={13}
+                className="text-[#64748b]"
+              />
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setNewGroupParent(node.id);
+                setShowAddGroup(true);
+              }}
+              className="p-1.5 rounded-lg hover:bg-green-50"
+            >
+              <Plus
+                size={13}
+                className="text-green-600"
+              />
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+
+                handleDelete(
+                  node.id,
+                  node.name
+                );
+              }}
+              className="p-1.5 rounded-lg hover:bg-red-50"
+            >
+              <Trash2
+                size={13}
+                className="text-red-500"
+              />
             </button>
           </div>
         </motion.div>
-        
-        {/* الأبناء (Sub-nodes) */}
+
+        {/* CHILDREN */}
         <AnimatePresence>
           {isExpanded && hasChildren && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="mt-1 relative before:content-[''] before:absolute before:right-6 before:top-0 before:bottom-0 before:w-px before:bg-[#e8ddc8]/60"
+              initial={{
+                opacity: 0,
+                height: 0,
+              }}
+              animate={{
+                opacity: 1,
+                height: 'auto',
+              }}
+              exit={{
+                opacity: 0,
+                height: 0,
+              }}
+              transition={{
+                duration: 0.18,
+              }}
+              className="relative"
             >
-              {node.children.map(child => renderTreeNode(child, depth + 1))}
+              {node.children.map((child) =>
+                renderTreeNode(child, depth + 1)
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -241,227 +495,514 @@ const PermissionTreeBuilder = () => {
   };
 
   // ==========================================
-  // Render: Flat View (القائمة المسطحة)
+  // FLAT VIEW
   // ==========================================
   const renderFlatView = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
       {flatPermissions
-        .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
-        .map(permission => (
+        .filter((p) =>
+          p.name
+            .toLowerCase()
+            .includes(
+              searchQuery.toLowerCase()
+            )
+        )
+        .map((permission) => (
           <motion.div
             key={permission.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-start gap-3 p-3 bg-white border border-[#e8ddc8] rounded-xl hover:border-[#d8b46a]/50 hover:shadow-md transition-all group"
+            initial={{
+              opacity: 0,
+              y: 10,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            className="
+              p-3
+              bg-white
+              border
+              border-[#e8ddc8]
+              rounded-2xl
+              hover:shadow-md
+              transition-all
+            "
           >
-            <div className="bg-[#fbf8f1] p-2 rounded-lg text-[#0e7490] mt-0.5 group-hover:bg-[#0e7490] group-hover:text-white transition-colors">
-              <FileText size={16} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-black text-[11px] text-[#123f59] leading-tight truncate">{permission.name}</h4>
-              <p className="text-[9px] font-mono font-bold text-[#94a3b8] mt-1 bg-gray-50 inline-block px-1.5 py-0.5 rounded border border-gray-100 truncate max-w-full">
-                {permission.code}
-              </p>
-            </div>
-            <div className="text-[9px] font-black px-2 py-1 bg-[#eef7f6] text-[#0e7490] rounded-md shrink-0 border border-[#0e7490]/10">
-              {permission.level || 'عام'}
+            <div className="flex gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#eef7f6] flex items-center justify-center">
+                <FileText
+                  size={16}
+                  className="text-[#0e7490]"
+                />
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="text-[11px] font-black text-[#123f59] truncate">
+                  {permission.name}
+                </div>
+
+                <div className="mt-1 text-[9px] text-[#94a3b8] font-mono truncate">
+                  {permission.code}
+                </div>
+              </div>
             </div>
           </motion.div>
         ))}
     </div>
   );
 
+  // ==========================================
+  // JSX
+  // ==========================================
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 p-4 animate-in fade-in bg-[#f4f1ea]">
-      
-      {/* Header & Description */}
-      <div className="bg-white p-5 rounded-xl border border-[#e8ddc8] shadow-sm shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-black text-[#123f59] flex items-center gap-2">
-            <Settings2 className="w-6 h-6 text-[#d8b46a]" />
-            باني الأدوار الاستراتيجي والمجموعات
-          </h1>
-          <p className="text-[11px] font-bold text-[#64748b] mt-1.5 max-w-2xl leading-relaxed">
-            قم بتنظيم الصلاحيات في هيكل شجري هرمي عبر السحب والإفلات. يمكنك إعادة تسمية المجموعات، بناء تفريعات عميقة، وحفظها لتنعكس على كامل النظام والصلاحيات.
-          </p>
-        </div>
-      </div>
+    <div className="h-screen bg-[#f4f1ea] flex overflow-hidden">
+      {/* SIDEBAR */}
+      <div className="w-[420px] bg-white border-l border-[#e8ddc8] flex flex-col">
+        {/* HEADER */}
+        <div className="p-4 border-b border-[#e8ddc8]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <PanelLeft
+                size={20}
+                className="text-[#0e7490]"
+              />
 
-      {/* Toolbar */}
-      <div className="bg-white rounded-xl border border-[#e8ddc8] shadow-sm p-3 shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#94a3b8]" size={16} />
-          <input
-            type="text"
-            placeholder="بحث عن صلاحية أو مجموعة..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pr-9 pl-3 py-2 bg-[#fbf8f1] border border-[#e8ddc8] rounded-lg text-[11px] font-bold text-[#123f59] focus:outline-none focus:border-[#d8b46a] focus:ring-1 focus:ring-[#d8b46a]/30 transition-all"
-          />
-        </div>
+              <div>
+                <h1 className="text-[15px] font-black text-[#123f59]">
+                  شجرة الصلاحيات
+                </h1>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* View Mode Toggle */}
-          <div className="flex items-center bg-[#fbf8f1] border border-[#e8ddc8] rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('tree')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors text-[10px] font-black ${
-                viewMode === 'tree' ? 'bg-white shadow-sm text-[#0e7490] border border-[#e8ddc8]/50' : 'text-[#64748b] hover:text-[#123f59]'
-              }`}
-            >
-              <Layers size={14} /> عرض شجري
-            </button>
-            <button
-              onClick={() => setViewMode('flat')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors text-[10px] font-black ${
-                viewMode === 'flat' ? 'bg-white shadow-sm text-[#0e7490] border border-[#e8ddc8]/50' : 'text-[#64748b] hover:text-[#123f59]'
-              }`}
-            >
-              <List size={14} /> مسطح
-            </button>
-          </div>
-
-          {/* Tree Controls */}
-          {viewMode === 'tree' && (
-            <>
-              <div className="h-6 w-px bg-[#e8ddc8] mx-1 hidden sm:block"></div>
-              <button
-                onClick={expandAll}
-                className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black bg-white border border-[#e8ddc8] text-[#123f59] hover:bg-[#fbf8f1] rounded-lg transition-colors shadow-sm"
-              >
-                <FolderOpen size={14} className="text-[#d8b46a]" /> توسيع الكل
-              </button>
-              <button
-                onClick={collapseAll}
-                className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black bg-white border border-[#e8ddc8] text-[#123f59] hover:bg-[#fbf8f1] rounded-lg transition-colors shadow-sm"
-              >
-                <Folder size={14} className="text-[#94a3b8]" /> طي الكل
-              </button>
-              <button
-                onClick={() => {
-                  setNewGroupParent(null);
-                  setShowAddGroup(true);
-                }}
-                className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black bg-[#0e7490] text-white hover:bg-[#0e7490]/90 rounded-lg transition-colors shadow-md"
-              >
-                <Plus size={14} /> إضافة مجموعة
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Error Display */}
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 shrink-0 animate-in slide-in-from-top-2">
-          <AlertCircle className="text-red-500 shrink-0" size={18} />
-          <span className="text-[11px] font-bold text-red-700">{error}</span>
-        </div>
-      )}
-
-      {/* Main Content Area */}
-      <div className="flex-1 bg-white border border-[#e8ddc8] rounded-xl shadow-sm overflow-hidden flex flex-col relative">
-        {isLoading && (
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10">
-            <div className="w-10 h-10 border-4 border-[#e8ddc8] border-t-[#0e7490] rounded-full animate-spin"></div>
-          </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-gradient-to-b from-[#fbf8f1]/30 to-transparent">
-          {viewMode === 'tree' ? (
-            <div className="space-y-1.5 max-w-4xl mx-auto">
-              {filteredTree.length > 0 ? (
-                filteredTree.map(node => renderTreeNode(node))
-              ) : (
-                <div className="text-center py-16 flex flex-col items-center justify-center border-2 border-dashed border-[#e8ddc8] rounded-xl">
-                  <Layers size={48} className="text-[#cbd5e1] mb-3" />
-                  <p className="text-[12px] font-black text-[#64748b]">لا توجد مجموعات أو صلاحيات</p>
-                  <button
-                    onClick={() => setShowAddGroup(true)}
-                    className="mt-4 px-4 py-2 bg-[#fbf8f1] border border-[#d8b46a]/50 text-[#80580d] hover:bg-[#d8b46a] hover:text-white rounded-lg text-[11px] font-black transition-colors"
-                  >
-                    بناء الهيكل وإنشاء مجموعة جديدة
-                  </button>
-                </div>
-              )}
+                <p className="text-[10px] text-[#64748b] mt-1">
+                  اسحب وافلت لبناء الهيكل
+                </p>
+              </div>
             </div>
+          </div>
+
+          {/* SEARCH */}
+          <div className="relative mt-4">
+            <Search
+              size={15}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8]"
+            />
+
+            <input
+              value={searchQuery}
+              onChange={(e) =>
+                setSearchQuery(e.target.value)
+              }
+              placeholder="بحث..."
+              className="
+                w-full
+                h-10
+                pr-9
+                pl-3
+                rounded-xl
+                border
+                border-[#e8ddc8]
+                bg-[#fbf8f1]
+                text-[11px]
+                font-black
+                outline-none
+              "
+            />
+          </div>
+
+          {/* TOOLBAR */}
+          <div className="flex items-center gap-2 mt-3">
+            <button
+              onClick={expandAll}
+              className="
+                flex-1
+                h-9
+                rounded-xl
+                bg-[#eef7f6]
+                text-[#0e7490]
+                text-[10px]
+                font-black
+              "
+            >
+              توسيع الكل
+            </button>
+
+            <button
+              onClick={collapseAll}
+              className="
+                flex-1
+                h-9
+                rounded-xl
+                bg-[#fbf8f1]
+                text-[#64748b]
+                text-[10px]
+                font-black
+              "
+            >
+              طي الكل
+            </button>
+          </div>
+        </div>
+
+        {/* TREE */}
+        <div
+          ref={treeContainerRef}
+          className="flex-1 overflow-y-auto p-3"
+        >
+          {viewMode === 'tree' ? (
+            filteredTree.length > 0 ? (
+              filteredTree.map((node) =>
+                renderTreeNode(node)
+              )
+            ) : (
+              <div className="h-full flex items-center justify-center text-[#94a3b8] text-[11px] font-black">
+                لا توجد نتائج
+              </div>
+            )
           ) : (
             renderFlatView()
           )}
         </div>
 
-        {/* Instructions Footer (Visible only in Tree Mode) */}
-        {viewMode === 'tree' && (
-          <div className="p-3 bg-[#eef7f6] border-t border-[#0e7490]/10 flex items-start gap-2 shrink-0">
-            <CheckCircle size={16} className="text-[#0e7490] shrink-0 mt-0.5" />
-            <div className="text-[10px] font-bold text-[#123f59] leading-relaxed">
-              <strong>تلميح سريع:</strong> اسحب المجلدات <GripVertical size={12} className="inline text-gray-400" /> لتغيير ترتيبها أو إدخالها داخل مجموعات أخرى. التغييرات تحفظ وتتزامن مع السيرفر آلياً.
-            </div>
-          </div>
-        )}
+        {/* FOOTER */}
+        <div className="p-3 border-t border-[#e8ddc8] bg-[#fbf8f1]">
+          <button
+            onClick={() => {
+              setNewGroupParent(null);
+              setShowAddGroup(true);
+            }}
+            className="
+              w-full
+              h-11
+              rounded-xl
+              bg-[#0e7490]
+              text-white
+              text-[11px]
+              font-black
+              flex
+              items-center
+              justify-center
+              gap-2
+            "
+          >
+            <Plus size={16} />
+            إضافة عنصر جديد
+          </button>
+        </div>
       </div>
 
-      {/* Add Group Modal */}
-      {showAddGroup && (
-        <div className="fixed inset-0 bg-[#123f59]/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-2xl p-5 w-full max-w-sm border border-[#e8ddc8]"
-          >
-            <h3 className="text-[15px] font-black text-[#123f59] mb-4 flex items-center gap-2">
-              <FolderPlus size={18} className="text-[#0e7490]" /> 
-              {newGroupParent ? 'إضافة تفريع فرعي' : 'إضافة مجموعة رئيسية جديدة'}
-            </h3>
-            
-            <div className="mb-5">
-              <label className="block text-[11px] font-bold text-[#475569] mb-1.5">
-                اسم المجموعة / الموديول
-              </label>
-              <input
-                type="text"
-                value={newGroupName}
-                onChange={(e) => setNewGroupName(e.target.value)}
-                placeholder="مثال: إدارة الموارد البشرية..."
-                className="w-full px-3 py-2.5 bg-[#fbf8f1] border border-[#e8ddc8] rounded-lg text-[12px] font-black text-[#123f59] focus:outline-none focus:border-[#d8b46a] focus:ring-1 focus:ring-[#d8b46a]/30 transition-all"
-                autoFocus
-              />
-            </div>
+      {/* DETAILS PANEL */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* TOP BAR */}
+        <div className="h-[72px] bg-white border-b border-[#e8ddc8] px-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-[16px] font-black text-[#123f59]">
+              تفاصيل الصلاحية
+            </h2>
 
-            <div className="flex justify-end gap-2 mt-6">
-              <button
-                onClick={() => {
-                  setShowAddGroup(false);
-                  setNewGroupName('');
-                  setNewGroupParent(null);
-                }}
-                className="px-4 py-2 text-[11px] font-black text-[#64748b] bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
-              >
-                إلغاء
-              </button>
-              <button
-                onClick={handleAddGroup}
-                disabled={!newGroupName.trim()}
-                className="px-4 py-2 text-[11px] font-black bg-[#0e7490] text-white rounded-lg hover:bg-[#0e7490]/90 transition-colors disabled:opacity-50 shadow-sm"
-              >
-                حفظ وإنشاء
-              </button>
+            <p className="text-[11px] text-[#64748b] mt-1">
+              اختر أي عنصر من الشجرة لعرض التفاصيل
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() =>
+                setViewMode('tree')
+              }
+              className={`
+                h-10
+                px-4
+                rounded-xl
+                text-[10px]
+                font-black
+                transition-all
+
+                ${
+                  viewMode === 'tree'
+                    ? 'bg-[#0e7490] text-white'
+                    : 'bg-[#fbf8f1] text-[#64748b]'
+                }
+              `}
+            >
+              هرمي
+            </button>
+
+            <button
+              onClick={() =>
+                setViewMode('flat')
+              }
+              className={`
+                h-10
+                px-4
+                rounded-xl
+                text-[10px]
+                font-black
+                transition-all
+
+                ${
+                  viewMode === 'flat'
+                    ? 'bg-[#0e7490] text-white'
+                    : 'bg-[#fbf8f1] text-[#64748b]'
+                }
+              `}
+            >
+              مسطح
+            </button>
+          </div>
+        </div>
+
+        {/* CONTENT */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {selectedNodeDetails ? (
+            <div className="max-w-3xl">
+              <div className="bg-white border border-[#e8ddc8] rounded-3xl p-6 shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-[#eef7f6] flex items-center justify-center">
+                    <Settings2
+                      size={26}
+                      className="text-[#0e7490]"
+                    />
+                  </div>
+
+                  <div>
+                    <h3 className="text-[22px] font-black text-[#123f59]">
+                      {selectedNodeDetails.name}
+                    </h3>
+
+                    <p className="text-[11px] text-[#94a3b8] mt-1 font-mono">
+                      {selectedNodeDetails.code ||
+                        'NO_CODE'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mt-8">
+                  <div className="p-4 rounded-2xl bg-[#fbf8f1] border border-[#e8ddc8]">
+                    <div className="text-[10px] text-[#94a3b8] font-bold">
+                      النوع
+                    </div>
+
+                    <div className="mt-2 text-[13px] font-black text-[#123f59]">
+                      {selectedNodeDetails.children
+                        ?.length
+                        ? 'مجموعة / شاشة'
+                        : 'صلاحية مفردة'}
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-[#fbf8f1] border border-[#e8ddc8]">
+                    <div className="text-[10px] text-[#94a3b8] font-bold">
+                      الأبناء
+                    </div>
+
+                    <div className="mt-2 text-[13px] font-black text-[#123f59]">
+                      {selectedNodeDetails.children
+                        ?.length || 0}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center">
+              <Layers
+                size={60}
+                className="text-[#dbe4ea]"
+              />
+
+              <h3 className="mt-4 text-[15px] font-black text-[#64748b]">
+                اختر صلاحية
+              </h3>
+
+              <p className="text-[11px] text-[#94a3b8] mt-1">
+                اضغط على أي عنصر داخل الشجرة
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* DRAG OVERLAY */}
+      <AnimatePresence>
+        {draggedNode && (
+          <motion.div
+            initial={{
+              opacity: 0,
+              scale: 0.9,
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+            }}
+            exit={{
+              opacity: 0,
+              scale: 0.9,
+            }}
+            className="
+              fixed
+              bottom-6
+              left-6
+              z-[9999]
+              pointer-events-none
+            "
+          >
+            <div className="bg-[#123f59] text-white px-5 py-3 rounded-2xl shadow-2xl">
+              <div className="text-[10px] text-white/70 font-bold">
+                جاري نقل
+              </div>
+
+              <div className="text-[12px] font-black mt-1">
+                {draggedNode.name}
+              </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* LOADING */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-[99999]">
+          <div className="w-12 h-12 rounded-full border-4 border-[#e8ddc8] border-t-[#0e7490] animate-spin"></div>
         </div>
       )}
+
+      {/* ERROR */}
+      {error && (
+        <div className="fixed bottom-5 right-5 bg-red-500 text-white px-4 py-3 rounded-2xl shadow-2xl text-[11px] font-black z-[99999]">
+          {error}
+        </div>
+      )}
+
+      {/* ADD MODAL */}
+      <AnimatePresence>
+        {showAddGroup && (
+          <motion.div
+            initial={{
+              opacity: 0,
+            }}
+            animate={{
+              opacity: 1,
+            }}
+            exit={{
+              opacity: 0,
+            }}
+            className="
+              fixed
+              inset-0
+              bg-black/40
+              backdrop-blur-sm
+              z-[99999]
+              flex
+              items-center
+              justify-center
+              p-4
+            "
+          >
+            <motion.div
+              initial={{
+                opacity: 0,
+                scale: 0.95,
+              }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+              }}
+              exit={{
+                opacity: 0,
+                scale: 0.95,
+              }}
+              className="
+                w-full
+                max-w-md
+                bg-white
+                rounded-3xl
+                border
+                border-[#e8ddc8]
+                shadow-2xl
+                p-6
+              "
+            >
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="text-[16px] font-black text-[#123f59]">
+                    إضافة عنصر
+                  </h3>
+
+                  <p className="text-[10px] text-[#94a3b8] mt-1">
+                    إنشاء مجموعة أو شاشة جديدة
+                  </p>
+                </div>
+
+                <button
+                  onClick={() =>
+                    setShowAddGroup(false)
+                  }
+                  className="w-9 h-9 rounded-xl hover:bg-gray-100 flex items-center justify-center"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <input
+                value={newGroupName}
+                onChange={(e) =>
+                  setNewGroupName(
+                    e.target.value
+                  )
+                }
+                placeholder="اسم العنصر..."
+                className="
+                  w-full
+                  h-12
+                  px-4
+                  rounded-2xl
+                  border
+                  border-[#e8ddc8]
+                  bg-[#fbf8f1]
+                  text-[12px]
+                  font-black
+                  outline-none
+                "
+              />
+
+              <div className="flex justify-end gap-2 mt-5">
+                <button
+                  onClick={() =>
+                    setShowAddGroup(false)
+                  }
+                  className="
+                    h-11
+                    px-5
+                    rounded-2xl
+                    bg-[#fbf8f1]
+                    text-[#64748b]
+                    text-[11px]
+                    font-black
+                  "
+                >
+                  إلغاء
+                </button>
+
+                <button
+                  onClick={handleAddGroup}
+                  className="
+                    h-11
+                    px-5
+                    rounded-2xl
+                    bg-[#0e7490]
+                    text-white
+                    text-[11px]
+                    font-black
+                  "
+                >
+                  حفظ
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
-
-// Component required Icon
-const FolderPlus = ({ size, className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
-    <line x1="12" y1="10" x2="12" y2="16"/>
-    <line x1="9" y1="13" x2="15" y2="13"/>
-  </svg>
-);
 
 export default PermissionTreeBuilder;
