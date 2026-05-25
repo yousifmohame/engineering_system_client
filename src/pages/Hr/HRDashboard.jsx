@@ -15,7 +15,8 @@ import {
   Globe,
   Computer,
   Bot,
-  Loader2
+  Loader2,
+  ShieldCheck
 } from "lucide-react";
 import api from "../../api/axios";
 
@@ -117,6 +118,12 @@ export default function HRDashboard({ onNavigate }) {
         title: "العقود والاتفاقيات\n(قوى)",
         icon: FileText,
         gradient: "from-[#c5983c] to-[#e2bf74]",
+      },
+      {
+        id: "ROLES_PERMISSIONS",
+        title: "الأدوار والصلاحيات",
+        icon: ShieldCheck,
+        gradient: "from-[#8b5cf6] to-[#7c3aed]",
       },
       {
         id: "HR_REQUESTS",

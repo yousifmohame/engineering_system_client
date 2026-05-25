@@ -6,6 +6,7 @@ import HRDashboard from "./HRDashboard";
 import InternalFormsTab from "./screens/InternalForms/InternalFormsTab";
 import EmployeesManagement from "./screens/employees/EmployeesManagement";
 import AttendanceCenter from "./screens/Attendance/AttendanceCenter";
+import PermissionTreeBuilder from "./screens/permissionTree/PermissionTreeBuilder";
 
 
 const IconWithText = ({
@@ -43,6 +44,7 @@ const TAB_TITLES = {
   HR_EMPLOYEES: "إدارة الموظفين",
   ATTENDANCE_AI: "الحضور والانصراف (AI)",
   CONTRACTS_QIWA: "العقود والاتفاقيات",
+  ROLES_PERMISSIONS: "الأدوار والصلاحيات",
   HR_REQUESTS: "مركز الطلبات والنماذج",
   MY_PORTAL: "بوابة الموظف",
   HR_PAYROLL: "الرواتب والمسيرات",
@@ -92,6 +94,14 @@ const HRScreenWrapper = () => {
       return (
         <div className="p-3 h-full overflow-y-auto custom-scrollbar-slim bg-[#fbf8f1] custom-scrollbar">
           <InternalFormsTab />
+        </div>
+      );
+    }
+
+    if (activeModal === "ROLES_PERMISSIONS") {
+      return (
+        <div className="p-3 h-full overflow-y-auto custom-scrollbar-slim bg-[#fbf8f1] custom-scrollbar">
+          <PermissionTreeBuilder />
         </div>
       );
     }
