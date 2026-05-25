@@ -40,14 +40,50 @@ const safeText = (val) => {
 const getPaymentMethodsLabel = (transferMethod) => {
   if (!transferMethod) return "—";
 
-  try {
-    const parsed = JSON.parse(transferMethod);
-    if (Array.isArray(parsed) && parsed.length > 0) return parsed.join(" + ");
-  } catch (e) {
-    return transferMethod;
+  if (Array.isArray(transferMethod)) {
+    return transferMethod.filter(Boolean).join(" + ") || "—";
   }
 
-  return transferMethod;
+  if (typeof transferMethod === "string") {
+    const trimmed = transferMethod.trim();
+    if (!trimmed || trimmed === "[]" || trimmed === "{}") return "—";
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(Boolean).join(" + ") || "—";
+      }
+      if (parsed && typeof parsed === "object") {
+        const values = Object.values(parsed).filter(Boolean);
+        return values.join(" + ") || "—";
+      }
+    } catch (e) {
+      return trimmed;
+    }
+
+    return trimmed;
+  }
+
+  return String(transferMethod);
+};
+
+
+const formatTransferDetails = (details) => {
+  if (!details || typeof details !== "object") return "—";
+
+  const labels = {
+    cashNote: "ملاحظة نقدية",
+    bankName: "اسم البنك",
+    accountNumber: "رقم الحساب",
+    iban: "IBAN",
+    transferNote: "ملاحظة التحويل",
+  };
+
+  const parts = Object.entries(details)
+    .filter(([, value]) => value !== "" && value !== null && value !== undefined && value !== false)
+    .map(([key, value]) => `${labels[key] || key}: ${value}`);
+
+  return parts.length ? parts.join(" + ") : "—";
 };
 
 const DataCard = ({ label, value, icon: Icon, tone = "blue", dir }) => {
@@ -81,15 +117,15 @@ const DataCard = ({ label, value, icon: Icon, tone = "blue", dir }) => {
   const t = tones[tone] || tones.blue;
 
   return (
-    <div className={`rounded-2xl border p-4 shadow-sm ${t.box}`}>
+    <div className={`rounded-xl border p-4 shadow-sm ${t.box}`}>
       <div className="mb-2 flex items-center justify-between gap-3">
         <div className={`text-[10px] font-black uppercase ${t.label}`}>
           {label}
         </div>
 
         {Icon && (
-          <span className={`grid h-9 w-9 place-items-center rounded-2xl ${t.icon}`}>
-            <Icon className="h-4 w-4" />
+          <span className={`grid h-9 w-9 place-items-center rounded-xl ${t.icon}`}>
+            <Icon className="h-3.5 w-3.5" />
           </span>
         )}
       </div>
@@ -226,54 +262,55 @@ export default function BrokersPage() {
         className="
           flex h-full flex-col overflow-hidden
           bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
-          p-4 font-sans md:p-5
+          p-2.5 font-sans md:p-3
         "
         dir="rtl"
       >
         {/* Header */}
         <div
           className="
-            relative mb-4 shrink-0 overflow-hidden rounded-[26px]
+            relative mb-2 shrink-0 overflow-hidden rounded-[22px]
             border border-[#c5983c]/25
             bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59]
-            p-4 shadow-[0_20px_55px_rgba(18,63,89,0.20)]
+            p-2.5 shadow-[0_12px_32px_rgba(18,63,89,0.16)]
           "
         >
           <div className="pointer-events-none absolute inset-0">
-            <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-[#c5983c]/18 blur-3xl" />
-            <div className="absolute left-[-80px] bottom-[-80px] h-52 w-52 rounded-full bg-cyan-400/12 blur-3xl" />
+            <div className="absolute right-[-55px] top-[-60px] h-32 w-32 rounded-full bg-[#c5983c]/18 blur-3xl" />
+            <div className="absolute left-[-60px] bottom-[-70px] h-36 w-36 rounded-full bg-cyan-400/12 blur-3xl" />
           </div>
 
-          <div className="relative z-10 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="relative z-10 flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex items-center gap-3">
               <button
+                onClick={() => window.history.back()}
                 className="
-                  grid h-11 w-11 place-items-center rounded-2xl
+                  grid h-9 w-9 place-items-center rounded-xl
                   border border-white/15 bg-white/10 text-[#e2bf74]
                   transition hover:bg-white/15
                 "
                 type="button"
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-3.5 w-3.5" />
               </button>
 
-              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#e2bf74] text-[#123f59] shadow-sm">
-                <Handshake className="h-6 w-6" />
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#e2bf74] text-[#123f59] shadow-sm">
+                <Handshake className="h-5 w-5" />
               </div>
 
               <div>
-                <h2 className="text-xl font-black text-white">
+                <h2 className="text-lg font-black leading-tight text-white">
                   سجل الوسطاء والمسوقين
                 </h2>
-                <p className="mt-1 text-xs font-bold text-white/55">
+                <p className="mt-0.5 text-[11px] font-bold leading-tight text-white/55">
                   {brokersList.length} وسيط مسجل في النظام
                 </p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <div className="relative">
-                <Search className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#c5983c]" />
+              <div className="relative w-full sm:w-auto">
+                <Search className="absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#c5983c]" />
 
                 <input
                   type="text"
@@ -281,8 +318,8 @@ export default function BrokersPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="
-                    h-11 w-[260px] rounded-2xl border border-white/15
-                    bg-white/10 pr-10 pl-3 text-xs font-bold text-white
+                    h-9 w-full sm:w-[240px] rounded-xl border border-white/15
+                    bg-white/10 pr-9 pl-3 text-[11px] font-bold text-white
                     outline-none backdrop-blur-xl transition
                     placeholder:text-white/45
                     focus:border-[#e2bf74]/60 focus:bg-white/15
@@ -297,14 +334,14 @@ export default function BrokersPage() {
                   setIsAddOpen(true);
                 }}
                 className="
-                  flex h-11 items-center gap-2 rounded-2xl
-                  bg-white px-4 text-xs font-black text-[#123f59]
+                  flex h-9 items-center gap-2 rounded-xl
+                  bg-white px-3.5 text-[11px] font-black text-[#123f59]
                   shadow-[0_12px_30px_rgba(255,255,255,0.14)]
                   transition hover:-translate-y-[1px] hover:bg-[#fbf8f1]
                 "
                 type="button"
               >
-                <Plus className="h-4 w-4 text-[#c5983c]" />
+                <Plus className="h-3.5 w-3.5 text-[#c5983c]" />
                 تسجيل وسيط جديد
               </button>
             </div>
@@ -312,14 +349,14 @@ export default function BrokersPage() {
         </div>
 
         {/* Filters */}
-        <div className="mb-4 flex shrink-0 flex-wrap items-center gap-2">
-          <span className="ml-1 text-[11px] font-black text-[#64748b]">
+        <div className="mb-2 flex shrink-0 flex-wrap items-center gap-1.5 rounded-[18px] border border-[#d8b46a]/25 bg-white/80 px-3 py-2 shadow-sm">
+          <span className="ml-1 text-[10px] font-black text-[#64748b]">
             نوع الاتفاق المالي:
           </span>
 
           <button
             onClick={() => setFilterAgreement("all")}
-            className={`rounded-2xl border px-3 py-2 text-[11px] font-black transition-all ${filterButtonClass(
+            className={`rounded-xl border px-3 py-1.5 text-[10px] font-black transition-all ${filterButtonClass(
               filterAgreement === "all",
             )}`}
             type="button"
@@ -329,7 +366,7 @@ export default function BrokersPage() {
 
           <button
             onClick={() => setFilterAgreement("نسبة")}
-            className={`rounded-2xl border px-3 py-2 text-[11px] font-black transition-all ${filterButtonClass(
+            className={`rounded-xl border px-3 py-1.5 text-[10px] font-black transition-all ${filterButtonClass(
               filterAgreement === "نسبة",
             )}`}
             type="button"
@@ -339,7 +376,7 @@ export default function BrokersPage() {
 
           <button
             onClick={() => setFilterAgreement("مبلغ ثابت")}
-            className={`rounded-2xl border px-3 py-2 text-[11px] font-black transition-all ${filterButtonClass(
+            className={`rounded-xl border px-3 py-1.5 text-[10px] font-black transition-all ${filterButtonClass(
               filterAgreement === "مبلغ ثابت",
             )}`}
             type="button"
@@ -351,28 +388,35 @@ export default function BrokersPage() {
         {/* Main Table */}
         <div
           className="
-            min-h-0 flex-1 overflow-hidden rounded-[26px]
+            min-h-0 flex-1 overflow-hidden rounded-[20px]
             border border-[#d8b46a]/30 bg-white
-            shadow-[0_18px_45px_rgba(18,63,89,0.10)]
+            shadow-[0_10px_28px_rgba(18,63,89,0.08)]
           "
         >
-          <div className="custom-scrollbar-slim h-full overflow-auto">
-            <table className="w-full min-w-[880px] text-right text-[12px]">
-              <thead className="sticky top-0 z-10 bg-[#0f3448] text-white">
-                <tr className="h-[44px]">
-                  <th className="border-l border-white/10 px-4 text-[11px] font-black">
+          <div className="custom-scrollbar-slim h-full overflow-y-auto overflow-x-auto md:overflow-x-hidden">
+            <table dir="rtl" className="w-full min-w-[680px] table-fixed text-right text-[12px] md:min-w-0">
+                  <colgroup>
+                    <col className="w-[33%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[16%]" />
+                    <col className="w-[17%]" />
+                    <col className="w-[20%]" />
+                  </colgroup>
+              <thead className="sticky top-0 z-10 bg-[#0f3448] text-white shadow-sm">
+                <tr className="h-[36px]">
+                  <th className="border-l border-white/10 px-2 text-[10px] font-black">
                     اسم الوسيط
                   </th>
-                  <th className="border-l border-white/10 px-4 text-[11px] font-black">
+                  <th className="border-l border-white/10 px-2 text-[10px] font-black">
                     الجوال
                   </th>
-                  <th className="border-l border-white/10 px-4 text-[11px] font-black">
+                  <th className="border-l border-white/10 px-2 text-[10px] font-black">
                     نوع الاتفاق
                   </th>
-                  <th className="border-l border-white/10 px-4 text-[11px] font-black">
+                  <th className="border-l border-white/10 px-2 text-[10px] font-black">
                     طرق الدفع
                   </th>
-                  <th className="px-4 text-center text-[11px] font-black">
+                  <th className="w-[20%] px-1.5 text-center text-[10px] font-black">
                     إجراءات
                   </th>
                 </tr>
@@ -403,14 +447,14 @@ export default function BrokersPage() {
                     return (
                       <tr
                         key={row.id}
-                        className={`h-[48px] transition-colors hover:bg-cyan-50/45 ${
+                        className={`h-[40px] transition-colors hover:bg-cyan-50/45 ${
                           idx % 2 === 1 ? "bg-[#fbf8f1]/55" : "bg-white"
                         }`}
                       >
-                        <td className="border-l border-[#e8ddc8]/70 px-4">
+                        <td className="border-l border-[#e8ddc8]/70 px-2">
                           <div className="flex items-center gap-2">
-                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-[#123f59] text-white">
-                              <User className="h-4 w-4 text-[#e2bf74]" />
+                            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[#123f59] text-white">
+                              <User className="h-3.5 w-3.5 text-[#e2bf74]" />
                             </span>
 
                             <div className="min-w-0">
@@ -428,37 +472,38 @@ export default function BrokersPage() {
                         </td>
 
                         <td
-                          className="border-l border-[#e8ddc8]/70 px-4 font-mono text-[11px] font-black text-[#334155]"
-                          dir="ltr"
+                          className="border-l border-[#e8ddc8]/70 px-2 font-mono text-[11px] font-black text-[#334155]"
+                          dir="rtl"
                         >
                           {safeText(row.phone)}
                         </td>
 
-                        <td className="border-l border-[#e8ddc8]/70 px-4">
+                        <td className="border-l border-[#e8ddc8]/70 px-2">
                           <span className="rounded-xl border border-[#d8b46a]/35 bg-[#f8efe0] px-2.5 py-1 text-[10px] font-black text-[#123f59]">
                             {safeText(row.agreementType)}
                           </span>
                         </td>
 
                         <td
-                          className="max-w-[180px] truncate border-l border-[#e8ddc8]/70 px-4 text-[10px] font-black text-cyan-700"
+                          className="max-w-[180px] truncate border-l border-[#e8ddc8]/70 px-2 text-[10px] font-black text-cyan-700"
                           title={methodsLabel}
                         >
                           {methodsLabel}
                         </td>
 
-                        <td className="px-4 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
+                        <td className="px-1.5 text-center">
+                          <div className="flex flex-wrap items-center justify-center gap-1">
                             <button
                               onClick={() => {
                                 setSelectedPerson(row);
                                 setActiveTab("data");
                               }}
-                              className="grid h-8 w-8 place-items-center rounded-xl bg-cyan-50 text-cyan-700 transition hover:bg-cyan-600 hover:text-white"
+                              className="inline-flex h-6 items-center gap-0.5 rounded-lg bg-cyan-50 px-1.5 text-[8px] font-black text-cyan-700 transition hover:bg-cyan-600 hover:text-white"
                               title="عرض التفاصيل"
                               type="button"
                             >
-                              <Eye className="h-4 w-4" />
+                              <Eye className="h-2.5 w-2.5" />
+                              عرض
                             </button>
 
                             <button
@@ -468,11 +513,12 @@ export default function BrokersPage() {
                                 setEditingPerson(row);
                                 setIsAddOpen(true);
                               }}
-                              className="grid h-8 w-8 place-items-center rounded-xl bg-amber-50 text-amber-600 transition hover:bg-amber-500 hover:text-white"
+                              className="inline-flex h-6 items-center gap-0.5 rounded-lg bg-amber-50 px-1.5 text-[8px] font-black text-amber-600 transition hover:bg-amber-500 hover:text-white"
                               title="تعديل"
                               type="button"
                             >
-                              <Edit3 className="h-4 w-4" />
+                              <Edit3 className="h-2.5 w-2.5" />
+                              تعديل
                             </button>
 
                             <button
@@ -482,11 +528,12 @@ export default function BrokersPage() {
                                   deleteMutation.mutate(row.id);
                                 }
                               }}
-                              className="grid h-8 w-8 place-items-center rounded-xl bg-rose-50 text-rose-600 transition hover:bg-rose-500 hover:text-white"
+                              className="inline-flex h-6 items-center gap-0.5 rounded-lg bg-rose-50 px-1.5 text-[8px] font-black text-rose-600 transition hover:bg-rose-500 hover:text-white"
                               title="حذف"
                               type="button"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-2.5 w-2.5" />
+                              حذف
                             </button>
                           </div>
                         </td>
@@ -525,26 +572,26 @@ export default function BrokersPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="relative shrink-0 overflow-hidden bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59] px-6 py-5 text-white">
+            <div className="relative shrink-0 overflow-hidden bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59] px-5 py-3 text-white">
               <div className="pointer-events-none absolute inset-0">
-                <div className="absolute right-[-70px] top-[-70px] h-44 w-44 rounded-full bg-[#c5983c]/18 blur-3xl" />
-                <div className="absolute left-[-80px] bottom-[-80px] h-52 w-52 rounded-full bg-cyan-400/12 blur-3xl" />
+                <div className="absolute right-[-55px] top-[-60px] h-32 w-32 rounded-full bg-[#c5983c]/18 blur-3xl" />
+                <div className="absolute left-[-60px] bottom-[-70px] h-36 w-36 rounded-full bg-cyan-400/12 blur-3xl" />
               </div>
 
               <div className="relative z-10 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="grid h-14 w-14 place-items-center rounded-3xl bg-[#e2bf74] text-[#123f59] shadow-sm">
-                    <span className="text-xl font-black">
+                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#e2bf74] text-[#123f59] shadow-sm">
+                    <span className="text-[17px] font-black">
                       {safeText(selectedPerson.name).charAt(0)}
                     </span>
                   </div>
 
                   <div>
-                    <div className="text-xl font-black">
+                    <div className="text-[17px] font-black">
                       {safeText(selectedPerson.name)}
                     </div>
 
-                    <div className="mt-2 flex items-center gap-2">
+                    <div className="mt-1 flex items-center gap-2">
                       <span className="rounded-xl border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-black text-[#e2bf74]">
                         {safeText(selectedPerson.role)}
                       </span>
@@ -558,7 +605,7 @@ export default function BrokersPage() {
 
                 <button
                   onClick={() => setSelectedPerson(null)}
-                  className="grid h-10 w-10 place-items-center rounded-2xl bg-white/10 text-white transition hover:bg-rose-500"
+                  className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-white transition hover:bg-rose-500"
                   type="button"
                 >
                   <X className="h-5 w-5" />
@@ -575,14 +622,14 @@ export default function BrokersPage() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 border-b-2 px-5 py-3.5 text-xs font-black transition-all ${
+                    className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-[11px] font-black transition-all ${
                       isActive
                         ? "border-[#c5983c] text-[#123f59]"
                         : "border-transparent text-[#64748b] hover:bg-white hover:text-[#123f59]"
                     }`}
                     type="button"
                   >
-                    <tab.icon className="h-4 w-4" />
+                    <tab.icon className="h-3.5 w-3.5" />
                     {tab.label}
                   </button>
                 );
@@ -590,7 +637,7 @@ export default function BrokersPage() {
             </div>
 
             {/* Content */}
-            <div className="custom-scrollbar-slim relative flex-1 overflow-y-auto bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white p-6">
+            <div className="custom-scrollbar-slim relative flex-1 overflow-y-auto bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white p-4">
               {activeTab === "data" && (
                 <div className="space-y-6 animate-in fade-in">
                   <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -625,10 +672,10 @@ export default function BrokersPage() {
                     />
                   </div>
 
-                  <div className="rounded-2xl border border-[#d8b46a]/35 bg-white p-5 shadow-sm">
+                  <div className="rounded-xl border border-[#d8b46a]/35 bg-white p-5 shadow-sm">
                     <div className="mb-3 flex items-center gap-2">
-                      <span className="grid h-9 w-9 place-items-center rounded-2xl bg-[#f8efe0] text-[#c5983c]">
-                        <Banknote className="h-4 w-4" />
+                      <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#f8efe0] text-[#c5983c]">
+                        <Banknote className="h-3.5 w-3.5" />
                       </span>
 
                       <div>
@@ -646,18 +693,17 @@ export default function BrokersPage() {
                       </div>
                     </div>
 
-                    {selectedPerson.transferDetails &&
-                      Object.keys(selectedPerson.transferDetails).length > 0 && (
-                        <pre
-                          className="mt-3 rounded-2xl border border-[#e8ddc8] bg-[#fbf8f1] p-4 font-mono text-xs font-bold text-[#334155]"
-                          dir="ltr"
-                        >
-                          {JSON.stringify(selectedPerson.transferDetails, null, 2)}
-                        </pre>
-                      )}
+                    {formatTransferDetails(selectedPerson.transferDetails) !== "—" && (
+                      <div
+                        className="mt-3 rounded-xl border border-[#e8ddc8] bg-[#fbf8f1] px-3 py-2 text-[12px] font-bold leading-relaxed text-[#334155]"
+                        dir="rtl"
+                      >
+                        {formatTransferDetails(selectedPerson.transferDetails)}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="rounded-2xl border border-[#d8b46a]/35 bg-white p-5 shadow-sm">
+                  <div className="rounded-xl border border-[#d8b46a]/35 bg-white p-5 shadow-sm">
                     <div className="mb-2 text-xs font-black text-[#123f59]">
                       ملاحظات مسجلة
                     </div>
@@ -790,7 +836,7 @@ export default function BrokersPage() {
 
               {activeTab === "attachments" && (
                 <div className="space-y-4 animate-in fade-in">
-                  <div className="flex items-center justify-between rounded-2xl border border-[#d8b46a]/35 bg-white p-5 shadow-sm">
+                  <div className="flex items-center justify-between rounded-xl border border-[#d8b46a]/35 bg-white p-5 shadow-sm">
                     <div>
                       <h3 className="text-sm font-black text-[#123f59]">
                         مرفقات ووثائق الشخص
@@ -804,7 +850,7 @@ export default function BrokersPage() {
                   <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                     {!selectedPerson.attachments ||
                     selectedPerson.attachments.length === 0 ? (
-                      <div className="col-span-full rounded-2xl border border-dashed border-[#d8b46a]/45 bg-white py-12 text-center">
+                      <div className="col-span-full rounded-xl border border-dashed border-[#d8b46a]/45 bg-white py-12 text-center">
                         <Archive className="mx-auto mb-2 h-10 w-10 text-[#c5983c]/50" />
                         <span className="text-sm font-black text-[#64748b]">
                           لا توجد مرفقات محفوظة
@@ -814,9 +860,9 @@ export default function BrokersPage() {
                       selectedPerson.attachments.map((file, i) => (
                         <div
                           key={i}
-                          className="group flex flex-col items-center rounded-2xl border border-[#d8b46a]/35 bg-white p-4 text-center shadow-sm transition hover:border-[#c5983c]/55"
+                          className="group flex flex-col items-center rounded-xl border border-[#d8b46a]/35 bg-white p-4 text-center shadow-sm transition hover:border-[#c5983c]/55"
                         >
-                          <div className="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-[#f8efe0] text-[#c5983c]">
+                          <div className="mb-3 grid h-12 w-12 place-items-center rounded-xl bg-[#f8efe0] text-[#c5983c]">
                             <FileText className="h-6 w-6" />
                           </div>
 
@@ -845,10 +891,11 @@ export default function BrokersPage() {
                                   });
                                 }
                               }}
-                              className="rounded-xl bg-rose-50 p-1.5 text-rose-500 transition hover:bg-rose-500 hover:text-white"
+                              className="inline-flex items-center gap-1 rounded-xl bg-rose-50 px-2 py-1.5 text-[10px] font-black text-rose-500 transition hover:bg-rose-500 hover:text-white"
                               type="button"
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
+                              <Trash2 className="h-2.5 w-2.5" />
+                              حذف
                             </button>
                           </div>
                         </div>
@@ -865,7 +912,7 @@ export default function BrokersPage() {
       {/* Loading Preview */}
       {isPreviewLoading && (
         <div className="fixed inset-0 z-[160] grid place-items-center bg-black/45 backdrop-blur-sm">
-          <div className="rounded-2xl bg-white px-5 py-4 shadow-xl">
+          <div className="rounded-xl bg-white px-5 py-4 shadow-xl">
             <Loader2 className="mx-auto h-7 w-7 animate-spin text-[#c5983c]" />
             <p className="mt-2 text-xs font-black text-[#123f59]">
               جاري تحميل المرفق...
@@ -890,8 +937,8 @@ export default function BrokersPage() {
           >
             <div className="flex shrink-0 items-center justify-between border-b border-[#e8ddc8] bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59] px-6 py-4 text-white">
               <div className="flex items-center gap-3">
-                <div className="grid h-9 w-9 place-items-center rounded-2xl bg-[#e2bf74] text-[#123f59]">
-                  <Eye className="h-4 w-4" />
+                <div className="grid h-9 w-9 place-items-center rounded-xl bg-[#e2bf74] text-[#123f59]">
+                  <Eye className="h-3.5 w-3.5" />
                 </div>
 
                 <span className="text-base font-black">معاينة المستند</span>
@@ -901,18 +948,20 @@ export default function BrokersPage() {
                 <a
                   href={previewData.url}
                   download
-                  className="grid h-9 w-9 place-items-center rounded-2xl bg-white/10 text-white transition hover:bg-white/15"
+                  className="inline-flex h-9 items-center gap-2 rounded-xl bg-white/10 px-2 text-[10px] font-black text-white transition hover:bg-white/15"
                   title="تحميل"
                 >
                   <Download className="h-5 w-5" />
+                  تحميل
                 </a>
 
                 <button
                   onClick={closePreview}
-                  className="grid h-9 w-9 place-items-center rounded-2xl bg-white/10 text-white transition hover:bg-rose-500"
+                  className="inline-flex h-9 items-center gap-2 rounded-xl bg-white/10 px-2 text-[10px] font-black text-white transition hover:bg-rose-500"
                   type="button"
                 >
                   <X className="h-5 w-5" />
+                  إغلاق
                 </button>
               </div>
             </div>
@@ -921,14 +970,14 @@ export default function BrokersPage() {
               {previewData.isPdf ? (
                 <iframe
                   src={previewData.url}
-                  className="h-full w-full rounded-2xl border border-[#d8b46a]/35 bg-white shadow-lg"
+                  className="h-full w-full rounded-xl border border-[#d8b46a]/35 bg-white shadow-lg"
                   title="PDF Preview"
                 />
               ) : (
                 <img
                   src={previewData.url}
                   alt="مرفق"
-                  className="max-h-full max-w-full rounded-2xl border border-[#d8b46a]/35 bg-white object-contain shadow-lg"
+                  className="max-h-full max-w-full rounded-xl border border-[#d8b46a]/35 bg-white object-contain shadow-lg"
                 />
               )}
             </div>
@@ -943,7 +992,7 @@ const SimpleTable = ({ columns, rows, emptyText, renderRow }) => {
   const safeRows = Array.isArray(rows) ? rows : [];
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#d8b46a]/35 bg-white shadow-sm animate-in fade-in">
+    <div className="overflow-hidden rounded-xl border border-[#d8b46a]/35 bg-white shadow-sm animate-in fade-in">
       <table className="w-full text-right text-xs">
         <thead className="bg-[#0f3448] text-white">
           <tr>

@@ -49,7 +49,7 @@ import AiDashboard from "./pages/AiScreen/AiDashboard";
 import HubScreen from "./pages/Archives_and_records/ArchivesHubWrapper";
 import AccountsScreenWrapper from "./pages/AccountsCenter/AccountsScreenWrapper";
 import OfficeServicesScreen from "./pages/ServicesOffices/EngineeringOfficeServices";
-import DocumentCenterScreen from "./pages/DocsStation/DocsStation";
+import DocumentScreenWrapper from "./pages/DocsStation/DocsStationScreenWrapper";
 
 // --- Icons & Context ---
 import { Wrench } from "lucide-react"; // 👈 استيراد أيقونة شاشة الصيانة
@@ -360,7 +360,7 @@ const AppContent = () => {
             <div
               className={activeScreenId === "17" ? "block h-full" : "hidden"}
             >
-              <DocumentCenterScreen />
+              <DocumentScreenWrapper />
             </div>
 
 

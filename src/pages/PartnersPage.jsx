@@ -6,58 +6,120 @@ import {
   Search,
   Plus,
   X,
-  BookUser,
   Handshake,
-  UserCheck,
-  Star,
-  Briefcase,
-  Users,
-  Building2,
   Phone,
-  Mail,
-  Globe,
-  MapPin,
-  Hash,
   FileText,
   Wallet,
   Receipt,
   Paperclip,
-  Upload,
   Loader2,
-  Info,
   Edit3,
   Trash2,
   Eye,
-  ChevronDown,
-  ArrowUpRight,
-  TriangleAlert,
-  MonitorSmartphone,
-  Send,
-  Save,
-  Globe2,
-  User,
-  Banknote,
-  CheckSquare,
-  Square,
   Archive,
   Download,
-  UserPlus,
+  User,
+  Banknote,
 } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
 import { usePrivacy } from "../context/PrivacyContext";
-
-// 💡 استيراد المودل بدون دوال إضافية
 import { AddPersonModal } from "../components/AddPersonModal";
 
-// ==========================================
-// 💡 دوال مساعدة لحماية الواجهة
-// ==========================================
 const safeText = (val) => {
-  if (val === null || val === undefined) return "—";
-  if (typeof val === "object")
+  if (val === null || val === undefined || val === "") return "—";
+  if (typeof val === "object") {
     return val.ar || val.name || val.en || JSON.stringify(val);
+  }
   return String(val);
 };
+
+const normalizeTransferMethods = (value) => {
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === "[]" || trimmed === "{}") return [];
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      return normalizeTransferMethods(parsed);
+    } catch {
+      return trimmed
+        .replace(/[\[\]"]/g, "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+  }
+
+  return [String(value)];
+};
+
+const getPaymentMethodsLabel = (value) => {
+  const methods = normalizeTransferMethods(value);
+  return methods.length ? methods.join(" + ") : "—";
+};
+
+const formatPaymentMethods = (methods) => {
+  if (!methods) return "—";
+
+  if (typeof methods === "string") {
+    try {
+      return formatPaymentMethods(JSON.parse(methods));
+    } catch {
+      return methods.trim() || "—";
+    }
+  }
+
+  if (Array.isArray(methods)) {
+    return methods.filter(Boolean).join(" + ") || "—";
+  }
+
+  if (typeof methods === "object") {
+    const labels = {
+      cash: "نقدي",
+      bank: "حساب بنكي",
+      localBank: "حساب بنكي محلي",
+      internationalBank: "حساب بنكي دولي",
+      cheque: "شيك",
+      transfer: "تحويل بنكي",
+      cashNote: "ملاحظة نقدية",
+      bankName: "اسم البنك",
+      iban: "IBAN",
+      accountNumber: "رقم الحساب",
+    };
+
+    const parts = Object.entries(methods)
+      .filter(([, value]) => value !== "" && value !== null && value !== undefined && value !== false)
+      .map(([key, value]) => (value === true ? labels[key] || key : `${labels[key] || key}: ${value}`));
+
+    return parts.length ? parts.join(" + ") : "—";
+  }
+
+  return String(methods);
+};
+
+const DataCard = ({ label, value, dir = "rtl", icon: Icon }) => (
+  <div className="rounded-xl border border-[#e8ddc8] bg-white p-3 shadow-[0_6px_16px_rgba(18,63,89,0.04)]">
+    <div className="mb-1.5 flex items-center justify-between gap-2">
+      <span className="text-[10px] font-black text-[#8da0bb]">{label}</span>
+      {Icon && <Icon className="h-3.5 w-3.5 text-[#c5983c]" />}
+    </div>
+    <div className="truncate text-[13px] font-black text-[#123f59]" dir={dir} title={safeText(value)}>
+      {safeText(value)}
+    </div>
+  </div>
+);
+
+const EmptyState = ({ title }) => (
+  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#e8ddc8] bg-white py-8 text-center">
+    <Archive className="mb-2 h-9 w-9 text-[#cfd8e3]" />
+    <span className="text-[12px] font-black text-[#8da0bb]">{title}</span>
+  </div>
+);
 
 export default function PartnersPage() {
   const queryClient = useQueryClient();
@@ -69,13 +131,12 @@ export default function PartnersPage() {
   const [activeTab, setActiveTab] = useState("data");
 
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [modalMode, setModalMode] = useState("add"); // "add" or "edit"
+  const [modalMode, setModalMode] = useState("add");
   const [editingPerson, setEditingPerson] = useState(null);
 
   const [previewData, setPreviewData] = useState(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
-  // 💡 Data Fetching
   const { data: partnersList = [], isLoading } = useQuery({
     queryKey: ["partners-directory"],
     queryFn: async () => {
@@ -86,7 +147,7 @@ export default function PartnersPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id) => await api.delete(`/persons/${id}`),
+    mutationFn: async (id) => api.delete(`/persons/${id}`),
     onSuccess: () => {
       toast.success("تم الحذف بنجاح");
       queryClient.invalidateQueries(["partners-directory"]);
@@ -98,19 +159,18 @@ export default function PartnersPage() {
 
   const removeAttachmentMutation = useMutation({
     mutationFn: async ({ id, fileUrl }) => {
-      const res = await api.put(`/persons/${id}/attachments/remove`, {
-        fileUrl,
-      });
+      const res = await api.put(`/persons/${id}/attachments/remove`, { fileUrl });
       return res.data;
     },
     onSuccess: (res) => {
       toast.success("تم حذف المرفق بنجاح");
       queryClient.invalidateQueries(["partners-directory"]);
-      if (selectedPerson)
+      if (selectedPerson) {
         setSelectedPerson((prev) => ({
           ...prev,
           attachments: res.data?.attachments || prev.attachments,
         }));
+      }
     },
   });
 
@@ -121,9 +181,13 @@ export default function PartnersPage() {
 
   const filteredData = useMemo(() => {
     return partnersList.filter((p) => {
+      const name = safeText(p.name);
+      const phone = safeText(p.phone);
       const matchSearch =
-        p.name.includes(searchQuery) ||
-        (p.phone && p.phone.includes(searchQuery));
+        !searchQuery ||
+        name.includes(searchQuery) ||
+        phone.includes(searchQuery) ||
+        safeText(p.personCode).includes(searchQuery);
       const matchAgreement =
         filterAgreement === "all" || p.agreementType === filterAgreement;
       return matchSearch && matchAgreement;
@@ -134,6 +198,7 @@ export default function PartnersPage() {
     e.stopPropagation();
     if (!attachmentUrl) return;
     setIsPreviewLoading(true);
+
     try {
       const response = await api.get(attachmentUrl, { responseType: "blob" });
       const contentType = response.headers["content-type"];
@@ -143,173 +208,238 @@ export default function PartnersPage() {
           contentType?.includes("pdf") ||
           attachmentUrl.toLowerCase().endsWith(".pdf"),
       });
-    } catch (error) {
+    } catch {
       toast.error("فشل في تحميل المرفق.");
     } finally {
       setIsPreviewLoading(false);
     }
   };
 
+  const filterButtons = [
+    { value: "all", label: "الكل" },
+    { value: "نسبة", label: "نسبة مئوية" },
+    { value: "مبلغ ثابت", label: "مبلغ ثابت" },
+  ];
+
   return (
     <>
       <div
-        className="p-3 flex flex-col h-full overflow-hidden bg-[var(--wms-bg-0)] font-sans"
+        className="flex h-full flex-col overflow-hidden bg-[radial-gradient(circle_at_top_left,#eef7f6,transparent_32%),linear-gradient(135deg,#fbf8f1_0%,#ffffff_48%,#f3f7f6_100%)] p-2.5 font-sans md:p-3"
         dir="rtl"
       >
-        {/* Header Toolbar */}
-        <div className="flex items-center gap-3 mb-3 shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-md flex items-center justify-center bg-violet-50 border border-violet-100">
-              <Users className="w-4 h-4 text-violet-600" />
+        <div
+          className="
+            relative mb-2 shrink-0 overflow-hidden rounded-[22px]
+            border border-[#c5983c]/25
+            bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59]
+            p-2.5 shadow-[0_12px_32px_rgba(18,63,89,0.16)]
+          "
+        >
+          <div className="pointer-events-none absolute right-[-55px] top-[-60px] h-32 w-32 rounded-full bg-[#e2bf74]/20 blur-3xl" />
+          <div className="pointer-events-none absolute left-[-60px] bottom-[-70px] h-36 w-36 rounded-full bg-cyan-300/15 blur-3xl" />
+
+          <div className="relative z-10 flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => window.history.back()}
+                className="
+                  inline-flex h-9 items-center gap-2 rounded-xl
+                  border border-white/15 bg-white/10 px-3 text-[11px] font-black text-[#e2bf74]
+                  transition hover:bg-white/15
+                "
+                type="button"
+              >
+                <span>رجوع</span>
+              </button>
+
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#e2bf74] text-[#08111c]">
+                <Handshake className="h-5 w-5" />
+              </div>
+
+              <div>
+                <h1 className="text-lg font-black leading-tight text-white">
+                  سجل الشركاء
+                </h1>
+                <p className="mt-0.5 text-[11px] font-bold leading-tight text-white/55">
+                  {filteredData.length} شريك ظاهر من أصل {partnersList.length} شريك مسجل في النظام
+                </p>
+              </div>
             </div>
-            <div>
-              <div className="text-[var(--wms-text)] text-[15px] font-bold">
-                سجل الشركاء
+
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative w-full sm:w-auto">
+                <Search className="absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/45" />
+                <input
+                  type="text"
+                  placeholder="بحث بالاسم أو الجوال..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="
+                    h-9 w-full sm:w-[240px] rounded-xl border border-white/15 bg-white/10
+                    pr-9 pl-3 text-[11px] font-bold text-white outline-none
+                    placeholder:text-white/45 focus:border-[#e2bf74]/70 focus:bg-white/15
+                  "
+                />
               </div>
-              <div className="text-[var(--wms-text-muted)] text-[10px]">
-                {partnersList.length} شريك مسجل
-              </div>
+
+              <button
+                onClick={() => {
+                  setModalMode("add");
+                  setEditingPerson(null);
+                  setIsAddOpen(true);
+                }}
+                className="
+                  flex h-9 items-center gap-2 rounded-xl
+                  bg-white px-3.5 text-[11px] font-black text-[#123f59]
+                  shadow-[0_10px_24px_rgba(255,255,255,0.12)]
+                  transition hover:-translate-y-0.5 hover:bg-[#fbf8f1]
+                "
+                type="button"
+              >
+                <Plus className="h-3.5 w-3.5 text-[#c5983c]" />
+                تسجيل شريك جديد
+              </button>
             </div>
           </div>
-          <div className="flex-1"></div>
-          <div className="relative">
-            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--wms-text-muted)]" />
-            <input
-              type="text"
-              placeholder="بحث بالاسم أو الجوال..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-[var(--wms-surface-2)] border border-[var(--wms-border)] rounded-md pr-8 pl-3 text-[var(--wms-text)] outline-none w-[220px] h-[32px] text-[12px] focus:border-violet-400"
-            />
-          </div>
-          <button
-            onClick={() => {
-              setModalMode("add");
-              setEditingPerson(null);
-              setIsAddOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-3 rounded-md bg-violet-600 text-white hover:opacity-90 h-[32px] text-[12px] font-semibold shadow-sm"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>تسجيل شريك جديد</span>
-          </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-1.5 flex-wrap mb-3 shrink-0">
-          <span className="text-[11px] font-bold text-gray-500 ml-2">
+        <div className="mb-2 flex shrink-0 flex-wrap items-center gap-1.5 rounded-[18px] border border-[#d8b46a]/25 bg-white/80 px-3 py-2 shadow-sm">
+          <span className="ml-1 text-[10px] font-black text-[#64748b]">
             نوع الاتفاق المالي:
           </span>
-          <button
-            onClick={() => setFilterAgreement("all")}
-            className={`px-2.5 py-1 rounded-md transition-colors text-[11px] font-bold ${filterAgreement === "all" ? "bg-violet-600 text-white" : "bg-[var(--wms-surface-2)] text-[var(--wms-text-sec)]"}`}
-          >
-            الكل
-          </button>
-          <button
-            onClick={() => setFilterAgreement("نسبة")}
-            className={`px-2.5 py-1 rounded-md transition-colors text-[11px] font-bold ${filterAgreement === "نسبة" ? "bg-violet-600 text-white" : "bg-[var(--wms-surface-2)] text-[var(--wms-text-sec)]"}`}
-          >
-            نسبة مئوية
-          </button>
-          <button
-            onClick={() => setFilterAgreement("مبلغ ثابت")}
-            className={`px-2.5 py-1 rounded-md transition-colors text-[11px] font-bold ${filterAgreement === "مبلغ ثابت" ? "bg-violet-600 text-white" : "bg-[var(--wms-surface-2)] text-[var(--wms-text-sec)]"}`}
-          >
-            مبلغ ثابت
-          </button>
+
+          {filterButtons.map((button) => (
+            <button
+              key={button.value}
+              type="button"
+              onClick={() => setFilterAgreement(button.value)}
+              className={`rounded-xl border px-3 py-1.5 text-[10px] font-black transition ${
+                filterAgreement === button.value
+                  ? "border-[#123f59] bg-[#123f59] text-white shadow-[0_8px_20px_rgba(18,63,89,0.16)]"
+                  : "border-[#e8ddc8] bg-white text-[#123f59] hover:bg-[#fbf8f1]"
+              }`}
+            >
+              {button.label}
+            </button>
+          ))}
         </div>
 
-        {/* Main Table */}
-        <div className="bg-[var(--wms-surface-1)] border border-[var(--wms-border)] rounded-lg overflow-hidden flex flex-col flex-1 min-h-0 shadow-sm">
-          <div className="overflow-auto custom-scrollbar-slim flex-1">
-            <table className="w-full text-right whitespace-nowrap text-[12px]">
-              <thead className="sticky top-0 z-10 bg-[var(--wms-surface-2)]">
+        <div
+          className="
+            min-h-0 flex-1 overflow-hidden rounded-[20px]
+            border border-[#d8b46a]/30 bg-white
+            shadow-[0_10px_28px_rgba(18,63,89,0.08)]
+          "
+        >
+          <div className="custom-scrollbar-slim h-full overflow-y-auto overflow-x-auto md:overflow-x-hidden">
+            <table dir="rtl" className="w-full min-w-[680px] table-fixed text-right text-[12px] md:min-w-0">
+              <colgroup>
+                <col className="w-[32%]" />
+                <col className="w-[15%]" />
+                <col className="w-[15%]" />
+                <col className="w-[18%]" />
+                <col className="w-[20%]" />
+              </colgroup>
+
+              <thead className="sticky top-0 z-10 bg-[#0f3448] text-white shadow-sm">
                 <tr className="h-[36px]">
-                  <th className="px-3 text-[var(--wms-text-sec)] font-bold text-[11px]">
+                  <th className="border-l border-white/10 px-2 text-[10px] font-black">
                     اسم الشريك
                   </th>
-                  <th className="px-3 text-[var(--wms-text-sec)] font-bold text-[11px]">
+                  <th className="border-l border-white/10 px-2 text-[10px] font-black">
                     الجوال
                   </th>
-                  <th className="px-3 text-[var(--wms-text-sec)] font-bold text-[11px]">
+                  <th className="border-l border-white/10 px-2 text-[10px] font-black">
                     نوع الاتفاق
                   </th>
-                  <th className="px-3 text-[var(--wms-text-sec)] font-bold text-[11px]">
+                  <th className="border-l border-white/10 px-2 text-[10px] font-black">
                     طرق الدفع
                   </th>
-                  <th className="px-3 text-center text-[var(--wms-text-sec)] font-bold text-[11px]">
+                  <th className="px-1.5 text-center text-[10px] font-black">
                     إجراءات
                   </th>
                 </tr>
               </thead>
-              <tbody>
+
+              <tbody className="divide-y divide-[#e8ddc8]/70">
                 {isLoading ? (
                   <tr>
-                    <td colSpan="5" className="text-center py-8">
-                      <Loader2 className="w-6 h-6 animate-spin text-violet-500 mx-auto" />
+                    <td colSpan="5" className="py-10 text-center">
+                      <Loader2 className="mx-auto h-7 w-7 animate-spin text-[#c5983c]" />
                     </td>
                   </tr>
                 ) : filteredData.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan="5"
-                      className="text-center py-8 text-gray-500 font-semibold"
-                    >
-                      لا يوجد شركاء مسجلين
+                    <td colSpan="5" className="py-12 text-center">
+                      <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-3xl border border-[#d8b46a]/35 bg-[#f8efe0] text-[#c5983c]">
+                        <Archive className="h-8 w-8" />
+                      </div>
+                      <p className="text-sm font-black text-[#123f59]">
+                        لا يوجد شركاء مسجلين
+                      </p>
                     </td>
                   </tr>
                 ) : (
                   filteredData.map((row, idx) => {
-                    let methodsLabel = "—";
-                    if (row.transferMethod) {
-                      try {
-                        const parsed = JSON.parse(row.transferMethod);
-                        if (Array.isArray(parsed) && parsed.length > 0)
-                          methodsLabel = parsed.join(" + ");
-                      } catch (e) {
-                        methodsLabel = row.transferMethod;
-                      }
-                    }
+                    const methodsLabel = getPaymentMethodsLabel(row.transferMethod);
+
                     return (
                       <tr
                         key={row.id}
-                        className={`border-b border-[var(--wms-border)]/30 hover:bg-[var(--wms-surface-2)]/40 transition-colors h-[40px] ${idx % 2 === 1 ? "bg-[var(--wms-row-alt)]" : "bg-transparent"}`}
+                        className={`h-[40px] transition-colors hover:bg-cyan-50/45 ${
+                          idx % 2 === 1 ? "bg-[#fbf8f1]/55" : "bg-white"
+                        }`}
                       >
-                        <td className="px-3 text-[var(--wms-text)] font-bold">
-                          {/* 💡 استخدام safeText بدلاً من getFullName */}
-                          {safeText(row.name)}
-                          <span className="mr-2 text-[9px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded">
-                            شريك
-                          </span>
+                        <td className="border-l border-[#e8ddc8]/70 px-2">
+                          <div className="flex items-center gap-2">
+                            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[#123f59] text-white">
+                              <Handshake className="h-3.5 w-3.5 text-[#e2bf74]" />
+                            </span>
+
+                            <div className="min-w-0">
+                              <div className="truncate text-[12px] font-black text-[#123f59]">
+                                {safeText(row.name)}
+                              </div>
+
+                              <span className="mt-1 inline-block rounded-xl border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[9px] font-black text-cyan-700">
+                                شريك
+                              </span>
+                            </div>
+                          </div>
                         </td>
-                        <td
-                          className="px-3 text-[var(--wms-text-sec)] font-mono text-[11px] font-bold"
-                          dir="ltr"
-                        >
+
+                        <td className="border-l border-[#e8ddc8]/70 px-2 font-mono text-[10px] font-bold text-[#334155]" dir="ltr">
                           {safeText(row.phone)}
                         </td>
-                        <td className="px-3 text-[var(--wms-text-muted)] text-[10px] font-semibold">
-                          {safeText(row.agreementType)}
+
+                        <td className="border-l border-[#e8ddc8]/70 px-2">
+                          <span className="inline-flex items-center rounded-xl border border-[#e8ddc8] bg-[#fbf8f1] px-2 py-1 text-[10px] font-black text-[#123f59]">
+                            {safeText(row.agreementType)}
+                          </span>
                         </td>
+
                         <td
-                          className="px-3 text-violet-600 text-[10px] font-bold truncate max-w-[150px]"
+                          className="border-l border-[#e8ddc8]/70 px-2 text-[10px] font-black text-[#0e7490]"
                           title={methodsLabel}
                         >
-                          {methodsLabel}
+                          <span className="block truncate">{methodsLabel}</span>
                         </td>
-                        <td className="px-3 text-center">
-                          <div className="flex items-center justify-center gap-2">
+
+                        <td className="px-1.5 text-center">
+                          <div className="flex flex-wrap items-center justify-center gap-1">
                             <button
                               onClick={() => {
                                 setSelectedPerson(row);
                                 setActiveTab("data");
                               }}
-                              className="text-blue-500 hover:bg-blue-50 p-1.5 rounded transition-colors"
+                              className="inline-flex h-6 items-center gap-0.5 rounded-lg bg-cyan-50 px-1.5 text-[8px] font-black text-cyan-700 transition hover:bg-cyan-600 hover:text-white"
                               title="عرض التفاصيل"
+                              type="button"
                             >
-                              <Eye className="w-4 h-4" />
+                              <Eye className="h-2.5 w-2.5" />
+                              عرض
                             </button>
+
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -317,21 +447,27 @@ export default function PartnersPage() {
                                 setEditingPerson(row);
                                 setIsAddOpen(true);
                               }}
-                              className="text-amber-500 hover:bg-amber-50 p-1.5 rounded transition-colors"
+                              className="inline-flex h-6 items-center gap-0.5 rounded-lg bg-amber-50 px-1.5 text-[8px] font-black text-amber-600 transition hover:bg-amber-500 hover:text-white"
                               title="تعديل"
+                              type="button"
                             >
-                              <Edit3 className="w-4 h-4" />
+                              <Edit3 className="h-2.5 w-2.5" />
+                              تعديل
                             </button>
+
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (window.confirm("متأكد من حذف الشريك؟"))
+                                if (window.confirm("متأكد من حذف الشريك؟")) {
                                   deleteMutation.mutate(row.id);
+                                }
                               }}
-                              className="text-red-500 hover:bg-red-50 p-1.5 rounded transition-colors"
+                              className="inline-flex h-6 items-center gap-0.5 rounded-lg bg-rose-50 px-1.5 text-[8px] font-black text-rose-600 transition hover:bg-rose-500 hover:text-white"
                               title="حذف"
+                              type="button"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="h-2.5 w-2.5" />
+                              حذف
                             </button>
                           </div>
                         </td>
@@ -354,57 +490,53 @@ export default function PartnersPage() {
         />
       )}
 
-      {/* ========================================== */}
-      {/* 🌟 2. Details Modal */}
-      {/* ========================================== */}
       {selectedPerson && (
         <div
-          className="fixed inset-0 z-[50] flex items-center justify-center bg-black/60 p-4 animate-in fade-in"
+          className="fixed inset-0 z-[50] flex items-center justify-center bg-black/60 p-3 animate-in fade-in"
           dir="rtl"
           onClick={() => setSelectedPerson(null)}
         >
           <div
-            className="bg-white border border-gray-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden w-full max-w-5xl h-[85vh]"
+            className="flex h-[84vh] w-full max-w-5xl flex-col overflow-hidden rounded-[24px] border border-[#d8b46a]/25 bg-white shadow-[0_24px_70px_rgba(2,12,23,0.28)]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0 bg-gray-50/80">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-[18px] shadow-sm bg-violet-600 text-white">
-                  {safeText(selectedPerson.name).charAt(0)}
-                </div>
-                <div>
-                  <div className="text-gray-800 text-[18px] font-black">
-                    {/* 💡 استخدام safeText */}
-                    {safeText(selectedPerson.name)}
+            <div className="relative shrink-0 overflow-hidden bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59] px-5 py-3 text-white">
+              <div className="flex items-center justify-between gap-3" style={{ direction: "ltr" }}>
+                <button
+                  onClick={() => setSelectedPerson(null)}
+                  className="inline-flex h-9 items-center gap-2 rounded-xl bg-white/10 px-3 text-[11px] font-black text-white transition hover:bg-rose-500"
+                  type="button"
+                >
+                  <X className="h-5 w-5" />
+                  إغلاق
+                </button>
+
+                <div className="flex min-w-0 items-center gap-3 text-right" dir="rtl">
+                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#e2bf74] text-[#08111c]">
+                    <Handshake className="h-5 w-5" />
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold border bg-violet-50 text-violet-700 border-violet-200">
-                      {safeText(selectedPerson.role)}
-                    </span>
-                    <span className="text-gray-400 font-mono text-[11px] font-bold">
-                      {safeText(selectedPerson.personCode)}
-                    </span>
+
+                  <div className="min-w-0">
+                    <h2 className="truncate text-[17px] font-black">
+                      {safeText(selectedPerson.name)}
+                    </h2>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="rounded-lg bg-white/10 px-2 py-0.5 text-[10px] font-black text-white/75">
+                        {safeText(selectedPerson.personCode)}
+                      </span>
+                      <span className="rounded-lg bg-[#e2bf74] px-2 py-0.5 text-[10px] font-black text-[#08111c]">
+                        شريك
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => setSelectedPerson(null)}
-                className="text-gray-400 hover:text-red-500 bg-white p-2 rounded-md border shadow-sm transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
             </div>
 
-            {/* Tabs Navigation */}
-            <div className="flex border-b border-gray-200 overflow-x-auto custom-scrollbar-slim bg-white shrink-0">
+            <div className="flex shrink-0 overflow-x-auto border-b border-[#e8ddc8]/70 bg-white custom-scrollbar-slim">
               {[
                 { id: "data", label: "بيانات الشريك", icon: User },
-                {
-                  id: "transactions",
-                  label: "المعاملات المرتبطة",
-                  icon: FileText,
-                },
+                { id: "transactions", label: "المعاملات المرتبطة", icon: FileText },
                 { id: "settlements", label: "تسويات الشريك", icon: Handshake },
                 { id: "collections", label: "التحصيلات", icon: Wallet },
                 { id: "disbursements", label: "المنصرفات", icon: Receipt },
@@ -413,151 +545,108 @@ export default function PartnersPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-6 py-3.5 whitespace-nowrap cursor-pointer transition-all text-xs font-bold border-b-2 ${activeTab === tab.id ? "text-violet-600 border-violet-600 bg-violet-50/30" : "text-gray-500 border-transparent hover:text-gray-800 hover:bg-gray-50"}`}
+                  className={`flex cursor-pointer items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2.5 text-[11px] font-black transition-all ${
+                    activeTab === tab.id
+                      ? "border-[#0e7490] bg-[#eef7f6]/45 text-[#0e7490]"
+                      : "border-transparent text-[#8da0bb] hover:bg-[#fbf8f1] hover:text-[#123f59]"
+                  }`}
+                  type="button"
                 >
-                  <tab.icon className="w-4 h-4" />
+                  <tab.icon className="h-4 w-4" />
                   <span>{tab.label}</span>
                 </button>
               ))}
             </div>
 
-            {/* Tabs Content */}
-            <div className="flex-1 overflow-y-auto p-6 bg-gray-50/50 relative">
-              {/* TAB 1: Data */}
+            <div className="relative flex-1 overflow-y-auto bg-[linear-gradient(135deg,#fbf8f1_0%,#ffffff_55%,#f3f7f6_100%)] p-4">
               {activeTab === "data" && (
-                <div className="space-y-6 animate-in fade-in">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                      <div className="text-gray-400 text-[10px] font-bold mb-1 uppercase">
-                        رقم التواصل
-                      </div>
-                      <div
-                        className="text-[14px] font-mono text-gray-800 font-bold"
-                        dir="ltr"
-                      >
-                        {safeText(selectedPerson.phone)}
-                      </div>
-                    </div>
-                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                      <div className="text-gray-400 text-[10px] font-bold mb-1 uppercase">
-                        نوع الاتفاق
-                      </div>
-                      <div className="text-[14px] font-bold text-gray-800">
-                        {safeText(selectedPerson.agreementType)}
-                      </div>
-                    </div>
-                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                      <div className="text-gray-400 text-[10px] font-bold mb-1 uppercase">
-                        الدولة
-                      </div>
-                      <div className="text-[14px] font-bold text-gray-800">
-                        {safeText(selectedPerson.country) || "غير محدد"}
-                      </div>
-                    </div>
-                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                      <div className="text-gray-400 text-[10px] font-bold mb-1 uppercase">
-                        رقم الهوية
-                      </div>
-                      <div className="text-[14px] font-mono font-bold text-gray-800">
-                        {safeText(selectedPerson.idNumber) || "غير محدد"}
-                      </div>
-                    </div>
+                <div className="space-y-4 animate-in fade-in">
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                    <DataCard label="رقم التواصل" value={selectedPerson.phone} dir="ltr" icon={Phone} />
+                    <DataCard label="نوع الاتفاق" value={selectedPerson.agreementType} icon={Banknote} />
+                    <DataCard label="الدولة" value={selectedPerson.country || "غير محدد"} />
+                    <DataCard label="رقم الهوية" value={selectedPerson.idNumber || "غير محدد"} dir="ltr" />
                   </div>
 
-                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                    <div className="text-gray-400 text-[10px] font-bold mb-2 uppercase">
+                  <div className="rounded-xl border border-[#e8ddc8] bg-white p-4 shadow-[0_6px_16px_rgba(18,63,89,0.04)]">
+                    <div className="mb-2 text-[10px] font-black uppercase text-[#8da0bb]">
                       طرق الدفع والاستلام المفضلة
                     </div>
-                    <div className="text-[13px] font-bold text-violet-600">
-                      {selectedPerson.transferMethod
-                        ? selectedPerson.transferMethod
-                            .replace(/[\[\]"]/g, "")
-                            .replace(/,/g, " + ")
-                        : "غير محدد"}
-                    </div>
+
+                    {normalizeTransferMethods(selectedPerson.transferMethod).length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {normalizeTransferMethods(selectedPerson.transferMethod).map((method) => (
+                          <span
+                            key={method}
+                            className="rounded-xl border border-[#0e7490]/15 bg-[#eef7f6] px-3 py-1.5 text-[12px] font-black text-[#0e7490]"
+                          >
+                            {method}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-[#e8ddc8] bg-[#fbf8f1] px-3 py-2 text-[12px] font-bold text-[#8da0bb]">
+                        غير محدد
+                      </div>
+                    )}
+
                     {selectedPerson.transferDetails &&
-                      Object.keys(selectedPerson.transferDetails).length >
-                        0 && (
-                        <pre
-                          className="mt-3 bg-gray-50 p-3 rounded-lg border border-gray-100 text-xs text-gray-700 font-mono"
-                          dir="ltr"
+                      formatPaymentMethods(selectedPerson.transferDetails) !== "—" && (
+                        <div
+                          className="mt-3 rounded-xl border border-[#e8ddc8] bg-[#fbf8f1] px-3 py-2 text-[12px] font-bold leading-relaxed text-[#60738f]"
+                          dir="rtl"
                         >
-                          {JSON.stringify(
-                            selectedPerson.transferDetails,
-                            null,
-                            2,
-                          )}
-                        </pre>
+                          {formatPaymentMethods(selectedPerson.transferDetails)}
+                        </div>
                       )}
                   </div>
 
-                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                    <div className="text-gray-400 text-[10px] font-bold mb-2 uppercase">
+                  <div className="rounded-xl border border-[#e8ddc8] bg-white p-4 shadow-[0_6px_16px_rgba(18,63,89,0.04)]">
+                    <div className="mb-2 text-[10px] font-black uppercase text-[#8da0bb]">
                       ملاحظات مسجلة
                     </div>
-                    <div className="text-[13px] whitespace-pre-wrap text-gray-700 leading-relaxed font-semibold">
+                    <div className="whitespace-pre-wrap text-[13px] font-semibold leading-relaxed text-[#60738f]">
                       {selectedPerson.notes || "لا توجد ملاحظات."}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* TAB 2: Transactions */}
               {activeTab === "transactions" && (
-                <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-in fade-in">
+                <div className="overflow-hidden rounded-xl border border-[#e8ddc8] bg-white shadow-sm animate-in fade-in">
                   <table className="w-full text-right text-xs">
-                    <thead className="bg-gray-100">
+                    <thead className="bg-[#0f3448] text-white">
                       <tr>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          المرجع
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          النوع
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          الدور
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          الأتعاب
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          التاريخ
-                        </th>
+                        <th className="px-4 py-3 font-black">المرجع</th>
+                        <th className="px-4 py-3 font-black">النوع</th>
+                        <th className="px-4 py-3 font-black">الدور</th>
+                        <th className="px-4 py-3 font-black">الأتعاب</th>
+                        <th className="px-4 py-3 font-black">التاريخ</th>
                       </tr>
                     </thead>
                     <tbody>
                       {!selectedPerson.stakeholderTransactions ||
                       selectedPerson.stakeholderTransactions.length === 0 ? (
                         <tr>
-                          <td
-                            colSpan="5"
-                            className="text-center py-8 text-gray-400 font-bold"
-                          >
+                          <td colSpan="5" className="py-8 text-center font-bold text-[#8da0bb]">
                             لا توجد معاملات مرتبطة كصاحب مصلحة / شريك
                           </td>
                         </tr>
                       ) : (
-                        selectedPerson.stakeholderTransactions?.map((tx) => (
-                          <tr
-                            key={tx.id}
-                            className="border-b border-gray-100 hover:bg-gray-50"
-                          >
-                            <td className="px-4 py-3 font-mono text-violet-600 font-bold">
+                        selectedPerson.stakeholderTransactions.map((tx) => (
+                          <tr key={tx.id} className="border-b border-[#e8ddc8]/60 hover:bg-[#fbf8f1]">
+                            <td className="px-4 py-3 font-mono font-bold text-[#0e7490]">
                               {tx.transactionCode}
                             </td>
-                            <td className="px-4 py-3 text-gray-700 font-bold">
+                            <td className="px-4 py-3 font-bold text-[#60738f]">
                               {tx.category || "عامة"}
                             </td>
-                            <td className="px-4 py-3 text-gray-500 font-bold">
+                            <td className="px-4 py-3 font-bold text-[#8da0bb]">
                               شريك / صاحب مصلحة
                             </td>
-                            <td className="px-4 py-3 text-gray-700 font-bold">
-                              —
-                            </td>
-                            <td className="px-4 py-3 text-gray-500 font-mono">
-                              {new Date(tx.createdAt).toLocaleDateString(
-                                "ar-SA",
-                              )}
+                            <td className="px-4 py-3 font-bold text-[#60738f]">—</td>
+                            <td className="px-4 py-3 font-mono text-[#8da0bb]">
+                              {new Date(tx.createdAt).toLocaleDateString("ar-SA")}
                             </td>
                           </tr>
                         ))
@@ -567,56 +656,37 @@ export default function PartnersPage() {
                 </div>
               )}
 
-              {/* TAB 3: Settlements */}
               {activeTab === "settlements" && (
-                <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-in fade-in">
+                <div className="overflow-hidden rounded-xl border border-[#e8ddc8] bg-white shadow-sm animate-in fade-in">
                   <table className="w-full text-right text-xs">
-                    <thead className="bg-gray-100">
+                    <thead className="bg-[#0f3448] text-white">
                       <tr>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          التاريخ
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          المبلغ
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          المصدر
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          الحالة
-                        </th>
+                        <th className="px-4 py-3 font-black">التاريخ</th>
+                        <th className="px-4 py-3 font-black">المبلغ</th>
+                        <th className="px-4 py-3 font-black">المصدر</th>
+                        <th className="px-4 py-3 font-black">الحالة</th>
                       </tr>
                     </thead>
                     <tbody>
                       {!selectedPerson.settlementsTarget ||
                       selectedPerson.settlementsTarget.length === 0 ? (
                         <tr>
-                          <td
-                            colSpan="4"
-                            className="text-center py-8 text-gray-400 font-bold"
-                          >
+                          <td colSpan="4" className="py-8 text-center font-bold text-[#8da0bb]">
                             لا توجد تسويات مالية
                           </td>
                         </tr>
                       ) : (
                         selectedPerson.settlementsTarget.map((s) => (
-                          <tr
-                            key={s.id}
-                            className="border-b border-gray-100 hover:bg-gray-50"
-                          >
-                            <td className="px-4 py-3 font-mono text-gray-500">
-                              {new Date(s.createdAt).toLocaleDateString(
-                                "ar-SA",
-                              )}
+                          <tr key={s.id} className="border-b border-[#e8ddc8]/60 hover:bg-[#fbf8f1]">
+                            <td className="px-4 py-3 font-mono text-[#8da0bb]">
+                              {new Date(s.createdAt).toLocaleDateString("ar-SA")}
                             </td>
                             <td className="px-4 py-3 font-mono font-bold text-green-600">
-                              {s.amount.toLocaleString()} ر.س
+                              {maskAmount ? maskAmount(s.amount) : s.amount?.toLocaleString()} ر.س
                             </td>
-                            <td className="px-4 py-3 text-gray-700 font-bold">
-                              {s.source}
-                            </td>
+                            <td className="px-4 py-3 font-bold text-[#60738f]">{s.source}</td>
                             <td className="px-4 py-3">
-                              <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-[10px] font-bold">
+                              <span className="rounded bg-green-100 px-2 py-1 text-[10px] font-bold text-green-700">
                                 {s.status}
                               </span>
                             </td>
@@ -628,54 +698,39 @@ export default function PartnersPage() {
                 </div>
               )}
 
-              {/* TAB 4: Collections */}
               {activeTab === "collections" && (
-                <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-in fade-in">
+                <div className="overflow-hidden rounded-xl border border-[#e8ddc8] bg-white shadow-sm animate-in fade-in">
                   <table className="w-full text-right text-xs">
-                    <thead className="bg-gray-100">
+                    <thead className="bg-[#0f3448] text-white">
                       <tr>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          التاريخ
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          المبلغ
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          المرجع
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          الطريقة
-                        </th>
+                        <th className="px-4 py-3 font-black">التاريخ</th>
+                        <th className="px-4 py-3 font-black">المبلغ</th>
+                        <th className="px-4 py-3 font-black">المرجع</th>
+                        <th className="px-4 py-3 font-black">الطريقة</th>
                       </tr>
                     </thead>
                     <tbody>
                       {!selectedPerson.paymentsCollected ||
                       selectedPerson.paymentsCollected.length === 0 ? (
                         <tr>
-                          <td
-                            colSpan="4"
-                            className="text-center py-8 text-gray-400 font-bold"
-                          >
+                          <td colSpan="4" className="py-8 text-center font-bold text-[#8da0bb]">
                             لا توجد تحصيلات مسجلة
                           </td>
                         </tr>
                       ) : (
-                        selectedPerson.paymentsCollected.map((p) => (
-                          <tr
-                            key={p.id}
-                            className="border-b border-gray-100 hover:bg-gray-50"
-                          >
-                            <td className="px-4 py-3 font-mono text-gray-500">
-                              {new Date(p.date).toLocaleDateString("ar-SA")}
+                        selectedPerson.paymentsCollected.map((payment) => (
+                          <tr key={payment.id} className="border-b border-[#e8ddc8]/60 hover:bg-[#fbf8f1]">
+                            <td className="px-4 py-3 font-mono text-[#8da0bb]">
+                              {new Date(payment.date).toLocaleDateString("ar-SA")}
                             </td>
-                            <td className="px-4 py-3 font-mono font-bold text-violet-600">
-                              {p.amount.toLocaleString()} ر.س
+                            <td className="px-4 py-3 font-mono font-bold text-[#0e7490]">
+                              {maskAmount ? maskAmount(payment.amount) : payment.amount?.toLocaleString()} ر.س
                             </td>
-                            <td className="px-4 py-3 text-gray-700 font-bold">
-                              {p.periodRef || "—"}
+                            <td className="px-4 py-3 font-bold text-[#60738f]">
+                              {payment.periodRef || "—"}
                             </td>
-                            <td className="px-4 py-3 text-gray-500 font-bold">
-                              {p.method}
+                            <td className="px-4 py-3 font-bold text-[#8da0bb]">
+                              {payment.method}
                             </td>
                           </tr>
                         ))
@@ -685,54 +740,39 @@ export default function PartnersPage() {
                 </div>
               )}
 
-              {/* TAB 5: Disbursements */}
               {activeTab === "disbursements" && (
-                <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-in fade-in">
+                <div className="overflow-hidden rounded-xl border border-[#e8ddc8] bg-white shadow-sm animate-in fade-in">
                   <table className="w-full text-right text-xs">
-                    <thead className="bg-gray-100">
+                    <thead className="bg-[#0f3448] text-white">
                       <tr>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          التاريخ
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          المبلغ
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          السبب/النوع
-                        </th>
-                        <th className="px-4 py-3 font-bold text-gray-600">
-                          ملاحظات
-                        </th>
+                        <th className="px-4 py-3 font-black">التاريخ</th>
+                        <th className="px-4 py-3 font-black">المبلغ</th>
+                        <th className="px-4 py-3 font-black">السبب/النوع</th>
+                        <th className="px-4 py-3 font-black">ملاحظات</th>
                       </tr>
                     </thead>
                     <tbody>
                       {!selectedPerson.disbursements ||
                       selectedPerson.disbursements.length === 0 ? (
                         <tr>
-                          <td
-                            colSpan="4"
-                            className="text-center py-8 text-gray-400 font-bold"
-                          >
+                          <td colSpan="4" className="py-8 text-center font-bold text-[#8da0bb]">
                             لا توجد منصرفات أو سلف
                           </td>
                         </tr>
                       ) : (
-                        selectedPerson.disbursements.map((d) => (
-                          <tr
-                            key={d.id}
-                            className="border-b border-gray-100 hover:bg-gray-50"
-                          >
-                            <td className="px-4 py-3 font-mono text-gray-500">
-                              {new Date(d.date).toLocaleDateString("ar-SA")}
+                        selectedPerson.disbursements.map((item) => (
+                          <tr key={item.id} className="border-b border-[#e8ddc8]/60 hover:bg-[#fbf8f1]">
+                            <td className="px-4 py-3 font-mono text-[#8da0bb]">
+                              {new Date(item.date).toLocaleDateString("ar-SA")}
                             </td>
                             <td className="px-4 py-3 font-mono font-bold text-red-600">
-                              {d.amount.toLocaleString()} ر.س
+                              {maskAmount ? maskAmount(item.amount) : item.amount?.toLocaleString()} ر.س
                             </td>
-                            <td className="px-4 py-3 text-gray-700 font-bold">
-                              {d.type}
+                            <td className="px-4 py-3 font-bold text-[#60738f]">
+                              {item.type}
                             </td>
-                            <td className="px-4 py-3 text-gray-500 font-semibold">
-                              {d.notes}
+                            <td className="px-4 py-3 font-semibold text-[#8da0bb]">
+                              {item.notes}
                             </td>
                           </tr>
                         ))
@@ -742,68 +782,65 @@ export default function PartnersPage() {
                 </div>
               )}
 
-              {/* TAB 6: Attachments */}
               {activeTab === "attachments" && (
                 <div className="space-y-4 animate-in fade-in">
-                  <div className="bg-white border border-gray-200 p-5 rounded-xl shadow-sm flex items-center justify-between">
+                  <div className="flex items-center justify-between rounded-xl border border-[#e8ddc8] bg-white p-4 shadow-sm">
                     <div>
-                      <h3 className="text-gray-800 font-black text-sm">
+                      <h3 className="text-sm font-black text-[#123f59]">
                         مرفقات ووثائق الشخص
                       </h3>
-                      <p className="text-gray-500 text-xs font-semibold mt-1">
+                      <p className="mt-1 text-xs font-semibold text-[#8da0bb]">
                         يمكنك عرض الملفات المرفقة أو حذفها من هنا.
                       </p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {!selectedPerson.attachments ||
-                    selectedPerson.attachments.length === 0 ? (
-                      <div className="col-span-full text-center py-10 bg-white border border-dashed border-gray-300 rounded-xl">
-                        <Archive className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                        <span className="text-gray-400 font-bold text-sm">
-                          لا توجد مرفقات محفوظة
-                        </span>
-                      </div>
-                    ) : (
-                      selectedPerson.attachments.map((file, i) => (
+                  {!selectedPerson.attachments || selectedPerson.attachments.length === 0 ? (
+                    <EmptyState title="لا توجد مرفقات محفوظة" />
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                      {selectedPerson.attachments.map((file, index) => (
                         <div
-                          key={i}
-                          className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col items-center text-center group hover:border-violet-300 transition-colors"
+                          key={index}
+                          className="flex flex-col items-center rounded-xl border border-[#e8ddc8] bg-white p-4 text-center shadow-sm transition hover:border-[#0e7490]"
                         >
-                          <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center mb-3 text-violet-500">
-                            <FileText className="w-6 h-6" />
+                          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-[#fbf8f1] text-[#0e7490]">
+                            <FileText className="h-6 w-6" />
                           </div>
                           <span
-                            className="text-xs font-bold text-gray-700 truncate w-full mb-3"
+                            className="mb-3 w-full truncate text-xs font-bold text-[#60738f]"
                             title={file.name}
                           >
                             {file.name}
                           </span>
-                          <div className="flex items-center gap-2 w-full">
+                          <div className="flex w-full items-center gap-2">
                             <button
                               onClick={(e) => handleViewAttachment(e, file.url)}
-                              className="flex-1 bg-violet-50 text-violet-600 py-1.5 rounded-md text-[10px] font-bold hover:bg-violet-600 hover:text-white transition-colors"
+                              className="flex-1 rounded-md bg-[#eef7f6] py-1.5 text-[10px] font-bold text-[#0e7490] transition hover:bg-[#0e7490] hover:text-white"
+                              type="button"
                             >
                               معاينة
                             </button>
                             <button
                               onClick={() => {
-                                if (window.confirm("هل تريد حذف المرفق؟"))
+                                if (window.confirm("هل تريد حذف المرفق؟")) {
                                   removeAttachmentMutation.mutate({
                                     id: selectedPerson.id,
                                     fileUrl: file.url,
                                   });
+                                }
                               }}
-                              className="p-1.5 bg-red-50 text-red-500 rounded-md hover:bg-red-500 hover:text-white transition-colors"
+                              className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-1.5 text-[10px] font-black text-red-500 transition hover:bg-red-500 hover:text-white"
+                              type="button"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="h-3.5 w-3.5" />
+                              حذف
                             </button>
                           </div>
                         </div>
-                      ))
-                    )}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -811,23 +848,28 @@ export default function PartnersPage() {
         </div>
       )}
 
-      {/* Modal: Preview File */}
+      {isPreviewLoading && (
+        <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/40">
+          <Loader2 className="h-10 w-10 animate-spin text-white" />
+        </div>
+      )}
+
       {previewData && (
         <div
-          className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 animate-in fade-in"
+          className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 p-4 animate-in fade-in"
           dir="rtl"
           onClick={closePreview}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden w-full max-w-5xl h-[90vh]"
+            className="flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0 bg-gray-50">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#e8ddc8] bg-[#fbf8f1] px-6 py-4">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center">
-                  <Eye className="w-4 h-4 text-violet-600" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef7f6]">
+                  <Eye className="h-4 w-4 text-[#0e7490]" />
                 </div>
-                <span className="text-gray-800 font-bold text-[16px]">
+                <span className="text-[16px] font-bold text-[#123f59]">
                   معاينة المستند
                 </span>
               </div>
@@ -835,31 +877,35 @@ export default function PartnersPage() {
                 <a
                   href={previewData.url}
                   download
-                  className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 text-gray-700 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-lg border border-[#e8ddc8] bg-white px-3 py-2 text-[11px] font-black text-[#60738f] transition hover:bg-[#eef7f6]"
                   title="تحميل"
                 >
-                  <Download className="w-5 h-5" />
+                  <Download className="h-4 w-4" />
+                  تحميل
                 </a>
                 <button
                   onClick={closePreview}
-                  className="text-gray-500 hover:text-red-500 bg-white border border-gray-200 shadow-sm p-2 rounded-lg transition-colors"
+                  className="inline-flex items-center gap-2 rounded-lg border border-[#e8ddc8] bg-white px-3 py-2 text-[11px] font-black text-[#8da0bb] transition hover:text-red-500"
+                  type="button"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="h-4 w-4" />
+                  إغلاق
                 </button>
               </div>
             </div>
-            <div className="flex-1 bg-gray-200 p-6 flex items-center justify-center overflow-hidden">
+
+            <div className="flex flex-1 items-center justify-center overflow-hidden bg-gray-200 p-6">
               {previewData.isPdf ? (
                 <iframe
                   src={previewData.url}
-                  className="w-full h-full rounded-xl border border-gray-300 shadow-lg bg-white"
+                  className="h-full w-full rounded-xl border border-gray-300 bg-white shadow-lg"
                   title="PDF Preview"
                 />
               ) : (
                 <img
                   src={previewData.url}
                   alt="مرفق"
-                  className="max-w-full max-h-full rounded-xl shadow-lg border border-gray-300 object-contain bg-white"
+                  className="max-h-full max-w-full rounded-xl border border-gray-300 bg-white object-contain shadow-lg"
                 />
               )}
             </div>
