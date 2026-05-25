@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Folder,
@@ -18,9 +18,87 @@ import {
   Settings2,
   PanelLeft,
   X,
+  Home,
+  BarChart3,
+  Filter,
+  MoreVertical,
+  Copy,
+  Move,
+  Info,
+  Zap,
+  Shield,
+  Users,
+  Activity,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 
 import usePermissionStore from '../../../../stores/usePermissionStore';
+
+// ============================================================
+// UTILITY COMPONENTS
+// ============================================================
+
+const StatCard = ({ icon: Icon, label, value, color, delay = 0 }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3, delay }}
+    className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+  >
+    <div className="flex items-center gap-3">
+      <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center`}>
+        <Icon size={18} className="text-white" />
+      </div>
+      <div>
+        <div className="text-2xl font-bold text-slate-800">{value}</div>
+        <div className="text-xs text-slate-500 font-medium">{label}</div>
+      </div>
+    </div>
+  </motion.div>
+);
+
+const Breadcrumb = ({ path, onNavigate }) => (
+  <div className="flex items-center gap-2 text-sm overflow-x-auto">
+    <button
+      onClick={() => onNavigate(null)}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors whitespace-nowrap"
+    >
+      <Home size={14} />
+      <span className="font-semibold">الرئيسية</span>
+    </button>
+    {path.map((node, index) => (
+      <React.Fragment key={node.id}>
+        <ChevronRight size={14} className="text-slate-400" />
+        <button
+          onClick={() => onNavigate(node.id)}
+          className="px-3 py-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors whitespace-nowrap font-medium"
+        >
+          {node.name}
+        </button>
+      </React.Fragment>
+    ))}
+  </div>
+);
+
+const ActionButton = ({ icon: Icon, onClick, color, tooltip, disabled = false }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    title={tooltip}
+    className={`p-2 rounded-lg transition-all duration-200 ${
+      disabled
+        ? 'opacity-30 cursor-not-allowed bg-slate-100'
+        : `hover:bg-${color}-50 hover:text-${color}-600 text-slate-500`
+    }`}
+  >
+    <Icon size={16} />
+  </button>
+);
+
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
 
 const PermissionTreeBuilder = () => {
   // ==========================================
@@ -38,6 +116,9 @@ const PermissionTreeBuilder = () => {
   const [dropTarget, setDropTarget] = useState(null);
 
   const [selectedNodeDetails, setSelectedNodeDetails] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [navigationPath, setNavigationPath] = useState([]);
+  const [showStats, setShowStats] = useState(true);
 
   const treeContainerRef = useRef(null);
 
@@ -67,6 +148,27 @@ const PermissionTreeBuilder = () => {
     loadFlatPermissions,
     setSearchQuery,
   } = usePermissionStore();
+
+  // ==========================================
+  // COMPUTED VALUES
+  // ==========================================
+  const stats = useMemo(() => {
+    const countNodes = (nodes) => {
+      let count = 0;
+      nodes.forEach(node => {
+        count++;
+        if (node.children) count += countNodes(node.children);
+      });
+      return count;
+    };
+
+    const totalNodes = countNodes(permissionTree);
+    const groupsCount = permissionTree.filter(n => n.children?.length > 0).length;
+    const permissionsCount = flatPermissions.length;
+    const selectedCount = selectedNodes.size;
+
+    return { totalNodes, groupsCount, permissionsCount, selectedCount };
+  }, [permissionTree, flatPermissions, selectedNodes]);
 
   // ==========================================
   // LOAD
