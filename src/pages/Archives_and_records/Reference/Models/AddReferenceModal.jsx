@@ -331,29 +331,29 @@ export default function AddReferenceModal({ isOpen, onClose, documentToEdit, fix
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0f3d50]/60 backdrop-blur-sm p-4 animate-in fade-in"
       dir="rtl"
     >
       <div className="bg-white w-full max-w-5xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 animate-in zoom-in-95">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
-          <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
+        <div className="px-6 py-3 border-b border-[#d7b96d]/40 flex justify-between items-center bg-gradient-to-l from-[#0f3d50] to-[#1a7d89] shrink-0">
+          <h2 className="text-lg font-black text-white flex items-center gap-2">
             {documentToEdit ? (
-              <Edit2 className="w-6 h-6 text-blue-600" />
+              <Edit2 className="w-5 h-5 text-[#d7b96d]" />
             ) : (
-              <Plus className="w-6 h-6 text-emerald-600" />
+              <Plus className="w-5 h-5 text-[#d7b96d]" />
             )}
             {documentToEdit ? "تعديل بيانات المرجع" : "إضافة مرجع جديد للمكتبة"}
           </h2>
           <button
             onClick={onClose}
             disabled={saveMutation.isPending}
-            className="p-2 hover:bg-slate-200 rounded-xl transition-colors disabled:opacity-50"
+            className="w-10 h-10 rounded-2xl border border-white/20 bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors disabled:opacity-50"
           >
-            <X className="w-6 h-6 text-slate-500" />
+            <X className="w-5 h-5 text-[#d7b96d]" />
           </button>
         </div>
 
-        <form className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar-slim">
+        <form className="flex-1 overflow-y-auto px-8 py-5 space-y-6 custom-scrollbar-slim">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-700">
@@ -420,7 +420,7 @@ export default function AddReferenceModal({ isOpen, onClose, documentToEdit, fix
 
             {/* 🚀 إظهار الملفات القديمة إن وجدت */}
             {documentToEdit && existingFiles.length > 0 && (
-              <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold text-blue-800">
+              <div className="p-3 bg-[#f4f7f8] border border-[#e8dcc8] rounded-xl text-xs font-bold text-[#123B5D]">
                 يوجد {existingFiles.length} ملفات مرفوعة مسبقاً. لرفع ملفات
                 جديدة سيتم استبدال القديمة.
               </div>
@@ -745,22 +745,22 @@ export default function AddReferenceModal({ isOpen, onClose, documentToEdit, fix
           </div>
 
           <div
-            className={`p-6 rounded-3xl border flex items-center justify-between transition-colors ${autoAnalyze ? "bg-purple-50 border-purple-200" : "bg-slate-50 border-slate-200"}`}
+            className={`p-6 rounded-3xl border flex items-center justify-between transition-colors ${autoAnalyze ? "bg-[#f4f7f8] border-[#e8dcc8]" : "bg-slate-50 border-slate-200"}`}
           >
             <div className="flex items-center gap-4">
               <div
-                className={`p-3 rounded-2xl shadow-sm transition-colors ${autoAnalyze ? "bg-white text-purple-600" : "bg-slate-200 text-slate-500"}`}
+                className={`p-3 rounded-2xl shadow-sm transition-colors ${autoAnalyze ? "bg-white text-[#0f3d50]" : "bg-slate-200 text-slate-500"}`}
               >
                 <Brain className="w-6 h-6" />
               </div>
               <div>
                 <p
-                  className={`text-sm font-black transition-colors ${autoAnalyze ? "text-purple-900" : "text-slate-700"}`}
+                  className={`text-sm font-black transition-colors ${autoAnalyze ? "text-[#123B5D]" : "text-slate-700"}`}
                 >
                   بدء التحليل الذكي تلقائياً
                 </p>
                 <p
-                  className={`text-[10px] font-bold transition-colors ${autoAnalyze ? "text-purple-600" : "text-slate-500"}`}
+                  className={`text-[10px] font-bold transition-colors ${autoAnalyze ? "text-[#0f3d50]" : "text-slate-500"}`}
                 >
                   سيقوم النظام باستخراج النص وتلخيصه وشرحه فور الرفع
                 </p>
@@ -768,7 +768,7 @@ export default function AddReferenceModal({ isOpen, onClose, documentToEdit, fix
             </div>
             <div
               onClick={() => setAutoAnalyze(!autoAnalyze)}
-              className={`w-12 h-6 rounded-full relative cursor-pointer transition-colors ${autoAnalyze ? "bg-purple-600" : "bg-slate-300"}`}
+              className={`w-12 h-6 rounded-full relative cursor-pointer transition-colors ${autoAnalyze ? "bg-[#0f3d50]" : "bg-slate-300"}`}
             >
               <div
                 className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 ${autoAnalyze ? "left-1 translate-x-6" : "left-1"}`}
@@ -777,7 +777,7 @@ export default function AddReferenceModal({ isOpen, onClose, documentToEdit, fix
           </div>
         </form>
 
-        <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
+        <div className="px-6 py-4 border-t border-[#e8dcc8] bg-[#f4f7f8] flex justify-end gap-3 shrink-0">
           <button
             onClick={onClose}
             disabled={saveMutation.isPending}
@@ -788,14 +788,14 @@ export default function AddReferenceModal({ isOpen, onClose, documentToEdit, fix
           <button
             onClick={handleSubmit}
             disabled={saveMutation.isPending}
-            className="px-8 py-3 bg-emerald-600 text-white rounded-2xl text-sm font-black hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all disabled:opacity-50 flex items-center gap-2 relative overflow-hidden"
+            className="px-8 py-3 bg-[#0f3d50] text-white rounded-2xl text-sm font-black hover:bg-[#123B5D] shadow-lg shadow-[#0f3d50]/20 transition-all disabled:opacity-50 flex items-center gap-2 relative overflow-hidden"
           >
             {saveMutation.isPending ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin relative z-10" />
                 <span className="relative z-10">جاري المعالجة...</span>
                 <div
-                  className="absolute left-0 top-0 bottom-0 bg-emerald-800/40 transition-all duration-300 ease-out"
+                  className="absolute left-0 top-0 bottom-0 bg-[#d7b96d]/40 transition-all duration-300 ease-out"
                   style={{ width: `${uploadProgress}%` }}
                 ></div>
               </>

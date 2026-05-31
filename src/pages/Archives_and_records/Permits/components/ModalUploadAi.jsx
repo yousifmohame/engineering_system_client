@@ -423,7 +423,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
         className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 animate-in fade-in"
         dir="rtl"
       >
-        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center flex flex-col items-center border border-purple-100 relative overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center flex flex-col items-center border border-[#e8dcc8] relative overflow-hidden">
           <button
             onClick={onClose}
             className="absolute top-4 left-4 p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg z-10"
@@ -431,8 +431,8 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
             <X className="w-5 h-5" />
           </button>
 
-          <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-5 relative z-10">
-            <Brain className="w-8 h-8 text-purple-600" />
+          <div className="w-16 h-16 bg-[#edf2f4] rounded-full flex items-center justify-center mb-5 relative z-10">
+            <Brain className="w-8 h-8 text-[#0f3d50]" />
           </div>
 
           <h3 className="text-xl font-black text-slate-800 mb-2 relative z-10">
@@ -448,7 +448,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
             <div className="w-full flex flex-col items-center py-6">
               <div className="w-full bg-slate-100 rounded-full h-4 mb-4 overflow-hidden border border-slate-200">
                 <div
-                  className="bg-purple-600 h-full rounded-full transition-all duration-500 ease-out flex items-center justify-end pr-2"
+                  className="bg-[#0f3d50] h-full rounded-full transition-all duration-500 ease-out flex items-center justify-end pr-2"
                   style={{ width: `${progress}%` }}
                 >
                   <span className="text-[9px] text-white font-bold">
@@ -456,7 +456,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
                   </span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-purple-700 font-bold text-sm animate-pulse">
+              <div className="flex items-center gap-2 text-[#123B5D] font-bold text-sm animate-pulse">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 {jobStatus === "PROCESSING"
                   ? "جاري قراءة وتحليل المستند بذكاء..."
@@ -490,7 +490,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
                 className={`w-full border-2 border-dashed rounded-xl p-8 mb-6 cursor-pointer transition-all duration-300 relative z-10 group
                   ${
                     isDragging
-                      ? "border-purple-500 bg-purple-50 scale-105 shadow-lg"
+                      ? "border-purple-500 bg-[#f4f7f8] scale-105 shadow-lg"
                       : file
                         ? "border-emerald-300 bg-emerald-50"
                         : "border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-purple-300"
@@ -524,7 +524,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
                 ) : (
                   <>
                     <CloudUpload
-                      className={`w-12 h-12 mx-auto mb-3 transition-colors ${isDragging ? "text-purple-600" : "text-slate-400 group-hover:text-purple-500"}`}
+                      className={`w-12 h-12 mx-auto mb-3 transition-colors ${isDragging ? "text-[#0f3d50]" : "text-slate-400 group-hover:text-[#0f3d50]"}`}
                     />
                     <div className="text-sm font-bold text-slate-700">
                       اسحب وافلت الملف هنا
@@ -556,7 +556,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
                 <button
                   onClick={startBackgroundAnalysis}
                   disabled={!file}
-                  className="flex-1 py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                  className="flex-1 py-3 bg-[#0f3d50] text-white font-bold rounded-xl hover:bg-[#12495f] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
                 >
                   <Sparkles className="w-5 h-5" /> بدء التحليل والمطابقة
                 </button>
@@ -584,22 +584,22 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
       dir="rtl"
     >
       {/* ... بقية الكود للـ JSX الخاص بالخطوة 2 يبقى تماماً كما هو في الكود الذي أرسلته بدون أي حذف ... */}
-      <div className="bg-white rounded-2xl shadow-2xl w-[98vw] max-w-[1600px] flex flex-col border border-purple-200 max-h-[96vh]">
+      <div className="bg-white rounded-2xl shadow-2xl w-[98vw] max-w-[1600px] flex flex-col border border-[#e8dcc8] max-h-[96vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-purple-100 bg-purple-50 rounded-t-2xl shrink-0">
+        <div className="flex items-center justify-between px-6 py-3 border-b border-[#d7b96d]/40 bg-gradient-to-l from-[#0f3d50] to-[#1a7d89] rounded-t-2xl shrink-0">
           <div className="flex items-center gap-3">
-            <Brain className="w-6 h-6 text-purple-600" />
+            <Brain className="w-6 h-6 text-[#0f3d50]" />
             <div>
-              <h3 className="font-black text-purple-900 text-base">
+              <h3 className="font-black text-[#123B5D] text-base">
                 المراجعة والربط الذكي
               </h3>
-              <p className="text-[11px] text-purple-600 font-bold mt-0.5">
+              <p className="text-[11px] text-[#0f3d50] font-bold mt-0.5">
                 قم بتأكيد البيانات وتصحيحها من المستند المرفق
               </p>
             </div>
           </div>
           {permits.length > 1 && (
-            <div className="flex items-center gap-4 bg-white px-3 py-1.5 rounded-lg border border-purple-200 shadow-sm">
+            <div className="flex items-center gap-4 bg-white px-3 py-1.5 rounded-lg border border-[#e8dcc8] shadow-sm">
               <button
                 disabled={currentIndex === 0}
                 onClick={() => setCurrentIndex((i) => i - 1)}
@@ -607,7 +607,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
               >
                 <ChevronRight size={18} />
               </button>
-              <span className="text-xs font-bold text-purple-800">
+              <span className="text-xs font-bold text-[#123B5D]">
                 رخصة {currentIndex + 1} من {permits.length}
               </span>
               <button
@@ -621,7 +621,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
           )}
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white rounded-lg text-purple-400 hover:text-purple-600"
+            className="p-2 hover:bg-white rounded-lg text-[#6f8494] hover:text-[#0f3d50]"
           >
             <X className="w-5 h-5" />
           </button>
@@ -631,7 +631,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
         <div className="bg-slate-50 p-3 border-b border-slate-200 shrink-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-bold text-slate-600 ml-2">
-              <Link size={14} className="inline mr-1 text-blue-500" /> إضافة
+              <Link size={14} className="inline mr-1 text-[#0f3d50]" /> إضافة
               ارتباط للرخصة:
             </span>
             {!current.linkedClientId && (
@@ -640,7 +640,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
                   setLinkingMode("client");
                   setSelectedValue("");
                 }}
-                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "client" ? "border-blue-500 bg-blue-100 text-blue-700 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"}`}
+                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "client" ? "border-[#d7b96d] bg-[#edf2f4] text-[#123B5D] shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-[#d7b96d]"}`}
               >
                 <User size={14} />{" "}
                 <span className="text-[10px] font-black">بعميل</span>
@@ -652,7 +652,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
                   setLinkingMode("office");
                   setSelectedValue("");
                 }}
-                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "office" ? "border-blue-500 bg-blue-100 text-blue-700 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"}`}
+                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "office" ? "border-[#d7b96d] bg-[#edf2f4] text-[#123B5D] shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-[#d7b96d]"}`}
               >
                 <Briefcase size={14} />{" "}
                 <span className="text-[10px] font-black">بمكتب</span>
@@ -664,7 +664,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
                   setLinkingMode("ownership");
                   setSelectedValue("");
                 }}
-                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "ownership" ? "border-blue-500 bg-blue-100 text-blue-700 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"}`}
+                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "ownership" ? "border-[#d7b96d] bg-[#edf2f4] text-[#123B5D] shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-[#d7b96d]"}`}
               >
                 <Building size={14} />{" "}
                 <span className="text-[10px] font-black">بملكية</span>
@@ -676,7 +676,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
                   setLinkingMode("privateTransaction");
                   setSelectedValue("");
                 }}
-                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "privateTransaction" ? "border-blue-500 bg-blue-100 text-blue-700 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"}`}
+                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "privateTransaction" ? "border-[#d7b96d] bg-[#edf2f4] text-[#123B5D] shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-[#d7b96d]"}`}
               >
                 <FileSignature size={14} />{" "}
                 <span className="text-[10px] font-black">بمعاملة فرعية</span>
@@ -685,7 +685,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
           </div>
 
           {linkingMode && (
-            <div className="mt-2 p-2.5 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2">
+            <div className="mt-2 p-2.5 bg-[#f4f7f8] border border-[#e8dcc8] rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2">
               <div className="flex-1">
                 <SearchableDropdown
                   options={getOptions(linkingMode)}
@@ -697,7 +697,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
               <div className="flex gap-2">
                 <button
                   onClick={handleApplyLink}
-                  className="px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 shadow-sm transition-colors"
+                  className="px-4 py-2 bg-[#0f3d50] text-white text-[10px] font-black rounded-lg hover:bg-[#174e65] shadow-sm transition-colors"
                 >
                   اختيار وربط
                 </button>
@@ -775,7 +775,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
           <div className="w-[60%] flex flex-col overflow-y-auto p-4 custom-scrollbar-slim">
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-5">
               <h4 className="text-sm font-black text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <Edit3 className="w-4 h-4 text-blue-500" /> البيانات المستخرجة
+                <Edit3 className="w-4 h-4 text-[#0f3d50]" /> البيانات المستخرجة
               </h4>
 
               {/* شبكة مدخلات البيانات الأساسية */}
@@ -834,7 +834,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
                       )}
                       <button
                         onClick={() => copyToClipboard(current.permitNumber)}
-                        className="text-slate-400 hover:text-blue-600 transition-colors"
+                        className="text-slate-400 hover:text-[#123B5D] transition-colors"
                         title="نسخ المحتوى"
                       >
                         <Copy size={12} />
@@ -1198,7 +1198,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
 
           {/* اليسار: معاينة المستند المرفوع (40%) */}
           <div className="w-[40%] flex flex-col border-r border-slate-300 bg-slate-200 relative">
-            <div className="px-4 py-2.5 bg-slate-800 text-white flex justify-between items-center shrink-0 shadow-md z-10">
+            <div className="px-4 py-2.5 bg-[#0f3d50] text-white flex justify-between items-center shrink-0 shadow-md z-10">
               <h3 className="text-xs font-bold flex items-center gap-2">
                 <Eye size={14} className="text-blue-400" /> معاينة المستند
                 للمطابقة
@@ -1253,7 +1253,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
             <button
               onClick={handleFinalSave}
               disabled={saveMutation.isPending}
-              className="px-8 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 text-sm transition-all disabled:opacity-50"
+              className="px-8 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-[#123B5D] flex items-center justify-center gap-2 shadow-md shadow-[#0f3d50]/20 text-sm transition-all disabled:opacity-50"
             >
               {saveMutation.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

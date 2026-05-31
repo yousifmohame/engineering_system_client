@@ -364,7 +364,7 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/50 backdrop-blur-sm">
         <div className="bg-white p-8 rounded-3xl shadow-xl border border-indigo-50 flex flex-col items-center">
-          <Loader2 className="w-14 h-14 text-indigo-600 animate-spin mb-4" />
+          <Loader2 className="w-14 h-14 text-[#123B5D] animate-spin mb-4" />
           <h2 className="text-xl font-black text-slate-800">
             جاري تحليل البيانات...
           </h2>
@@ -376,7 +376,7 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
   if (!data) return null;
 
   const inputClass =
-    "w-full px-3 py-2.5 text-xs font-bold text-slate-700 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all";
+    "w-full px-3 py-2.5 text-xs font-bold text-slate-700 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-[#d7b96d] focus:ring-4 focus:ring-[#e8dcc8]0/10 transition-all";
   const labelClass = "text-[11px] font-black text-slate-600";
 
   return (
@@ -406,7 +406,7 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-xl text-sm font-black flex items-center gap-2 transition-all disabled:opacity-50 shadow-md shadow-indigo-600/20"
+          className="bg-[#0f3d50] hover:bg-[#174e65] text-white px-8 py-2.5 rounded-xl text-sm font-black flex items-center gap-2 transition-all disabled:opacity-50 shadow-md shadow-[#0f3d50]/20"
         >
           {isSaving ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -423,7 +423,7 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
           <div className="p-4 border-b border-slate-100 bg-slate-50/50 shrink-0 flex justify-between items-center">
             <div>
               <h3 className="text-xs font-black text-slate-800 flex items-center gap-2">
-                <FolderArchive className="w-4 h-4 text-indigo-600" /> المرفقات (
+                <FolderArchive className="w-4 h-4 text-[#123B5D]" /> المرفقات (
                 {data.files?.length || 0})
               </h3>
             </div>
@@ -432,7 +432,7 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className="p-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg transition-colors"
+              className="p-1.5 bg-[#f4f7f8] text-[#123B5D] hover:bg-[#0f3d50] hover:text-white rounded-lg transition-colors"
               title="رفع ملف جديد"
             >
               {isUploading ? (
@@ -462,12 +462,12 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                   rel="noreferrer"
                   className="flex items-center gap-3 flex-1 overflow-hidden"
                 >
-                  <div className="p-2 bg-indigo-50 rounded-lg group-hover:bg-indigo-100 transition-colors shrink-0">
-                    <FileText className="w-4 h-4 text-indigo-600" />
+                  <div className="p-2 bg-[#f4f7f8] rounded-lg group-hover:bg-[#edf2f4] transition-colors shrink-0">
+                    <FileText className="w-4 h-4 text-[#123B5D]" />
                   </div>
                   <div className="overflow-hidden flex-1">
                     <span
-                      className="text-xs font-bold text-slate-700 truncate block hover:text-indigo-600"
+                      className="text-xs font-bold text-slate-700 truncate block hover:text-[#123B5D]"
                       dir="rtl"
                       title={getArabicFileName(file.originalName)}
                     >
@@ -548,7 +548,7 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
             {/* --- 1. معلومات المشروع الأساسية --- */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
               <h4 className="text-sm font-black text-slate-800 border-b border-slate-100 pb-3 mb-5 flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-indigo-600" /> 1. معلومات
+                <Building2 className="w-4 h-4 text-[#123B5D]" /> 1. معلومات
                 المشروع الأساسية
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -595,7 +595,7 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
             {/* --- 2. بيانات المالك --- */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
               <h4 className="text-sm font-black text-slate-800 border-b border-slate-100 pb-3 mb-5 flex items-center gap-2">
-                <UserCheck className="w-4 h-4 text-indigo-600" /> 2. بيانات
+                <UserCheck className="w-4 h-4 text-[#123B5D]" /> 2. بيانات
                 المالك والاتصال
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
@@ -670,7 +670,7 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
             {/* --- 3. الرخص والصكوك --- */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
               <h4 className="text-sm font-black text-slate-800 border-b border-slate-100 pb-3 mb-5 flex items-center gap-2">
-                <FileBadge2 className="w-4 h-4 text-indigo-600" /> 3. الرخص
+                <FileBadge2 className="w-4 h-4 text-[#123B5D]" /> 3. الرخص
                 والصكوك القانونية
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
@@ -737,7 +737,7 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
             {/* --- 4. الموقع والمحددات --- */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
               <h4 className="text-sm font-black text-slate-800 border-b border-slate-100 pb-3 mb-5 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-indigo-600" /> 4. الموقع
+                <MapPin className="w-4 h-4 text-[#123B5D]" /> 4. الموقع
                 والمحددات المكانية
               </h4>
 
@@ -931,7 +931,7 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                         ],
                       })
                     }
-                    className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 mt-3 flex items-center gap-1"
+                    className="text-[11px] font-bold text-[#123B5D] hover:text-[#123B5D] mt-3 flex items-center gap-1"
                   >
                     <Plus className="w-3 h-3" /> إضافة حد
                   </button>
@@ -943,7 +943,7 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
             {/* (تم الاحتفاظ بها كما هي في الكود الأصلي لتوفير المساحة) */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
               <h4 className="text-sm font-black text-slate-800 border-b border-slate-100 pb-3 mb-5 flex items-center gap-2">
-                <Scale className="w-4 h-4 text-indigo-600" /> 5. المواصفات
+                <Scale className="w-4 h-4 text-[#123B5D]" /> 5. المواصفات
                 الهندسية
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
@@ -953,7 +953,7 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
                     name="totalArea"
                     value={data.totalArea || ""}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 text-sm font-black text-indigo-700 bg-indigo-50/50 border border-indigo-200 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-mono"
+                    className="w-full px-4 py-3 text-sm font-black text-[#123B5D] bg-[#f4f7f8]/50 border border-[#e8dcc8] rounded-xl outline-none focus:ring-4 focus:ring-[#e8dcc8]0/10 font-mono"
                     type="number"
                   />
                 </div>
@@ -1023,7 +1023,7 @@ export default function ProjectDetailsStep({ projectId, onClose }) {
             {/* --- 6. المكاتب المهنية --- */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
               <h4 className="text-sm font-black text-slate-800 border-b border-slate-100 pb-3 mb-5 flex items-center gap-2">
-                <Briefcase className="w-4 h-4 text-indigo-600" /> 6. المكاتب
+                <Briefcase className="w-4 h-4 text-[#123B5D]" /> 6. المكاتب
                 المهنية والملاحظات
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

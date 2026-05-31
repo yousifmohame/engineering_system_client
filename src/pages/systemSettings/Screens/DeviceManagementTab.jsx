@@ -449,7 +449,7 @@ export default function DevicesMain() {
       case "Offline":
         return "bg-red-100 text-red-700 border-red-200";
       default:
-        return "bg-slate-100 text-slate-700 border-slate-200";
+        return "bg-[#eef5f7] text-[#123B5D] border-[#d8e6ee]";
     }
   };
 
@@ -518,116 +518,105 @@ export default function DevicesMain() {
 
   return (
     <div
-      className="h-full overflow-y-auto bg-slate-50/50 p-4 sm:p-8 custom-scrollbar"
+      className="h-full overflow-y-auto bg-[#eef5f7] p-4 md:p-5 custom-scrollbar"
       dir="rtl"
     >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-            إدارة الأجهزة والأصول
-          </h1>
-          <p className="text-sm font-bold text-slate-500 mt-1">
-            تتبع الأجهزة، الصيانة، طباعة الملصقات، وإدارة العهد
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => toast.success("جاري التحضير للتصدير...")}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 shadow-sm"
-          >
-            <Download className="w-4 h-4" /> تصدير CSV
-          </button>
-          <button
-            onClick={handleOpenAddModal}
-            className="group flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-black hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-600/20 active:scale-95"
-          >
-            <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />{" "}
-            إضافة جهاز جديد
-          </button>
+      <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-l from-[#071927] via-[#0b2f3f] to-[#147785] border border-[#d9b85b]/25 shadow-[0_14px_28px_rgba(8,54,70,0.14)] px-4 md:px-5 py-3.5 mb-4">
+        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-12 h-12 rounded-[18px] bg-[#d9b85b] text-[#083646] flex items-center justify-center shrink-0 shadow-sm">
+              <Package className="w-6 h-6" />
+            </div>
+            <div className="min-w-0" style={{ fontFamily: "Tajawal, sans-serif" }}>
+              <div className="text-[16px] font-bold leading-tight whitespace-nowrap" style={{ color: "#ffffff", textShadow: "0 1px 2px rgba(0,0,0,0.28)" }}>إدارة الأجهزة والأصول</div>
+              <div className="text-[10px] font-semibold mt-0.5 whitespace-nowrap" style={{ color: "rgba(255,255,255,0.86)" }}>تتبع الأجهزة، الصيانة، الملصقات، وإدارة العهد</div>
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-center gap-2.5 xl:min-w-[520px]">
+            <button
+              onClick={handleOpenAddModal}
+              className="h-11 px-4 rounded-[16px] bg-[#d9b85b] text-[#083646] border border-[#f0d98d] shadow-sm font-black text-[13px] flex items-center justify-center gap-2 hover:bg-[#e6c86c] active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span>إضافة جهاز جديد</span>
+            </button>
+            <button
+              onClick={() => toast.success('جاري التحضير للتصدير...')}
+              className="h-11 px-4 rounded-[16px] bg-white text-[#123B5D] border border-[#d8e6ee] shadow-sm font-black text-[13px] flex items-center justify-center gap-2 hover:bg-[#f8fbfd]"
+            >
+              <Download className="w-4 h-4" />
+              <span>تصدير CSV</span>
+            </button>
+            <div className="relative h-11 flex-1 min-w-[220px]">
+              <Search className="w-4.5 h-4.5 text-[#8aa0b4] absolute right-4 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="البحث عن جهاز..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full h-full rounded-[16px] bg-white border border-[#d8e6ee] pr-11 pl-4 text-[12px] font-bold text-[#123B5D] placeholder:text-[#8aa0b4] focus:outline-none focus:ring-2 focus:ring-[#d9b85b]/30"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-center relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-1 h-full bg-blue-500" />
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
-              <Package className="w-6 h-6" />
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
+        <div className="bg-white rounded-[20px] p-4 border border-[#d8e6ee] shadow-sm flex items-center justify-between relative overflow-hidden">
+          <div className="absolute inset-y-0 right-0 w-1.5 bg-blue-500" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="p-2 bg-blue-50 text-[#0f6d7c] rounded-xl shrink-0">
+              <Package className="w-5 h-5" />
             </div>
-            <span className="text-sm font-black text-slate-700 uppercase tracking-wider">
-              إجمالي الأجهزة
-            </span>
+            <span className="text-[12px] font-black text-[#123B5D] tracking-tight truncate">إجمالي الأجهزة</span>
           </div>
-          <div className="text-3xl font-black text-slate-900">
-            {devices.length}
-          </div>
+          <div className="text-[22px] font-black text-[#123B5D] leading-none">{devices.length}</div>
         </div>
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-center relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-1 h-full bg-emerald-500" />
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
-              <CheckCircle2 className="w-6 h-6" />
+        <div className="bg-white rounded-[20px] p-4 border border-[#d8e6ee] shadow-sm flex items-center justify-between relative overflow-hidden">
+          <div className="absolute inset-y-0 right-0 w-1.5 bg-emerald-500" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="p-2 bg-emerald-50 text-[#0f6d7c] rounded-xl shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
             </div>
-            <span className="text-sm font-black text-slate-700 uppercase tracking-wider">
-              تعمل بكفاءة
-            </span>
+            <span className="text-[12px] font-black text-[#123B5D] tracking-tight truncate">تعمل بكفاءة</span>
           </div>
-          <div className="text-3xl font-black text-slate-900">
-            {devices.filter((d) => d.status === "Active").length}
-          </div>
+          <div className="text-[22px] font-black text-[#123B5D] leading-none">{devices.filter((d) => d.status === 'Active').length}</div>
         </div>
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-center relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-1 h-full bg-amber-500" />
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
-              <Wrench className="w-6 h-6" />
+        <div className="bg-white rounded-[20px] p-4 border border-[#d8e6ee] shadow-sm flex items-center justify-between relative overflow-hidden">
+          <div className="absolute inset-y-0 right-0 w-1.5 bg-amber-500" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="p-2 bg-amber-50 text-amber-600 rounded-xl shrink-0">
+              <Wrench className="w-5 h-5" />
             </div>
-            <span className="text-sm font-black text-slate-700 uppercase tracking-wider">
-              تتطلب صيانة
-            </span>
+            <span className="text-[12px] font-black text-[#123B5D] tracking-tight truncate">تتطلب صيانة</span>
           </div>
-          <div className="text-3xl font-black text-slate-900">
-            {devices.filter((d) => d.status === "Warning").length}
-          </div>
+          <div className="text-[22px] font-black text-[#123B5D] leading-none">{devices.filter((d) => d.status === 'Warning').length}</div>
         </div>
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-center relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-1 h-full bg-red-500" />
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2.5 bg-red-50 text-red-600 rounded-xl">
-              <AlertOctagon className="w-6 h-6" />
+        <div className="bg-white rounded-[20px] p-4 border border-[#d8e6ee] shadow-sm flex items-center justify-between relative overflow-hidden">
+          <div className="absolute inset-y-0 right-0 w-1.5 bg-red-500" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="p-2 bg-red-50 text-red-600 rounded-xl shrink-0">
+              <AlertOctagon className="w-5 h-5" />
             </div>
-            <span className="text-sm font-black text-slate-700 uppercase tracking-wider">
-              خارج الخدمة
-            </span>
+            <span className="text-[12px] font-black text-[#123B5D] tracking-tight truncate">خارج الخدمة</span>
           </div>
-          <div className="text-3xl font-black text-slate-900">
-            {devices.filter((d) => d.status === "Offline").length}
-          </div>
+          <div className="text-[22px] font-black text-[#123B5D] leading-none">{devices.filter((d) => d.status === 'Offline').length}</div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
-        <div className="flex-1 relative group w-full">
-          <Search className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="البحث بالاسم، الموديل، أو الرقم التسلسلي..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-4 pr-12 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-          />
-        </div>
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto custom-scrollbar">
+      <div className="rounded-[22px] bg-white border border-[#d8e6ee] shadow-sm p-3 mb-5">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
           <button
             onClick={() => setSelectedCategory("All")}
             className={cn(
-              "px-4 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all border",
+              "px-4 py-2.5 rounded-xl text-[13px] font-bold whitespace-nowrap transition-all border",
               selectedCategory === "All"
-                ? "bg-slate-900 text-white border-slate-900"
-                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50",
+                ? "bg-[#083646] text-white border-[#d9b85b]/60 shadow-md"
+                : "bg-white text-[#123B5D] border-[#d8e6ee] hover:bg-[#f7fbfd]",
             )}
           >
             الكل
@@ -637,10 +626,10 @@ export default function DevicesMain() {
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
               className={cn(
-                "px-4 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 border",
+                "px-4 py-2.5 rounded-xl text-[13px] font-bold whitespace-nowrap transition-all flex items-center gap-2 border",
                 selectedCategory === cat.id
-                  ? "bg-slate-900 text-white border-slate-900"
-                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50",
+                  ? "bg-[#083646] text-white border-[#d9b85b]/60 shadow-md"
+                  : "bg-white text-[#123B5D] border-[#d8e6ee] hover:bg-[#f7fbfd]",
               )}
             >
               <cat.icon
@@ -648,7 +637,7 @@ export default function DevicesMain() {
                   "w-4 h-4",
                   selectedCategory === cat.id
                     ? "text-emerald-400"
-                    : "text-slate-400",
+                    : "text-[#8aa0b4]",
                 )}
               />{" "}
               {cat.label}
@@ -656,10 +645,11 @@ export default function DevicesMain() {
           ))}
           <button
             onClick={handleAddCategory}
-            className="px-3 py-2.5 rounded-xl text-sm font-bold bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
+            className="px-4 py-2.5 rounded-xl text-[13px] font-black bg-[#fbf7ef] text-[#123B5D] border border-[#d9b85b]/45 hover:bg-[#f6eddc] flex items-center gap-2"
             title="إضافة تصنيف جديد"
           >
             <Plus className="w-4 h-4" />
+            <span>إضافة تصنيف</span>
           </button>
         </div>
       </div>
@@ -671,7 +661,7 @@ export default function DevicesMain() {
             <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
           </div>
         ) : filteredDevices.length === 0 ? (
-          <div className="text-center py-20 text-slate-400 font-bold">
+          <div className="text-center py-20 text-[#8aa0b4] font-bold">
             لا توجد أجهزة مطابقة للبحث
           </div>
         ) : (
@@ -679,27 +669,27 @@ export default function DevicesMain() {
             {filteredDevices.map((device) => (
               <div
                 key={device.id}
-                className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-300 p-4 group cursor-pointer flex flex-col"
+                className="bg-white rounded-[24px] border border-[#d8e6ee] shadow-sm hover:shadow-md hover:border-emerald-300 p-4 group cursor-pointer flex flex-col"
                 onClick={() => {
                   setSelectedDevice(device);
                   setActiveTab("info");
                 }}
               >
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center text-slate-600 border border-slate-200">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-12 h-12 bg-[#f7fbfd] rounded-[16px] flex items-center justify-center text-[#52677e] border border-[#d8e6ee] shrink-0 shadow-sm">
                       {getDeviceIcon(device.type, "w-5 h-5")}
                     </div>
-                    <div>
-                      <h3 className="text-sm font-black text-slate-900 line-clamp-1">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-[17px] font-black text-[#123B5D] leading-tight line-clamp-1">
                         {device.name}
                       </h3>
-                      <div className="text-[10px] font-bold text-slate-500 mt-0.5">
-                        {device.brand} {device.model}
+                      <div className="text-[11px] font-bold text-[#71839a] mt-1 line-clamp-1">
+                        {device.brand || "—"} {device.model || ""}
                       </div>
                     </div>
                   </div>
-                  <div className="relative flex items-center">
+                  <div className="relative flex items-center shrink-0">
                     <select
                       value={device.status}
                       onChange={(e) =>
@@ -707,7 +697,7 @@ export default function DevicesMain() {
                       }
                       onClick={(e) => e.stopPropagation()}
                       className={cn(
-                        "px-2 py-0.5 rounded-md text-[10px] font-black border outline-none cursor-pointer appearance-none text-center",
+                        "px-2.5 py-1 rounded-lg text-[11px] font-black border outline-none cursor-pointer appearance-none text-center",
                         getStatusColor(device.status),
                       )}
                     >
@@ -718,69 +708,67 @@ export default function DevicesMain() {
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-6 flex-1 mt-2">
-                  <div className="flex justify-between items-center text-sm border-b border-slate-100 pb-2">
-                    <span className="text-slate-500 font-bold">
-                      الرقم التسلسلي
-                    </span>
-                    <span className="font-mono font-black text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md">
-                      {device.serialNumber}
-                    </span>
+                <div className="grid grid-cols-1 gap-3 mb-4 flex-1">
+                  <div className="bg-[#f7fbfd] border border-[#e7eef2] rounded-[16px] p-3">
+                    <div className="text-[11px] font-bold text-[#71839a] mb-1">الرقم التسلسلي</div>
+                    <div className="font-mono font-black text-[#123B5D] text-[15px] break-all leading-tight">
+                      {device.serialNumber || "—"}
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center text-sm border-b border-slate-100 pb-2">
-                    <span className="text-slate-500 font-bold">العهدة</span>
-                    <span className="font-bold text-slate-900">
-                      {device.assignedTo || "—"}
-                    </span>
+                  <div className="bg-[#f7fbfd] border border-[#e7eef2] rounded-[16px] p-3">
+                    <div className="text-[11px] font-bold text-[#71839a] mb-1">العهدة</div>
+                    <div className="font-bold text-[#123B5D] text-[13px] leading-relaxed line-clamp-2 min-h-[20px]">
+                      {device.assignedTo || "غير مخصص"}
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-auto">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pt-3 border-t border-[#e7eef2] mt-auto">
+                  <button
+                    onClick={(e) => handleOpenSticker(device, e)}
+                    className="flex-1 h-11 rounded-[16px] bg-[#083646] text-white font-black text-[12px] flex items-center justify-center gap-2 hover:bg-[#0f6d7c] shadow-sm"
+                    title="طباعة ستيكر"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    <span>طباعة ستيكر</span>
+                  </button>
+                  <button
+                    onClick={(e) => handleOpenEditModal(device, e)}
+                    className="flex-1 h-11 rounded-[16px] bg-[#fbf7ef] text-[#123B5D] border border-[#ecd8a6] font-black text-[12px] flex items-center justify-center gap-2 hover:bg-[#f6eddc]"
+                    title="تعديل الجهاز"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>تعديل الجهاز</span>
+                  </button>
+                  <div className="relative group shrink-0">
                     <button
-                      onClick={(e) => handleOpenSticker(device, e)}
-                      className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl"
-                      title="طباعة ستيكر"
+                      className="w-11 h-11 text-[#8aa0b4] hover:text-[#52677e] hover:bg-[#eef5f7] border border-[#d8e6ee] rounded-[16px] flex items-center justify-center"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <QrCode className="w-5 h-5" />
+                      <MoreVertical className="w-5 h-5" />
                     </button>
-                    <button
-                      onClick={(e) => handleOpenEditModal(device, e)}
-                      className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl"
-                      title="تعديل الجهاز"
+                    <div
+                      className="absolute left-0 bottom-full mb-2 w-48 bg-white rounded-xl shadow-xl border border-[#e7eef2] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <Edit className="w-5 h-5" />
-                    </button>
-                    <div className="relative group">
                       <button
-                        className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={() => {
+                          setSelectedDevice(device);
+                          setIsAddMaintenanceOpen(true);
+                        }}
+                        className="w-full text-right px-4 py-2.5 text-sm font-bold text-[#123B5D] hover:bg-[#f7fbfd] hover:text-[#0f6d7c] flex items-center gap-2"
                       >
-                        <MoreVertical className="w-5 h-5" />
+                        <Wrench className="w-4 h-4" /> تسجيل صيانة
                       </button>
-                      <div
-                        className="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10"
-                        onClick={(e) => e.stopPropagation()}
+                      <button
+                        onClick={() => {
+                          if (window.confirm("حذف؟"))
+                            deleteDeviceMutation.mutate(device.id);
+                        }}
+                        className="w-full text-right px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-[#e7eef2]"
                       >
-                        <button
-                          onClick={() => {
-                            setSelectedDevice(device);
-                            setIsAddMaintenanceOpen(true);
-                          }}
-                          className="w-full text-right px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-emerald-600 flex items-center gap-2"
-                        >
-                          <Wrench className="w-4 h-4" /> تسجيل صيانة
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (window.confirm("حذف؟"))
-                              deleteDeviceMutation.mutate(device.id);
-                          }}
-                          className="w-full text-right px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-slate-100"
-                        >
-                          <Trash2 className="w-4 h-4" /> حذف الجهاز
-                        </button>
-                      </div>
+                        <Trash2 className="w-4 h-4" /> حذف الجهاز
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -812,23 +800,23 @@ export default function DevicesMain() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative w-full max-w-5xl max-h-[90vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+                className="relative w-full max-w-5xl max-h-[90vh] bg-white rounded-[26px] shadow-2xl overflow-hidden flex flex-col"
               >
                 {/* Header */}
-                <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+                <div className="px-8 py-6 border-b border-[#e7eef2] flex justify-between items-center bg-[#f7fbfd] shrink-0">
                   <div className="flex items-center gap-5">
-                    <div className="w-16 h-16 bg-white border border-slate-200 rounded-2xl flex items-center justify-center text-slate-700 shadow-sm">
+                    <div className="w-16 h-16 bg-white border border-[#d8e6ee] rounded-[22px] flex items-center justify-center text-[#123B5D] shadow-sm">
                       {getDeviceIcon(selectedDevice.type)}
                     </div>
                     <div>
-                      <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
+                      <h2 className="text-2xl font-black text-[#123B5D] flex items-center gap-3">
                         {selectedDevice.name}
-                        <span className="font-mono text-sm bg-blue-100 text-blue-700 px-2 py-0.5 rounded border border-blue-200">
+                        <span className="font-mono text-sm bg-blue-100 text-blue-700 px-2 py-0.5 rounded border border-[#d8e6ee]">
                           {selectedDevice.deviceCode}
                         </span>
                       </h2>
                       <div className="flex items-center gap-3 mt-1">
-                        <p className="text-sm font-bold text-slate-500">
+                        <p className="text-sm font-bold text-[#71839a]">
                           {selectedDevice.brand} {selectedDevice.model}
                         </p>
                         {/* الحالة تبقى تفاعلية لسهولة الاستخدام */}
@@ -855,7 +843,7 @@ export default function DevicesMain() {
                         setSelectedDevice(null);
                         handleOpenEditModal(selectedDevice);
                       }}
-                      className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-600 rounded-xl font-bold hover:bg-blue-100 transition-all"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-[#0f6d7c] rounded-xl font-bold hover:bg-blue-100 transition-all"
                     >
                       <Edit className="w-4 h-4" /> تعديل شامل
                     </button>
@@ -868,7 +856,7 @@ export default function DevicesMain() {
                     <div className="w-px h-8 bg-slate-200 mx-1" />
                     <button
                       onClick={() => setSelectedDevice(null)}
-                      className="p-2.5 text-slate-400 hover:bg-slate-200 rounded-full transition-colors"
+                      className="p-2.5 text-[#8aa0b4] hover:bg-slate-200 rounded-full transition-colors"
                     >
                       <X className="w-6 h-6" />
                     </button>
@@ -876,7 +864,7 @@ export default function DevicesMain() {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex items-center gap-6 px-8 border-b border-slate-100 bg-white shrink-0">
+                <div className="flex items-center gap-6 px-8 border-b border-[#e7eef2] bg-white shrink-0">
                   {[
                     { id: "info", label: "المعلومات الأساسية", icon: Info },
                     {
@@ -892,8 +880,8 @@ export default function DevicesMain() {
                       className={cn(
                         "py-4 text-sm font-black border-b-2 transition-colors flex items-center gap-2",
                         activeTab === tab.id
-                          ? "border-emerald-500 text-emerald-600"
-                          : "border-transparent text-slate-500 hover:text-slate-800",
+                          ? "border-emerald-500 text-[#0f6d7c]"
+                          : "border-transparent text-[#71839a] hover:text-[#123B5D]",
                       )}
                     >
                       <tab.icon className="w-4 h-4" /> {tab.label}
@@ -902,7 +890,7 @@ export default function DevicesMain() {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-50/30">
+                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-[#f7fbfd]/30">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Left Content */}
                     <div className="lg:col-span-2 space-y-8">
@@ -910,42 +898,42 @@ export default function DevicesMain() {
                       {activeTab === "info" && (
                         <>
                           <section>
-                            <h3 className="text-sm font-black text-slate-900 uppercase mb-4 flex items-center gap-2">
-                              <DollarSign className="w-5 h-5 text-emerald-600" />{" "}
+                            <h3 className="text-sm font-black text-[#123B5D] uppercase mb-4 flex items-center gap-2">
+                              <DollarSign className="w-5 h-5 text-[#0f6d7c]" />{" "}
                               بيانات الشراء والضمان
                             </h3>
-                            <div className="grid grid-cols-2 gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                              <div className="border-b border-slate-100 pb-3">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                            <div className="grid grid-cols-2 gap-4 bg-white p-6 rounded-[22px] border border-[#d8e6ee] shadow-sm">
+                              <div className="border-b border-[#e7eef2] pb-3">
+                                <div className="text-[10px] font-bold text-[#8aa0b4] uppercase mb-1">
                                   تاريخ الشراء
                                 </div>
-                                <div className="text-sm font-black text-slate-900">
+                                <div className="text-sm font-black text-[#123B5D]">
                                   {selectedDevice.purchaseDate || "—"}
                                 </div>
                               </div>
-                              <div className="border-b border-slate-100 pb-3">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                              <div className="border-b border-[#e7eef2] pb-3">
+                                <div className="text-[10px] font-bold text-[#8aa0b4] uppercase mb-1">
                                   سعر الشراء
                                 </div>
-                                <div className="text-sm font-black text-slate-900">
+                                <div className="text-sm font-black text-[#123B5D]">
                                   {selectedDevice.purchasePrice
                                     ? `${selectedDevice.purchasePrice} ريال`
                                     : "—"}
                                 </div>
                               </div>
-                              <div className="border-b border-slate-100 pb-3">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                              <div className="border-b border-[#e7eef2] pb-3">
+                                <div className="text-[10px] font-bold text-[#8aa0b4] uppercase mb-1">
                                   المورد
                                 </div>
-                                <div className="text-sm font-black text-slate-900">
+                                <div className="text-sm font-black text-[#123B5D]">
                                   {selectedDevice.vendor || "—"}
                                 </div>
                               </div>
-                              <div className="border-b border-slate-100 pb-3">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                              <div className="border-b border-[#e7eef2] pb-3">
+                                <div className="text-[10px] font-bold text-[#8aa0b4] uppercase mb-1">
                                   نهاية الضمان
                                 </div>
-                                <div className="text-sm font-black text-slate-900 flex items-center gap-2">
+                                <div className="text-sm font-black text-[#123B5D] flex items-center gap-2">
                                   {selectedDevice.warrantyEnd || "—"}{" "}
                                   {selectedDevice.warrantyEnd && (
                                     <ShieldCheck
@@ -960,8 +948,8 @@ export default function DevicesMain() {
                                   )}
                                 </div>
                               </div>
-                              <div className="border-b border-slate-100 pb-3 md:col-span-2">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                              <div className="border-b border-[#e7eef2] pb-3 md:col-span-2">
+                                <div className="text-[10px] font-bold text-[#8aa0b4] uppercase mb-1">
                                   القيمة الدفترية الحالية (بناءً على الإهلاك)
                                 </div>
                                 <div
@@ -973,7 +961,7 @@ export default function DevicesMain() {
                                       selectedDevice.depreciationRate,
                                     ) <= 0
                                       ? "text-red-500"
-                                      : "text-emerald-600",
+                                      : "text-[#0f6d7c]",
                                   )}
                                 >
                                   {calculateCurrentValue(
@@ -989,29 +977,29 @@ export default function DevicesMain() {
 
                           <section>
                             <div className="flex items-center justify-between mb-4">
-                              <h3 className="text-sm font-black text-slate-900 uppercase flex items-center gap-2">
-                                <Activity className="w-5 h-5 text-emerald-600" />{" "}
+                              <h3 className="text-sm font-black text-[#123B5D] uppercase flex items-center gap-2">
+                                <Activity className="w-5 h-5 text-[#0f6d7c]" />{" "}
                                 الأجزاء المستهلكة
                               </h3>
                               <button
                                 onClick={() => setIsAddConsumableOpen(true)}
-                                className="text-xs font-bold text-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200"
+                                className="text-xs font-bold text-[#0f6d7c] hover:bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200"
                               >
                                 + جزء مستهلك
                               </button>
                             </div>
                             {selectedDevice.consumables?.length > 0 ? (
-                              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                              <div className="bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm overflow-hidden">
                                 <table className="w-full text-right">
-                                  <thead className="bg-slate-50 border-b border-slate-200">
+                                  <thead className="bg-[#f7fbfd] border-b border-[#d8e6ee]">
                                     <tr>
-                                      <th className="px-4 py-3 text-xs font-black text-slate-500">
+                                      <th className="px-4 py-3 text-xs font-black text-[#71839a]">
                                         الجزء
                                       </th>
-                                      <th className="px-4 py-3 text-xs font-black text-slate-500">
+                                      <th className="px-4 py-3 text-xs font-black text-[#71839a]">
                                         الحالة
                                       </th>
-                                      <th className="px-4 py-3 text-xs font-black text-slate-500">
+                                      <th className="px-4 py-3 text-xs font-black text-[#71839a]">
                                         الصلاحية
                                       </th>
                                       <th className="px-4 py-3"></th>
@@ -1022,9 +1010,9 @@ export default function DevicesMain() {
                                       (item, idx) => (
                                         <tr
                                           key={idx}
-                                          className="hover:bg-slate-50"
+                                          className="hover:bg-[#f7fbfd]"
                                         >
-                                          <td className="px-4 py-3 text-sm font-bold text-slate-900">
+                                          <td className="px-4 py-3 text-sm font-bold text-[#123B5D]">
                                             {item.name}
                                           </td>
                                           <td className="px-4 py-3">
@@ -1039,7 +1027,7 @@ export default function DevicesMain() {
                                               {item.status}
                                             </span>
                                           </td>
-                                          <td className="px-4 py-3 text-sm font-bold text-slate-600">
+                                          <td className="px-4 py-3 text-sm font-bold text-[#52677e]">
                                             {item.validity}
                                           </td>
                                           <td className="px-4 py-3 text-left">
@@ -1066,7 +1054,7 @@ export default function DevicesMain() {
                                 </table>
                               </div>
                             ) : (
-                              <div className="text-center py-6 text-slate-400 font-bold text-xs bg-slate-50 rounded-xl border border-slate-200 border-dashed">
+                              <div className="text-center py-6 text-[#8aa0b4] font-bold text-xs bg-[#f7fbfd] rounded-xl border border-[#d8e6ee] border-dashed">
                                 لا توجد أجزاء مستهلكة مسجلة
                               </div>
                             )}
@@ -1078,48 +1066,48 @@ export default function DevicesMain() {
                       {activeTab === "network" && (
                         <>
                           <section>
-                            <h3 className="text-sm font-black text-slate-900 uppercase mb-4 flex items-center gap-2">
-                              <Cpu className="w-5 h-5 text-emerald-600" />{" "}
+                            <h3 className="text-sm font-black text-[#123B5D] uppercase mb-4 flex items-center gap-2">
+                              <Cpu className="w-5 h-5 text-[#0f6d7c]" />{" "}
                               المواصفات التقنية
                             </h3>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                              <div className="border-b border-slate-100 pb-3">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-white p-6 rounded-[22px] border border-[#d8e6ee] shadow-sm">
+                              <div className="border-b border-[#e7eef2] pb-3">
+                                <div className="text-[10px] font-bold text-[#8aa0b4] uppercase mb-1">
                                   المعالج (CPU)
                                 </div>
-                                <div className="text-sm font-black text-slate-900">
+                                <div className="text-sm font-black text-[#123B5D]">
                                   {selectedDevice.specs?.cpu || "—"}
                                 </div>
                               </div>
-                              <div className="border-b border-slate-100 pb-3">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                              <div className="border-b border-[#e7eef2] pb-3">
+                                <div className="text-[10px] font-bold text-[#8aa0b4] uppercase mb-1">
                                   الذاكرة (RAM)
                                 </div>
-                                <div className="text-sm font-black text-slate-900">
+                                <div className="text-sm font-black text-[#123B5D]">
                                   {selectedDevice.specs?.ram || "—"}
                                 </div>
                               </div>
-                              <div className="border-b border-slate-100 pb-3">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                              <div className="border-b border-[#e7eef2] pb-3">
+                                <div className="text-[10px] font-bold text-[#8aa0b4] uppercase mb-1">
                                   التخزين
                                 </div>
-                                <div className="text-sm font-black text-slate-900">
+                                <div className="text-sm font-black text-[#123B5D]">
                                   {selectedDevice.specs?.storage || "—"}
                                 </div>
                               </div>
-                              <div className="border-b border-slate-100 pb-3">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                              <div className="border-b border-[#e7eef2] pb-3">
+                                <div className="text-[10px] font-bold text-[#8aa0b4] uppercase mb-1">
                                   كرت الشاشة (GPU)
                                 </div>
-                                <div className="text-sm font-black text-slate-900">
+                                <div className="text-sm font-black text-[#123B5D]">
                                   {selectedDevice.specs?.gpu || "—"}
                                 </div>
                               </div>
-                              <div className="border-b border-slate-100 pb-3 md:col-span-2">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                              <div className="border-b border-[#e7eef2] pb-3 md:col-span-2">
+                                <div className="text-[10px] font-bold text-[#8aa0b4] uppercase mb-1">
                                   نظام التشغيل (OS)
                                 </div>
-                                <div className="text-sm font-black text-slate-900">
+                                <div className="text-sm font-black text-[#123B5D]">
                                   {selectedDevice.specs?.os || "—"}
                                 </div>
                               </div>
@@ -1127,45 +1115,45 @@ export default function DevicesMain() {
                           </section>
 
                           <section>
-                            <h3 className="text-sm font-black text-slate-900 uppercase mb-4 flex items-center gap-2">
-                              <Network className="w-5 h-5 text-emerald-600" />{" "}
+                            <h3 className="text-sm font-black text-[#123B5D] uppercase mb-4 flex items-center gap-2">
+                              <Network className="w-5 h-5 text-[#0f6d7c]" />{" "}
                               الشبكة
                             </h3>
-                            <div className="grid grid-cols-2 gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                              <div className="border-b border-slate-100 pb-3">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                            <div className="grid grid-cols-2 gap-4 bg-white p-6 rounded-[22px] border border-[#d8e6ee] shadow-sm">
+                              <div className="border-b border-[#e7eef2] pb-3">
+                                <div className="text-[10px] font-bold text-[#8aa0b4] uppercase mb-1">
                                   IP الداخلي
                                 </div>
-                                <div className="text-sm font-black text-slate-900 font-mono">
+                                <div className="text-sm font-black text-[#123B5D] font-mono">
                                   {selectedDevice.network?.internalIp || "—"}
                                 </div>
                               </div>
-                              <div className="border-b border-slate-100 pb-3">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                              <div className="border-b border-[#e7eef2] pb-3">
+                                <div className="text-[10px] font-bold text-[#8aa0b4] uppercase mb-1">
                                   Static IP
                                 </div>
-                                <div className="text-sm font-black text-slate-900 font-mono">
+                                <div className="text-sm font-black text-[#123B5D] font-mono">
                                   {selectedDevice.network?.staticIp || "—"}
                                 </div>
                               </div>
-                              <div className="border-b border-slate-100 pb-3">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                              <div className="border-b border-[#e7eef2] pb-3">
+                                <div className="text-[10px] font-bold text-[#8aa0b4] uppercase mb-1">
                                   Tailscale IP
                                 </div>
-                                <div className="text-sm font-black text-slate-900 font-mono">
+                                <div className="text-sm font-black text-[#123B5D] font-mono">
                                   {selectedDevice.network?.tailscaleIp || "—"}
                                 </div>
                               </div>
-                              <div className="border-b border-slate-100 pb-3">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                              <div className="border-b border-[#e7eef2] pb-3">
+                                <div className="text-[10px] font-bold text-[#8aa0b4] uppercase mb-1">
                                   ZeroTier IP
                                 </div>
-                                <div className="text-sm font-black text-slate-900 font-mono">
+                                <div className="text-sm font-black text-[#123B5D] font-mono">
                                   {selectedDevice.network?.zeroTierIp || "—"}
                                 </div>
                               </div>
-                              <div className="border-b border-slate-100 pb-3 md:col-span-2">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                              <div className="border-b border-[#e7eef2] pb-3 md:col-span-2">
+                                <div className="text-[10px] font-bold text-[#8aa0b4] uppercase mb-1">
                                   عناوين MAC
                                 </div>
                                 <div className="space-y-1 mt-1">
@@ -1174,7 +1162,7 @@ export default function DevicesMain() {
                                       mac.trim() !== "" && (
                                         <div
                                           key={i}
-                                          className="text-sm font-black text-slate-900 font-mono bg-slate-50 px-2 py-1 rounded inline-block ml-2"
+                                          className="text-sm font-black text-[#123B5D] font-mono bg-[#f7fbfd] px-2 py-1 rounded inline-block ml-2"
                                         >
                                           {mac}
                                         </div>
@@ -1184,7 +1172,7 @@ export default function DevicesMain() {
                                     selectedDevice.network.macAddresses.filter(
                                       (m) => m.trim() !== "",
                                     ).length === 0) && (
-                                    <div className="text-sm text-slate-400">
+                                    <div className="text-sm text-[#8aa0b4]">
                                       —
                                     </div>
                                   )}
@@ -1199,13 +1187,13 @@ export default function DevicesMain() {
                       {activeTab === "maintenance" && (
                         <section>
                           <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-sm font-black text-slate-900 uppercase flex items-center gap-2">
-                              <Wrench className="w-5 h-5 text-emerald-600" />{" "}
+                            <h3 className="text-sm font-black text-[#123B5D] uppercase flex items-center gap-2">
+                              <Wrench className="w-5 h-5 text-[#0f6d7c]" />{" "}
                               سجل الصيانة
                             </h3>
                             <button
                               onClick={() => setIsAddMaintenanceOpen(true)}
-                              className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg"
+                              className="text-xs font-bold text-[#0f6d7c] bg-emerald-50 px-3 py-1.5 rounded-lg"
                             >
                               + إضافة سجل
                             </button>
@@ -1218,10 +1206,10 @@ export default function DevicesMain() {
                                     key={idx}
                                     className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group"
                                   >
-                                    <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-slate-100 text-slate-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                                    <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-[#eef5f7] text-[#71839a] shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
                                       <Wrench className="w-4 h-4" />
                                     </div>
-                                    <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
+                                    <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-[22px] border border-[#d8e6ee] bg-white shadow-sm">
                                       {editingMaintenance?.index === idx ? (
                                         <div className="space-y-2">
                                           <input
@@ -1277,7 +1265,7 @@ export default function DevicesMain() {
                                               onClick={() =>
                                                 handleSaveMaintenance(idx)
                                               }
-                                              className="text-emerald-600 bg-emerald-50 px-3 py-1 rounded text-xs font-bold"
+                                              className="text-[#0f6d7c] bg-emerald-50 px-3 py-1 rounded text-xs font-bold"
                                             >
                                               حفظ
                                             </button>
@@ -1285,7 +1273,7 @@ export default function DevicesMain() {
                                               onClick={() =>
                                                 setEditingMaintenance(null)
                                               }
-                                              className="text-slate-500 bg-slate-100 px-3 py-1 rounded text-xs font-bold"
+                                              className="text-[#71839a] bg-[#eef5f7] px-3 py-1 rounded text-xs font-bold"
                                             >
                                               إلغاء
                                             </button>
@@ -1297,15 +1285,15 @@ export default function DevicesMain() {
                                             <div className="font-black text-sm">
                                               {record.type}
                                             </div>
-                                            <div className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                                            <div className="text-[10px] text-[#71839a] bg-[#eef5f7] px-2 py-0.5 rounded">
                                               {record.date}
                                             </div>
                                           </div>
-                                          <div className="text-sm font-bold text-slate-600 mb-3">
+                                          <div className="text-sm font-bold text-[#52677e] mb-3">
                                             {record.description}
                                           </div>
-                                          <div className="flex justify-between border-t border-slate-100 pt-2">
-                                            <div className="text-xs font-bold text-slate-500">
+                                          <div className="flex justify-between border-t border-[#e7eef2] pt-2">
+                                            <div className="text-xs font-bold text-[#71839a]">
                                               الفني: {record.technician}
                                             </div>
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1316,7 +1304,7 @@ export default function DevicesMain() {
                                                     ...record,
                                                   })
                                                 }
-                                                className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
+                                                className="p-1.5 text-blue-500 hover:bg-[#fbf7ef] rounded"
                                               >
                                                 <Edit className="w-3.5 h-3.5" />
                                               </button>
@@ -1337,7 +1325,7 @@ export default function DevicesMain() {
                                 ),
                               )
                             ) : (
-                              <div className="text-center py-10 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-2xl">
+                              <div className="text-center py-10 text-[#8aa0b4] font-bold border-2 border-dashed border-[#d8e6ee] rounded-[22px]">
                                 لا توجد سجلات صيانة.
                               </div>
                             )}
@@ -1348,48 +1336,48 @@ export default function DevicesMain() {
 
                     {/* Right Sidebar */}
                     <div className="space-y-6">
-                      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
-                        <h3 className="text-sm font-black text-slate-900 uppercase mb-2 flex items-center gap-2">
-                          <FileText className="w-5 h-5 text-slate-400" /> ملخص
+                      <div className="bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm p-6 space-y-4">
+                        <h3 className="text-sm font-black text-[#123B5D] uppercase mb-2 flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-[#8aa0b4]" /> ملخص
                           الجهاز
                         </h3>
-                        <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                          <span className="text-xs font-bold text-slate-500">
+                        <div className="flex justify-between items-center pb-3 border-b border-[#e7eef2]">
+                          <span className="text-xs font-bold text-[#71839a]">
                             الرقم التسلسلي
                           </span>
-                          <span className="text-xs font-black text-slate-900 font-mono bg-slate-100 px-2 py-1 rounded">
+                          <span className="text-xs font-black text-[#123B5D] font-mono bg-[#eef5f7] px-2 py-1 rounded">
                             {selectedDevice.serialNumber}
                           </span>
                         </div>
-                        <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                          <span className="text-xs font-bold text-slate-500">
+                        <div className="flex justify-between items-center pb-3 border-b border-[#e7eef2]">
+                          <span className="text-xs font-bold text-[#71839a]">
                             الموقع
                           </span>
-                          <span className="text-xs font-black text-slate-900">
+                          <span className="text-xs font-black text-[#123B5D]">
                             {selectedDevice.location || "—"}
                           </span>
                         </div>
-                        <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                          <span className="text-xs font-bold text-slate-500">
+                        <div className="flex justify-between items-center pb-3 border-b border-[#e7eef2]">
+                          <span className="text-xs font-bold text-[#71839a]">
                             العهدة
                           </span>
-                          <span className="text-xs font-black text-slate-900">
+                          <span className="text-xs font-black text-[#123B5D]">
                             {selectedDevice.assignedTo || "—"}
                           </span>
                         </div>
-                        <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                          <span className="text-xs font-bold text-slate-500">
+                        <div className="flex justify-between items-center pb-3 border-b border-[#e7eef2]">
+                          <span className="text-xs font-bold text-[#71839a]">
                             النظام المرتبط
                           </span>
                           <span
                             onClick={() => setIsLinkSystemModalOpen(true)}
-                            className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-1 rounded cursor-pointer hover:bg-blue-100"
+                            className="text-xs font-black text-[#0f6d7c] bg-blue-50 px-2 py-1 rounded cursor-pointer hover:bg-blue-100"
                           >
                             {selectedDevice.linkedSystem || "ربط..."}
                           </span>
                         </div>
                         <div className="flex justify-between items-center pt-2">
-                          <span className="text-xs font-bold text-slate-500">
+                          <span className="text-xs font-bold text-[#71839a]">
                             موعد الصيانة
                           </span>
                           <span className="text-sm font-black text-amber-600 bg-amber-50 px-2 py-1 rounded">
@@ -1398,24 +1386,24 @@ export default function DevicesMain() {
                         </div>
                       </div>
 
-                      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
-                        <h3 className="text-sm font-black text-slate-900 uppercase mb-2 flex items-center gap-2">
-                          <FileText className="w-5 h-5 text-slate-400" />{" "}
+                      <div className="bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm p-6 space-y-4">
+                        <h3 className="text-sm font-black text-[#123B5D] uppercase mb-2 flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-[#8aa0b4]" />{" "}
                           المرفقات والمستندات
                         </h3>
                         <div className="space-y-2">
                           {selectedDevice.invoiceAttachment && (
-                            <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl hover:border-emerald-200 transition-colors group">
+                            <div className="flex items-center justify-between p-3 bg-[#f7fbfd] border border-[#e7eef2] rounded-xl hover:border-emerald-200 transition-colors group">
                               <div className="flex items-center gap-3">
-                                <div className="p-2 bg-white rounded-lg shadow-sm text-blue-600">
+                                <div className="p-2 bg-white rounded-lg shadow-sm text-[#0f6d7c]">
                                   <FileText className="w-4 h-4" />
                                 </div>
                                 <div>
-                                  <div className="text-xs font-black text-slate-900">
+                                  <div className="text-xs font-black text-[#123B5D]">
                                     مرفق الفاتورة/الضمان
                                   </div>
                                   <div
-                                    className="text-[10px] font-bold text-slate-400 truncate max-w-[120px]"
+                                    className="text-[10px] font-bold text-[#8aa0b4] truncate max-w-[120px]"
                                     dir="ltr"
                                   >
                                     {selectedDevice.invoiceAttachment
@@ -1431,7 +1419,7 @@ export default function DevicesMain() {
                                   )}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="p-2 text-slate-400 hover:text-emerald-600"
+                                  className="p-2 text-[#8aa0b4] hover:text-[#0f6d7c]"
                                 >
                                   <Download className="w-4 h-4" />
                                 </a>
@@ -1442,7 +1430,7 @@ export default function DevicesMain() {
                                       invoiceAttachment: null,
                                     })
                                   }
-                                  className="p-2 text-slate-400 hover:text-red-600"
+                                  className="p-2 text-[#8aa0b4] hover:text-red-600"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -1452,18 +1440,18 @@ export default function DevicesMain() {
                           {selectedDevice.attachments?.map((file, idx) => (
                             <div
                               key={idx}
-                              className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl hover:border-emerald-200 transition-colors group"
+                              className="flex items-center justify-between p-3 bg-[#f7fbfd] border border-[#e7eef2] rounded-xl hover:border-emerald-200 transition-colors group"
                             >
                               <div className="flex items-center gap-3">
                                 <div className="p-2 bg-white rounded-lg shadow-sm text-purple-600">
                                   <ImageIcon className="w-4 h-4" />
                                 </div>
                                 <div>
-                                  <div className="text-xs font-black text-slate-900">
+                                  <div className="text-xs font-black text-[#123B5D]">
                                     {file.name}
                                   </div>
                                   <div
-                                    className="text-[10px] font-bold text-slate-400 truncate max-w-[120px]"
+                                    className="text-[10px] font-bold text-[#8aa0b4] truncate max-w-[120px]"
                                     dir="ltr"
                                   >
                                     {file.url.split("/").pop()}
@@ -1475,7 +1463,7 @@ export default function DevicesMain() {
                                   href={getFullUrl(file.url)}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="p-2 text-slate-400 hover:text-emerald-600"
+                                  className="p-2 text-[#8aa0b4] hover:text-[#0f6d7c]"
                                 >
                                   <Download className="w-4 h-4" />
                                 </a>
@@ -1490,7 +1478,7 @@ export default function DevicesMain() {
                                       attachments: upAtt,
                                     });
                                   }}
-                                  className="p-2 text-slate-400 hover:text-red-600"
+                                  className="p-2 text-[#8aa0b4] hover:text-red-600"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -1500,7 +1488,7 @@ export default function DevicesMain() {
                           {!selectedDevice.invoiceAttachment &&
                             (!selectedDevice.attachments ||
                               selectedDevice.attachments.length === 0) && (
-                              <div className="text-xs text-slate-400 font-bold text-center py-3 border border-dashed rounded-xl bg-slate-50">
+                              <div className="text-xs text-[#8aa0b4] font-bold text-center py-3 border border-dashed rounded-xl bg-[#f7fbfd]">
                                 لا توجد مرفقات
                               </div>
                             )}
@@ -1514,7 +1502,7 @@ export default function DevicesMain() {
                           <button
                             onClick={() => fileInputRef.current?.click()}
                             disabled={uploadAttachmentMutation.isPending}
-                            className="w-full py-2.5 border-2 border-dashed border-slate-200 text-slate-500 rounded-xl font-bold hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50 text-sm flex justify-center gap-2 mt-2 disabled:opacity-50"
+                            className="w-full py-2.5 border-2 border-dashed border-[#d8e6ee] text-[#71839a] rounded-xl font-bold hover:border-emerald-400 hover:text-[#0f6d7c] hover:bg-emerald-50 text-sm flex justify-center gap-2 mt-2 disabled:opacity-50"
                           >
                             {uploadAttachmentMutation.isPending ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -1550,45 +1538,45 @@ export default function DevicesMain() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col z-10"
+              className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-[26px] shadow-2xl overflow-hidden flex flex-col z-10"
             >
-              <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
-                <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+              <div className="px-8 py-6 border-b border-[#e7eef2] flex justify-between items-center bg-[#f7fbfd] shrink-0">
+                <h2 className="text-2xl font-black text-[#123B5D] flex items-center gap-2">
                   {deviceModalMode === "add" ? (
                     <>
-                      <Plus className="w-6 h-6 text-emerald-600" /> إضافة أصل
+                      <Plus className="w-6 h-6 text-[#0f6d7c]" /> إضافة أصل
                       جديد
                     </>
                   ) : (
                     <>
-                      <Edit className="w-6 h-6 text-blue-600" /> تعديل بيانات
+                      <Edit className="w-6 h-6 text-[#0f6d7c]" /> تعديل بيانات
                       الأصل
                     </>
                   )}
                 </h2>
                 <button
                   onClick={() => setIsDeviceModalOpen(false)}
-                  className="p-2 text-slate-400 hover:bg-slate-200 rounded-full transition-colors"
+                  className="p-2 text-[#8aa0b4] hover:bg-slate-200 rounded-full transition-colors"
                 >
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-50/50">
+              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-[#f7fbfd]/50">
                 <form
                   id="device-form"
                   onSubmit={handleDeviceSubmit}
                   className="space-y-8"
                 >
                   {/* Basic Info */}
-                  <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <Info className="w-5 h-5 text-emerald-600" /> المعلومات
+                  <section className="bg-white p-6 rounded-[22px] border border-[#d8e6ee] shadow-sm">
+                    <h3 className="text-[13px] font-black text-[#123B5D] tracking-tight mb-4 flex items-center gap-2">
+                      <Info className="w-5 h-5 text-[#0f6d7c]" /> المعلومات
                       الأساسية
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                           اسم الجهاز *
                         </label>
                         <input
@@ -1601,11 +1589,11 @@ export default function DevicesMain() {
                               name: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:border-emerald-500"
+                          className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                           التصنيف *
                         </label>
                         <select
@@ -1616,7 +1604,7 @@ export default function DevicesMain() {
                               type: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
+                          className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                         >
                           {allCategories.map((cat) => (
                             <option key={cat.id} value={cat.id}>
@@ -1626,7 +1614,7 @@ export default function DevicesMain() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                           العلامة التجارية *
                         </label>
                         <input
@@ -1639,11 +1627,11 @@ export default function DevicesMain() {
                               brand: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
+                          className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                           الموديل *
                         </label>
                         <input
@@ -1656,11 +1644,11 @@ export default function DevicesMain() {
                               model: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
+                          className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                           الرقم التسلسلي *
                         </label>
                         <input
@@ -1673,11 +1661,11 @@ export default function DevicesMain() {
                               serialNumber: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
+                          className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                           العهدة (مخصص لـ)
                         </label>
                         <select
@@ -1688,7 +1676,7 @@ export default function DevicesMain() {
                               assignedTo: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500 cursor-pointer"
+                          className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500 cursor-pointer"
                         >
                           <option value="">-- غير مخصص (جهاز عام) --</option>
                           {staffOnly.map((emp) => (
@@ -1699,7 +1687,7 @@ export default function DevicesMain() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                           الموقع الفعلي
                         </label>
                         <input
@@ -1711,11 +1699,11 @@ export default function DevicesMain() {
                               location: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
+                          className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                           الحالة
                         </label>
                         <select
@@ -1726,7 +1714,7 @@ export default function DevicesMain() {
                               status: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
+                          className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                         >
                           <option value="Active">نشط</option>
                           <option value="Warning">تحذير</option>
@@ -1737,14 +1725,14 @@ export default function DevicesMain() {
                   </section>
 
                   {/* 🚀 الإهلاك المالي (Financials & Depreciation) */}
-                  <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <DollarSign className="w-5 h-5 text-emerald-600" /> بيانات
+                  <section className="bg-white p-6 rounded-[22px] border border-[#d8e6ee] shadow-sm">
+                    <h3 className="text-[13px] font-black text-[#123B5D] tracking-tight mb-4 flex items-center gap-2">
+                      <DollarSign className="w-5 h-5 text-[#0f6d7c]" /> بيانات
                       الشراء والإهلاك
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                           سعر الشراء (ريال)
                         </label>
                         <input
@@ -1756,11 +1744,11 @@ export default function DevicesMain() {
                               purchasePrice: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
+                          className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                           تاريخ الشراء
                         </label>
                         <input
@@ -1772,11 +1760,11 @@ export default function DevicesMain() {
                               purchaseDate: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
+                          className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                           معدل الإهلاك السنوي (%)
                         </label>
                         <select
@@ -1787,7 +1775,7 @@ export default function DevicesMain() {
                               depreciationRate: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500 cursor-pointer"
+                          className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500 cursor-pointer"
                         >
                           <option value="">بدون إهلاك</option>
                           <option value="20">
@@ -1808,8 +1796,8 @@ export default function DevicesMain() {
                         {deviceForm.purchasePrice &&
                         deviceForm.purchaseDate &&
                         deviceForm.depreciationRate ? (
-                          <div className="bg-slate-100 p-3 rounded-xl border border-slate-200 flex justify-between items-center">
-                            <span className="text-xs font-bold text-slate-600">
+                          <div className="bg-[#eef5f7] p-3 rounded-xl border border-[#d8e6ee] flex justify-between items-center">
+                            <span className="text-xs font-bold text-[#52677e]">
                               القيمة الدفترية الحالية:
                             </span>
                             <span
@@ -1821,7 +1809,7 @@ export default function DevicesMain() {
                                   deviceForm.depreciationRate,
                                 ) <= 0
                                   ? "text-red-500"
-                                  : "text-emerald-600",
+                                  : "text-[#0f6d7c]",
                               )}
                             >
                               {calculateCurrentValue(
@@ -1833,7 +1821,7 @@ export default function DevicesMain() {
                             </span>
                           </div>
                         ) : (
-                          <div className="text-xs text-slate-400 font-bold p-3">
+                          <div className="text-xs text-[#8aa0b4] font-bold p-3">
                             أكمل البيانات لحساب القيمة الحالية
                           </div>
                         )}
@@ -1844,10 +1832,10 @@ export default function DevicesMain() {
                   {/* 🚀 المواصفات + الذكاء الاصطناعي */}
                   {(deviceForm.type === "Computer" ||
                     deviceForm.type === "Server") && (
-                    <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                    <section className="bg-white p-6 rounded-[22px] border border-[#d8e6ee] shadow-sm relative overflow-hidden">
                       <div className="flex items-center justify-between mb-4 relative z-10">
-                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                          <Cpu className="w-5 h-5 text-emerald-600" /> المواصفات
+                        <h3 className="text-[13px] font-black text-[#123B5D] tracking-tight flex items-center gap-2">
+                          <Cpu className="w-5 h-5 text-[#0f6d7c]" /> المواصفات
                           التقنية
                         </h3>
                         <input
@@ -1872,7 +1860,7 @@ export default function DevicesMain() {
                           className={cn(
                             "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border shadow-sm",
                             deviceModalMode === "add"
-                              ? "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
+                              ? "bg-[#f7fbfd] text-[#8aa0b4] border-[#d8e6ee] cursor-not-allowed"
                               : "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 hover:from-purple-200 hover:to-blue-200 border-purple-200 disabled:opacity-50",
                           )}
                           title={
@@ -1904,12 +1892,12 @@ export default function DevicesMain() {
 
                       {/* شاشة التحميل اللحظية (Feedback) عند رفع الصورة */}
                       {isAIExtracting && (
-                        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-20 flex flex-col items-center justify-center rounded-2xl">
+                        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-20 flex flex-col items-center justify-center rounded-[22px]">
                           <BrainCircuit className="w-10 h-10 text-purple-500 animate-pulse mb-3" />
                           <div className="text-sm font-black text-purple-800 mb-1">
                             جاري إرسال الصورة للطابور المركزي...
                           </div>
-                          <div className="text-xs font-bold text-slate-500 text-center px-6">
+                          <div className="text-xs font-bold text-[#71839a] text-center px-6">
                             العملية ستستمر في الخلفية.
                             <br />
                             يمكنك إغلاق النافذة وسنرسل لك إشعاراً فور انتهاء
@@ -1919,7 +1907,7 @@ export default function DevicesMain() {
                       )}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 relative z-10">
                         <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                          <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                             المعالج (CPU)
                           </label>
                           <input
@@ -1934,11 +1922,11 @@ export default function DevicesMain() {
                                 },
                               })
                             }
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
+                            className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                          <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                             الذاكرة (RAM)
                           </label>
                           <input
@@ -1953,11 +1941,11 @@ export default function DevicesMain() {
                                 },
                               })
                             }
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
+                            className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                          <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                             التخزين (Storage)
                           </label>
                           <input
@@ -1972,11 +1960,11 @@ export default function DevicesMain() {
                                 },
                               })
                             }
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
+                            className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                          <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                             كرت الشاشة (GPU)
                           </label>
                           <input
@@ -1991,11 +1979,11 @@ export default function DevicesMain() {
                                 },
                               })
                             }
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
+                            className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                           />
                         </div>
                         <div className="md:col-span-2">
-                          <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                          <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                             نظام التشغيل (OS)
                           </label>
                           <input
@@ -2010,7 +1998,7 @@ export default function DevicesMain() {
                                 },
                               })
                             }
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
+                            className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500"
                           />
                         </div>
                       </div>
@@ -2018,14 +2006,14 @@ export default function DevicesMain() {
                   )}
 
                   {/* Network Section in Form */}
-                  <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <Network className="w-5 h-5 text-emerald-600" /> إعدادات
+                  <section className="bg-white p-6 rounded-[22px] border border-[#d8e6ee] shadow-sm">
+                    <h3 className="text-[13px] font-black text-[#123B5D] tracking-tight mb-4 flex items-center gap-2">
+                      <Network className="w-5 h-5 text-[#0f6d7c]" /> إعدادات
                       الشبكة
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                           IP الداخلي
                         </label>
                         <input
@@ -2040,11 +2028,11 @@ export default function DevicesMain() {
                               },
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold font-mono focus:outline-none focus:border-emerald-500"
+                          className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold font-mono focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                           IP ثابت (Static IP)
                         </label>
                         <input
@@ -2059,11 +2047,11 @@ export default function DevicesMain() {
                               },
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold font-mono focus:outline-none focus:border-emerald-500"
+                          className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold font-mono focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                           Tailscale IP
                         </label>
                         <input
@@ -2078,11 +2066,11 @@ export default function DevicesMain() {
                               },
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold font-mono focus:outline-none focus:border-emerald-500"
+                          className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold font-mono focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                           ZeroTier IP
                         </label>
                         <input
@@ -2097,12 +2085,12 @@ export default function DevicesMain() {
                               },
                             })
                           }
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold font-mono focus:outline-none focus:border-emerald-500"
+                          className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold font-mono focus:outline-none focus:border-emerald-500"
                         />
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                        <label className="block text-xs font-bold text-[#71839a] mb-1.5">
                           عناوين MAC Address
                         </label>
                         <div className="space-y-2">
@@ -2129,7 +2117,7 @@ export default function DevicesMain() {
                                       },
                                     });
                                   }}
-                                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold font-mono focus:outline-none focus:border-emerald-500"
+                                  className="w-full px-4 py-2.5 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-bold font-mono focus:outline-none focus:border-emerald-500"
                                   placeholder="00:1A:2B:3C:4D:5E"
                                   dir="ltr"
                                 />
@@ -2171,7 +2159,7 @@ export default function DevicesMain() {
                                 },
                               })
                             }
-                            className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg hover:bg-emerald-100 w-fit"
+                            className="text-xs font-bold text-[#0f6d7c] bg-emerald-50 px-3 py-1.5 rounded-lg hover:bg-emerald-100 w-fit"
                           >
                             + إضافة MAC إضافي
                           </button>
@@ -2182,10 +2170,10 @@ export default function DevicesMain() {
                 </form>
               </div>
 
-              <div className="px-8 py-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
+              <div className="px-8 py-5 border-t border-[#e7eef2] bg-[#f7fbfd] flex justify-end gap-3 shrink-0">
                 <button
                   onClick={() => setIsDeviceModalOpen(false)}
-                  className="px-6 py-2.5 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition-colors"
+                  className="px-6 py-2.5 text-[#52677e] font-bold hover:bg-slate-200 rounded-xl transition-colors"
                 >
                   إلغاء
                 </button>
@@ -2196,7 +2184,7 @@ export default function DevicesMain() {
                   }
                   type="submit"
                   form="device-form"
-                  className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-black hover:bg-emerald-500 transition-all flex items-center gap-2 shadow-md disabled:opacity-50"
+                  className="px-6 py-2.5 bg-[#083646] text-white rounded-xl font-black hover:bg-emerald-500 transition-all flex items-center gap-2 shadow-md disabled:opacity-50"
                 >
                   {addDeviceMutation.isPending ||
                   updateDeviceMutation.isPending ? (
@@ -2229,13 +2217,13 @@ export default function DevicesMain() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl z-10"
+              className="relative bg-white rounded-[22px] w-full max-w-md p-6 shadow-2xl z-10"
             >
               <h3 className="text-lg font-black mb-4">تسجيل صيانة جديدة</h3>
               <form onSubmit={handleAddMaintenanceSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-bold text-slate-600 mb-1 block">
+                    <label className="text-xs font-bold text-[#52677e] mb-1 block">
                       التاريخ
                     </label>
                     <input
@@ -2252,7 +2240,7 @@ export default function DevicesMain() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-600 mb-1 block">
+                    <label className="text-xs font-bold text-[#52677e] mb-1 block">
                       النوع
                     </label>
                     <input
@@ -2271,7 +2259,7 @@ export default function DevicesMain() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-600 mb-1 block">
+                  <label className="text-xs font-bold text-[#52677e] mb-1 block">
                     اسم الفني
                   </label>
                   <input
@@ -2288,7 +2276,7 @@ export default function DevicesMain() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-600 mb-1 block">
+                  <label className="text-xs font-bold text-[#52677e] mb-1 block">
                     الوصف والتفاصيل
                   </label>
                   <textarea
@@ -2307,13 +2295,13 @@ export default function DevicesMain() {
                   <button
                     type="button"
                     onClick={() => setIsAddMaintenanceOpen(false)}
-                    className="px-4 py-2 bg-slate-100 rounded-lg text-sm font-bold"
+                    className="px-4 py-2 bg-[#eef5f7] rounded-lg text-sm font-bold"
                   >
                     إلغاء
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold"
+                    className="px-4 py-2 bg-[#083646] text-white rounded-lg text-sm font-bold"
                   >
                     حفظ السجل
                   </button>
@@ -2338,12 +2326,12 @@ export default function DevicesMain() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl z-10"
+              className="relative bg-white rounded-[22px] w-full max-w-sm p-6 shadow-2xl z-10"
             >
               <h3 className="text-lg font-black mb-4">إضافة جزء مستهلك</h3>
               <form onSubmit={handleAddConsumableSubmit} className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-600 mb-1 block">
+                  <label className="text-xs font-bold text-[#52677e] mb-1 block">
                     الاسم
                   </label>
                   <input
@@ -2360,7 +2348,7 @@ export default function DevicesMain() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-600 mb-1 block">
+                  <label className="text-xs font-bold text-[#52677e] mb-1 block">
                     الحالة
                   </label>
                   <select
@@ -2379,7 +2367,7 @@ export default function DevicesMain() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-600 mb-1 block">
+                  <label className="text-xs font-bold text-[#52677e] mb-1 block">
                     الصلاحية (%)
                   </label>
                   <input
@@ -2399,13 +2387,13 @@ export default function DevicesMain() {
                   <button
                     type="button"
                     onClick={() => setIsAddConsumableOpen(false)}
-                    className="px-4 py-2 bg-slate-100 rounded-lg text-sm font-bold"
+                    className="px-4 py-2 bg-[#eef5f7] rounded-lg text-sm font-bold"
                   >
                     إلغاء
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold"
+                    className="px-4 py-2 bg-[#083646] text-white rounded-lg text-sm font-bold"
                   >
                     إضافة
                   </button>
@@ -2430,86 +2418,86 @@ export default function DevicesMain() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col z-10"
+              className="relative w-full max-w-md bg-white rounded-[26px] shadow-2xl overflow-hidden flex flex-col z-10"
             >
-              <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div className="px-6 py-4 border-b border-[#e7eef2] flex justify-between items-center bg-[#f7fbfd]">
                 <h2 className="text-lg font-black flex items-center gap-2">
-                  <QrCode className="w-5 h-5 text-emerald-600" /> معاينة ملصق
+                  <QrCode className="w-5 h-5 text-[#0f6d7c]" /> معاينة ملصق
                   الجهاز
                 </h2>
                 <button
                   onClick={() => setIsStickerModalOpen(false)}
-                  className="p-2 text-slate-400 hover:bg-slate-200 rounded-full transition-colors"
+                  className="p-2 text-[#8aa0b4] hover:bg-slate-200 rounded-full transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <div className="p-8 flex justify-center bg-slate-100/50">
+              <div className="p-8 flex justify-center bg-[#eef5f7]/50">
                 <div className="w-80 bg-white border-2 border-slate-800 rounded-xl p-4 shadow-xl relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-2 bg-emerald-600" />
+                  <div className="absolute top-0 left-0 w-full h-2 bg-[#083646]" />
                   <div className="flex justify-between items-start mb-4 mt-1">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-black text-xs shadow-sm">
                         DC
                       </div>
                       <div>
-                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                        <div className="text-[10px] font-black text-[#71839a] uppercase tracking-widest">
                           ديتيلز كونسولتس
                         </div>
-                        <div className="text-sm font-black text-slate-900">
+                        <div className="text-sm font-black text-[#123B5D]">
                           {selectedDevice.name}
                         </div>
                       </div>
                     </div>
-                    <div className="w-12 h-12 bg-slate-50 rounded-lg flex items-center justify-center border border-slate-200 shadow-sm">
+                    <div className="w-12 h-12 bg-[#f7fbfd] rounded-lg flex items-center justify-center border border-[#d8e6ee] shadow-sm">
                       <QrCode className="w-8 h-8 opacity-50" />
                     </div>
                   </div>
                   <div className="space-y-1.5 mb-4">
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="text-[10px] font-bold text-slate-500">
+                    <div className="flex justify-between border-b border-[#e7eef2] pb-1">
+                      <span className="text-[10px] font-bold text-[#71839a]">
                         كود الجهاز
                       </span>
-                      <span className="text-[10px] font-black text-slate-900 font-mono">
+                      <span className="text-[10px] font-black text-[#123B5D] font-mono">
                         {selectedDevice.deviceCode}
                       </span>
                     </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="text-[10px] font-bold text-slate-500">
+                    <div className="flex justify-between border-b border-[#e7eef2] pb-1">
+                      <span className="text-[10px] font-bold text-[#71839a]">
                         الرقم التسلسلي
                       </span>
-                      <span className="text-[10px] font-black text-slate-900 font-mono">
+                      <span className="text-[10px] font-black text-[#123B5D] font-mono">
                         {selectedDevice.serialNumber}
                       </span>
                     </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="text-[10px] font-bold text-slate-500">
+                    <div className="flex justify-between border-b border-[#e7eef2] pb-1">
+                      <span className="text-[10px] font-bold text-[#71839a]">
                         الموديل
                       </span>
-                      <span className="text-[10px] font-black text-slate-900">
+                      <span className="text-[10px] font-black text-[#123B5D]">
                         {selectedDevice.brand} {selectedDevice.model}
                       </span>
                     </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="text-[10px] font-bold text-slate-500">
+                    <div className="flex justify-between border-b border-[#e7eef2] pb-1">
+                      <span className="text-[10px] font-bold text-[#71839a]">
                         العهدة
                       </span>
-                      <span className="text-[10px] font-black text-slate-900">
+                      <span className="text-[10px] font-black text-[#123B5D]">
                         {selectedDevice.assignedTo || "—"}
                       </span>
                     </div>
                   </div>
-                  <div className="text-center bg-slate-50 p-1.5 rounded-lg border border-slate-100">
-                    <div className="text-[9px] font-black text-slate-700">
+                  <div className="text-center bg-[#f7fbfd] p-1.5 rounded-lg border border-[#e7eef2]">
+                    <div className="text-[9px] font-black text-[#123B5D]">
                       هذا الجهاز ملك شركة ديتيلز كونسولتس
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+              <div className="px-6 py-4 border-t border-[#e7eef2] bg-[#f7fbfd] flex justify-end gap-3">
                 <button
                   onClick={() => setIsStickerModalOpen(false)}
-                  className="px-6 py-2.5 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition-colors"
+                  className="px-6 py-2.5 text-[#52677e] font-bold hover:bg-slate-200 rounded-xl transition-colors"
                 >
                   إلغاء
                 </button>
@@ -2539,15 +2527,15 @@ export default function DevicesMain() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl z-10"
+              className="relative bg-white rounded-[22px] w-full max-w-sm overflow-hidden shadow-2xl z-10"
             >
-              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+              <div className="px-6 py-4 border-b border-[#e7eef2] bg-[#f7fbfd] flex justify-between items-center">
                 <h2 className="text-lg font-black flex items-center gap-2">
-                  <Server className="w-5 h-5 text-blue-600" /> ربط بنظام
+                  <Server className="w-5 h-5 text-[#0f6d7c]" /> ربط بنظام
                 </h2>
                 <button
                   onClick={() => setIsLinkSystemModalOpen(false)}
-                  className="text-slate-400 hover:text-slate-600"
+                  className="text-[#8aa0b4] hover:text-[#52677e]"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -2563,7 +2551,7 @@ export default function DevicesMain() {
                   <button
                     key={sys}
                     onClick={() => handleLinkSystemSubmit(sys)}
-                    className="w-full text-right p-3 border rounded-xl hover:bg-blue-50 hover:border-blue-300 font-bold text-sm transition-colors"
+                    className="w-full text-right p-3 border rounded-xl hover:bg-[#fbf7ef] hover:border-blue-300 font-bold text-sm transition-colors"
                   >
                     {sys}
                   </button>

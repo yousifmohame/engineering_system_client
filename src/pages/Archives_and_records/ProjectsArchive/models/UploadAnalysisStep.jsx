@@ -74,7 +74,7 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
       return <FileText className="w-5 h-5 text-rose-500" />;
     if (type.includes("image"))
       return <ImageIcon className="w-5 h-5 text-emerald-500" />;
-    return <FileCheck className="w-5 h-5 text-indigo-500" />;
+    return <FileCheck className="w-5 h-5 text-[#0f3d50]" />;
   };
 
   const formatSize = (bytes) => (bytes / (1024 * 1024)).toFixed(2) + " MB";
@@ -209,7 +209,7 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
 
           {uploadStatus === "manual_creating" ? (
             <>
-              <Loader2 className="w-16 h-16 text-indigo-600 animate-spin mx-auto mb-6" />
+              <Loader2 className="w-16 h-16 text-[#123B5D] animate-spin mx-auto mb-6" />
               <h3 className="text-xl font-black text-slate-800 mb-2">
                 جاري تجهيز الملف...
               </h3>
@@ -239,7 +239,7 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-600 font-black text-sm">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[#123B5D] font-black text-sm">
                   {uploadProgress}%
                 </div>
               </div>
@@ -292,7 +292,7 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
           </p>
           <button
             onClick={() => setUploadStatus("idle")}
-            className="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-sm font-black transition-colors"
+            className="w-full py-3.5 bg-[#0f3d50] hover:bg-[#0f3d50] text-white rounded-xl text-sm font-black transition-colors"
           >
             العودة
           </button>
@@ -306,7 +306,7 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
       <div className="max-w-2xl w-full my-auto mx-auto bg-white rounded-3xl shadow-2xl border border-slate-100 p-6 md:p-8 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* العناوين */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-gradient-to-br from-indigo-50 to-blue-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-indigo-100/50">
+          <div className="w-14 h-14 bg-gradient-to-br from-indigo-50 to-blue-50 text-[#123B5D] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-[#e8dcc8]/50">
             <CloudUpload className="w-7 h-7" />
           </div>
           <h2 className="text-xl font-black text-slate-800 mb-2 tracking-tight">
@@ -323,12 +323,12 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
           onDragLeave={onDragLeave}
           onDrop={onDrop}
           className={`relative w-full overflow-hidden transition-all duration-300 ease-out border-2 border-dashed rounded-3xl p-8 flex flex-col items-center justify-center text-center mb-6
-            ${isDragging ? "border-indigo-500 bg-indigo-50 scale-[1.02] shadow-xl shadow-indigo-100" : "border-slate-300 bg-slate-50 hover:border-indigo-400 hover:bg-slate-50/80"}`}
+            ${isDragging ? "border-[#d7b96d] bg-[#f4f7f8] scale-[1.02] shadow-xl shadow-[#d7b96d]/20" : "border-slate-300 bg-slate-50 hover:border-[#d7b96d] hover:bg-slate-50/80"}`}
         >
           <div className="relative z-10 flex flex-col items-center">
             <ClipboardPaste className="w-8 h-8 text-slate-300 mb-3" />
             <h3
-              className={`text-sm font-black mb-1.5 ${isDragging ? "text-indigo-700" : "text-slate-700"}`}
+              className={`text-sm font-black mb-1.5 ${isDragging ? "text-[#123B5D]" : "text-slate-700"}`}
             >
               {isDragging
                 ? "أفلت الملفات هنا الآن..."
@@ -337,7 +337,7 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
             <p className="text-[11px] font-bold text-slate-400 mb-5">
               مسموح برفع أعداد كبيرة (الرفع يتم على دفعات مجزأة)
             </p>
-            <label className="px-6 py-2.5 bg-white text-indigo-600 rounded-xl text-xs font-black hover:bg-indigo-50 transition-all border border-indigo-200 cursor-pointer shadow-sm hover:shadow active:scale-95 inline-flex items-center gap-2">
+            <label className="px-6 py-2.5 bg-white text-[#123B5D] rounded-xl text-xs font-black hover:bg-[#f4f7f8] transition-all border border-[#e8dcc8] cursor-pointer shadow-sm hover:shadow active:scale-95 inline-flex items-center gap-2">
               <CloudUpload className="w-4 h-4" />
               تصفح الملفات
               <input
@@ -357,7 +357,7 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
             {/* إعدادات الضغط */}
             <div className="mb-5 pb-5 border-b border-slate-100">
               <label className="flex items-center gap-2 text-xs font-black text-slate-700 mb-3">
-                <Settings2 className="w-4 h-4 text-indigo-500" /> إعدادات ضغط
+                <Settings2 className="w-4 h-4 text-[#0f3d50]" /> إعدادات ضغط
                 الملفات
               </label>
               <div className="flex flex-wrap gap-2">
@@ -425,7 +425,7 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
             <button
               onClick={() => startAnalysis(false)}
               disabled={files.length === 0}
-              className="flex-1 py-3 bg-indigo-600 text-white rounded-xl text-xs font-black shadow-[0_0_15px_rgba(79,70,229,0.25)] hover:bg-indigo-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 active:scale-95"
+              className="flex-1 py-3 bg-[#0f3d50] text-white rounded-xl text-xs font-black shadow-[0_0_15px_rgba(79,70,229,0.25)] hover:bg-[#174e65] disabled:opacity-50 transition-all flex items-center justify-center gap-2 active:scale-95"
             >
               <Brain className="w-4 h-4" /> تحليل فوري ومراجعة
             </button>
@@ -440,7 +440,7 @@ export default function UploadAnalysisStep({ onAnalysisStarted, onClose }) {
           </div>
           <button
             onClick={handleManualEntry}
-            className="w-full py-2 text-slate-400 hover:text-indigo-600 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1.5"
+            className="w-full py-2 text-slate-400 hover:text-[#123B5D] rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1.5"
           >
             <PenTool className="w-3.5 h-3.5" /> إدخال البيانات يدوياً بدون
             مستندات

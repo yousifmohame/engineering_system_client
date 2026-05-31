@@ -1,12 +1,12 @@
 import React from "react";
-import { Building2, ShieldCheck } from "lucide-react";
-import QRCode from "react-qr-code"; // 💡 استيراد مكتبة الـ QR Code الحقيقية
+import { Building2 } from "lucide-react";
 
 export default function MeetingMinutePreview({
   minute,
   transaction,
   zoom = 1,
   isInternal = false,
+  printId = "printable-minute-a4",
 }) {
   // تجهيز المتغيرات بأمان
   const serialNumber = minute?.referenceNumber || minute?.id || "MM-000-000";
@@ -31,10 +31,35 @@ export default function MeetingMinutePreview({
     ? `${window.location.origin}/verify/${minute.verificationToken}`
     : `${window.location.origin}/verify/unverified`;
 
+  const companyLogo =
+    minute?.printSettings?.companyLogoUrl ||
+    minute?.printSettings?.logoUrl ||
+    minute?.companyLogoUrl ||
+    transaction?.companyLogoUrl ||
+    transaction?.company?.logoUrl ||
+    "/logo.jpeg";
+
+  const companyName =
+    minute?.printSettings?.companyName ||
+    transaction?.companyName ||
+    transaction?.company?.name ||
+    "DETAILS";
+
+  const companySubtitle =
+    minute?.printSettings?.companySubtitle ||
+    transaction?.company?.subtitle ||
+    "Consulting Engineers";
+
+  const companyNameAr =
+    minute?.printSettings?.companyNameAr ||
+    transaction?.companyNameAr ||
+    transaction?.company?.nameAr ||
+    "شركة ديتيلز للاستشارات الهندسية";
+
   return (
     <div
-      id="printable-minute-a4"
-      className="origin-top transition-transform duration-300 shadow-2xl print:shadow-none print:m-0 flex flex-col items-center"
+      id={printId}
+      className="origin-top transition-transform duration-300 shadow-[0_18px_45px_rgba(18,63,89,0.14)] print:shadow-none print:m-0 flex flex-col items-center"
       style={{
         transform: `scale(${zoom})`,
         marginBottom: marginBottom,
@@ -69,14 +94,14 @@ export default function MeetingMinutePreview({
         {/* 🛡️ الختم المائي (حسب الإعدادات) */}
         {showStamp && (
           <div className="absolute top-32 left-16 opacity-30 pointer-events-none z-0 print:opacity-50">
-            <div className="w-32 h-32 border-4 border-indigo-600 rounded-full flex flex-col items-center justify-center -rotate-12 bg-transparent">
-              <span className="text-xs font-black text-indigo-700 tracking-widest uppercase">
+            <div className="w-32 h-32 border-4 border-[#0e7490] rounded-full flex flex-col items-center justify-center -rotate-12 bg-transparent">
+              <span className="text-xs font-black text-[#0e7490] tracking-widest uppercase">
                 مكتب معتمد
               </span>
-              <span className="text-lg font-black text-indigo-800 my-0.5">
+              <span className="text-lg font-black text-[#123f59] my-0.5">
                 صورة رسمية
               </span>
-              <span className="text-[8px] font-bold text-indigo-600 font-mono">
+              <span className="text-[8px] font-bold text-[#0e7490] font-mono">
                 {serialNumber}
               </span>
             </div>
@@ -87,7 +112,7 @@ export default function MeetingMinutePreview({
           <thead className="print:table-header-group">
             <tr>
               <td className="p-0 border-none m-0">
-                <div className="absolute top-4 right-4 text-[9px] font-black uppercase text-slate-300 print:hidden tracking-widest pl-4">
+                <div className="absolute top-4 right-4 text-[9px] font-black uppercase text-[#cfd8e3] print:hidden tracking-widest pl-4">
                   محضر اجتماع - A4 DOCUMENT VIEW
                 </div>
                 <div className="h-6"></div>
@@ -103,13 +128,31 @@ export default function MeetingMinutePreview({
                     {/* =======================================
                         1. الترويسة (Header & Basic Info)
                         ======================================= */}
-                    <div className="flex justify-between items-start border-b-2 border-slate-900 pb-6 mb-8 mt-4">
+                    <div className="flex justify-between items-start gap-6 border-b-2 border-[#08111c] pb-5 mb-7 mt-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-slate-900 rounded-xl flex items-center justify-center font-black text-white text-xl">
-                          LOGO
+                        <div className="h-18 w-32 shrink-0 rounded-xl border border-[#e8ddc8] bg-white p-2 shadow-sm flex items-center justify-center overflow-hidden">
+                          {companyLogo ? (
+                            <img
+                              src={companyLogo}
+                              alt={companyName}
+                              className="max-h-full max-w-full object-contain"
+                            />
+                          ) : (
+                            <div className="text-center leading-none">
+                              <div className="text-lg font-black tracking-wider text-[#c5983c]">
+                                {companyName}
+                              </div>
+                              <div className="mt-1 text-[8px] font-black uppercase tracking-[0.18em] text-[#60738f]">
+                                {companySubtitle}
+                              </div>
+                              <div className="mt-1 text-[8px] font-bold text-[#c5983c]">
+                                {companyNameAr}
+                              </div>
+                            </div>
+                          )}
                         </div>
                         <div>
-                          <h1 className="text-3xl font-black text-slate-900 mb-2 font-sans flex items-center gap-2">
+                          <h1 className="text-2xl font-black text-[#123f59] mb-2 font-sans flex items-center gap-2">
                             محضر اجتماع
                             {isInternal && (
                               <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-300 rounded px-2 py-0.5 font-bold">
@@ -118,7 +161,7 @@ export default function MeetingMinutePreview({
                             )}
                           </h1>
                           <p
-                            className="text-sm font-bold text-slate-600 font-sans max-w-sm truncate"
+                            className="text-sm font-bold text-[#60738f] font-sans max-w-sm truncate"
                             title={minute?.title}
                           >
                             {minute?.title || "عنوان المحضر"}
@@ -127,7 +170,7 @@ export default function MeetingMinutePreview({
                       </div>
                       <div className="text-left text-sm space-y-1 font-sans">
                         <p>
-                          <span className="font-bold text-slate-500">
+                          <span className="font-bold text-[#64748b]">
                             رقم المحضر:
                           </span>{" "}
                           <span className="font-black font-mono">
@@ -135,13 +178,13 @@ export default function MeetingMinutePreview({
                           </span>
                         </p>
                         <p>
-                          <span className="font-bold text-slate-500">
+                          <span className="font-bold text-[#64748b]">
                             التاريخ:
                           </span>{" "}
                           <span className="font-black">{meetingDate}</span>
                         </p>
                         <p>
-                          <span className="font-bold text-slate-500">
+                          <span className="font-bold text-[#64748b]">
                             الحالة:
                           </span>{" "}
                           <span className="font-black">
@@ -153,10 +196,10 @@ export default function MeetingMinutePreview({
 
                     <div className="grid grid-cols-2 gap-x-8 gap-y-4 mb-8 text-sm font-sans relative">
                       {transaction?.processingEntities?.length > 0 && (
-                        <div className="col-span-2 mb-2 bg-indigo-50 border border-indigo-100 p-4 rounded-xl flex items-start gap-3">
-                          <Building2 className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+                        <div className="col-span-2 mb-2 bg-[#eef7f6] border border-[#b9e5ee] p-4 rounded-xl flex items-start gap-3">
+                          <Building2 className="w-5 h-5 text-[#0e7490] shrink-0 mt-0.5" />
                           <div>
-                            <p className="text-xs font-black text-indigo-900">
+                            <p className="text-xs font-black text-[#123f59]">
                               جهة المعالجة (الارتباط الحكومي)
                             </p>
                             <div className="mt-1.5 flex flex-wrap gap-2">
@@ -164,7 +207,7 @@ export default function MeetingMinutePreview({
                                 (entity, i) => (
                                   <span
                                     key={i}
-                                    className={`px-2 py-1 rounded text-[10px] font-bold ${entity.isPrimary ? "bg-indigo-600 text-white" : "bg-white text-indigo-700 border border-indigo-200"}`}
+                                    className={`px-2 py-1 rounded text-[10px] font-bold ${entity.isPrimary ? "bg-[#0e7490] text-white" : "bg-white text-[#0e7490] border border-[#b9e5ee]"}`}
                                   >
                                     {entity.name}
                                     <span className="opacity-70 text-[9px] mr-1 font-normal">
@@ -182,7 +225,7 @@ export default function MeetingMinutePreview({
                         </div>
                       )}
                       <div>
-                        <span className="font-bold text-slate-500 block mb-1">
+                        <span className="font-bold text-[#64748b] block mb-1">
                           نوع وصفة الاجتماع:
                         </span>{" "}
                         <span className="font-black">
@@ -191,7 +234,7 @@ export default function MeetingMinutePreview({
                         </span>
                       </div>
                       <div>
-                        <span className="font-bold text-slate-500 block mb-1">
+                        <span className="font-bold text-[#64748b] block mb-1">
                           التسلسل:
                         </span>{" "}
                         <span className="font-black">
@@ -199,7 +242,7 @@ export default function MeetingMinutePreview({
                         </span>
                       </div>
                       <div>
-                        <span className="font-bold text-slate-500 block mb-1">
+                        <span className="font-bold text-[#64748b] block mb-1">
                           وقت البداية:
                         </span>{" "}
                         <span className="font-black">
@@ -207,7 +250,7 @@ export default function MeetingMinutePreview({
                         </span>
                       </div>
                       <div>
-                        <span className="font-bold text-slate-500 block mb-1">
+                        <span className="font-bold text-[#64748b] block mb-1">
                           وقت النهاية:
                         </span>{" "}
                         <span className="font-black">
@@ -215,7 +258,7 @@ export default function MeetingMinutePreview({
                         </span>
                       </div>
                       <div>
-                        <span className="font-bold text-slate-500 block mb-1">
+                        <span className="font-bold text-[#64748b] block mb-1">
                           طريقة/مكان الاجتماع:
                         </span>{" "}
                         <span className="font-black">
@@ -224,7 +267,7 @@ export default function MeetingMinutePreview({
                         </span>
                       </div>
                       <div>
-                        <span className="font-bold text-slate-500 block mb-1">
+                        <span className="font-bold text-[#64748b] block mb-1">
                           العميل / ممثل العميل:
                         </span>{" "}
                         <span className="font-black">
@@ -233,7 +276,7 @@ export default function MeetingMinutePreview({
                       </div>
                       {minute?.requester && (
                         <div>
-                          <span className="font-bold text-slate-500 block mb-1">
+                          <span className="font-bold text-[#64748b] block mb-1">
                             الجهة الطالبة:
                           </span>{" "}
                           <span className="font-black">{minute.requester}</span>
@@ -241,10 +284,10 @@ export default function MeetingMinutePreview({
                       )}
                       {minute?.transactionId && (
                         <div>
-                          <span className="font-bold text-slate-500 block mb-1">
+                          <span className="font-bold text-[#64748b] block mb-1">
                             رقم المعاملة:
                           </span>
-                          <span className="font-black font-mono text-indigo-700 bg-indigo-50 px-1 rounded">
+                          <span className="font-black font-mono text-[#0e7490] bg-[#eef7f6] px-1 rounded">
                             {minute.transactionRef || minute.transactionId}
                           </span>
                         </div>
@@ -255,26 +298,26 @@ export default function MeetingMinutePreview({
                         2. قائمة الحضور (Attendees)
                         ======================================= */}
                     <div className="mb-8 font-sans break-inside-avoid">
-                      <h2 className="text-lg font-black text-slate-900 mb-4 border-b border-slate-200 pb-2">
+                      <h2 className="text-lg font-black text-[#123f59] mb-4 border-b border-[#e8ddc8] pb-2">
                         قائمة الحضور
                       </h2>
-                      <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
+                      <table className="w-full text-sm border border-[#e8ddc8] rounded-xl overflow-hidden">
                         <thead>
-                          <tr className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                          <tr className="bg-[#fbf8f1] text-[#60738f] font-bold border-b border-[#e8ddc8]">
                             <th className="p-2 text-right">الاسم</th>
                             <th className="p-2 text-right">الجهة</th>
                             <th className="p-2 text-right">الصفة</th>
                             <th className="p-2 text-right">طريقة الحضور</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-[#e8ddc8]/70">
                           {minute?.attendees?.length > 0 ? (
                             minute.attendees.map((a) => (
                               <tr key={a.id}>
                                 <td className="p-2 font-black">{a.name}</td>
                                 <td className="p-2">{a.entity}</td>
-                                <td className="p-2 text-slate-600">{a.role}</td>
-                                <td className="p-2 text-slate-600">
+                                <td className="p-2 text-[#60738f]">{a.role}</td>
+                                <td className="p-2 text-[#60738f]">
                                   {a.attendanceMethod}
                                 </td>
                               </tr>
@@ -283,7 +326,7 @@ export default function MeetingMinutePreview({
                             <tr>
                               <td
                                 colSpan={4}
-                                className="p-4 text-center text-slate-400 font-bold"
+                                className="p-4 text-center text-[#8da0bb] font-bold"
                               >
                                 لا يوجد حضور مسجل
                               </td>
@@ -301,10 +344,10 @@ export default function MeetingMinutePreview({
                         {minute.axes.map((axis, index) => (
                           <div
                             key={axis.id}
-                            className="border border-slate-200 rounded-xl overflow-hidden page-break-inside-avoid shadow-sm print:shadow-none print:border-slate-300"
+                            className="border border-[#e8ddc8] rounded-xl overflow-hidden page-break-inside-avoid shadow-sm print:shadow-none print:border-[#d8b46a]/45"
                           >
-                            <div className="bg-slate-100 p-3 border-b border-slate-200 flex justify-between items-center print:bg-slate-50">
-                              <h2 className="text-base font-black text-slate-900">
+                            <div className="bg-[#fbf8f1] p-3 border-b border-[#e8ddc8] flex justify-between items-center print:bg-[#fbf8f1]">
+                              <h2 className="text-base font-black text-[#123f59]">
                                 محور {index + 1}: {axis.title}
                               </h2>
                             </div>
@@ -314,15 +357,15 @@ export default function MeetingMinutePreview({
                                 .length > 0 ||
                                 axis.companyResponses?.filter((r) => r.trim())
                                   .length > 0) && (
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                   {axis.clientRequests?.filter((r) => r.trim())
                                     .length > 0 && (
                                     <div>
-                                      <h3 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>{" "}
+                                      <h3 className="text-sm font-bold text-[#123f59] mb-2 flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#eef7f6]0"></span>{" "}
                                         نقاشات وطلبات العميل
                                       </h3>
-                                      <ul className="text-xs list-disc list-inside space-y-1 text-slate-700 font-medium">
+                                      <ul className="text-xs list-disc list-inside space-y-1 text-[#334155] font-medium">
                                         {axis.clientRequests
                                           .filter((r) => r.trim())
                                           .map((req, i) => (
@@ -340,11 +383,11 @@ export default function MeetingMinutePreview({
                                     r.trim(),
                                   ).length > 0 && (
                                     <div>
-                                      <h3 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
+                                      <h3 className="text-sm font-bold text-[#123f59] mb-2 flex items-center gap-2">
                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>{" "}
                                         إفادات الشركة
                                       </h3>
-                                      <ul className="text-xs list-disc list-inside space-y-1 text-slate-700 font-medium">
+                                      <ul className="text-xs list-disc list-inside space-y-1 text-[#334155] font-medium">
                                         {axis.companyResponses
                                           .filter((r) => r.trim())
                                           .map((res, i) => (
@@ -363,8 +406,8 @@ export default function MeetingMinutePreview({
 
                               {/* المخرجات النهائية */}
                               {axis.outcomes && axis.outcomes.length > 0 && (
-                                <div className="border-t border-slate-100 pt-4">
-                                  <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                                <div className="border-t border-[#e8ddc8]/70 pt-4">
+                                  <h3 className="text-sm font-bold text-[#123f59] mb-3 flex items-center gap-2">
                                     <span className="w-1.5 h-1.5 rounded-full bg-violet-500"></span>{" "}
                                     القرارات والمخرجات
                                   </h3>
@@ -372,31 +415,31 @@ export default function MeetingMinutePreview({
                                     {axis.outcomes.map((outcome) => (
                                       <div
                                         key={outcome.id}
-                                        className="bg-slate-50 border border-slate-100 rounded-lg p-3"
+                                        className="bg-[#fbf8f1] border border-[#e8ddc8]/70 rounded-xl p-3"
                                       >
                                         <div className="flex justify-between items-start mb-2">
-                                          <h4 className="font-bold text-sm text-slate-800">
+                                          <h4 className="font-bold text-sm text-[#123f59]">
                                             {outcome.title}{" "}
-                                            <span className="text-[10px] text-slate-500 font-normal mr-2">
+                                            <span className="text-[10px] text-[#64748b] font-normal mr-2">
                                               ({outcome.source})
                                             </span>
                                           </h4>
                                           <span
-                                            className={`text-[9px] px-2 py-0.5 rounded font-bold ${outcome.status === "منجز" ? "bg-emerald-100 text-emerald-700" : outcome.status === "قيد التنفيذ" ? "bg-amber-100 text-amber-700" : "bg-slate-200 text-slate-600"}`}
+                                            className={`text-[9px] px-2 py-0.5 rounded font-bold ${outcome.status === "منجز" ? "bg-emerald-100 text-emerald-700" : outcome.status === "قيد التنفيذ" ? "bg-amber-100 text-amber-700" : "bg-[#e8ddc8] text-[#60738f]"}`}
                                           >
                                             {outcome.status}
                                           </span>
                                         </div>
-                                        <p className="text-slate-800 text-xs whitespace-pre-wrap leading-relaxed font-bold">
+                                        <p className="text-[#123f59] text-xs whitespace-pre-wrap leading-relaxed font-bold">
                                           {outcome.content}
                                         </p>
                                         {(outcome.responsible ||
                                           outcome.targetDate ||
                                           outcome.dueDate) && (
-                                          <div className="flex flex-wrap gap-4 text-[10px] text-slate-500 mt-2 pt-2 border-t border-slate-200/50">
+                                          <div className="flex flex-wrap gap-4 text-[10px] text-[#64748b] mt-2 pt-2 border-t border-[#e8ddc8]/50">
                                             {outcome.responsible && (
                                               <span>
-                                                <span className="font-bold text-slate-700">
+                                                <span className="font-bold text-[#334155]">
                                                   المسؤول:
                                                 </span>{" "}
                                                 {outcome.responsible}
@@ -404,7 +447,7 @@ export default function MeetingMinutePreview({
                                             )}
                                             {outcome.targetDate && (
                                               <span>
-                                                <span className="font-bold text-slate-700">
+                                                <span className="font-bold text-[#334155]">
                                                   البدء:
                                                 </span>{" "}
                                                 {outcome.targetDate}
@@ -412,7 +455,7 @@ export default function MeetingMinutePreview({
                                             )}
                                             {outcome.dueDate && (
                                               <span>
-                                                <span className="font-bold text-slate-700">
+                                                <span className="font-bold text-[#334155]">
                                                   الاستحقاق:
                                                 </span>{" "}
                                                 {outcome.dueDate}
@@ -436,11 +479,11 @@ export default function MeetingMinutePreview({
                         ======================================= */}
                     {minute?.steps && minute.steps.length > 0 && (
                       <div className="mb-8 font-sans break-inside-avoid">
-                        <h2 className="text-lg font-black text-slate-900 mb-4 border-b border-slate-200 pb-2">
+                        <h2 className="text-lg font-black text-[#123f59] mb-4 border-b border-[#e8ddc8] pb-2">
                           الخطوات والإجراءات التنفيذية
                         </h2>
-                        <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
-                          <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                        <table className="w-full text-sm border border-[#e8ddc8] rounded-xl overflow-hidden">
+                          <thead className="bg-[#fbf8f1] text-[#60738f] font-bold border-b border-[#e8ddc8]">
                             <tr>
                               <th className="p-2 text-right w-10">م</th>
                               <th className="p-2 text-right">
@@ -451,24 +494,24 @@ export default function MeetingMinutePreview({
                               <th className="p-2 text-right">الحالة</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-100">
+                          <tbody className="divide-y divide-[#e8ddc8]/70">
                             {minute.steps.map((step, index) => (
                               <tr key={step.id}>
-                                <td className="p-2 font-black text-slate-400">
+                                <td className="p-2 font-black text-[#8da0bb]">
                                   {index + 1}
                                 </td>
-                                <td className="p-2 font-black text-slate-800">
+                                <td className="p-2 font-black text-[#123f59]">
                                   {step.description}
                                 </td>
-                                <td className="p-2 text-slate-600">
+                                <td className="p-2 text-[#60738f]">
                                   {step.responsible || "--"}
                                 </td>
-                                <td className="p-2 text-slate-600">
+                                <td className="p-2 text-[#60738f]">
                                   {step.deadline || "--"}
                                 </td>
                                 <td className="p-2">
                                   <span
-                                    className={`text-[9px] px-2 py-0.5 rounded font-bold ${step.status === "مكتمل" ? "bg-emerald-100 text-emerald-700" : step.status === "جاري" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}`}
+                                    className={`text-[9px] px-2 py-0.5 rounded font-bold ${step.status === "مكتمل" ? "bg-emerald-100 text-emerald-700" : step.status === "جاري" ? "bg-amber-100 text-amber-700" : "bg-[#fbf8f1] text-[#60738f]"}`}
                                   >
                                     {step.status}
                                   </span>
@@ -485,14 +528,14 @@ export default function MeetingMinutePreview({
                         ======================================= */}
                     {minute?.attachments && minute.attachments.length > 0 && (
                       <div className="mb-8 font-sans break-inside-avoid">
-                        <h2 className="text-lg font-black text-slate-900 mb-2 border-b border-slate-200 pb-2">
+                        <h2 className="text-lg font-black text-[#123f59] mb-2 border-b border-[#e8ddc8] pb-2">
                           المرفقات المرجعية
                         </h2>
-                        <ul className="text-xs list-disc list-inside text-slate-700 font-medium space-y-1">
+                        <ul className="text-xs list-disc list-inside text-[#334155] font-medium space-y-1">
                           {minute.attachments.map((att, i) => (
                             <li key={i}>
                               {att.name}{" "}
-                              <span className="text-[10px] text-slate-400 ml-1">
+                              <span className="text-[10px] text-[#8da0bb] ml-1">
                                 ({att.date})
                               </span>
                             </li>
@@ -519,7 +562,7 @@ export default function MeetingMinutePreview({
                         7. قسم التوقيع (Signatures) - ديناميكي حسب الإعدادات
                         ======================================= */}
                     {signatureSettings.signatureType !== "none" && (
-                      <div className="mt-12 pt-6 border-t-2 border-slate-800 break-inside-avoid">
+                      <div className="mt-12 pt-6 border-t-2 border-[#123f59] break-inside-avoid">
                         <div
                           className={`grid gap-8 text-center ${signingParties === "both" ? "grid-cols-2" : "grid-cols-1 max-w-sm mx-auto"}`}
                         >
@@ -528,22 +571,22 @@ export default function MeetingMinutePreview({
                             signingParties === "party1_only" ||
                             signingParties === "company_only") && (
                             <div>
-                              <p className="font-black text-[11px] text-slate-800">
+                              <p className="font-black text-[11px] text-[#123f59]">
                                 {signingParties === "company_only"
                                   ? "جهة الإصدار والاعتماد"
                                   : "الطرف الأول (ممثل المكتب)"}
                               </p>
-                              <p className="text-[9px] text-slate-500 mt-0.5 mb-6">
+                              <p className="text-[9px] text-[#64748b] mt-0.5 mb-6">
                                 الاسم والتوقيع
                               </p>
-                              <div className="h-16 mx-4 border-b border-slate-300 border-dashed relative flex items-center justify-center">
+                              <div className="h-16 mx-4 border-b border-[#d8b46a]/45 border-dashed relative flex items-center justify-center">
                                 {signatureSettings.signatureType ===
                                 "secure" ? (
                                   <span className="text-emerald-600 font-bold text-[10px] border border-emerald-200 bg-emerald-50 px-2 py-1 rounded">
                                     تم الاعتماد والمصادقة الرقمية
                                   </span>
                                 ) : (
-                                  <span className="text-slate-300 text-xs italic opacity-50 select-none absolute bottom-2">
+                                  <span className="text-[#cfd8e3] text-xs italic opacity-50 select-none absolute bottom-2">
                                     مساحة التوقيع
                                   </span>
                                 )}
@@ -555,14 +598,14 @@ export default function MeetingMinutePreview({
                           {(signingParties === "both" ||
                             signingParties === "party2_only") && (
                             <div>
-                              <p className="font-black text-[11px] text-slate-800">
+                              <p className="font-black text-[11px] text-[#123f59]">
                                 الطرف الثاني (ممثل العميل)
                               </p>
-                              <p className="text-[9px] text-slate-500 mt-0.5 mb-6">
+                              <p className="text-[9px] text-[#64748b] mt-0.5 mb-6">
                                 الاسم والتوقيع
                               </p>
-                              <div className="h-16 mx-4 border-b border-slate-300 border-dashed relative flex items-center justify-center">
-                                <span className="text-slate-300 text-xs italic opacity-50 select-none absolute bottom-2">
+                              <div className="h-16 mx-4 border-b border-[#d8b46a]/45 border-dashed relative flex items-center justify-center">
+                                <span className="text-[#cfd8e3] text-xs italic opacity-50 select-none absolute bottom-2">
                                   مساحة التوقيع
                                 </span>
                               </div>
@@ -573,7 +616,7 @@ export default function MeetingMinutePreview({
                         {/* بيان التوثيق (إذا كان مفعلاً) */}
                         {signatureSettings.showAuthStatement &&
                           signatureSettings.authStatementText && (
-                            <div className="mt-8 text-center text-[10px] text-slate-500 font-bold bg-slate-50 p-3 rounded-lg border border-slate-200">
+                            <div className="mt-8 text-center text-[10px] text-[#64748b] font-bold bg-[#fbf8f1] p-3 rounded-xl border border-[#e8ddc8]">
                               {signatureSettings.authStatementText}
                             </div>
                           )}
@@ -590,66 +633,40 @@ export default function MeetingMinutePreview({
               ======================================= */}
           <tfoot className="print:table-footer-group">
             <tr>
-              <td className="p-0 border-none m-0 align-bottom h-32 pt-8">
-                <div className="border-t border-slate-200 pt-6 flex justify-between items-end text-[10px] text-slate-500 font-sans print:border-slate-300 break-inside-avoid">
-                  <div className="flex flex-col gap-1 w-1/3">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-800 tracking-tight">
-                        الرقم المرجعي:
-                      </span>
-                      <span className="font-mono text-xs text-slate-900">
-                        {serialNumber}
-                      </span>
+              <td className="p-0 border-none m-0 align-bottom pt-5">
+                <div
+                  className="meeting-footer-details w-full border-t-2 border-[#123f59] pt-1.5 flex items-start gap-2 text-[#123f59] font-sans break-inside-avoid"
+                  dir="rtl"
+                >
+                  {/* QR Code à gauche */}
+                  <div className="w-[14mm] h-[14mm] shrink-0 flex items-center justify-center overflow-hidden order-last">
+                    <img
+                      src="/qrcode.png"
+                      alt="QR Code"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+
+                  {/* Coordonnées société avec icônes, compactes et lisibles */}
+                  <div className="flex-1 min-w-0 text-[8.9px] leading-[1.45] font-bold text-center overflow-hidden">
+                    <div className="whitespace-nowrap overflow-hidden text-ellipsis">
+                      <span className="text-[#e91e63] mx-1">📍</span>
+                      <span>حي الملك فهد - الرياض - المملكة العربية السعودية</span>
+                      <span className="mx-1">-</span>
+                      <span>الرمز البريدي: ١٢٢٧٤</span>
+                      <span className="mx-1">-</span>
+                      <span>جوال: ٠٥٩٠٧٢٢٨٢٧</span>
+                      <span className="mx-1">-</span>
+                      <span>الرقم الوطني الموحد: ٧٠٥٢٣٠٣٨٢٨</span>
                     </div>
-                    <p className="leading-relaxed opacity-75 max-w-xs">
-                      {footerText}
-                    </p>
-                  </div>
 
-                  {/* 💡 مـكـان الـ QR Code الـحـقـيـقـي */}
-                  <div className="flex flex-col items-center gap-1 w-1/3">
-                    {showQR && (
-                      <div className="bg-white p-1.5 border border-slate-200 rounded-lg shadow-sm">
-                        {/* توليد الباركود بناءً على الرابط */}
-                        <QRCode value={verificationUrl} size={60} level="L" />
-                      </div>
-                    )}
-                    <span className="font-mono text-[9px] tracking-[0.2em] mt-1">
-                      {serialNumber}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-end gap-6 items-end w-1/3">
-                    <div className="text-left font-black text-slate-900 border-r-2 border-slate-900 pr-4 h-full flex flex-col justify-center">
-                      <div className="text-[10px] uppercase tracking-widest text-slate-400 mb-0.5">
-                        Page
-                      </div>
-                      <div className="text-base leading-none print:hidden">
-                        1 <span className="text-slate-300 mx-0.5">/</span> 1
-                      </div>
-                      <div className="text-base leading-none hidden print:block css-page-number"></div>
+                    <div className="mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis" dir="ltr">
+                      <span className="text-[#e91e63] mx-1">📍</span>
+                      <span>King Fahd Dist - RIYADH - Kingdom of Saudi Arabia - POSTAL CODE :12274</span>
+                      <span className="mx-1">☎ 0590722827</span>
+                      <span className="mx-1">- N.N: 7052303828</span>
+                      <span className="mx-1">✉ info@details-consults.sa</span>
                     </div>
-                  </div>
-                </div>
-
-                {/* شريط معلومات الاتصال السفلي */}
-                <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-500 font-bold">
-                  <div className="flex gap-4">
-                    <span className="flex items-center gap-1">
-                      <span className="text-slate-400">هاتف:</span>{" "}
-                      {minute?.printSettings?.contactPhone || "920000000"}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="text-slate-400">بريد:</span>{" "}
-                      {minute?.printSettings?.contactEmail ||
-                        "info@company.com"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100/50">
-                    <ShieldCheck className="w-3 h-3" />
-                    <span className="uppercase tracking-widest text-[8px] font-black">
-                      Secure Digital Original
-                    </span>
                   </div>
                 </div>
               </td>

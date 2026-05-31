@@ -6,28 +6,28 @@ export default function BasicInfoSection({ minute, updateField, onOpenContacts }
     <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
       
       {/* 💡 عنوان القسم */}
-      <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-2">
-        <FileText className="text-indigo-600" size={20} />
-        <h3 className="text-sm font-black text-slate-800">البيانات الأساسية للمحضر</h3>
+      <div className="flex items-center gap-2 rounded-[18px] border border-[#e8ddc8] bg-white px-4 py-3 shadow-sm mb-3">
+        <FileText className="text-[#0e7490]" size={20} />
+        <h3 className="text-sm font-black text-[#123f59]">البيانات الأساسية للمحضر</h3>
       </div>
 
       {/* 💡 الصف الأول: رقم المحضر والتاريخ */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-[10px] font-bold text-slate-500 mb-1">رقم المحضر</label>
+          <label className="block text-[10px] font-bold text-[#64748b] mb-1">رقم المحضر</label>
           <input 
-            className="w-full text-xs p-2 border border-slate-200 rounded-lg text-slate-500 bg-slate-50 cursor-not-allowed outline-none" 
+            className="w-full text-xs p-2 border border-[#e8ddc8] rounded-xl text-[#64748b] bg-[#fbf8f1] cursor-not-allowed outline-none" 
             readOnly 
             type="text" 
             value={minute.referenceNumber || ""} 
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-slate-500 mb-1">
+          <label className="block text-[10px] font-bold text-[#64748b] mb-1">
             تاريخ الاجتماع <span className="text-rose-500">*</span>
           </label>
           <input 
-            className={`w-full text-xs p-2 border rounded-lg transition-all focus:ring-2 focus:ring-indigo-500/20 outline-none ${!minute.meetingDate ? 'border-amber-300 bg-amber-50/10' : 'border-slate-200'}`} 
+            className={`w-full text-xs p-2 border rounded-xl transition-all focus:ring-2 focus:ring-[#0e7490]/20 outline-none ${!minute.meetingDate ? 'border-amber-300 bg-amber-50/10' : 'border-[#e8ddc8]'}`} 
             type="date" 
             value={minute.meetingDate || ""} 
             onChange={(e) => updateField('meetingDate', e.target.value)} 
@@ -37,11 +37,11 @@ export default function BasicInfoSection({ minute, updateField, onOpenContacts }
 
       {/* 💡 الصف الثاني: عنوان الاجتماع */}
       <div>
-        <label className="block text-[10px] font-bold text-slate-500 mb-1">
+        <label className="block text-[10px] font-bold text-[#64748b] mb-1">
           عنوان الاجتماع <span className="text-rose-500">*</span>
         </label>
         <input 
-          className={`w-full text-sm font-bold p-2 border rounded-lg transition-all focus:ring-2 focus:ring-indigo-500/20 outline-none ${!minute.title ? 'border-amber-300 bg-amber-50/10' : 'border-slate-200'}`} 
+          className={`w-full text-sm font-bold p-2 border rounded-xl transition-all focus:ring-2 focus:ring-[#0e7490]/20 outline-none ${!minute.title ? 'border-amber-300 bg-amber-50/10' : 'border-[#e8ddc8]'}`} 
           placeholder="مثال: محضر اجتماع انطلاق المشروع" 
           type="text" 
           value={minute.title || ""} 
@@ -55,11 +55,11 @@ export default function BasicInfoSection({ minute, updateField, onOpenContacts }
       </div>
 
       {/* 💡 الصف الثالث: نوع وصفة الاجتماع */}
-      <div className="grid grid-cols-3 gap-4 border-t border-slate-100 pt-4 mt-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-[#e8ddc8]/70 pt-4 mt-2">
         <div>
-          <label className="block text-[10px] font-bold text-slate-500 mb-1">نوع الاجتماع</label>
+          <label className="block text-[10px] font-bold text-[#64748b] mb-1">نوع الاجتماع</label>
           <select 
-            className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none"
+            className="w-full text-xs p-2 border border-[#e8ddc8] rounded-xl focus:ring-2 focus:ring-[#0e7490]/20 outline-none"
             value={minute.meetingType || "إداري"}
             onChange={(e) => updateField('meetingType', e.target.value)}
           >
@@ -70,9 +70,9 @@ export default function BasicInfoSection({ minute, updateField, onOpenContacts }
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-slate-500 mb-1">صفة الاجتماع</label>
+          <label className="block text-[10px] font-bold text-[#64748b] mb-1">صفة الاجتماع</label>
           <select 
-            className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none"
+            className="w-full text-xs p-2 border border-[#e8ddc8] rounded-xl focus:ring-2 focus:ring-[#0e7490]/20 outline-none"
             value={minute.meetingCapacity || "استعراض"}
             onChange={(e) => updateField('meetingCapacity', e.target.value)}
           >
@@ -82,19 +82,19 @@ export default function BasicInfoSection({ minute, updateField, onOpenContacts }
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-slate-500 mb-1">التسلسل</label>
-          <div className="flex bg-slate-50 rounded-lg p-0.5 border border-slate-200">
+          <label className="block text-[10px] font-bold text-[#64748b] mb-1">التسلسل</label>
+          <div className="flex bg-[#fbf8f1] rounded-xl p-0.5 border border-[#e8ddc8]">
             <button 
               type="button"
               onClick={() => updateField('isFollowUp', false)}
-              className={`flex-1 text-[10px] py-1.5 font-bold rounded-md transition-all ${!minute.isFollowUp ? 'bg-white shadow-sm text-indigo-600 border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`flex-1 text-[10px] py-1.5 font-bold rounded-xl transition-all ${!minute.isFollowUp ? 'bg-white shadow-sm text-[#0e7490] border border-[#e8ddc8]/50' : 'text-[#64748b] hover:text-[#334155]'}`}
             >
               أولي
             </button>
             <button 
               type="button"
               onClick={() => updateField('isFollowUp', true)}
-              className={`flex-1 text-[10px] py-1.5 font-bold rounded-md transition-all ${minute.isFollowUp ? 'bg-white shadow-sm text-indigo-600 border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`flex-1 text-[10px] py-1.5 font-bold rounded-xl transition-all ${minute.isFollowUp ? 'bg-white shadow-sm text-[#0e7490] border border-[#e8ddc8]/50' : 'text-[#64748b] hover:text-[#334155]'}`}
             >
               متابعة
             </button>
@@ -103,20 +103,20 @@ export default function BasicInfoSection({ minute, updateField, onOpenContacts }
       </div>
 
       {/* 💡 الصف الرابع: أوقات الاجتماع */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-[10px] font-bold text-slate-500 mb-1">وقت البداية</label>
+          <label className="block text-[10px] font-bold text-[#64748b] mb-1">وقت البداية</label>
           <input 
-            className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none" 
+            className="w-full text-xs p-2 border border-[#e8ddc8] rounded-xl focus:ring-2 focus:ring-[#0e7490]/20 outline-none" 
             type="time" 
             value={minute.startTime || ""} 
             onChange={(e) => updateField('startTime', e.target.value)} 
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-slate-500 mb-1">وقت النهاية</label>
+          <label className="block text-[10px] font-bold text-[#64748b] mb-1">وقت النهاية</label>
           <input 
-            className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none" 
+            className="w-full text-xs p-2 border border-[#e8ddc8] rounded-xl focus:ring-2 focus:ring-[#0e7490]/20 outline-none" 
             type="time" 
             value={minute.endTime || ""} 
             onChange={(e) => updateField('endTime', e.target.value)} 
@@ -125,14 +125,14 @@ export default function BasicInfoSection({ minute, updateField, onOpenContacts }
       </div>
 
       {/* 💡 الصف الخامس: العميل والجهة */}
-      <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 mt-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-[#e8ddc8]/70 pt-4 mt-2">
         <div>
-          <label className="block text-[10px] font-bold text-slate-500 mb-1">
+          <label className="block text-[10px] font-bold text-[#64748b] mb-1">
             العميل / المعني <span className="text-rose-500">*</span>
           </label>
           <div className="relative">
             <input 
-              className={`w-full text-xs p-2 pr-10 border rounded-lg transition-all focus:ring-2 focus:ring-indigo-500/20 outline-none ${!minute.clientName ? 'border-amber-300 bg-amber-50/10' : 'border-slate-200 bg-white'}`} 
+              className={`w-full text-xs p-2 pr-20 border rounded-xl transition-all focus:ring-2 focus:ring-[#0e7490]/20 outline-none ${!minute.clientName ? 'border-amber-300 bg-amber-50/10' : 'border-[#e8ddc8] bg-white'}`} 
               type="text" 
               placeholder="اكتب اسم العميل..."
               value={minute.clientName || ""} 
@@ -143,16 +143,16 @@ export default function BasicInfoSection({ minute, updateField, onOpenContacts }
               type="button" 
               onClick={onOpenContacts} 
               title="جلب عميل مسجل"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 bg-slate-50 border border-slate-200 rounded-md text-indigo-600 shadow-sm hover:bg-indigo-50 transition-colors"
+              className="absolute right-1.5 top-1/2 inline-flex h-7 -translate-y-1/2 items-center gap-1 rounded-xl border border-[#e8ddc8] bg-[#fbf8f1] px-2 text-[9px] font-black text-[#0e7490] shadow-sm transition hover:bg-[#eef7f6]"
             >
-              <Users size={14} />
+              <Users size={12} /> جلب
             </button>
           </div>
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-slate-500 mb-1">الجهة الطالبة</label>
+          <label className="block text-[10px] font-bold text-[#64748b] mb-1">الجهة الطالبة</label>
           <input 
-            className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none" 
+            className="w-full text-xs p-2 border border-[#e8ddc8] rounded-xl focus:ring-2 focus:ring-[#0e7490]/20 outline-none" 
             type="text" 
             value={minute.requester || ""} 
             onChange={(e) => updateField('requester', e.target.value)} 
@@ -161,11 +161,11 @@ export default function BasicInfoSection({ minute, updateField, onOpenContacts }
       </div>
 
       {/* 💡 الصف السادس: القناة والمكان */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-[10px] font-bold text-slate-500 mb-1">قناة الاجتماع</label>
+          <label className="block text-[10px] font-bold text-[#64748b] mb-1">قناة الاجتماع</label>
           <select 
-            className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none"
+            className="w-full text-xs p-2 border border-[#e8ddc8] rounded-xl focus:ring-2 focus:ring-[#0e7490]/20 outline-none"
             value={minute.channel || "اجتماع حضوري"}
             onChange={(e) => updateField('channel', e.target.value)}
           >
@@ -175,12 +175,12 @@ export default function BasicInfoSection({ minute, updateField, onOpenContacts }
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-slate-500 mb-1">
+          <label className="block text-[10px] font-bold text-[#64748b] mb-1">
             المكان <span className="text-rose-500">*</span>
           </label>
           <input 
             list="locationsList" 
-            className={`w-full text-xs p-2 border rounded-lg transition-all focus:ring-2 focus:ring-indigo-500/20 outline-none ${!minute.location ? 'border-amber-300 bg-amber-50/10' : 'border-slate-200'}`} 
+            className={`w-full text-xs p-2 border rounded-xl transition-all focus:ring-2 focus:ring-[#0e7490]/20 outline-none ${!minute.location ? 'border-amber-300 bg-amber-50/10' : 'border-[#e8ddc8]'}`} 
             placeholder="مقر الشركة..." 
             type="text" 
             value={minute.location || ""} 

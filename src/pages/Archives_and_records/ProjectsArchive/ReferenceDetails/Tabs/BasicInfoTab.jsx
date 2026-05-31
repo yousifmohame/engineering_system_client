@@ -44,20 +44,20 @@ export default function BasicInfoTab({
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="bg-white rounded-[28px] shadow-sm border border-[#d8e6ee] p-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
       
       {/* ======================================================== */}
       {/* 💡 التعديل هنا: إضافة زر إعادة التحليل في الرأس */}
       {/* ======================================================== */}
-      <div className="flex justify-between items-center border-b border-indigo-100 pb-3 mb-5">
-        <h4 className="text-sm font-black text-indigo-800 flex items-center gap-2">
+      <div className="flex flex-wrap justify-between items-center gap-3 border-b border-[#e8dcc8] pb-3 mb-5">
+        <h4 className="text-[15px] font-black text-[#123B5D] flex items-center gap-2">
           <Building2 className="w-4 h-4" /> بيانات المشروع والمالك
         </h4>
         
         <button
           onClick={onReanalyze}
           disabled={isReanalyzing || !data.id}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white border border-purple-100 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-[#fbf7ef] text-[#123B5D] hover:bg-[#0f3d50] hover:text-white border border-[#ecd8a6] rounded-xl text-[12px] font-black shadow-sm transition-colors disabled:opacity-50"
           title="إعادة تحليل كافة المرفقات بالذكاء الاصطناعي"
         >
           {isReanalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
@@ -129,7 +129,7 @@ export default function BasicInfoTab({
                           }}
                           className={`px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors ${
                             data.clientId === client.id
-                              ? "bg-indigo-50 text-indigo-700"
+                              ? "bg-[#f4f7f8] text-[#123B5D]"
                               : "text-slate-600 hover:bg-slate-50"
                           }`}
                         >

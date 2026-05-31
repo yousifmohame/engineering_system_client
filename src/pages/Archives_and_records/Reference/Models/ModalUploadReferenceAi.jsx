@@ -113,8 +113,8 @@ export default function ModalUploadReferenceAi({ onClose, fixedCategory }) {
           <X size={20} />
         </button>
         
-        <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-5 relative">
-          <Brain className="w-8 h-8 text-purple-600" />
+        <div className="w-16 h-16 bg-[#edf2f4] rounded-full flex items-center justify-center mb-5 relative">
+          <Brain className="w-8 h-8 text-[#0f3d50]" />
         </div>
         
         <h3 className="text-xl font-black text-slate-800 mb-2">أرشفة المراجع بالذكاء الاصطناعي</h3>
@@ -125,11 +125,11 @@ export default function ModalUploadReferenceAi({ onClose, fixedCategory }) {
         {jobId ? (
           <div className="w-full flex flex-col items-center py-4">
              <div className="w-full bg-slate-100 rounded-full h-3 mb-4 overflow-hidden">
-                <div className="bg-purple-600 h-full rounded-full transition-all duration-500 ease-out flex items-center justify-end pr-2" style={{ width: `${progress}%` }}>
+                <div className="bg-[#0f3d50] h-full rounded-full transition-all duration-500 ease-out flex items-center justify-end pr-2" style={{ width: `${progress}%` }}>
                    <span className="text-[8px] text-white font-black">{progress}%</span>
                 </div>
              </div>
-             <div className="flex items-center gap-2 text-purple-700 font-bold text-sm animate-pulse">
+             <div className="flex items-center gap-2 text-[#123B5D] font-bold text-sm animate-pulse">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 {jobStatus === 'PROCESSING' ? 'جاري قراءة وتلخيص المرجع...' : 'جاري التحضير...'}
              </div>
@@ -151,7 +151,7 @@ export default function ModalUploadReferenceAi({ onClose, fixedCategory }) {
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
               className={`w-full border-2 border-dashed rounded-2xl p-8 mb-6 cursor-pointer transition-all duration-300 group
-                ${isDragging ? "border-purple-500 bg-purple-50 scale-105 shadow-lg" : 
+                ${isDragging ? "border-purple-500 bg-[#f4f7f8] scale-105 shadow-lg" : 
                   file ? "border-emerald-300 bg-emerald-50" : "border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-purple-300"}`}
             >
               {file ? (
@@ -162,7 +162,7 @@ export default function ModalUploadReferenceAi({ onClose, fixedCategory }) {
                 </div>
               ) : (
                 <>
-                  <CloudUpload className={`w-12 h-12 mx-auto mb-3 transition-colors ${isDragging ? "text-purple-600" : "text-slate-400 group-hover:text-purple-500"}`} />
+                  <CloudUpload className={`w-12 h-12 mx-auto mb-3 transition-colors ${isDragging ? "text-[#0f3d50]" : "text-slate-400 group-hover:text-[#0f3d50]"}`} />
                   <div className="text-sm font-black text-slate-700">اسحب وافلت المستند هنا</div>
                   <div className="text-xs font-bold text-slate-500 mt-1">أو اضغط للاختيار، أو الصق (Ctrl+V)</div>
                 </>
@@ -173,7 +173,7 @@ export default function ModalUploadReferenceAi({ onClose, fixedCategory }) {
             <button
               onClick={startBackgroundAnalysis}
               disabled={!file}
-              className="w-full py-3.5 bg-purple-600 text-white font-black rounded-xl hover:bg-purple-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all"
+              className="w-full py-3.5 bg-[#0f3d50] text-white font-black rounded-xl hover:bg-[#12495f] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all"
             >
               <Sparkles className="w-5 h-5" /> البدء بالتحليل والأرشفة
             </button>

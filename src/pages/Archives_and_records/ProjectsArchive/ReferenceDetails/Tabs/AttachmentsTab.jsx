@@ -58,8 +58,8 @@ const getFileMeta = (fileName) => {
   if (["dwg", "dxf"].includes(ext))
     return {
       icon: PenTool,
-      color: "text-indigo-500",
-      bg: "bg-indigo-50",
+      color: "text-[#0f3d50]",
+      bg: "bg-[#f4f7f8]",
       preview: false,
       label: "AutoCAD",
     };
@@ -243,12 +243,12 @@ export default function AttachmentsTab({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`bg-white rounded-2xl shadow-sm border p-6 relative transition-all duration-300 animate-in fade-in slide-in-from-bottom-4
-          ${isDragging ? "border-indigo-500 border-dashed bg-indigo-50/50 shadow-md ring-4 ring-indigo-50" : "border-slate-200"}
+          ${isDragging ? "border-[#d7b96d] border-dashed bg-[#f4f7f8]/50 shadow-md ring-4 ring-[#e8dcc8]" : "border-slate-200"}
         `}
       >
         {isUploading && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm rounded-2xl animate-in fade-in">
-            <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-3" />
+            <Loader2 className="w-10 h-10 text-[#123B5D] animate-spin mb-3" />
             <p className="text-sm font-black text-slate-800">
               جاري الرفع والضغط...
             </p>
@@ -259,14 +259,14 @@ export default function AttachmentsTab({
         )}
 
         {isDragging && !isUploading && (
-          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-indigo-50/90 backdrop-blur-sm rounded-2xl border-2 border-indigo-400 border-dashed animate-in zoom-in-95">
+          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#f4f7f8]/90 backdrop-blur-sm rounded-2xl border-2 border-[#d7b96d] border-dashed animate-in zoom-in-95">
             <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg mb-4 animate-bounce">
-              <CopyPlus className="w-10 h-10 text-indigo-600" />
+              <CopyPlus className="w-10 h-10 text-[#123B5D]" />
             </div>
-            <h3 className="text-xl font-black text-indigo-900">
+            <h3 className="text-xl font-black text-[#123B5D]">
               أفلت الملفات الهندسية هنا
             </h3>
-            <p className="text-sm font-bold text-indigo-600 mt-2">
+            <p className="text-sm font-bold text-[#123B5D] mt-2">
               يدعم PDF, صور, AutoCAD, Revit
             </p>
           </div>
@@ -275,7 +275,7 @@ export default function AttachmentsTab({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 pb-4 mb-5 gap-4">
           <div>
             <h4 className="text-base font-black text-slate-800 flex items-center gap-2">
-              <FolderArchive className="w-5 h-5 text-indigo-600" /> المصادر
+              <FolderArchive className="w-5 h-5 text-[#123B5D]" /> المصادر
               والمرفقات ({data.files?.length || 0})
             </h4>
             <p className="text-[11px] font-bold text-slate-400 mt-1">
@@ -286,7 +286,7 @@ export default function AttachmentsTab({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-[#0f3d50] text-white hover:bg-[#174e65] hover:shadow-lg hover:-translate-y-0.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
           >
             <UploadCloud className="w-4 h-4" />
             رفع ملفات إضافية
@@ -316,7 +316,7 @@ export default function AttachmentsTab({
             return (
               <div
                 key={idx}
-                className="flex items-start justify-between gap-4 p-4 bg-slate-50 hover:bg-white rounded-xl border border-slate-200 hover:border-indigo-200 hover:shadow-sm transition-all group"
+                className="flex items-start justify-between gap-4 p-4 bg-slate-50 hover:bg-white rounded-xl border border-slate-200 hover:border-[#e8dcc8] hover:shadow-sm transition-all group"
               >
                 <div className="flex items-start gap-4 flex-1 overflow-hidden">
                   <div
@@ -328,7 +328,7 @@ export default function AttachmentsTab({
                   <div className="overflow-hidden flex-1 pt-1">
                     {isEditing ? (
                       <div className="flex items-center gap-2 w-full">
-                        <div className="flex items-center flex-1 border-b-2 border-indigo-500 bg-transparent">
+                        <div className="flex items-center flex-1 border-b-2 border-[#d7b96d] bg-transparent">
                           <input
                             type="text"
                             value={newName}
@@ -389,10 +389,11 @@ export default function AttachmentsTab({
                     {meta.preview ? (
                       <button
                         onClick={() => openPreview(idx)}
-                        className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg transition-all"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#f4f7f8] text-[#123B5D] hover:bg-[#0f3d50] hover:text-white rounded-xl transition-all text-xs font-bold"
                         title="معاينة"
                       >
                         <Eye className="w-4 h-4" />
+                        <span>معاينة</span>
                       </button>
                     ) : (
                       <a
@@ -400,26 +401,29 @@ export default function AttachmentsTab({
                         download
                         target="_blank"
                         rel="noreferrer"
-                        className="p-2 bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white rounded-lg transition-all flex items-center justify-center"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white rounded-xl transition-all text-xs font-bold"
                         title="تحميل الملف الهندسي"
                       >
                         <Download className="w-4 h-4" />
+                        <span>تحميل</span>
                       </a>
                     )}
 
                     <button
                       onClick={() => handleEditStart(file, file.originalName)}
-                      className="p-2 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-lg transition-all"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-xl transition-all text-xs font-bold"
                       title="إعادة تسمية"
                     >
                       <PenLine className="w-4 h-4" />
+                      <span>تسمية</span>
                     </button>
                     <button
                       onClick={() => onDeleteFile && onDeleteFile(file)}
-                      className="p-2 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-lg transition-all"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all text-xs font-bold"
                       title="حذف"
                     >
                       <Trash2 className="w-4 h-4" />
+                      <span>حذف</span>
                     </button>
                   </div>
                 )}
@@ -445,7 +449,7 @@ export default function AttachmentsTab({
 
       {/* --- نافذة المعاينة الآمنة مع أزرار التدوير والتنقل --- */}
       {previewIndex !== null && currentPreviewFile && (
-        <div className="fixed !m-0 inset-0 z-[200] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="fixed !m-0 inset-0 z-[200] flex items-center justify-center bg-[#0f3d50]/90 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           {/* 💡 أزرار التنقل (Next / Prev) */}
           {data.files.length > 1 && (
             <>
@@ -492,7 +496,7 @@ export default function AttachmentsTab({
                   <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm mr-2">
                     <button
                       onClick={() => setRotation((r) => r - 90)}
-                      className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                      className="p-1.5 text-slate-500 hover:text-[#123B5D] hover:bg-[#f4f7f8] rounded-lg transition-colors"
                       title="تدوير عكس عقارب الساعة"
                     >
                       <RotateCcw className="w-4 h-4" />
@@ -500,7 +504,7 @@ export default function AttachmentsTab({
                     <div className="w-px h-4 bg-slate-200"></div>
                     <button
                       onClick={() => setRotation((r) => r + 90)}
-                      className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                      className="p-1.5 text-slate-500 hover:text-[#123B5D] hover:bg-[#f4f7f8] rounded-lg transition-colors"
                       title="تدوير مع عقارب الساعة"
                     >
                       <RotateCw className="w-4 h-4" />
@@ -513,7 +517,7 @@ export default function AttachmentsTab({
                   download
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black hover:bg-indigo-700 transition-colors shadow-sm"
+                  className="flex items-center gap-2 px-4 py-2 bg-[#0f3d50] text-white rounded-xl text-xs font-black hover:bg-[#174e65] transition-colors shadow-sm"
                 >
                   <Download className="w-4 h-4" />{" "}
                   <span className="hidden md:inline">تحميل الملف</span>

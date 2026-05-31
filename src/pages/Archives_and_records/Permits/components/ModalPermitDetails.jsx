@@ -241,7 +241,7 @@ const SearchableDropdown = ({
                   }}
                   className={`px-3 py-2 text-[11px] font-bold rounded-lg cursor-pointer transition-colors ${
                     value === opt.value
-                      ? "bg-blue-50 text-blue-700"
+                      ? "bg-[#f4f7f8] text-[#123B5D]"
                       : "text-slate-700 hover:bg-slate-50"
                   }`}
                 >
@@ -288,7 +288,7 @@ const SmartLinkedField = ({
           {label}
           <button
             onClick={() => copyToClipboard(value)}
-            className="text-slate-400 hover:text-blue-600 transition-colors"
+            className="text-slate-400 hover:text-[#123B5D] transition-colors"
             title="نسخ المحتوى"
           >
             <Copy size={12} />
@@ -309,7 +309,7 @@ const SmartLinkedField = ({
                 <button
                   onClick={onQuickAdd}
                   disabled={isAdding}
-                  className="text-[9px] bg-blue-600 text-white hover:bg-blue-700 px-2 py-0.5 rounded font-bold flex items-center gap-1 transition-all shadow-sm disabled:opacity-50"
+                  className="text-[9px] bg-[#0f3d50] text-white hover:bg-[#174e65] px-2 py-0.5 rounded font-bold flex items-center gap-1 transition-all shadow-sm disabled:opacity-50"
                   title="إضافة سريعة للنظام"
                 >
                   {isAdding ? (
@@ -358,7 +358,7 @@ const CopyableInput = ({
         {label}
         <button
           onClick={() => copyToClipboard(value)}
-          className="text-slate-400 hover:text-blue-600 transition-colors"
+          className="text-slate-400 hover:text-[#123B5D] transition-colors"
           title="نسخ المحتوى"
         >
           <Copy size={12} />
@@ -429,7 +429,7 @@ function TabDocument({ permit }) {
         {!isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
-            className="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 flex items-center gap-1 transition-colors"
+            className="text-[10px] font-bold text-[#123B5D] bg-[#f4f7f8] px-3 py-1.5 rounded-lg hover:bg-[#edf2f4] flex items-center gap-1 transition-colors"
           >
             <Edit3 size={12} /> تحديث المرفق
           </button>
@@ -447,7 +447,7 @@ function TabDocument({ permit }) {
             <button
               onClick={handleSave}
               disabled={uploadMutation.isPending || !newFile}
-              className="text-[10px] font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 flex items-center gap-1 disabled:opacity-50"
+              className="text-[10px] font-bold text-white bg-[#0f3d50] px-3 py-1.5 rounded-lg hover:bg-[#174e65] flex items-center gap-1 disabled:opacity-50"
             >
               {uploadMutation.isPending ? (
                 <Loader2 size={12} className="animate-spin" />
@@ -463,7 +463,7 @@ function TabDocument({ permit }) {
       {isEditing ? (
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-blue-300 rounded-xl bg-blue-50/50 h-64 flex flex-col items-center justify-center text-blue-500 cursor-pointer hover:bg-blue-50 transition-colors"
+          className="border-2 border-dashed border-[#d7b96d] rounded-xl bg-[#f4f7f8]/50 h-64 flex flex-col items-center justify-center text-[#0f3d50] cursor-pointer hover:bg-[#f4f7f8] transition-colors"
         >
           <CloudUpload size={32} className="mb-2" />
           <span className="text-sm font-bold">
@@ -507,7 +507,7 @@ function TabDocument({ permit }) {
             href={fileUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 text-[11px] font-bold bg-blue-600 text-white rounded-lg py-2.5 hover:bg-blue-700 flex items-center justify-center gap-1.5 shadow-sm"
+            className="flex-1 text-[11px] font-bold bg-[#0f3d50] text-white rounded-lg py-2.5 hover:bg-[#174e65] flex items-center justify-center gap-1.5 shadow-sm"
           >
             <Eye size={14} /> عرض المستند كامل
           </a>
@@ -564,7 +564,7 @@ function TabExtractedData({ permit }) {
         {!isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
-            className="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 flex items-center gap-1 transition-colors"
+            className="text-[10px] font-bold text-[#123B5D] bg-[#f4f7f8] px-3 py-1.5 rounded-lg hover:bg-[#edf2f4] flex items-center gap-1 transition-colors"
           >
             <Edit3 size={12} /> تعديل البيانات
           </button>
@@ -582,7 +582,7 @@ function TabExtractedData({ permit }) {
             <button
               onClick={() => updateMutation.mutate(formData)}
               disabled={updateMutation.isPending}
-              className="text-[10px] font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 flex items-center gap-1 disabled:opacity-50"
+              className="text-[10px] font-bold text-white bg-[#0f3d50] px-3 py-1.5 rounded-lg hover:bg-[#174e65] flex items-center gap-1 disabled:opacity-50"
             >
               {updateMutation.isPending ? (
                 <Loader2 size={12} className="animate-spin" />
@@ -603,7 +603,7 @@ function TabExtractedData({ permit }) {
               {!isEditing && (
                 <button
                   onClick={() => copyToClipboard(formData[f.key])}
-                  className="text-slate-400 hover:text-blue-600"
+                  className="text-slate-400 hover:text-[#123B5D]"
                   title="نسخ"
                 >
                   <Copy size={10} />
@@ -676,7 +676,7 @@ function TabComponents({ permit }) {
         {!isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
-            className="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 flex items-center gap-1 transition-colors"
+            className="text-[10px] font-bold text-[#123B5D] bg-[#f4f7f8] px-3 py-1.5 rounded-lg hover:bg-[#edf2f4] flex items-center gap-1 transition-colors"
           >
             <Edit3 size={12} /> تعديل المكونات
           </button>
@@ -691,7 +691,7 @@ function TabComponents({ permit }) {
             <button
               onClick={() => updateMutation.mutate(components)}
               disabled={updateMutation.isPending}
-              className="text-[10px] font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 flex items-center gap-1"
+              className="text-[10px] font-bold text-white bg-[#0f3d50] px-3 py-1.5 rounded-lg hover:bg-[#174e65] flex items-center gap-1"
             >
               {updateMutation.isPending ? (
                 <Loader2 size={12} className="animate-spin" />
@@ -845,7 +845,7 @@ function TabBoundaries({ permit }) {
         {!isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
-            className="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 flex items-center gap-1 transition-colors"
+            className="text-[10px] font-bold text-[#123B5D] bg-[#f4f7f8] px-3 py-1.5 rounded-lg hover:bg-[#edf2f4] flex items-center gap-1 transition-colors"
           >
             <Edit3 size={12} /> تعديل الحدود
           </button>
@@ -860,7 +860,7 @@ function TabBoundaries({ permit }) {
             <button
               onClick={() => updateMutation.mutate(boundaries)}
               disabled={updateMutation.isPending}
-              className="text-[10px] font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 flex items-center gap-1"
+              className="text-[10px] font-bold text-white bg-[#0f3d50] px-3 py-1.5 rounded-lg hover:bg-[#174e65] flex items-center gap-1"
             >
               {updateMutation.isPending ? (
                 <Loader2 size={12} className="animate-spin" />
@@ -944,27 +944,27 @@ function TabAiReport({ permit }) {
   return (
     <div className="space-y-4 p-4 animate-in fade-in">
       <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-        <Brain size={16} className="text-purple-600" />
+        <Brain size={16} className="text-[#0f3d50]" />
         <span className="text-[12px] font-black text-slate-700">
           تقرير التحليل الشامل بالذكاء الاصطناعي
         </span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="border border-purple-100 rounded-xl p-4 bg-purple-50/50 space-y-3 text-[11px] font-bold shadow-sm h-fit">
+        <div className="border border-[#e8dcc8] rounded-xl p-4 bg-[#f4f7f8]/50 space-y-3 text-[11px] font-bold shadow-sm h-fit">
           <div className="flex justify-between items-center">
-            <span className="text-purple-600">حالة التحليل</span>
+            <span className="text-[#0f3d50]">حالة التحليل</span>
             <AiBadge status={permit?.aiStatus} />
           </div>
-          <div className="w-full bg-purple-100 rounded-full h-2 mt-2">
+          <div className="w-full bg-[#edf2f4] rounded-full h-2 mt-2">
             <div
-              className="bg-purple-500 h-2 rounded-full transition-all"
+              className="bg-[#f4f7f8]0 h-2 rounded-full transition-all"
               style={{
                 width: permit?.aiStatus === "تم التحليل" ? "95%" : "60%",
               }}
             />
           </div>
-          <div className="flex justify-between pt-2 border-t border-purple-100">
+          <div className="flex justify-between pt-2 border-t border-[#e8dcc8]">
             <span className="text-slate-500">المودل المستخدم</span>
             <span className="text-slate-700">GPT-4o Vision</span>
           </div>
@@ -976,11 +976,11 @@ function TabAiReport({ permit }) {
 
         <div className="lg:col-span-2 border border-slate-200 rounded-xl p-5 bg-white shadow-sm">
           <h4 className="text-[12px] font-black text-slate-800 mb-3 flex items-center gap-2">
-            <FileText size={14} className="text-blue-500" /> الملخص الهندسي
+            <FileText size={14} className="text-[#0f3d50]" /> الملخص الهندسي
             للرخصة
             <button
               onClick={() => copyToClipboard(detailedReport)}
-              className="text-slate-400 hover:text-blue-600 mr-auto"
+              className="text-slate-400 hover:text-[#123B5D] mr-auto"
             >
               <Copy size={12} />
             </button>
@@ -1020,12 +1020,12 @@ function TabLinkedRecords({
       {/* القسم الأول: الربط التلقائي */}
       <div className="space-y-4">
         <h4 className="text-[12px] font-black text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-2">
-          <FileSignature size={16} className="text-blue-500" /> المعاملات
+          <FileSignature size={16} className="text-[#0f3d50]" /> المعاملات
           المرتبطة تلقائياً (تطابق رقم الرخصة)
         </h4>
 
         {loadingAuto ? (
-          <div className="flex justify-center p-6 text-blue-500">
+          <div className="flex justify-center p-6 text-[#0f3d50]">
             <Loader2 className="animate-spin w-6 h-6" />
           </div>
         ) : autoLinkedTransactions.length > 0 ? (
@@ -1033,10 +1033,10 @@ function TabLinkedRecords({
             {autoLinkedTransactions.map((tx) => (
               <div
                 key={tx.id}
-                className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-white shadow-sm hover:border-blue-300 transition-colors"
+                className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-white shadow-sm hover:border-[#d7b96d] transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className="bg-blue-50 p-2.5 rounded-lg text-blue-600">
+                  <div className="bg-[#f4f7f8] p-2.5 rounded-lg text-[#123B5D]">
                     <FileSignature size={18} />
                   </div>
                   <div>
@@ -1048,7 +1048,7 @@ function TabLinkedRecords({
                     </div>
                   </div>
                 </div>
-                <button className="text-[10px] font-bold text-blue-600 hover:text-white hover:bg-blue-600 bg-blue-50 px-4 py-2 rounded-lg transition-colors">
+                <button className="text-[10px] font-bold text-[#123B5D] hover:text-white hover:bg-[#0f3d50] bg-[#f4f7f8] px-4 py-2 rounded-lg transition-colors">
                   عرض المعاملة
                 </button>
               </div>
@@ -1079,7 +1079,7 @@ function TabLinkedRecords({
                   setLinkingMode("client");
                   setSelectedValue("");
                 }}
-                className={`flex-1 min-w-[120px] p-3 border rounded-xl flex flex-col items-center gap-2 transition-all ${linkingMode === "client" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md scale-105" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
+                className={`flex-1 min-w-[120px] p-3 border rounded-xl flex flex-col items-center gap-2 transition-all ${linkingMode === "client" ? "border-[#d7b96d] bg-[#f4f7f8] text-[#123B5D] shadow-md scale-105" : "border-slate-200 bg-slate-50 text-slate-600 hover:border-[#d7b96d] hover:bg-white"}`}
               >
                 <User size={20} />{" "}
                 <span className="text-[10px] font-black">ربط بعميل</span>
@@ -1091,7 +1091,7 @@ function TabLinkedRecords({
                   setLinkingMode("office");
                   setSelectedValue("");
                 }}
-                className={`flex-1 min-w-[120px] p-3 border rounded-xl flex flex-col items-center gap-2 transition-all ${linkingMode === "office" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md scale-105" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
+                className={`flex-1 min-w-[120px] p-3 border rounded-xl flex flex-col items-center gap-2 transition-all ${linkingMode === "office" ? "border-[#d7b96d] bg-[#f4f7f8] text-[#123B5D] shadow-md scale-105" : "border-slate-200 bg-slate-50 text-slate-600 hover:border-[#d7b96d] hover:bg-white"}`}
               >
                 <Briefcase size={20} />{" "}
                 <span className="text-[10px] font-black">ربط بمكتب</span>
@@ -1103,7 +1103,7 @@ function TabLinkedRecords({
                   setLinkingMode("ownership");
                   setSelectedValue("");
                 }}
-                className={`flex-1 min-w-[120px] p-3 border rounded-xl flex flex-col items-center gap-2 transition-all ${linkingMode === "ownership" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md scale-105" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
+                className={`flex-1 min-w-[120px] p-3 border rounded-xl flex flex-col items-center gap-2 transition-all ${linkingMode === "ownership" ? "border-[#d7b96d] bg-[#f4f7f8] text-[#123B5D] shadow-md scale-105" : "border-slate-200 bg-slate-50 text-slate-600 hover:border-[#d7b96d] hover:bg-white"}`}
               >
                 <Building size={20} />{" "}
                 <span className="text-[10px] font-black">ربط بملكية</span>
@@ -1115,7 +1115,7 @@ function TabLinkedRecords({
                   setLinkingMode("privateTransaction");
                   setSelectedValue("");
                 }}
-                className={`flex-1 min-w-[120px] p-3 border rounded-xl flex flex-col items-center gap-2 transition-all ${linkingMode === "privateTransaction" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md scale-105" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
+                className={`flex-1 min-w-[120px] p-3 border rounded-xl flex flex-col items-center gap-2 transition-all ${linkingMode === "privateTransaction" ? "border-[#d7b96d] bg-[#f4f7f8] text-[#123B5D] shadow-md scale-105" : "border-slate-200 bg-slate-50 text-slate-600 hover:border-[#d7b96d] hover:bg-white"}`}
               >
                 <FileSignature size={20} />{" "}
                 <span className="text-[10px] font-black">
@@ -1133,7 +1133,7 @@ function TabLinkedRecords({
 
           {/* 💡 منطقة البحث العائمة (تظهر عند تحديد نوع الربط) */}
           {linkingMode && (
-            <div className="mt-4 p-4 bg-blue-50/50 border border-blue-100 rounded-xl flex flex-col md:flex-row items-center gap-3 animate-in slide-in-from-top-2">
+            <div className="mt-4 p-4 bg-[#f4f7f8]/50 border border-[#e8dcc8] rounded-xl flex flex-col md:flex-row items-center gap-3 animate-in slide-in-from-top-2">
               <div className="flex-1 w-full">
                 <SearchableDropdown
                   options={getOptions(linkingMode)}
@@ -1146,7 +1146,7 @@ function TabLinkedRecords({
                 <button
                   onClick={handleSaveLink}
                   disabled={linkMutation.isPending}
-                  className="flex-1 md:flex-none px-6 py-2.5 bg-blue-600 text-white text-[11px] font-black rounded-xl hover:bg-blue-700 shadow-md transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 md:flex-none px-6 py-2.5 bg-[#0f3d50] text-white text-[11px] font-black rounded-xl hover:bg-[#174e65] shadow-md transition-colors flex items-center justify-center gap-2"
                 >
                   {linkMutation.isPending ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -1326,7 +1326,7 @@ function TabExtraAttachments({ permit }) {
     <div className="p-5 animate-in fade-in space-y-6">
       <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl space-y-4">
         <h4 className="text-[12px] font-black text-slate-800 flex items-center gap-2">
-          <CloudUpload size={16} className="text-blue-500" /> رفع مرفق إضافي
+          <CloudUpload size={16} className="text-[#0f3d50]" /> رفع مرفق إضافي
         </h4>
 
         <div className="flex flex-col md:flex-row gap-4">
@@ -1377,7 +1377,7 @@ function TabExtraAttachments({ permit }) {
               uploadMutation.isPending ||
               saveAttachmentsToPermit.isPending
             }
-            className="md:w-32 h-auto py-3 md:py-0 bg-blue-600 text-white font-black text-[11px] rounded-xl hover:bg-blue-700 shadow-md flex flex-col items-center justify-center gap-2 disabled:opacity-50 transition-all"
+            className="md:w-32 h-auto py-3 md:py-0 bg-[#0f3d50] text-white font-black text-[11px] rounded-xl hover:bg-[#174e65] shadow-md flex flex-col items-center justify-center gap-2 disabled:opacity-50 transition-all"
           >
             {uploadMutation.isPending || saveAttachmentsToPermit.isPending ? (
               <Loader2 size={20} className="animate-spin" />
@@ -1417,14 +1417,14 @@ function TabExtraAttachments({ permit }) {
                     <div className="flex items-start gap-2">
                       <FileText
                         size={16}
-                        className="text-blue-500 mt-0.5 shrink-0"
+                        className="text-[#0f3d50] mt-0.5 shrink-0"
                       />
                       <div>
                         <a
                           href={getFullUrl(att.url)}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-blue-600 hover:underline"
+                          className="text-[#123B5D] hover:underline"
                         >
                           {att.name}
                         </a>
@@ -1672,18 +1672,18 @@ export function ModalUploadAi({ onClose }) {
   if (step === 1) {
     return (
       <div
-        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 animate-in fade-in"
+        className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/65 backdrop-blur-sm p-3 animate-in fade-in"
         dir="rtl"
       >
-        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center flex flex-col items-center border border-purple-100 relative">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center flex flex-col items-center border border-[#e8dcc8] relative">
           <button
             onClick={onClose}
             className="absolute top-4 left-4 p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg"
           >
             <X className="w-5 h-5" />
           </button>
-          <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-5">
-            <Brain className="w-8 h-8 text-purple-600" />
+          <div className="w-16 h-16 bg-[#edf2f4] rounded-full flex items-center justify-center mb-5">
+            <Brain className="w-8 h-8 text-[#0f3d50]" />
           </div>
           <h3 className="text-xl font-black text-slate-800 mb-2">
             استخراج البيانات بذكاء
@@ -1695,7 +1695,7 @@ export function ModalUploadAi({ onClose }) {
 
           <div
             onClick={() => fileInputRef.current?.click()}
-            className={`w-full border-2 border-dashed rounded-xl p-8 mb-6 cursor-pointer transition-colors ${file ? "border-emerald-300 bg-emerald-50" : "border-purple-200 bg-slate-50 hover:bg-purple-50"}`}
+            className={`w-full border-2 border-dashed rounded-xl p-8 mb-6 cursor-pointer transition-colors ${file ? "border-emerald-300 bg-emerald-50" : "border-[#e8dcc8] bg-slate-50 hover:bg-[#f4f7f8]"}`}
           >
             {file ? (
               <>
@@ -1706,7 +1706,7 @@ export function ModalUploadAi({ onClose }) {
               </>
             ) : (
               <>
-                <CloudUpload className="w-10 h-10 text-purple-400 mx-auto mb-2" />
+                <CloudUpload className="w-10 h-10 text-[#6f8494] mx-auto mb-2" />
                 <div className="text-sm font-bold text-slate-700">
                   اختر ملف الرخصة
                 </div>
@@ -1731,7 +1731,7 @@ export function ModalUploadAi({ onClose }) {
             <button
               onClick={() => analyzeMutation.mutate(file)}
               disabled={!file || analyzeMutation.isPending}
-              className="flex-1 py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-[#0f3d50] text-white font-bold rounded-xl hover:bg-[#12495f] flex items-center justify-center gap-2"
             >
               {analyzeMutation.isPending ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -1755,18 +1755,18 @@ export function ModalUploadAi({ onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 animate-in fade-in"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/65 backdrop-blur-sm p-3 animate-in fade-in"
       dir="rtl"
     >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full flex flex-col border border-purple-200 max-h-[95vh]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-purple-100 bg-purple-50 rounded-t-2xl shrink-0">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full flex flex-col border border-[#e8dcc8] max-h-[95vh]">
+        <div className="flex items-center justify-between px-6 py-3 border-b border-[#d7b96d]/40 bg-gradient-to-l from-[#0f3d50] to-[#1a7d89] rounded-t-2xl shrink-0">
           <div className="flex items-center gap-3">
-            <Brain className="w-6 h-6 text-purple-600" />
+            <Brain className="w-6 h-6 text-[#0f3d50]" />
             <div>
-              <h3 className="font-black text-purple-900 text-base">
+              <h3 className="font-black text-[#123B5D] text-base">
                 المراجعة والربط الذكي
               </h3>
-              <p className="text-[11px] text-purple-600 font-bold mt-0.5">
+              <p className="text-[11px] text-[#0f3d50] font-bold mt-0.5">
                 اللون الأخضر يعني أن الذكاء الاصطناعي وجد تطابقاً في قاعدة
                 البيانات!
               </p>
@@ -1774,7 +1774,7 @@ export function ModalUploadAi({ onClose }) {
           </div>
 
           {permits.length > 1 && (
-            <div className="flex items-center gap-4 bg-white px-3 py-1.5 rounded-lg border border-purple-200 shadow-sm">
+            <div className="flex items-center gap-4 bg-white px-3 py-1.5 rounded-lg border border-[#e8dcc8] shadow-sm">
               <button
                 disabled={currentIndex === 0}
                 onClick={() => setCurrentIndex((i) => i - 1)}
@@ -1782,7 +1782,7 @@ export function ModalUploadAi({ onClose }) {
               >
                 <ChevronRight size={18} />
               </button>
-              <span className="text-xs font-bold text-purple-800">
+              <span className="text-xs font-bold text-[#123B5D]">
                 رخصة {currentIndex + 1} من {permits.length}
               </span>
               <button
@@ -1796,7 +1796,7 @@ export function ModalUploadAi({ onClose }) {
           )}
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white rounded-lg text-purple-400 hover:text-purple-600"
+            className="p-2 hover:bg-white rounded-lg text-[#6f8494] hover:text-[#0f3d50]"
           >
             <X className="w-5 h-5" />
           </button>
@@ -1805,7 +1805,7 @@ export function ModalUploadAi({ onClose }) {
         <div className="flex-1 overflow-y-auto p-6 bg-[#fafbfc] custom-scrollbar-slim space-y-6">
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
             <h4 className="text-sm font-black text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Edit3 className="w-4 h-4 text-blue-500" /> المعلومات الأساسية
+              <Edit3 className="w-4 h-4 text-[#0f3d50]" /> المعلومات الأساسية
               للرخصة
             </h4>
 
@@ -2013,7 +2013,7 @@ export function ModalUploadAi({ onClose }) {
                     ملاحظات / اشتراطات{" "}
                     <button
                       onClick={() => copyToClipboard(current.notes)}
-                      className="text-slate-400 hover:text-blue-600"
+                      className="text-slate-400 hover:text-[#123B5D]"
                     >
                       <Copy size={12} />
                     </button>
@@ -2211,7 +2211,7 @@ export function ModalUploadAi({ onClose }) {
             <button
               onClick={handleFinalSave}
               disabled={saveMutation.isPending}
-              className="px-8 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 text-sm transition-all disabled:opacity-50"
+              className="px-8 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-[#123B5D] flex items-center justify-center gap-2 shadow-md shadow-[#0f3d50]/20 text-sm transition-all disabled:opacity-50"
             >
               {saveMutation.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -2355,23 +2355,23 @@ export function ModalPermitDetails({ permit, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 animate-in fade-in"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/65 backdrop-blur-sm p-3 animate-in fade-in"
       dir="rtl"
     >
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-4xl flex flex-col overflow-hidden max-h-[90vh]">
+      <div className="bg-white rounded-[1.7rem] shadow-2xl border border-slate-200 w-full max-w-[96vw] h-[94vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 shrink-0">
+        <div className="px-5 py-3 bg-[#0f3d50] text-white border-b border-white/10 shrink-0">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 text-blue-600 rounded-lg shadow-sm">
+              <div className="p-2.5 bg-[#d7b96d] text-[#0f3d50] rounded-xl shadow-sm">
                 <FileText size={20} />
               </div>
               <div>
-                <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                <h2 className="text-lg font-black text-white flex items-center gap-2">
                   رخصة رقم {permit.permitNumber || "—"}
                   <AiBadge status={permit.aiStatus} />
                 </h2>
-                <p className="text-[11px] font-bold text-slate-500 mt-0.5">
+                <p className="text-[11px] font-bold text-white/65 mt-0.5">
                   تفاصيل، مكونات، ومرفقات الرخصة
                 </p>
               </div>
@@ -2396,7 +2396,7 @@ export function ModalPermitDetails({ permit, onClose }) {
 
               <button
                 onClick={onClose}
-                className="p-2 bg-white hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors border border-slate-200 text-slate-400 shadow-sm"
+                className="p-2 bg-white/10 hover:bg-red-500/90 hover:text-white rounded-xl transition-colors border border-white/15 text-white/80 shadow-sm"
               >
                 <X size={18} />
               </button>
@@ -2404,10 +2404,10 @@ export function ModalPermitDetails({ permit, onClose }) {
           </div>
 
           {/* 💡 أزرار الربط في الهيدر */}
-          <div className="bg-white p-3 border border-slate-200 rounded-xl shadow-sm relative">
+          <div className="bg-white/10 p-2.5 border border-white/15 rounded-xl shadow-sm relative">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[10px] font-bold text-slate-500 ml-2">
-                <Link size={14} className="inline mr-1 text-blue-500" /> ربط
+              <span className="text-[10px] font-bold text-white/75 ml-2">
+                <Link size={14} className="inline mr-1 text-[#0f3d50]" /> ربط
                 السجل الحالي:
               </span>
               {!localLinks.linkedClientId && (
@@ -2416,7 +2416,7 @@ export function ModalPermitDetails({ permit, onClose }) {
                     setLinkingMode("client");
                     setSelectedValue("");
                   }}
-                  className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "client" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
+                  className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "client" ? "border-[#d7b96d] bg-[#f4f7f8] text-[#123B5D] shadow-sm" : "border-slate-200 bg-slate-50 text-slate-600 hover:border-[#d7b96d] hover:bg-white"}`}
                 >
                   <User size={14} />{" "}
                   <span className="text-[9px] font-black">ربط بعميل</span>
@@ -2428,7 +2428,7 @@ export function ModalPermitDetails({ permit, onClose }) {
                     setLinkingMode("office");
                     setSelectedValue("");
                   }}
-                  className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "office" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
+                  className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "office" ? "border-[#d7b96d] bg-[#f4f7f8] text-[#123B5D] shadow-sm" : "border-slate-200 bg-slate-50 text-slate-600 hover:border-[#d7b96d] hover:bg-white"}`}
                 >
                   <Briefcase size={14} />{" "}
                   <span className="text-[9px] font-black">ربط بمكتب</span>
@@ -2440,7 +2440,7 @@ export function ModalPermitDetails({ permit, onClose }) {
                     setLinkingMode("ownership");
                     setSelectedValue("");
                   }}
-                  className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "ownership" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
+                  className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "ownership" ? "border-[#d7b96d] bg-[#f4f7f8] text-[#123B5D] shadow-sm" : "border-slate-200 bg-slate-50 text-slate-600 hover:border-[#d7b96d] hover:bg-white"}`}
                 >
                   <Building size={14} />{" "}
                   <span className="text-[9px] font-black">ربط بملكية</span>
@@ -2452,7 +2452,7 @@ export function ModalPermitDetails({ permit, onClose }) {
                     setLinkingMode("privateTransaction");
                     setSelectedValue("");
                   }}
-                  className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "privateTransaction" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-white"}`}
+                  className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "privateTransaction" ? "border-[#d7b96d] bg-[#f4f7f8] text-[#123B5D] shadow-sm" : "border-slate-200 bg-slate-50 text-slate-600 hover:border-[#d7b96d] hover:bg-white"}`}
                 >
                   <FileSignature size={14} />{" "}
                   <span className="text-[9px] font-black">ربط بمعاملة</span>
@@ -2462,7 +2462,7 @@ export function ModalPermitDetails({ permit, onClose }) {
 
             {/* منطقة البحث العائمة في الهيدر */}
             {linkingMode && (
-              <div className="absolute top-[110%] left-0 right-0 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3 z-[250] shadow-xl animate-in slide-in-from-top-2">
+              <div className="absolute top-[110%] left-0 right-0 p-3 bg-[#f4f7f8] border border-[#e8dcc8] rounded-xl flex items-center gap-3 z-[250] shadow-xl animate-in slide-in-from-top-2">
                 <div className="flex-1">
                   <SearchableDropdown
                     options={getOptions(linkingMode)}
@@ -2475,7 +2475,7 @@ export function ModalPermitDetails({ permit, onClose }) {
                   <button
                     onClick={handleSaveLink}
                     disabled={linkMutation.isPending}
-                    className="px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 shadow-sm transition-colors flex items-center gap-1.5"
+                    className="px-4 py-2 bg-[#0f3d50] text-white text-[10px] font-black rounded-lg hover:bg-[#174e65] shadow-sm transition-colors flex items-center gap-1.5"
                   >
                     {linkMutation.isPending ? (
                       <Loader2 size={12} className="animate-spin" />
@@ -2497,13 +2497,13 @@ export function ModalPermitDetails({ permit, onClose }) {
         </div>
 
         {/* Quick Info Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-6 py-4 bg-white border-b border-slate-100 text-[11px] shrink-0 z-20 shadow-sm relative">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-5 py-3 bg-[#f4f7f8] border-b border-slate-200 text-[11px] shrink-0 z-20 shadow-sm relative">
           <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col justify-between group">
             <span className="text-slate-400 font-bold mb-1 flex justify-between items-center">
               المالك
               <button
                 onClick={() => copyToClipboard(permit.ownerName)}
-                className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-blue-600 transition-all"
+                className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-[#123B5D] transition-all"
               >
                 <Copy size={10} />
               </button>
@@ -2517,7 +2517,7 @@ export function ModalPermitDetails({ permit, onClose }) {
               الهوية
               <button
                 onClick={() => copyToClipboard(permit.idNumber)}
-                className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-blue-600 transition-all"
+                className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-[#123B5D] transition-all"
               >
                 <Copy size={10} />
               </button>
@@ -2540,7 +2540,7 @@ export function ModalPermitDetails({ permit, onClose }) {
             </span>
             <div className="flex items-center gap-1 mt-1">
               <FormBadge form={permit.form} />
-              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+              <span className="text-[10px] font-bold text-[#123B5D] bg-[#f4f7f8] px-1.5 py-0.5 rounded border border-[#e8dcc8]">
                 {permit.source}
               </span>
             </div>
@@ -2550,7 +2550,7 @@ export function ModalPermitDetails({ permit, onClose }) {
         {/* 💡 التعديل هنا: إضافة min-h-0 للحاوية الرئيسية لفرض التمرير الداخلي */}
         <div className="flex flex-row flex-1 overflow-hidden bg-[#fafbfc] min-h-0">
           {/* 👈 Sidebar (Vertical Tabs) */}
-          <div className="w-full md:w-[220px] bg-white border-l border-slate-200 overflow-y-auto custom-scrollbar-slim p-3 flex flex-col gap-1.5 shrink-0 shadow-[2px_0_10px_-5px_rgba(0,0,0,0.05)] z-10 min-h-0">
+          <div className="w-full md:w-[210px] bg-white border-l border-slate-200 overflow-y-auto custom-scrollbar-slim p-3 flex flex-col gap-1.5 shrink-0 shadow-[2px_0_10px_-5px_rgba(0,0,0,0.05)] z-10 min-h-0">
             {tabs.map((tab, i) => {
               const isActive = activeTab === i;
               return (
@@ -2559,17 +2559,17 @@ export function ModalPermitDetails({ permit, onClose }) {
                   onClick={() => setActiveTab(i)}
                   className={`flex items-center gap-3 px-4 py-3.5 rounded-lg text-[11px] font-bold transition-all text-right w-full shrink-0 relative ${
                     isActive
-                      ? "bg-blue-50 text-blue-700 shadow-sm border border-blue-100"
+                      ? "bg-[#f4f7f8] text-[#0f3d50] shadow-sm border border-[#d7b96d]/50"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent"
                   }`}
                 >
                   {/* خط التحديد النشط الجانبي */}
                   {isActive && (
-                    <div className="absolute right-0 top-1/4 bottom-1/4 w-[3px] bg-blue-600 rounded-l-full"></div>
+                    <div className="absolute right-0 top-1/4 bottom-1/4 w-[4px] bg-[#d7b96d] rounded-l-full"></div>
                   )}
 
                   <span
-                    className={`shrink-0 transition-transform ${isActive ? "text-blue-600 scale-110" : "text-slate-400 group-hover:scale-110"}`}
+                    className={`shrink-0 transition-transform ${isActive ? "text-[#123B5D] scale-110" : "text-slate-400 group-hover:scale-110"}`}
                   >
                     {tab.icon}
                   </span>

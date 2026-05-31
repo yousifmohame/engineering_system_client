@@ -41,17 +41,15 @@ export default function HardwareMonitorTab() {
       style={{ fontFamily: "Tajawal, sans-serif" }}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 px-6 py-5 bg-white border-b border-gray-200 shrink-0 shadow-sm">
-        <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shadow-inner">
-          <Server className="w-5 h-5 text-blue-400" />
-        </div>
-        <div>
-          <h1 className="text-lg font-black text-slate-800">
-            مراقبة الموارد (Hardware)
-          </h1>
-          <p className="text-xs font-semibold text-slate-500">
-            حالة السيرفر، المعالج، والذاكرة بشكل لحظي
-          </p>
+      <div className="sys-compact-page-header flex items-center justify-between gap-3 mx-4 mt-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-[13px] bg-[#d9b85b] text-[#083646] flex items-center justify-center shrink-0 shadow-sm">
+            <Server className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-[16px] font-bold leading-tight whitespace-nowrap text-white">مراقبة الموارد</h1>
+            <p className="text-[10px] font-semibold text-white/75 mt-0.5 whitespace-nowrap">حالة السيرفر، المعالج، والذاكرة بشكل لحظي</p>
+          </div>
         </div>
       </div>
 
@@ -77,7 +75,7 @@ export default function HardwareMonitorTab() {
         ) : (
           <div className="space-y-6 animate-in fade-in">
             {/* CPU Section */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-[22px] shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
                 <Cpu className="w-5 h-5 text-indigo-600" />
                 <h3 className="text-sm font-black text-gray-800">
@@ -95,11 +93,11 @@ export default function HardwareMonitorTab() {
                     </span>
                   </div>
                 </div>
-                <div className="shrink-0 flex flex-col items-center bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 min-w-[120px]">
-                  <p className="text-3xl font-black text-indigo-600 font-mono">
+                <div className="shrink-0 flex flex-col items-center bg-[#eef4ff] p-4 rounded-xl border border-[#d8e6ee] min-w-[120px] shadow-sm">
+                  <p className="text-[18px] font-black text-[#123B5D] font-mono leading-none">
                     {stats?.cpu?.load || stats?.cpuLoad || 0}%
                   </p>
-                  <p className="text-[10px] font-bold text-indigo-400 mt-1 uppercase tracking-wider">
+                  <p className="text-[11px] font-bold text-[#4f5f75] mt-2 leading-none">
                     الاستهلاك الحالي
                   </p>
                 </div>
@@ -107,10 +105,10 @@ export default function HardwareMonitorTab() {
             </div>
 
             {/* RAM Section */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-[22px] shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-emerald-600" />
+                  <Activity className="w-5 h-5 text-[#0f6d7c]" />
                   <h3 className="text-sm font-black text-gray-800">
                     الذاكرة العشوائية (RAM)
                   </h3>
@@ -120,20 +118,20 @@ export default function HardwareMonitorTab() {
                 </span>
               </div>
               <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div className="col-span-1 p-5 bg-emerald-50 rounded-xl border border-emerald-200 flex flex-col items-center justify-center relative overflow-hidden">
-                  <div className="absolute bottom-0 left-0 w-full h-1.5 bg-emerald-200">
+                <div className="col-span-1 p-5 bg-[#f0fbf6] rounded-xl border border-[#d8e6ee] flex flex-col items-center justify-center relative overflow-hidden shadow-sm">
+                  <div className="absolute bottom-0 left-0 w-full h-1.5 bg-[#cfeee0]">
                     <div
-                      className="h-full bg-emerald-500 transition-all duration-500"
+                      className="h-full bg-[#0f6d7c] transition-all duration-500"
                       style={{ width: `${stats?.ram?.percent || 0}%` }}
                     />
                   </div>
-                  <p className="text-3xl font-black text-emerald-700 font-mono mb-1">
+                  <p className="text-[18px] font-black text-[#123B5D] font-mono mb-1 leading-none">
                     {stats?.ram?.percent || 0}%
                   </p>
-                  <p className="text-[11px] font-bold text-emerald-600">
+                  <p className="text-[11px] font-bold text-[#4f5f75] leading-none">
                     نسبة الاستهلاك
                   </p>
-                  <p className="text-[10px] text-emerald-500 mt-2 font-mono font-semibold">
+                  <p className="text-[10px] text-[#0f6d7c] mt-2 font-mono font-semibold">
                     مستخدم: {stats?.ram?.used || 0} GB
                   </p>
                 </div>
@@ -148,7 +146,7 @@ export default function HardwareMonitorTab() {
                         <p className="text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">
                           شريحة (Slot {stick?.bank || "-"})
                         </p>
-                        <p className="text-xl font-black text-gray-800 font-mono mb-2">
+                        <p className="text-lg font-black text-gray-800 font-mono mb-2">
                           {stick?.size || 0} GB
                         </p>
                         <div className="flex flex-wrap gap-1.5">
@@ -171,7 +169,7 @@ export default function HardwareMonitorTab() {
             </div>
 
             {/* Storage Section */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-[22px] shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
                 <HardDrive className="w-5 h-5 text-amber-600" />
                 <h3 className="text-sm font-black text-gray-800">
@@ -205,7 +203,7 @@ export default function HardwareMonitorTab() {
                           </div>
                           <div className="text-left">
                             <p
-                              className={`text-2xl font-black font-mono ${isWarning ? "text-red-600" : "text-amber-600"}`}
+                              className={`text-[19px] font-black font-mono ${isWarning ? "text-red-600" : "text-[#123B5D]"}`}
                             >
                               {disk?.percent || 0}%
                             </p>

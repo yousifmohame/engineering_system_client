@@ -96,7 +96,7 @@ export default function OfficesTab({
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <h4 className="text-sm font-black text-purple-800 border-b border-purple-100 pb-3 mb-5 flex items-center gap-2">
+      <h4 className="text-sm font-black text-[#123B5D] border-b border-[#e8dcc8] pb-3 mb-5 flex items-center gap-2">
         <Briefcase className="w-4 h-4" /> المكاتب الهندسية والملاحظات
       </h4>
       
@@ -150,7 +150,7 @@ export default function OfficesTab({
           <div className={`relative rounded-xl border transition-all duration-300 ${
             hasWarning 
               ? "border-amber-300 bg-amber-50/30 focus-within:ring-4 focus-within:ring-amber-500/10 focus-within:border-amber-500" 
-              : "border-slate-200 bg-slate-50/50 focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500"
+              : "border-slate-200 bg-slate-50/50 focus-within:ring-4 focus-within:ring-[#e8dcc8]0/10 focus-within:border-[#d7b96d]"
           }`}>
             <textarea
               name="archiveNotes"

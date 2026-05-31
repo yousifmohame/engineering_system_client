@@ -25,9 +25,9 @@ import {
   Copy,
   Eye,
   RefreshCw,
+  X,
 } from "lucide-react";
 
-import { SmartDropdownButton } from "../../../components/SmartDropdownButton";
 import { ModalPermitDetails } from "./components/ModalPermitDetails";
 import { ModalManualPermit } from "./components/ModalManualPermit";
 import { ModalUploadAi } from "./components/ModalUploadAi";
@@ -264,7 +264,7 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
     if (col.key === "form") return <FormBadge form={val} />;
     if (col.key === "source")
       return (
-        <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-bold border border-blue-100">
+        <span className="px-1.5 py-0.5 bg-[#f4f7f8] text-[#123B5D] rounded text-[10px] font-bold border border-[#e8dcc8]">
           {val || "—"}
         </span>
       );
@@ -289,7 +289,7 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
       dir="rtl"
     >
       {/* Statistics Bar */}
-      <div className="shrink-0 flex items-center gap-3 px-4 py-3 bg-white border-b border-slate-200">
+      <div className="shrink-0 grid grid-cols-1 md:grid-cols-4 gap-2 px-4 py-2 bg-[#f4f7f8] border-b border-slate-200">
         {[
           {
             label: fixedOffice
@@ -297,8 +297,8 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
               : "إجمالي الرخص بالسجل",
             value: stats.total,
             icon: <Database size={16} />,
-            color: "text-blue-600",
-            bg: "bg-blue-50",
+            color: "text-[#123B5D]",
+            bg: "bg-[#f4f7f8]",
           },
           {
             label: "مخرجات نظام المعاملات",
@@ -311,8 +311,8 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
             label: "تمت أرشفتها بالذكاء الاصطناعي",
             value: stats.fromAI,
             icon: <Brain size={16} />,
-            color: "text-purple-600",
-            bg: "bg-purple-50",
+            color: "text-[#123B5D]",
+            bg: "bg-[#f4f7f8]",
           },
           {
             label: "رخص خضراء (إلكترونية)",
@@ -324,15 +324,15 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
         ].map((card, i) => (
           <div
             key={i}
-            className="flex items-center gap-3 px-4 py-2 bg-white border border-slate-200 rounded-xl flex-1 min-w-0 shadow-sm"
+            className="flex items-center justify-between gap-2 px-3 py-2 bg-white border border-[#e8dcc8] rounded-2xl min-w-0 shadow-sm"
           >
             <div
-              className={`w-10 h-10 rounded-lg ${card.bg} flex items-center justify-center ${card.color} shrink-0`}
+              className={`w-9 h-9 rounded-xl ${card.bg} flex items-center justify-center ${card.color} shrink-0 border border-white/60`}
             >
               {card.icon}
             </div>
             <div className="min-w-0">
-              <div className="text-lg font-black text-slate-800">
+              <div className="text-lg font-black text-[#123B5D]">
                 {card.value}
               </div>
               <div className="text-[10px] font-bold text-slate-500 truncate">
@@ -345,20 +345,20 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
 
       {/* Actions Bar */}
       <div className="shrink-0 bg-white border-b border-slate-200 relative z-20">
-        <div className="flex items-center justify-between px-4 py-2">
+        <div className="flex items-center justify-between px-4 py-3 bg-[#0f3d50] text-white">
           <div className="flex items-center gap-2">
-            <Layers size={18} className="text-blue-600" />
-            <span className="text-base font-black text-slate-800">
+            <Layers size={18} className="text-[#d7b96d]" />
+            <span className="text-lg font-black text-white">
               {fixedOffice ? `رخص ${fixedOffice}` : "السجل المركزي لرخص البناء"}
             </span>
-            <span className="text-[10px] font-bold bg-slate-100 text-slate-500 rounded px-2 py-0.5 mt-1">
+            <span className="text-[10px] font-bold bg-white/10 text-white/80 rounded-lg px-2 py-0.5 mt-1 border border-white/10">
               {filtered.length} رخصة
             </span>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowDuplicatesPanel(!showDuplicatesPanel)}
-              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all shadow-sm ${showDuplicatesPanel ? "bg-orange-50 border-orange-300 text-orange-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+              className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all shadow-sm ${showDuplicatesPanel ? "bg-orange-50 border-orange-300 text-orange-700" : "bg-white/10 border-white/15 text-white hover:bg-white/20"}`}
             >
               <BellRing
                 size={14}
@@ -375,56 +375,32 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
                 </span>
               )}
             </button>
-            <div className="w-px h-6 bg-slate-200 mx-1"></div>
-            <SmartDropdownButton
-              label="إضافه رخصة"
-              icon={<Plus size={14} />}
-              color="blue"
-              options={[
-                {
-                  id: "manual",
-                  label: "إدخال بيانات رخصة يدوياً",
-                  icon: <Edit3 size={12} />,
-                },
-              ]}
-              onSelect={() => {
+            <div className="w-px h-6 bg-white/20 mx-1"></div>
+            <button
+              onClick={() => {
                 setModalMode("add");
                 setEditingPermit(null);
                 setActiveModal("manual");
               }}
-              onMainClick={() => {
-                setModalMode("add");
-                setEditingPermit(null);
-                setActiveModal("manual");
-              }}
-            />
-            <SmartDropdownButton
-              label="تحليل AI"
-              icon={<Brain size={14} />}
-              color="purple"
-              options={[
-                {
-                  id: "upload-ai",
-                  label: "رفع وتحليل رخصة (AI)",
-                  icon: <Sparkles size={12} />,
-                },
-              ]}
-              onSelect={() => {
+              className="flex items-center gap-2 px-4 py-2 bg-[#d7b96d] text-[#0f3d50] rounded-xl text-xs font-black shadow-sm hover:bg-[#e4c87d] transition-all"
+            >
+              <Plus size={14} /> إضافة رخصة
+            </button>
+            <button
+              onClick={() => {
                 setModalMode("add");
                 setEditingPermit(null);
                 setActiveModal("upload-ai");
               }}
-              onMainClick={() => {
-                setModalMode("add");
-                setEditingPermit(null);
-                setActiveModal("upload-ai");
-              }}
-            />
+              className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-xl text-xs font-black border border-white/15 hover:bg-white/20 transition-all"
+            >
+              <Brain size={14} /> تحليل AI
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 px-4 py-2 border-t border-slate-100 bg-slate-50/50">
-          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5 flex-1 max-w-md shadow-sm focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-100 transition-all">
+        <div className="flex items-center gap-2 px-4 py-2 border-t border-slate-100 bg-[#f4f7f8]">
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 flex-1 max-w-md shadow-sm focus-within:border-[#d7b96d] focus-within:ring-1 focus-within:ring-[#d7b96d]/20 transition-all">
             <Search size={14} className="text-slate-400 shrink-0" />
             <input
               type="text"
@@ -468,7 +444,7 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
               <button
                 onClick={() => refetchDuplicates()}
                 disabled={isScanningDuplicates}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-[#edf2f4] text-slate-700 text-[10px] font-bold rounded-lg transition-colors"
               >
                 <RefreshCw
                   size={12}
@@ -583,8 +559,8 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
           >
             <table className="w-max min-w-full text-[11px] border-collapse">
               <thead className="sticky top-0 z-10">
-                <tr className="bg-slate-100 shadow-sm">
-                  <th className="sticky right-0 z-20 bg-slate-100 px-2 py-2 border-b border-l border-slate-200 w-10 text-center">
+                <tr className="bg-[#f4f7f8] shadow-sm">
+                  <th className="sticky right-0 z-20 bg-[#f4f7f8] px-2 py-2 border-b border-l border-slate-200 w-10 text-center">
                     <input
                       type="checkbox"
                       checked={
@@ -597,7 +573,7 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
                   {visibleColumns.map((col, ci) => (
                     <th
                       key={col.key}
-                      className="px-3 py-2 border-b border-l border-slate-200 text-right text-[11px] font-black text-slate-700 select-none cursor-pointer hover:bg-slate-200"
+                      className="px-3 py-2 border-b border-l border-slate-200 text-right text-[11px] font-black text-slate-700 select-none cursor-pointer hover:bg-[#edf2f4]"
                       style={{ width: colWidths[ci] }}
                       onClick={() => handleSort(col.key)}
                     >
@@ -605,9 +581,9 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
                         {col.label}{" "}
                         {sort.key === col.key &&
                           (sort.dir === "asc" ? (
-                            <ArrowUp size={10} className="text-blue-600" />
+                            <ArrowUp size={10} className="text-[#d7b96d]" />
                           ) : (
-                            <ArrowDown size={10} className="text-blue-600" />
+                            <ArrowDown size={10} className="text-[#d7b96d]" />
                           ))}
                       </span>
                     </th>
@@ -624,7 +600,7 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
                       colSpan={visibleColumns.length + 2}
                       className="text-center py-12"
                     >
-                      <Loader2 className="w-6 h-6 animate-spin text-blue-500 mx-auto" />
+                      <Loader2 className="w-6 h-6 animate-spin text-[#0f3d50] mx-auto" />
                     </td>
                   </tr>
                 ) : sorted.length === 0 ? (
@@ -675,7 +651,7 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
                             {col.key === "permitNumber" ||
                             col.key === "idNumber" ? (
                               <span className="flex items-center gap-1 group/copy">
-                                <span className="font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100/50">
+                                <span className="font-mono font-bold text-[#123B5D] bg-[#f4f7f8] px-1.5 py-0.5 rounded border border-[#e8dcc8]/50">
                                   {String(permit[col.key] || "—")}
                                 </span>
                                 <button
@@ -686,7 +662,7 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
                                       `${permit.id}-${col.key}`,
                                     );
                                   }}
-                                  className="opacity-0 group-hover/copy:opacity-100 text-slate-400 hover:text-blue-600"
+                                  className="opacity-0 group-hover/copy:opacity-100 text-slate-400 hover:text-[#123B5D]"
                                 >
                                   {copiedId === `${permit.id}-${col.key}` ? (
                                     <Check
@@ -710,9 +686,10 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
                           <div className="flex items-center justify-center gap-1.5">
                             <button
                               onClick={() => setSelectedPermit(permit)}
-                              className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
+                              className="px-2 py-1.5 bg-[#f4f7f8] text-[#123B5D] rounded-lg hover:bg-[#edf2f4] flex items-center gap-1"
                             >
                               <Eye size={14} />
+                              <span className="text-[10px] font-bold">عرض</span>
                             </button>
                             <button
                               onClick={() => {
@@ -720,18 +697,20 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
                                 setEditingPermit(permit);
                                 setActiveModal("manual");
                               }}
-                              className="p-1.5 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100"
+                              className="px-2 py-1.5 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 flex items-center gap-1"
                             >
                               <Edit3 size={14} />
+                              <span className="text-[10px] font-bold">تعديل</span>
                             </button>
                             <button
                               onClick={() => {
                                 if (window.confirm("حذف الرخصة؟"))
                                   deleteMutation.mutate(permit.id);
                               }}
-                              className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100"
+                              className="px-2 py-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 flex items-center gap-1"
                             >
                               <Trash2 size={14} />
+                              <span className="text-[10px] font-bold">حذف</span>
                             </button>
                           </div>
                         </td>

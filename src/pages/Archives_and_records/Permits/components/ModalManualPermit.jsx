@@ -326,7 +326,7 @@ export function ModalManualPermit({
     >
       <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-5xl w-full mx-4 max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 rounded-t-xl bg-blue-600 shrink-0">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#d7b96d]/40 rounded-t-xl bg-gradient-to-l from-[#0f3d50] to-[#1a7d89] shrink-0">
           <div className="flex items-center gap-2 text-white">
             <Edit3 className="w-5 h-5" />
             <span className="text-base font-bold">
@@ -345,7 +345,7 @@ export function ModalManualPermit({
         <div className="bg-slate-50 p-4 border-b border-slate-200 shrink-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-bold text-slate-600 ml-2">
-              <Link size={14} className="inline mr-1 text-blue-500" /> إضافة
+              <Link size={14} className="inline mr-1 text-[#0f3d50]" /> إضافة
               ارتباط للرخصة:
             </span>
             {!formData.linkedClientId && (
@@ -354,7 +354,7 @@ export function ModalManualPermit({
                   setLinkingMode("client");
                   setSelectedValue("");
                 }}
-                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "client" ? "border-blue-500 bg-blue-100 text-blue-700 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"}`}
+                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "client" ? "border-[#d7b96d] bg-[#edf2f4] text-[#123B5D] shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-[#d7b96d]"}`}
               >
                 <User size={14} />{" "}
                 <span className="text-[10px] font-black">بعميل</span>
@@ -366,7 +366,7 @@ export function ModalManualPermit({
                   setLinkingMode("office");
                   setSelectedValue("");
                 }}
-                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "office" ? "border-blue-500 bg-blue-100 text-blue-700 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"}`}
+                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "office" ? "border-[#d7b96d] bg-[#edf2f4] text-[#123B5D] shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-[#d7b96d]"}`}
               >
                 <Briefcase size={14} />{" "}
                 <span className="text-[10px] font-black">بمكتب</span>
@@ -378,7 +378,7 @@ export function ModalManualPermit({
                   setLinkingMode("ownership");
                   setSelectedValue("");
                 }}
-                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "ownership" ? "border-blue-500 bg-blue-100 text-blue-700 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"}`}
+                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "ownership" ? "border-[#d7b96d] bg-[#edf2f4] text-[#123B5D] shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-[#d7b96d]"}`}
               >
                 <Building size={14} />{" "}
                 <span className="text-[10px] font-black">بملكية</span>
@@ -390,7 +390,7 @@ export function ModalManualPermit({
                   setLinkingMode("privateTransaction");
                   setSelectedValue("");
                 }}
-                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "privateTransaction" ? "border-blue-500 bg-blue-100 text-blue-700 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-blue-300"}`}
+                className={`flex-1 min-w-[100px] p-2 border rounded-lg flex items-center justify-center gap-1.5 transition-all ${linkingMode === "privateTransaction" ? "border-[#d7b96d] bg-[#edf2f4] text-[#123B5D] shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-[#d7b96d]"}`}
               >
                 <FileSignature size={14} />{" "}
                 <span className="text-[10px] font-black">بمعاملة فرعية</span>
@@ -399,7 +399,7 @@ export function ModalManualPermit({
           </div>
 
           {linkingMode && (
-            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2">
+            <div className="mt-3 p-3 bg-[#f4f7f8] border border-[#e8dcc8] rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2">
               <div className="flex-1">
                 <SearchableDropdown
                   options={getOptions(linkingMode)}
@@ -411,7 +411,7 @@ export function ModalManualPermit({
               <div className="flex gap-2">
                 <button
                   onClick={handleApplyLink}
-                  className="px-4 py-2.5 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 shadow-sm transition-colors"
+                  className="px-4 py-2.5 bg-[#0f3d50] text-white text-[10px] font-black rounded-lg hover:bg-[#174e65] shadow-sm transition-colors"
                 >
                   اختيار وربط
                 </button>
@@ -549,7 +549,7 @@ export function ModalManualPermit({
                   )}
                   <button
                     onClick={() => copyToClipboard(formData.permitNumber)}
-                    className="text-slate-400 hover:text-blue-600 transition-colors"
+                    className="text-slate-400 hover:text-[#123B5D] transition-colors"
                     title="نسخ المحتوى"
                   >
                     <Copy size={12} />
@@ -802,7 +802,7 @@ export function ModalManualPermit({
           <div className="mt-6 border-t border-slate-200 pt-5">
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-700 flex items-center gap-2">
-                <CloudUpload className="w-4 h-4 text-blue-500" /> إرفاق مستند
+                <CloudUpload className="w-4 h-4 text-[#0f3d50]" /> إرفاق مستند
                 الرخصة
                 <span className="text-[10px] text-slate-400 font-normal">
                   {mode === "edit"
@@ -812,7 +812,7 @@ export function ModalManualPermit({
               </label>
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-colors cursor-pointer bg-white shadow-sm"
+                className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-[#f4f7f8]/50 transition-colors cursor-pointer bg-white shadow-sm"
               >
                 <CloudUpload className="w-8 h-8 mx-auto text-blue-400 mb-2" />
                 <div className="text-[12px] font-bold text-slate-700">
@@ -847,7 +847,7 @@ export function ModalManualPermit({
           <button
             onClick={handleSubmit}
             disabled={saveMutation.isPending}
-            className="px-8 text-xs font-bold bg-blue-600 text-white rounded-xl py-2.5 hover:bg-blue-700 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 shadow-md shadow-blue-600/20"
+            className="px-8 text-xs font-bold bg-[#0f3d50] text-white rounded-xl py-2.5 hover:bg-[#174e65] flex items-center justify-center gap-2 transition-colors disabled:opacity-50 shadow-md shadow-[#0f3d50]/20"
           >
             {saveMutation.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />

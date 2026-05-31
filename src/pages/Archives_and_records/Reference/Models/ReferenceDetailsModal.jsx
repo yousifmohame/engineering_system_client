@@ -113,12 +113,12 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
 
   return (
     <div
-      className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 animate-in fade-in"
+      className="fixed inset-0 z-[150] flex items-center justify-center bg-[#0f3d50]/60 backdrop-blur-sm p-4 md:p-6 animate-in fade-in"
       dir="rtl"
     >
       <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col w-full max-w-[1400px] h-[92vh] animate-in zoom-in-95">
         {/* ─── Header ─── */}
-        <div className="bg-slate-900 px-6 py-5 text-white flex items-center justify-between shrink-0">
+        <div className="bg-[#0f3d50] px-6 py-5 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-emerald-500 rounded-xl shadow-lg">
               <BookOpen className="w-6 h-6 text-white" />
@@ -143,7 +143,7 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
           <div className="flex items-center gap-3">
             <button
               onClick={() => reanalyzeMutation.mutate("full")}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-xs font-black rounded-xl transition-all ml-2 shadow-md"
+              className="flex items-center gap-2 px-4 py-2 bg-[#0f3d50] hover:bg-[#12495f] text-xs font-black rounded-xl transition-all ml-2 shadow-md"
             >
               <Brain size={16} /> إعادة التحليل الذكي
             </button>
@@ -224,12 +224,12 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
                     "لا يوجد بروتوكول محدد في هذا المرجع"}
                 </p>
               </div>
-              <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-5 shadow-sm">
-                <h5 className="text-sm font-black text-blue-900 mb-2 flex items-center gap-2">
-                  <Activity size={18} className="text-blue-600" /> الرصد
+              <div className="bg-[#f4f7f8]/50 border border-[#e8dcc8] rounded-2xl p-5 shadow-sm">
+                <h5 className="text-sm font-black text-[#123B5D] mb-2 flex items-center gap-2">
+                  <Activity size={18} className="text-[#123B5D]" /> الرصد
                   والامتثال البيئي
                 </h5>
-                <p className="text-xs md:text-sm font-bold text-blue-800 leading-relaxed">
+                <p className="text-xs md:text-sm font-bold text-[#123B5D] leading-relaxed">
                   {document.monitoringProtocol ||
                     "لا يوجد بروتوكول محدد في هذا المرجع"}
                 </p>
@@ -247,11 +247,11 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
                   <button
                     key={i}
                     onClick={() => window.open(getFullUrl(url), "_blank")}
-                    className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-xl transition-all group shadow-sm"
+                    className="flex items-center gap-3 px-4 py-2.5 bg-slate-100 hover:bg-[#f4f7f8] border border-slate-200 hover:border-[#e8dcc8] rounded-xl transition-all group shadow-sm"
                   >
                     <FileText
                       size={18}
-                      className="text-slate-400 group-hover:text-blue-500"
+                      className="text-slate-400 group-hover:text-[#0f3d50]"
                     />
                     <span
                       className="text-xs md:text-sm font-black text-slate-700 truncate max-w-[200px]"
@@ -261,7 +261,7 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
                     </span>
                     <Eye
                       size={16}
-                      className="text-slate-300 group-hover:text-blue-500 ml-2"
+                      className="text-slate-300 group-hover:text-[#0f3d50] ml-2"
                     />
                   </button>
                 ))}
@@ -342,20 +342,20 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
             {/* Management Notes (Manual) */}
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
               <h5 className="text-sm md:text-base font-black text-slate-900 mb-3 flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-blue-500" /> توجيهات
+                <MessageSquare className="w-5 h-5 text-[#0f3d50]" /> توجيهات
                 وشروحات الإدارة
               </h5>
               <textarea
                 value={manualNotes}
                 onChange={(e) => setManualNotes(e.target.value)}
                 placeholder="أدخل توجيهات فنية أو شروحات إضافية لفريق العمل..."
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none min-h-[120px] resize-none transition-all"
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-[#d7b96d] outline-none min-h-[120px] resize-none transition-all"
               />
               <div className="flex justify-end mt-3">
                 <button
                   onClick={() => updateNotesMutation.mutate(manualNotes)}
                   disabled={updateNotesMutation.isPending}
-                  className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-xs md:text-sm font-black hover:bg-black transition-all flex items-center gap-2 shadow-md"
+                  className="px-5 py-2.5 bg-[#0f3d50] text-white rounded-xl text-xs md:text-sm font-black hover:bg-[#12495f] transition-all flex items-center gap-2 shadow-md"
                 >
                   {updateNotesMutation.isPending ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -428,7 +428,7 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
               className={`px-4 py-1.5 rounded-xl text-xs font-black border shadow-sm ${
                 document.analysisStatus === "محلل"
                   ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : "bg-purple-50 text-purple-700 border-purple-200"
+                  : "bg-[#f4f7f8] text-[#123B5D] border-[#e8dcc8]"
               }`}
             >
               حالة التحليل: {document.analysisStatus}
@@ -438,12 +438,12 @@ export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <button className="p-2.5 bg-slate-50 text-slate-600 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all border border-slate-200 shadow-sm">
+            <button className="p-2.5 bg-slate-50 text-slate-600 rounded-xl hover:bg-[#f4f7f8] hover:text-[#123B5D] transition-all border border-slate-200 shadow-sm">
               <Share2 size={18} />
             </button>
             <button
               onClick={onClose}
-              className="px-8 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-black hover:bg-black transition-all shadow-md"
+              className="px-8 py-2.5 bg-[#0f3d50] text-white rounded-xl text-sm font-black hover:bg-[#12495f] transition-all shadow-md"
             >
               إغلاق النافذة
             </button>

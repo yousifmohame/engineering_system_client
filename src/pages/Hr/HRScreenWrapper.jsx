@@ -7,7 +7,9 @@ import InternalFormsTab from "./screens/InternalForms/InternalFormsTab";
 import EmployeesManagement from "./screens/employees/EmployeesManagement";
 import AttendanceCenter from "./screens/Attendance/AttendanceCenter";
 import PermissionTreeBuilder from "./screens/permissionTree/PermissionTreeBuilder";
-
+import EmployeePortal from "./screens/EmployeePortal/EmployeePortal";
+import LeavesAbsenceManagement from "./screens/LeavesAbsence/LeavesAbsenceManagement";
+import PayrollManagement from "./screens/payroll/PayrollManagement";
 
 const IconWithText = ({
   icon: Icon,
@@ -38,7 +40,6 @@ const IconWithText = ({
   );
 };
 
-
 // 💡 قاموس بأسماء جميع الشاشات الجديدة (لعرضها في عنوان النافذة)
 const TAB_TITLES = {
   HR_EMPLOYEES: "إدارة الموظفين",
@@ -48,7 +49,7 @@ const TAB_TITLES = {
   HR_REQUESTS: "مركز الطلبات والنماذج",
   MY_PORTAL: "بوابة الموظف",
   HR_PAYROLL: "الرواتب والمسيرات",
-  LEAVES_ABSENCE: "سجل الإجازات والغياب",
+  LEAVES_ABSENCE: "ادارة الإجازات والغياب",
   HR_SETTINGS: "إعدادات الحالات والبدلات",
   PROF_PLATFORMS: "المنصات المهنية والهيئات",
   RESIDENCY_INSURANCE: "شؤون المقيمين والتأمين",
@@ -114,6 +115,30 @@ const HRScreenWrapper = () => {
       );
     }
 
+    if (activeModal === "MY_PORTAL") {
+      return (
+        <div className="h-full overflow-hidden bg-[#fbf8f1]">
+          <EmployeePortal />
+        </div>
+      );
+    }
+
+    if (activeModal === "LEAVES_ABSENCE") {
+      return (
+        <div className="h-full overflow-hidden bg-[#fbf8f1]">
+          <LeavesAbsenceManagement />
+        </div>
+      );
+    }
+
+    if (activeModal === "HR_PAYROLL") {
+      return (
+        <div className="h-full overflow-hidden bg-[#fbf8f1]">
+          <PayrollManagement />
+        </div>
+      );
+    }
+
     if (activeModal === "ATTENDANCE_AI") {
       return (
         <div className="h-full overflow-hidden bg-[#fbf8f1]">
@@ -131,8 +156,10 @@ const HRScreenWrapper = () => {
   };
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white" dir="rtl">
-      
+    <div
+      className="flex h-full w-full overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
+      dir="rtl"
+    >
       {/* 1. الخلفية الثابتة: لوحة المؤشرات (Dashboard) ستكون دائماً معروضة ومحتفظة بحالتها */}
       <div className="flex-1 flex flex-col min-w-0 bg-white shadow-[0_10px_24px_rgba(18,63,89,0.08)] m-3 rounded-[18px] border border-[#e8ddc8] overflow-hidden relative">
         <div className="flex-1 relative h-full overflow-hidden">
@@ -143,9 +170,7 @@ const HRScreenWrapper = () => {
       {/* 2. النافذة المنبثقة (Modal / Popup Window) */}
       {activeModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#06111d]/60 backdrop-blur-sm p-4 font-cairo animate-in fade-in duration-200">
-          
           <div className="bg-white w-full max-w-[95vw] h-[95vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative animate-in zoom-in-95 duration-200">
-            
             {/* الهيدر الموحد للنافذة (نخفيه فقط في شاشة الحضور لأننا برمجنا لها هيدر مخصص بداخلها) */}
             {activeModal !== "ATTENDANCE_AI" && (
               <div className="flex shrink-0 items-center justify-between border-b border-[#d8b46a]/25 bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490] px-3 py-1.5 text-white shadow-[0_8px_22px_rgba(18,63,89,0.16)]">
@@ -167,7 +192,11 @@ const HRScreenWrapper = () => {
                   onClick={closeModal}
                   className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/10 px-2 text-[9px] font-black text-white/80 transition hover:bg-rose-500/15 hover:text-white"
                 >
-                  <IconWithText icon={X} text="إغلاق" iconClassName="h-3.5 w-3.5" />
+                  <IconWithText
+                    icon={X}
+                    text="إغلاق"
+                    iconClassName="h-3.5 w-3.5"
+                  />
                 </button>
               </div>
             )}
@@ -176,11 +205,9 @@ const HRScreenWrapper = () => {
             <div className="relative min-w-0 flex-1 overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white">
               {renderModalContent()}
             </div>
-            
           </div>
         </div>
       )}
-      
     </div>
   );
 };

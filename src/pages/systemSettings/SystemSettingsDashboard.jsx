@@ -2,7 +2,6 @@ import React, { useMemo } from "react";
 import {
   Settings,
   LayoutTemplate,
-  MonitorPlay,
   BrainCircuit,
   Server,
   DatabaseBackup,
@@ -19,7 +18,7 @@ export default function SystemSettingsDashboard({ onNavigate }) {
         id: 1,
         targetId: "SET_SIDEBAR",
         title: "المظهر والهيكلة",
-        desc: "تخصيص الألوان وترتيب القوائم والشعار",
+        desc: "تخصيص الهيكلة وترتيب القوائم",
         stat: "UI / UX",
         gradient: "from-blue-500 to-blue-700",
         icon: LayoutTemplate,
@@ -60,15 +59,17 @@ export default function SystemSettingsDashboard({ onNavigate }) {
         gradient: "from-sky-500 to-cyan-600",
         icon: ShieldCheck,
       },
-      {
-        id: 6,
-        targetId: "SET_HEADER",
-        title: "الشريط العلوي",
-        desc: "إعدادات البحث والإشعارات",
-        stat: "إعدادات",
-        gradient: "from-indigo-500 to-purple-600",
-        icon: MonitorPlay,
-      },
+      // Header settings module is temporarily disabled.
+      // It is not used for now, so the dashboard card is hidden.
+      // {
+      //   id: 6,
+      //   targetId: "SET_HEADER",
+      //   title: "الشريط العلوي",
+      //   desc: "إعدادات البحث والإشعارات",
+      //   stat: "إعدادات",
+      //   gradient: "from-indigo-500 to-purple-600",
+      //   icon: MonitorPlay,
+      // },
       {
         id: 7,
         targetId: "SET_DEVICES", // 👈 اسم الـ ID للتاب
@@ -92,17 +93,19 @@ export default function SystemSettingsDashboard({ onNavigate }) {
   );
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 font-cairo" dir="rtl">
-      <div className="flex-1 overflow-auto p-4 md:p-8 bg-slate-50">
+    <div className="flex flex-col h-full bg-[#eef5f7] font-cairo" dir="rtl">
+      <div className="flex-1 overflow-auto p-4 md:p-5 bg-[#eef5f7]">
         <div className="max-w-7xl mx-auto animate-in fade-in duration-300">
-          <div className="mb-6 border-b border-slate-200 pb-4">
-            <h2 className="text-xl md:text-2xl font-black text-slate-900 flex items-center gap-2">
-              <Settings className="text-slate-800 w-6 h-6 md:w-8 md:h-8" />
-              لوحة التحكم وإعدادات النظام
-            </h2>
-            <p className="text-xs md:text-sm font-bold text-slate-500 mt-1.5">
-              إدارة المظهر، الأداء، والموارد الخاصة بالنظام
-            </p>
+          <div className="sys-compact-page-header flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-[13px] bg-[#d9b85b] text-[#083646] flex items-center justify-center shrink-0 shadow-sm">
+                <Settings className="w-4 h-4" />
+              </div>
+              <div className="min-w-0" style={{ fontFamily: "Tajawal, sans-serif" }}>
+                <h2 className="text-[16px] font-bold leading-tight whitespace-nowrap text-white">لوحة التحكم وإعدادات النظام</h2>
+                <p className="text-[10px] font-semibold text-white/75 mt-0.5 whitespace-nowrap">إدارة المظهر، الأداء، والموارد الخاصة بالنظام</p>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-5">
@@ -114,22 +117,23 @@ export default function SystemSettingsDashboard({ onNavigate }) {
                     onNavigate(module.targetId, module.title);
                   }
                 }}
-                className="relative flex flex-col items-center justify-center p-5 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-slate-400 hover:-translate-y-1.5 transition-all duration-300 group"
+                className="relative overflow-hidden flex flex-col items-center justify-center p-4 bg-white border border-[#d8e6ee] rounded-[24px] shadow-sm hover:shadow-lg hover:border-[#d9b85b] hover:-translate-y-1 transition-all duration-300 group"
               >
+                <div className={`absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-l ${module.gradient}`} />
                 <div
-                  className={`w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center mb-4 bg-gradient-to-br ${module.gradient} shadow-inner group-hover:scale-110 transition-transform duration-300`}
+                  className={`w-14 h-14 md:w-16 md:h-16 rounded-[20px] flex items-center justify-center mb-3 bg-gradient-to-br ${module.gradient} text-white shadow-sm group-hover:scale-105 transition-transform duration-300`}
                 >
-                  <module.icon className="text-white w-8 h-8 md:w-10 md:h-10" />
+                  <module.icon className="w-7 h-7 md:w-8 md:h-8" />
                 </div>
-                <div className="flex flex-col items-center gap-1 w-full">
-                  <h3 className="font-black text-[13px] md:text-[15px] text-slate-800 text-center leading-tight">
+                <div className="flex flex-col items-center gap-1 w-full relative z-10">
+                  <h3 className="font-black text-[12px] md:text-[13px] text-[#123B5D] text-center leading-tight">
                     {module.title}
                   </h3>
-                  <p className="text-[10px] md:text-[11px] font-bold text-slate-400 text-center line-clamp-2 w-full mt-1">
+                  <p className="text-[9.5px] md:text-[10px] font-bold text-[#71839a] text-center line-clamp-2 w-full mt-1">
                     {module.desc}
                   </p>
                 </div>
-                <div className="mt-4 w-full bg-slate-50 border border-slate-100 rounded-lg py-1.5 px-2 text-center text-[9px] md:text-[10px] font-black text-slate-500 truncate group-hover:bg-slate-100 group-hover:text-slate-800 transition-colors">
+                <div className="mt-3 w-full bg-[#fbf7ef] border border-[#ead9b8] rounded-lg py-1.5 px-2 text-center text-[9px] md:text-[10px] font-black text-[#123B5D] truncate group-hover:bg-[#eef5f7] transition-colors relative z-10">
                   {module.stat}
                 </div>
               </button>

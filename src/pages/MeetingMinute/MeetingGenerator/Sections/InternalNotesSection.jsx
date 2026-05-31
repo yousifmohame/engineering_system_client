@@ -36,7 +36,7 @@ export default function InternalNotesSection({ minute, updateField }) {
            <h3 className="text-sm font-black text-amber-900 flex items-center gap-2">
               <AlertCircle className="w-4 h-4" /> ملاحظات داخلية لفريق العمل
            </h3>
-           <button onClick={extractInternalNotes} disabled={loading} className="text-[10px] px-3 py-1.5 bg-white border border-amber-200 text-amber-800 font-black rounded-lg flex items-center gap-1.5 hover:bg-amber-100 shadow-sm transition-colors disabled:opacity-50">
+           <button type="button" onClick={extractInternalNotes} disabled={loading} className="text-[10px] px-3 py-1.5 bg-white border border-amber-200 text-amber-800 font-black rounded-xl flex items-center gap-1.5 hover:bg-amber-100 shadow-sm transition-colors disabled:opacity-50">
              {loading ? <Loader2 className="w-3 h-3 animate-spin"/> : <Wand2 className="w-3 h-3" />} استخراج تنبيهات عبر AI
            </button>
         </div>
@@ -44,7 +44,7 @@ export default function InternalNotesSection({ minute, updateField }) {
         <textarea
           value={minute.internalNotes || ""}
           onChange={(e) => updateField("internalNotes", e.target.value)}
-          className="w-full h-40 p-4 text-xs font-bold text-slate-800 border border-amber-300 rounded-xl resize-none outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition-all custom-scrollbar"
+          className="w-full h-40 p-3 text-xs font-bold text-[#123f59] border border-amber-300 rounded-xl resize-none outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition-all custom-scrollbar"
           placeholder="سجل تنبيهات للمهندسين، تكاليف خفية، أو أي تفاصيل تخص الفريق الداخلي..."
         />
       </div>

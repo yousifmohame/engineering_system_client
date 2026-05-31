@@ -379,7 +379,7 @@ export default function LegalTab({
                           setIsDistrictDropdownOpen(false);
                           setDistrictSearchTerm("");
                         }}
-                        className={`px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors ${data.districtId === dist.id ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50"}`}
+                        className={`px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors ${data.districtId === dist.id ? "bg-[#f4f7f8] text-[#123B5D]" : "text-slate-600 hover:bg-slate-50"}`}
                       >
                         {dist.name}
                       </li>

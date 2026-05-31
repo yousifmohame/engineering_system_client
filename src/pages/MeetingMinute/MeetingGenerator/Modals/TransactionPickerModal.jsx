@@ -42,36 +42,36 @@ export default function TransactionPickerModal({ onClose, onSelect }) {
   }, [transactions, search]);
 
   return (
-    <div className="fixed inset-0 z-[300] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" dir="rtl">
+    <div className="fixed inset-0 z-[300] bg-[#08111c]/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" dir="rtl">
       {/* 💡 خلفية قابلة للنقر لإغلاق النافذة */}
       <div className="absolute inset-0" onClick={onClose}></div>
 
-      <div className="bg-white rounded-[2.5rem] w-full max-w-lg border border-slate-200 overflow-hidden shadow-2xl flex flex-col max-h-[80vh] relative z-10 zoom-in-95">
+      <div className="bg-white rounded-[24px] w-full max-w-lg border border-[#d8b46a]/25 overflow-hidden shadow-[0_24px_70px_rgba(2,12,23,0.28)] flex flex-col max-h-[80vh] relative z-10 zoom-in-95">
         
         {/* الترويسة */}
-        <div className="p-6 border-b border-slate-100 bg-slate-50/80 flex items-center justify-between">
-           <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
+        <div className="px-5 py-3 border-b border-[#e8ddc8] bg-gradient-to-l from-[#08111c] via-[#0f3448] to-[#123f59] text-white flex items-center justify-between">
+           <h3 className="text-sm font-black text-white flex items-center gap-2">
              <Briefcase className="text-emerald-600 w-5 h-5"/> 
              ربط بمعاملة نشطة
            </h3>
-           <button onClick={onClose} className="p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 rounded-xl transition-colors">
-             <X size={20}/>
+           <button type="button" onClick={onClose} className="inline-flex h-8 items-center gap-1 rounded-xl bg-white/10 px-2 text-[10px] font-black text-white transition hover:bg-rose-500">
+             <X size={16}/> إغلاق
            </button>
         </div>
         
         {/* شريط البحث */}
-        <div className="p-4 border-b border-slate-100 bg-white">
+        <div className="p-3 border-b border-[#e8ddc8] bg-white">
            <div className="relative group">
-              <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={16}/>
+              <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8da0bb] group-focus-within:text-emerald-600 transition-colors" size={16}/>
               <input 
                  type="text" 
                  value={search}
                  onChange={e => setSearch(e.target.value)}
                  placeholder="ابحث بالرقم، المالك، أو الاسم المتداول..." 
-                 className="w-full pr-10 pl-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all"
+                 className="w-full pr-10 pl-4 py-3 bg-[#fbf8f1] border border-[#e8ddc8] rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all"
               />
               {search && (
-                <button onClick={() => setSearch("")} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500">
+                <button type="button" onClick={() => setSearch("")} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8da0bb] hover:text-rose-500">
                   <X size={14} />
                 </button>
               )}
@@ -79,11 +79,11 @@ export default function TransactionPickerModal({ onClose, onSelect }) {
         </div>
 
         {/* قائمة المعاملات */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar bg-slate-50/30">
+        <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar bg-[#fbf8f1]/50">
           {isLoading ? (
              <div className="flex flex-col items-center justify-center py-12 text-emerald-600">
                <Loader2 className="animate-spin mb-3" size={32}/>
-               <span className="text-xs font-bold text-slate-500">جاري جلب المعاملات...</span>
+               <span className="text-xs font-bold text-[#64748b]">جاري جلب المعاملات...</span>
              </div>
           ) : filtered.length > 0 ? (
              filtered.map((tx, index) => {
@@ -94,44 +94,44 @@ export default function TransactionPickerModal({ onClose, onSelect }) {
                const internalName = tx.internalName || tx.notes?.internalName;
                
                return (
-                 <button
+                 <button type="button"
                    key={`${tx.id || 'tx'}-${index}`}
                    onClick={() => onSelect(tx)}
-                   className="w-full flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-emerald-300 hover:bg-emerald-50 transition-all text-right group shadow-sm hover:shadow"
+                   className="w-full flex items-center justify-between p-4 bg-white border border-[#e8ddc8]/70 rounded-2xl hover:border-emerald-300 hover:bg-emerald-50 transition-all text-right group shadow-sm hover:shadow"
                  >
                    <div className="flex flex-col gap-1.5">
-                      <span className="text-xs font-black text-slate-800 group-hover:text-emerald-800 transition-colors">
+                      <span className="text-xs font-black text-[#123f59] group-hover:text-emerald-800 transition-colors">
                         {clientName}
                       </span>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black text-emerald-700 bg-emerald-100/50 px-2 py-0.5 rounded-md border border-emerald-200 w-fit">
+                        <span className="text-[10px] font-black text-emerald-700 bg-emerald-100/50 px-2 py-0.5 rounded-xl border border-emerald-200 w-fit">
                           {txRef}
                         </span>
                         {internalName && (
-                          <span className="text-[9px] font-bold text-slate-400 truncate max-w-[120px]">
+                          <span className="text-[9px] font-bold text-[#8da0bb] truncate max-w-[min(120px,38vw)]">
                             {internalName}
                           </span>
                         )}
                       </div>
                    </div>
                    <div className="flex items-center gap-3">
-                      <div className="bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg text-[9px] font-black text-slate-500 group-hover:bg-white transition-colors">
+                      <div className="bg-[#fbf8f1] border border-[#e8ddc8] px-2.5 py-1 rounded-xl text-[9px] font-black text-[#64748b] group-hover:bg-white transition-colors">
                         {sysStatus}
                       </div>
-                      <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-emerald-100 transition-colors hidden sm:flex">
-                        <CheckCircle2 size={16} className="text-slate-300 group-hover:text-emerald-600 transition-colors" />
+                      <div className="hidden sm:inline-flex h-8 items-center gap-1 rounded-xl bg-[#eef7f6] px-2 text-[9px] font-black text-[#0e7490] transition group-hover:bg-[#0e7490] group-hover:text-white">
+                        <CheckCircle2 size={14} className="transition-colors" /> اختيار
                       </div>
                    </div>
                  </button>
                );
              })
           ) : (
-             <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-               <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+             <div className="flex flex-col items-center justify-center py-12 text-[#8da0bb]">
+               <div className="w-14 h-14 bg-[#fbf8f1] rounded-2xl border border-[#e8ddc8] flex items-center justify-center mb-3">
                  <Briefcase className="w-6 h-6 opacity-50" />
                </div>
-               <p className="text-xs font-black text-slate-600 mb-1">لا توجد معاملات مطابقة للبحث</p>
-               <p className="text-[10px] font-bold text-slate-400">تأكد من رقم المعاملة أو اسم العميل</p>
+               <p className="text-xs font-black text-[#60738f] mb-1">لا توجد معاملات مطابقة للبحث</p>
+               <p className="text-[10px] font-bold text-[#8da0bb]">تأكد من رقم المعاملة أو اسم العميل</p>
              </div>
           )}
         </div>

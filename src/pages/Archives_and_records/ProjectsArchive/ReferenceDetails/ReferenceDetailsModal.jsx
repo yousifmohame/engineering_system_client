@@ -83,7 +83,7 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
   };
 
   const inputClass =
-    "w-full px-3 py-2.5 text-xs font-bold text-slate-700 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all";
+    "w-full px-3 py-2.5 text-xs font-bold text-slate-700 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-[#d7b96d] focus:ring-4 focus:ring-[#e8dcc8]0/10 transition-all";
   const labelClass = "text-[11px] font-black text-slate-600";
 
   useEffect(() => {
@@ -402,7 +402,7 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
   if (isAiProcessing) {
     return (
       <div
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4"
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0f3d50]/50 backdrop-blur-sm p-4"
         dir="rtl"
       >
         <div className="relative bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-sm w-full mx-4 animate-in zoom-in-95 duration-300">
@@ -413,7 +413,7 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
           >
             <X className="w-5 h-5" />
           </button>
-          <Loader2 className="w-14 h-14 text-indigo-600 animate-spin mb-4" />
+          <Loader2 className="w-14 h-14 text-[#123B5D] animate-spin mb-4" />
           <h2 className="text-xl font-black text-slate-800 text-center">
             جاري تحليل المستندات...
           </h2>
@@ -464,7 +464,7 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0f3d50]/60 backdrop-blur-sm p-4 sm:p-6"
       dir="rtl"
     >
       <div className="bg-slate-50 w-full max-w-[1200px] h-[95vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden ring-1 ring-white/20">
@@ -524,7 +524,7 @@ export default function ReferenceDetailsModal({ projectId, isOpen, onClose }) {
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-black flex items-center gap-2 transition-all disabled:opacity-50 shadow-md shadow-indigo-600/20 active:scale-95"
+            className="bg-[#0f3d50] hover:bg-[#174e65] text-white px-6 py-2.5 rounded-xl text-sm font-black flex items-center gap-2 transition-all disabled:opacity-50 shadow-md shadow-[#0f3d50]/20 active:scale-95"
           >
             {isSaving ? (
               <Loader2 className="w-4 h-4 animate-spin" />

@@ -87,7 +87,7 @@ export const SearchableDropdown = ({ options, value, onChange, placeholder, isAd
           <div className="overflow-y-auto p-1 custom-scrollbar-slim">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((opt, idx) => (
-                <div key={idx} onClick={() => { onChange(opt.value); setIsOpen(false); setSearchTerm(""); }} className={`px-3 py-2 text-[11px] font-bold rounded-lg cursor-pointer transition-colors ${value === opt.value ? "bg-blue-50 text-blue-700" : "text-slate-700 hover:bg-slate-50"}`}>
+                <div key={idx} onClick={() => { onChange(opt.value); setIsOpen(false); setSearchTerm(""); }} className={`px-3 py-2 text-[11px] font-bold rounded-lg cursor-pointer transition-colors ${value === opt.value ? "bg-[#f4f7f8] text-[#123B5D]" : "text-slate-700 hover:bg-slate-50"}`}>
                   {opt.label}
                 </div>
               ))
@@ -113,7 +113,7 @@ export const SmartLinkedField = ({ label, value, onChange, options, matchFn, onQ
       <div className="flex items-center justify-between mb-0.5">
         <label className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
           {label}
-          <button onClick={() => copyToClipboard(value)} className="text-slate-400 hover:text-blue-600 transition-colors" title="نسخ المحتوى">
+          <button onClick={() => copyToClipboard(value)} className="text-slate-400 hover:text-[#123B5D] transition-colors" title="نسخ المحتوى">
             <Copy size={12} />
           </button>
         </label>
@@ -128,7 +128,7 @@ export const SmartLinkedField = ({ label, value, onChange, options, matchFn, onQ
                 <AlertTriangle size={10} /> غير مسجل
               </span>
               {onQuickAdd && (
-                <button onClick={onQuickAdd} disabled={isAdding} className="text-[9px] bg-blue-600 text-white hover:bg-blue-700 px-2 py-0.5 rounded font-bold flex items-center gap-1 transition-all shadow-sm disabled:opacity-50" title="إضافة سريعة للنظام">
+                <button onClick={onQuickAdd} disabled={isAdding} className="text-[9px] bg-[#0f3d50] text-white hover:bg-[#174e65] px-2 py-0.5 rounded font-bold flex items-center gap-1 transition-all shadow-sm disabled:opacity-50" title="إضافة سريعة للنظام">
                   {isAdding ? <Loader2 size={10} className="animate-spin" /> : <Plus size={10} />} إضافة
                 </button>
               )}
@@ -168,7 +168,7 @@ export const CopyableInput = ({ label, value, onChange, placeholder, type = "tex
             <AlertTriangle size={10} /> {warning}
           </span>
         )}
-        <button onClick={() => copyToClipboard(value)} className="text-slate-400 hover:text-blue-600 transition-colors" title="نسخ المحتوى">
+        <button onClick={() => copyToClipboard(value)} className="text-slate-400 hover:text-[#123B5D] transition-colors" title="نسخ المحتوى">
           <Copy size={12} />
         </button>
       </label>

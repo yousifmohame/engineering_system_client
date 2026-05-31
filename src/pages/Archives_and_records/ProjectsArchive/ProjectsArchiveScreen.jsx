@@ -185,17 +185,17 @@ export default function ProjectsArchiveScreen() {
     <div className="flex-1 block h-full">
       <div className="h-full flex flex-col bg-[#f8fafc] font-sans" dir="rtl">
         {/* ======================= 🚀 الهيدر الاحترافي المضغوط (Toolbar) ======================= */}
-        <div className="bg-white border-b border-slate-200 px-5 py-3 shrink-0 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-4 relative z-10">
+        <div className="bg-[#0f3d50] text-white border-b border-white/10 px-4 py-2.5 shrink-0 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-3 relative z-10">
           {/* 1. العنوان المبسط */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100 shadow-sm">
+            <div className="p-2 bg-[#d7b96d] text-[#0f3d50] rounded-xl border border-white/10 shadow-sm">
               <FolderArchive className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-base font-black text-slate-800 tracking-tight">
+              <h1 className="text-base font-black text-white tracking-tight">
                 أرشيف المشاريع
               </h1>
-              <p className="text-[10px] font-bold text-slate-500 mt-0.5">
+              <p className="text-[10px] font-bold text-white/65 mt-0.5">
                 إدارة ومراجعة المعاملات المقروءة آلياً
               </p>
             </div>
@@ -205,12 +205,12 @@ export default function ProjectsArchiveScreen() {
           <div className="flex-1 flex flex-wrap md:flex-nowrap items-center justify-start xl:justify-center gap-3 overflow-hidden">
             {/* مربع البحث */}
             <div className="relative w-full md:w-64 shrink-0 group">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 group-focus-within:text-[#d7b96d] transition-colors" />
               <input
                 placeholder="ابحث بالاسم، الرخصة، المالك..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl pr-9 pl-3 py-2 text-xs font-bold outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
+                className="w-full bg-white/12 border border-white/15 rounded-xl pr-9 pl-3 py-1.5 text-xs font-bold text-white placeholder:text-white/45 outline-none focus:bg-white/18 focus:border-[#d7b96d] focus:ring-2 focus:ring-[#d7b96d]/20 transition-all"
               />
             </div>
 
@@ -218,11 +218,11 @@ export default function ProjectsArchiveScreen() {
             <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1 md:pb-0">
               <button
                 onClick={() => setActiveFilter("all")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all whitespace-nowrap ${activeFilter === "all" ? "bg-indigo-50 border-indigo-200 text-indigo-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all whitespace-nowrap ${activeFilter === "all" ? "bg-[#f4f7f8] border-[#e8dcc8] text-[#123B5D]" : "bg-white/10 border-white/15 text-white/80 hover:bg-white/20"}`}
               >
                 الكل{" "}
                 <span
-                  className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === "all" ? "bg-indigo-200/50" : "bg-slate-100"}`}
+                  className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === "all" ? "bg-[#d7b96d]/25" : "bg-white/10"}`}
                 >
                   {stats.total}
                 </span>
@@ -230,11 +230,11 @@ export default function ProjectsArchiveScreen() {
 
               <button
                 onClick={() => setActiveFilter("review")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all whitespace-nowrap ${activeFilter === "review" ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all whitespace-nowrap ${activeFilter === "review" ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-white/10 border-white/15 text-white/80 hover:bg-white/20"}`}
               >
                 <ListChecks className="w-3.5 h-3.5" /> مراجعة{" "}
                 <span
-                  className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === "review" ? "bg-amber-200/50" : "bg-slate-100"}`}
+                  className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === "review" ? "bg-amber-200/50" : "bg-white/10"}`}
                 >
                   {stats.needsReview}
                 </span>
@@ -242,11 +242,11 @@ export default function ProjectsArchiveScreen() {
 
               <button
                 onClick={() => setActiveFilter("processing")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all whitespace-nowrap ${activeFilter === "processing" ? "bg-sky-50 border-sky-200 text-sky-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all whitespace-nowrap ${activeFilter === "processing" ? "bg-sky-50 border-sky-200 text-sky-700" : "bg-white/10 border-white/15 text-white/80 hover:bg-white/20"}`}
               >
                 <Clock className="w-3.5 h-3.5" /> قراءة{" "}
                 <span
-                  className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === "processing" ? "bg-sky-200/50" : "bg-slate-100"}`}
+                  className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === "processing" ? "bg-sky-200/50" : "bg-white/10"}`}
                 >
                   {stats.processing}
                 </span>
@@ -254,11 +254,11 @@ export default function ProjectsArchiveScreen() {
 
               <button
                 onClick={() => setActiveFilter("duplicates")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all whitespace-nowrap ${activeFilter === "duplicates" ? "bg-orange-50 border-orange-200 text-orange-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all whitespace-nowrap ${activeFilter === "duplicates" ? "bg-orange-50 border-orange-200 text-orange-700" : "bg-white/10 border-white/15 text-white/80 hover:bg-white/20"}`}
               >
                 <FileWarning className="w-3.5 h-3.5" /> مكرر{" "}
                 <span
-                  className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === "duplicates" ? "bg-orange-200/50" : "bg-slate-100"}`}
+                  className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === "duplicates" ? "bg-orange-200/50" : "bg-white/10"}`}
                 >
                   {stats.duplicates}
                 </span>
@@ -266,11 +266,11 @@ export default function ProjectsArchiveScreen() {
 
               <button
                 onClick={() => setActiveFilter("failed")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all whitespace-nowrap ${activeFilter === "failed" ? "bg-rose-50 border-rose-200 text-rose-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all whitespace-nowrap ${activeFilter === "failed" ? "bg-rose-50 border-rose-200 text-rose-700" : "bg-white/10 border-white/15 text-white/80 hover:bg-white/20"}`}
               >
                 <XCircle className="w-3.5 h-3.5" /> فشل{" "}
                 <span
-                  className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === "failed" ? "bg-rose-200/50" : "bg-slate-100"}`}
+                  className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeFilter === "failed" ? "bg-rose-200/50" : "bg-white/10"}`}
                 >
                   {stats.failed}
                 </span>
@@ -282,23 +282,25 @@ export default function ProjectsArchiveScreen() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={fetchProjects}
-              className="p-2.5 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-slate-50 hover:text-indigo-600 transition-all shadow-sm"
+              className="px-3 py-2 bg-white/10 border border-white/15 text-white rounded-xl hover:bg-white/20 transition-all shadow-sm flex items-center gap-2"
               title="تحديث البيانات"
             >
               <RefreshCw
-                className={`w-4 h-4 ${isLoading ? "animate-spin text-indigo-600" : ""}`}
+                className={`w-4 h-4 ${isLoading ? "animate-spin text-[#123B5D]" : ""}`}
               />
+              <span className="text-[11px] font-black">تحديث</span>
             </button>
             <button
               onClick={handleExportExcel}
-              className="p-2.5 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-slate-50 hover:text-emerald-600 transition-all shadow-sm"
+              className="px-3 py-2 bg-white/10 border border-white/15 text-white rounded-xl hover:bg-white/20 transition-all shadow-sm flex items-center gap-2"
               title="تصدير إلى Excel"
             >
               <ArrowDownToLine className="w-4 h-4" />
+              <span className="text-[11px] font-black">تصدير</span>
             </button>
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="px-4 py-2.5 bg-indigo-600 text-white font-black text-xs rounded-xl hover:bg-indigo-700 flex items-center gap-2 transition-all shadow-sm active:scale-95"
+              className="px-4 py-2.5 bg-[#d7b96d] text-[#0f3d50] font-black text-xs rounded-xl hover:bg-[#e4c87d] flex items-center gap-2 transition-all shadow-sm active:scale-95"
             >
               <Plus className="w-4 h-4" /> إضافة ملفات
             </button>
@@ -308,7 +310,7 @@ export default function ProjectsArchiveScreen() {
         {/* ======================= Data Table ======================= */}
         <div className="flex-1 overflow-auto bg-white relative custom-scrollbar">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center h-full text-indigo-600 bg-slate-50/50">
+            <div className="flex flex-col items-center justify-center h-full text-[#123B5D] bg-slate-50/50">
               <Loader2 className="w-10 h-10 animate-spin mb-3" />
               <span className="text-sm font-black text-slate-700">
                 جاري إحضار الملفات... يرجى الانتظار
@@ -319,7 +321,7 @@ export default function ProjectsArchiveScreen() {
               <div className="w-24 h-24 bg-white rounded-full border border-slate-200 flex items-center justify-center mb-4 shadow-sm">
                 <FolderArchive className="w-10 h-10 text-slate-300" />
               </div>
-              <span className="text-lg font-black text-slate-700">
+              <span className="text-base font-black text-slate-700">
                 لا توجد ملفات لعرضها هنا!
               </span>
               <p className="text-xs font-bold mt-2 max-w-sm leading-relaxed">
@@ -330,30 +332,30 @@ export default function ProjectsArchiveScreen() {
             </div>
           ) : (
             <table className="w-full text-right text-[11px] font-bold border-collapse whitespace-nowrap">
-              <thead className="bg-slate-50 text-slate-600 sticky top-0 z-20 shadow-sm border-b border-slate-200">
+              <thead className="bg-[#f4f7f8] text-[#123B5D] sticky top-0 z-20 shadow-sm border-b border-slate-200">
                 <tr className="divide-x divide-x-reverse divide-slate-200">
-                  <th className="px-4 py-3 font-black sticky right-0 bg-slate-50 z-30 w-32 border-l border-slate-200 text-indigo-900">
+                  <th className="px-3 py-2.5 font-black sticky right-0 bg-slate-50 z-30 w-32 border-l border-slate-200 text-[#123B5D]">
                     رقم الملف (المرجع)
                   </th>
-                  <th className="px-4 py-3 font-black sticky right-[128px] bg-slate-50 z-30 w-64 border-l border-slate-200">
+                  <th className="px-3 py-2.5 font-black sticky right-[128px] bg-slate-50 z-30 w-64 border-l border-slate-200">
                     اسم المشروع
                   </th>
-                  <th className="px-4 py-3 font-black text-slate-500">
+                  <th className="px-3 py-2.5 font-black text-slate-500">
                     اسم المالك
                   </th>
-                  <th className="px-4 py-3 font-black text-slate-500">
+                  <th className="px-3 py-2.5 font-black text-slate-500">
                     الرخصة وتاريخها
                   </th>
-                  <th className="px-4 py-3 font-black text-slate-500">
+                  <th className="px-3 py-2.5 font-black text-slate-500">
                     الحي والمدينة
                   </th>
-                  <th className="px-4 py-3 font-black text-slate-500 text-center">
+                  <th className="px-3 py-2.5 font-black text-slate-500 text-center">
                     المرفقات
                   </th>
-                  <th className="px-4 py-3 font-black text-center w-40 text-slate-800">
+                  <th className="px-3 py-2.5 font-black text-center w-40 text-slate-800">
                     حالة الملف
                   </th>
-                  <th className="px-4 py-3 font-black text-center text-slate-500 w-24">
+                  <th className="px-3 py-2.5 font-black text-center text-slate-500 w-24">
                     إجراءات
                   </th>
                 </tr>
@@ -368,12 +370,12 @@ export default function ProjectsArchiveScreen() {
                     <tr
                       key={project.id}
                       onClick={() => openProjectDetails(project.id)}
-                      className={`cursor-pointer transition-all hover:shadow-md ${isDuplicate ? "bg-orange-50/30 hover:bg-orange-50" : "hover:bg-indigo-50/50"}`}
+                      className={`cursor-pointer transition-all hover:shadow-md ${isDuplicate ? "bg-orange-50/30 hover:bg-orange-50" : "hover:bg-[#f4f7f8]/50"}`}
                     >
                       <td
                         className={`px-4 py-3 sticky right-0 z-10 border-l border-slate-100 ${isDuplicate ? "bg-orange-50/90" : "bg-white"}`}
                       >
-                        <span className="font-mono font-black text-xs text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md border border-indigo-100">
+                        <span className="font-mono font-black text-xs text-[#123B5D] bg-[#f4f7f8] px-2 py-1 rounded-md border border-[#e8dcc8]">
                           {project.archiveCode}
                         </span>
                       </td>
@@ -394,7 +396,7 @@ export default function ProjectsArchiveScreen() {
                           >
                             {project.title || "بدون اسم"}
                           </span>
-                          <Eye className="w-4 h-4 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-indigo-600 shrink-0 transition-opacity" />
+                          <Eye className="w-4 h-4 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-[#123B5D] shrink-0 transition-opacity" />
                         </div>
                       </td>
 
@@ -464,22 +466,20 @@ export default function ProjectsArchiveScreen() {
                               e.stopPropagation();
                               openProjectDetails(project.id);
                             }}
-                            className="text-indigo-600 hover:text-indigo-800 flex flex-col items-center gap-1 group"
+                            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-[#123B5D] bg-[#edf7fb] border border-[#cfe3ea] hover:bg-[#dff0f6] rounded-xl shadow-sm transition-all"
                             title="افتح للتعديل والمراجعة"
                           >
-                            <div className="p-1.5 rounded-lg group-hover:bg-indigo-50">
-                              <PenLine className="w-4 h-4" />
-                            </div>
+                            <PenLine className="w-4 h-4" />
+                            <span>تعديل</span>
                           </button>
                           <button
                             onClick={(e) => handleDelete(project.id, e)}
                             disabled={isDeleting}
-                            className="text-rose-500 hover:text-rose-700 flex flex-col items-center gap-1 group disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 rounded-xl shadow-sm transition-all disabled:opacity-50"
                             title="حذف الملف نهائياً"
                           >
-                            <div className="p-1.5 rounded-lg group-hover:bg-rose-50">
-                              <Trash2 className="w-4 h-4" />
-                            </div>
+                            <Trash2 className="w-4 h-4" />
+                            <span>حذف</span>
                           </button>
                         </div>
                       </td>

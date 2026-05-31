@@ -83,19 +83,19 @@ export default function ReferenceBaseScreen({
   // 💡 طريقة آمنة جداً ومضمونة لإدارة الألوان بدون استخدام split 
   const THEMES = {
     purple: {
-      btn: "bg-purple-600 hover:bg-purple-700 shadow-purple-200",
-      iconBox: "bg-purple-50 text-purple-600 border-purple-200"
+      btn: "bg-[#0f3d50] hover:bg-[#174e65] shadow-[#0f3d50]/20",
+      iconBox: "bg-[#f4f7f8] text-[#123B5D] border-[#e8dcc8]"
     },
     blue: {
-      btn: "bg-blue-600 hover:bg-blue-700 shadow-blue-200",
-      iconBox: "bg-blue-50 text-blue-600 border-blue-200"
+      btn: "bg-[#0f3d50] hover:bg-[#174e65] shadow-[#0f3d50]/20",
+      iconBox: "bg-[#f4f7f8] text-[#123B5D] border-[#e8dcc8]"
     },
     amber: {
       btn: "bg-amber-500 hover:bg-amber-600 shadow-amber-200",
       iconBox: "bg-amber-50 text-amber-600 border-amber-200"
     },
     emerald: {
-      btn: "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200",
+      btn: "bg-emerald-600 hover:bg-[#123B5D] shadow-[#0f3d50]/20",
       iconBox: "bg-emerald-50 text-emerald-600 border-emerald-200"
     }
   };
@@ -105,22 +105,22 @@ export default function ReferenceBaseScreen({
 
   return (
     <div className="h-full block font-sans relative" dir="rtl">
-      <div className="p-4 bg-[#fafbfc] min-h-full">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <div className="p-4 bg-[#f4f7f8] min-h-full">
+        <div className="max-w-7xl mx-auto space-y-4">
           
           {/* 🚀 الهيدر المخصص للشاشة */}
-          <div className="flex items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div className={`p-4 rounded-2xl border ${activeTheme.iconBox}`}>
-              <HeaderIcon size={32} strokeWidth={2} />
+          <div className="flex items-center gap-4 bg-[#0f3d50] text-white p-4 rounded-[1.5rem] border border-white/10 shadow-lg">
+            <div className={`p-3 rounded-2xl border bg-[#d7b96d] text-[#0f3d50] border-white/10`}>
+              <HeaderIcon size={26} strokeWidth={2.4} />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-slate-800">{pageTitle}</h1>
-              <p className="text-sm font-bold text-slate-500 mt-1">{pageDescription} - ({filteredDocuments.length} سجل)</p>
+              <h1 className="text-xl font-black text-white">{pageTitle}</h1>
+              <p className="text-xs font-bold text-white/65 mt-1">{pageDescription} - ({filteredDocuments.length} سجل)</p>
             </div>
           </div>
 
           {/* شريط الإجراءات والبحث */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-[#e8dcc8] shadow-sm">
             <div className="relative flex-1 max-w-lg">
               <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
@@ -141,7 +141,7 @@ export default function ReferenceBaseScreen({
               </button>
               <button 
                 onClick={() => { setDocumentToEdit(null); setIsAddModalOpen(true); }} 
-                className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-white rounded-xl text-xs font-black shadow-md hover:bg-slate-900 transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#d7b96d] text-[#0f3d50] rounded-xl text-xs font-black shadow-md hover:bg-[#e4c87d] transition-all"
               >
                 <Plus className="w-4 h-4" /> إضافة يدوية
               </button>
@@ -149,11 +149,11 @@ export default function ReferenceBaseScreen({
           </div>
 
           {/* الجدول المكتمل */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-[#e8dcc8] shadow-sm overflow-hidden">
             <div className="overflow-x-auto custom-scrollbar-slim pb-24 min-h-[400px]">
               <table className="w-full text-right border-collapse min-w-[900px]">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200">
+                  <tr className="bg-[#f4f7f8] border-b border-slate-200">
                     <th className="p-4 text-xs font-black text-slate-500">العنوان</th>
                     <th className="p-4 text-xs font-black text-slate-500">الجهة المصدرة</th>
                     <th className="p-4 text-xs font-black text-slate-500">تاريخ الإصدار</th>
@@ -165,7 +165,7 @@ export default function ReferenceBaseScreen({
                   {isLoading ? (
                     <tr>
                       <td colSpan="5" className="p-16 text-center">
-                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500 mb-4" />
+                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0f3d50] mb-4" />
                         <span className="text-sm font-bold text-slate-500">جاري التحميل...</span>
                       </td>
                     </tr>
@@ -185,7 +185,7 @@ export default function ReferenceBaseScreen({
                             {doc.issueDate ? new Date(doc.issueDate).toLocaleDateString("en-GB") : "—"}
                           </td>
                           <td className="p-4">
-                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black ${doc.analysisStatus === 'محلل' ? 'bg-emerald-100 text-emerald-800' : doc.analysisStatus === 'قيد التحليل' ? 'bg-purple-100 text-purple-800 animate-pulse' : 'bg-slate-100 text-slate-600'}`}>
+                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black ${doc.analysisStatus === 'محلل' ? 'bg-emerald-100 text-emerald-800' : doc.analysisStatus === 'قيد التحليل' ? 'bg-[#edf2f4] text-[#123B5D] animate-pulse' : 'bg-slate-100 text-slate-600'}`}>
                               {doc.analysisStatus || "غير محلل"}
                             </span>
                           </td>
@@ -194,13 +194,15 @@ export default function ReferenceBaseScreen({
                           <td className="p-4" onClick={(e) => e.stopPropagation()}>
                             <div className="flex justify-center gap-2 relative">
                               {doc.fileUrl && (
-                                <button onClick={() => window.open(getFullUrl(doc.fileUrl.split(",")[0]), "_blank")} className="p-2 text-slate-400 hover:text-blue-600 transition-all hover:bg-slate-100 rounded-lg">
-                                  <Download size={16}/>
+                                <button onClick={() => window.open(getFullUrl(doc.fileUrl.split(",")[0]), "_blank")} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-[#123B5D] bg-[#edf7fb] border border-[#cfe3ea] hover:bg-[#dff0f6] transition-all rounded-xl shadow-sm">
+                                  <Download size={15}/>
+                                  <span>تحميل</span>
                                 </button>
                               )}
                               
-                              <button onClick={() => setActiveMenuId(activeMenuId === doc.id ? null : doc.id)} className="p-2 text-slate-400 hover:text-slate-800 transition-all hover:bg-slate-100 rounded-lg">
-                                <MoreVertical size={16}/>
+                              <button onClick={() => setActiveMenuId(activeMenuId === doc.id ? null : doc.id)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all rounded-xl shadow-sm">
+                                <MoreVertical size={15}/>
+                                <span>إجراءات</span>
                               </button>
 
                               {/* القائمة المنسدلة */}
@@ -210,7 +212,7 @@ export default function ReferenceBaseScreen({
                                   <div className="absolute left-10 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 w-40 py-1 font-bold text-xs animate-in zoom-in-95">
                                     
                                     <button onClick={() => { setDocumentToEdit(doc); setIsAddModalOpen(true); setActiveMenuId(null); }} className="flex items-center gap-2 w-full text-right px-4 py-2 hover:bg-slate-50 text-slate-700">
-                                      <Edit2 size={14} className="text-blue-500" /> تعديل المرجع
+                                      <Edit2 size={14} className="text-[#0f3d50]" /> تعديل المرجع
                                     </button>
                                     
                                     {doc.status === "نشط" ? (

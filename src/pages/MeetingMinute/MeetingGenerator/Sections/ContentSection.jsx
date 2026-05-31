@@ -65,56 +65,56 @@ export default function ContentSection({ minute, setMinute }) {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
-          <Layout className="w-4 h-4 text-indigo-600" /> جدول الأعمال والقرارات
+        <h3 className="text-sm font-black text-[#123f59] flex items-center gap-2">
+          <Layout className="w-4 h-4 text-[#0e7490]" /> جدول الأعمال والقرارات
         </h3>
-        <button onClick={addAxis} className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black flex items-center gap-1 hover:bg-indigo-100 transition-colors">
+        <button type="button" onClick={addAxis} className="px-3 py-1.5 bg-[#eef7f6] text-[#0e7490] rounded-xl text-[10px] font-black flex items-center gap-1 hover:bg-[#eef7f6] transition-colors">
           <Plus className="w-3 h-3" /> محور جديد
         </button>
       </div>
 
       {minute.axes?.map((axis) => (
-        <div key={axis.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
+        <div key={axis.id} className="p-3 bg-[#fbf8f1] border border-[#e8ddc8] rounded-2xl space-y-4">
           <div className="flex justify-between items-start gap-2">
             <input
               type="text"
               value={axis.title}
               onChange={(e) => updateAxis(axis.id, "title", e.target.value)}
-              className="flex-1 text-sm font-black w-full p-2 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-500"
+              className="flex-1 text-sm font-black w-full p-2 bg-white border border-[#e8ddc8] rounded-xl outline-none focus:border-[#0e7490]"
               placeholder="عنوان المحور..."
             />
-            <button onClick={() => removeAxis(axis.id)} className="p-2 bg-white border border-slate-200 text-rose-500 hover:bg-rose-50 rounded-xl">
+            <button type="button" onClick={() => removeAxis(axis.id)} className="p-2 bg-white border border-[#e8ddc8] text-rose-500 hover:bg-rose-50 rounded-xl">
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-black text-slate-700 mb-1">نقاشات وطلبات العميل</label>
+              <label className="block text-[10px] font-black text-[#334155] mb-1">نقاشات وطلبات العميل</label>
               <textarea
                 value={(axis.clientRequests || []).join("\n")}
                 onChange={(e) => updateAxis(axis.id, "clientRequests", e.target.value.split("\n"))}
-                className="w-full text-xs font-bold p-3 bg-white border border-slate-200 rounded-xl h-24 resize-none outline-none focus:border-indigo-500 custom-scrollbar"
+                className="w-full text-xs font-bold p-3 bg-white border border-[#e8ddc8] rounded-xl h-24 resize-none outline-none focus:border-[#0e7490] custom-scrollbar"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-black text-slate-700 mb-1">إفادات الشركة</label>
+              <label className="block text-[10px] font-black text-[#334155] mb-1">إفادات الشركة</label>
               <textarea
                 value={(axis.companyResponses || []).join("\n")}
                 onChange={(e) => updateAxis(axis.id, "companyResponses", e.target.value.split("\n"))}
-                className="w-full text-xs font-bold p-3 bg-white border border-slate-200 rounded-xl h-24 resize-none outline-none focus:border-indigo-500 custom-scrollbar"
+                className="w-full text-xs font-bold p-3 bg-white border border-[#e8ddc8] rounded-xl h-24 resize-none outline-none focus:border-[#0e7490] custom-scrollbar"
               />
             </div>
           </div>
-          <div className="pt-4 border-t border-slate-200 space-y-3">
+          <div className="pt-4 border-t border-[#e8ddc8] space-y-3">
             <div className="flex justify-between items-center">
-              <label className="block text-[11px] font-black text-slate-800">القرارات والمخرجات المتفق عليها</label>
-              <button onClick={() => addOutcome(axis.id)} className="text-[10px] font-black text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded bg-white border border-slate-200 flex items-center gap-1 shadow-sm">
+              <label className="block text-[11px] font-black text-[#123f59]">القرارات والمخرجات المتفق عليها</label>
+              <button type="button" onClick={() => addOutcome(axis.id)} className="text-[10px] font-black text-[#0e7490] hover:bg-[#eef7f6] px-2 py-1 rounded bg-white border border-[#e8ddc8] flex items-center gap-1 shadow-sm">
                 <Plus className="w-3 h-3" /> مخرج جديد
               </button>
             </div>
             {axis.outcomes?.map((outcome) => (
-              <div key={outcome.id} className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-3 relative group">
-                <button onClick={() => removeOutcome(axis.id, outcome.id)} className="absolute top-2 left-2 p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 z-10">
+              <div key={outcome.id} className="bg-white border border-[#e8ddc8] rounded-xl p-3 flex flex-col gap-3 relative group">
+                <button type="button" onClick={() => removeOutcome(axis.id, outcome.id)} className="absolute top-2 left-2 p-1.5 text-[#cfd8e3] hover:text-rose-500 hover:bg-rose-50 rounded-xl opacity-0 group-hover:opacity-100 z-10">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
 
@@ -123,7 +123,7 @@ export default function ContentSection({ minute, setMinute }) {
                     <input
                       value={outcome.title}
                       onChange={(e) => updateOutcome(axis.id, outcome.id, "title", e.target.value)}
-                      className="w-full text-xs font-black p-1.5 border-b border-transparent focus:border-indigo-500 outline-none transition-colors"
+                      className="w-full text-xs font-black p-1.5 border-b border-transparent focus:border-[#0e7490] outline-none transition-colors"
                       placeholder="عنوان المخرج المختصر..."
                     />
                   </div>
@@ -131,7 +131,7 @@ export default function ContentSection({ minute, setMinute }) {
                     <select
                       value={outcome.source}
                       onChange={(e) => updateOutcome(axis.id, outcome.id, "source", e.target.value)}
-                      className="w-full text-[10px] font-bold p-1.5 bg-slate-50 border border-slate-100 rounded outline-none focus:ring-1 focus:ring-indigo-500"
+                      className="w-full text-[10px] font-bold p-1.5 bg-[#fbf8f1] border border-[#e8ddc8]/70 rounded outline-none focus:ring-1 focus:ring-[#0e7490]"
                     >
                       <option value="قرار مشترك">قرار مشترك</option>
                       <option value="طلب عميل">طلب عميل</option>
@@ -142,19 +142,19 @@ export default function ContentSection({ minute, setMinute }) {
                 <textarea
                   value={outcome.content}
                   onChange={(e) => updateOutcome(axis.id, outcome.id, "content", e.target.value)}
-                  className="w-full text-xs font-bold text-slate-700 p-2 bg-slate-50 border border-slate-200 rounded-lg h-20 resize-none outline-none focus:border-indigo-500 custom-scrollbar"
+                  className="w-full text-xs font-bold text-[#334155] p-2 bg-[#fbf8f1] border border-[#e8ddc8] rounded-xl h-20 resize-none outline-none focus:border-[#0e7490] custom-scrollbar"
                   placeholder="نص المخرج والتفاصيل التنفيذية..."
                 />
 
                 <div className="flex gap-2">
-                  <button
+                  <button type="button"
                     onClick={() => handleInlineAi(axis.id, outcome.id, outcome.content, 'improve')}
                     disabled={loadingAiId === outcome.id}
-                    className="text-[9px] px-2 py-1.5 bg-indigo-50 text-indigo-600 font-bold rounded hover:bg-indigo-100 flex items-center gap-1 transition-colors disabled:opacity-50"
+                    className="text-[9px] px-2 py-1.5 bg-[#eef7f6] text-[#0e7490] font-bold rounded hover:bg-[#eef7f6] flex items-center gap-1 transition-colors disabled:opacity-50"
                   >
                     {loadingAiId === outcome.id ? <Loader2 className="w-3 h-3 animate-spin"/> : <Wand2 className="w-3 h-3" />} تحسين الصياغة
                   </button>
-                  <button
+                  <button type="button"
                     onClick={() => handleInlineAi(axis.id, outcome.id, outcome.content, 'action')}
                     disabled={loadingAiId === outcome.id}
                     className="text-[9px] px-2 py-1.5 bg-emerald-50 text-emerald-600 font-bold rounded hover:bg-emerald-100 flex items-center gap-1 transition-colors disabled:opacity-50"
@@ -163,11 +163,11 @@ export default function ContentSection({ minute, setMinute }) {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 border-t border-slate-100 pt-2 mt-1">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 border-t border-[#e8ddc8]/70 pt-2 mt-1">
                   <select
                     value={outcome.status}
                     onChange={(e) => updateOutcome(axis.id, outcome.id, "status", e.target.value)}
-                    className="text-[10px] font-bold p-1.5 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="text-[10px] font-bold p-1.5 bg-[#fbf8f1] border border-[#e8ddc8]/70 rounded-xl outline-none focus:ring-1 focus:ring-[#0e7490]"
                   >
                     <option value="معلق">معلق</option>
                     <option value="منجز">منجز</option>
@@ -176,19 +176,19 @@ export default function ContentSection({ minute, setMinute }) {
                     value={outcome.responsible}
                     onChange={(e) => updateOutcome(axis.id, outcome.id, "responsible", e.target.value)}
                     placeholder="المسؤول..."
-                    className="text-[10px] font-bold p-1.5 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="text-[10px] font-bold p-1.5 bg-[#fbf8f1] border border-[#e8ddc8]/70 rounded-xl outline-none focus:ring-1 focus:ring-[#0e7490]"
                   />
                   <input
                     type="date"
                     value={outcome.targetDate || ""}
                     onChange={(e) => updateOutcome(axis.id, outcome.id, "targetDate", e.target.value)}
-                    className="text-[10px] font-bold p-1.5 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="text-[10px] font-bold p-1.5 bg-[#fbf8f1] border border-[#e8ddc8]/70 rounded-xl outline-none focus:ring-1 focus:ring-[#0e7490]"
                   />
                   <input
                     type="date"
                     value={outcome.dueDate || ""}
                     onChange={(e) => updateOutcome(axis.id, outcome.id, "dueDate", e.target.value)}
-                    className="text-[10px] font-bold p-1.5 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="text-[10px] font-bold p-1.5 bg-[#fbf8f1] border border-[#e8ddc8]/70 rounded-xl outline-none focus:ring-1 focus:ring-[#0e7490]"
                     title="تاريخ الاستحقاق"
                   />
                 </div>

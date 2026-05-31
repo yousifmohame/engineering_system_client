@@ -54,22 +54,24 @@ export default function SystemBackupTab() {
   return (
     <div className="flex flex-col h-full bg-gray-50/50" dir="rtl" style={{ fontFamily: "Tajawal, sans-serif" }}>
       {/* Header */}
-      <div className="flex items-center gap-3 px-6 py-5 bg-white border-b border-gray-200 shrink-0 shadow-sm">
-        <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shadow-inner">
-          <Database className="w-5 h-5 text-blue-400" />
-        </div>
-        <div>
-          <h1 className="text-lg font-black text-slate-800">النسخ الاحتياطي (Backup)</h1>
-          <p className="text-xs font-semibold text-slate-500">حفظ نسخة من قواعد البيانات والملفات المرفوعة</p>
+      <div className="sys-compact-page-header flex items-center justify-between gap-3 mx-4 mt-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-[13px] bg-[#d9b85b] text-[#083646] flex items-center justify-center shrink-0 shadow-sm">
+            <Database className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-[16px] font-bold leading-tight whitespace-nowrap text-white">النسخ الاحتياطي</h1>
+            <p className="text-[10px] font-semibold text-white/75 mt-0.5 whitespace-nowrap">حفظ نسخة من قواعد البيانات والملفات المرفوعة</p>
+          </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6">
         <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in">
           
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+          <div className="bg-blue-50 border border-[#d8e6ee] rounded-xl p-5 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-[#0f6d7c] shrink-0 mt-0.5" />
             <div>
               <h4 className="text-sm font-bold text-blue-900 mb-1">أهمية النسخ الاحتياطي</h4>
               <p className="text-xs text-blue-700 leading-relaxed font-semibold">
@@ -80,34 +82,34 @@ export default function SystemBackupTab() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* DB Backup */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4">
+            <div className="bg-white border border-gray-200 rounded-[22px] p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-[22px] flex items-center justify-center mb-4">
                 <Database className="w-8 h-8" />
               </div>
-              <h3 className="text-lg font-black text-gray-800 mb-2">قاعدة البيانات (SQL)</h3>
+              <h3 className="text-base font-black text-[#123B5D] mb-2">قاعدة البيانات (SQL)</h3>
               <p className="text-xs text-gray-500 font-semibold mb-6">
                 تحميل نسخة كاملة من جميع الجداول، السجلات، الحسابات والمعاملات بصيغة خفيفة يسهل استرجاعها.
               </p>
               <button 
                 onClick={handleDbBackup}
-                className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-md"
+                className="w-full flex items-center justify-center gap-2 bg-[#083646] text-white py-3 rounded-xl font-bold hover:bg-[#0f6d7c] transition-colors shadow-md"
               >
                 <Download className="w-4 h-4" /> تحميل قاعدة البيانات
               </button>
             </div>
 
             {/* Uploads Backup */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-4">
+            <div className="bg-white border border-gray-200 rounded-[22px] p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-emerald-50 text-[#0f6d7c] rounded-[22px] flex items-center justify-center mb-4">
                 <FolderArchive className="w-8 h-8" />
               </div>
-              <h3 className="text-lg font-black text-gray-800 mb-2">مجلد المرفقات (Uploads)</h3>
+              <h3 className="text-base font-black text-[#123B5D] mb-2">مجلد المرفقات (Uploads)</h3>
               <p className="text-xs text-gray-500 font-semibold mb-6">
                 تحميل ملف مضغوط (ZIP) يحتوي على جميع الصور، ملفات الـ PDF، والمرفقات الخاصة بالعملاء والمعاملات.
               </p>
               <button 
                 onClick={handleUploadsBackup}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors shadow-md"
+                className="w-full flex items-center justify-center gap-2 bg-[#083646] text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors shadow-md"
               >
                 <Download className="w-4 h-4" /> تحميل مجلد المرفقات
               </button>
