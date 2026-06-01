@@ -6,8 +6,8 @@ export const ImagesTab = ({ localData }) => {
 
   return (
     <div className="animate-in fade-in max-w-7xl mx-auto">
-      <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-slate-200">
-        <span className="text-sm font-black text-slate-800 flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-[#d8e6ee]">
+        <span className="text-sm font-black text-[#123B5D] flex items-center gap-2">
           <ImageIcon className="w-5 h-5 text-pink-600" /> معرض الصور (
           {allImages.length})
         </span>
@@ -20,22 +20,22 @@ export const ImagesTab = ({ localData }) => {
             return (
               <div
                 key={idx}
-                className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all group"
+                className="bg-white border border-[#d8e6ee] rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all group"
               >
-                <div className="relative h-40 bg-slate-100">
+                <div className="relative h-40 bg-[#f7fbfd]">
                   <img
                     src={b.imageUrl}
                     alt={b.direction}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
-                <div className="p-3 bg-white flex justify-between items-center border-t border-slate-100 relative z-10">
+                <div className="p-3 bg-white flex justify-between items-center border-t border-[#e7eef2] relative z-10">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold block mb-0.5">
+                    <span className="text-[10px] text-[#71839a] font-bold block mb-0.5">
                       قطعة رقم
                     </span>
                     <span
-                      className="font-bold text-slate-700 text-sm"
+                      className="font-bold text-[#123B5D] text-sm"
                       dir="ltr"
                     >
                       {parentPlot?.plotNumber || "---"}
@@ -50,12 +50,12 @@ export const ImagesTab = ({ localData }) => {
           })}
         </div>
       ) : (
-        <div className="text-center py-16 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl">
+        <div className="text-center py-16 bg-[#f7fbfd] border-2 border-dashed border-slate-300 rounded-xl">
           <ImageIcon className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500 font-bold">
+          <p className="text-[#71839a] font-bold">
             لا توجد صور مرفوعة لحدود القطع
           </p>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-[#71839a] mt-1">
             يتم رفع الصور من تبويب (الحدود)
           </p>
         </div>

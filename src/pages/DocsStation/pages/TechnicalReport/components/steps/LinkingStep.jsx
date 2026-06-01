@@ -62,7 +62,7 @@ export default function LinkingStep() {
                   {isSelected ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <div className="w-5 h-5 rounded-full border-2 border-slate-200" />}
                   <div>
                     <span className={`font-black text-xs block ${isSelected ? "text-emerald-800" : "text-slate-700"}`}>
-                      {txn.client?.name || txn.description || "معاملة بدون وصف"}
+                      {txn.client || txn.title || "معاملة بدون وصف"}
                     </span>
                     <span className="text-[10px] text-slate-500 font-bold mt-0.5 block">{txn.transactionType?.name || "معاملة عامة"}</span>
                   </div>

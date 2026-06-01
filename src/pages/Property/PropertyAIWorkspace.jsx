@@ -86,19 +86,19 @@ export const PropertyAIWorkspace = () => {
   // واجهة التحميل والرفع
   if (analysisStep < 3) {
     return (
-      <div className="flex items-center justify-center min-h-full bg-slate-50 p-6">
+      <div className="flex items-center justify-center min-h-full bg-[#f7fbfd] p-6">
         <Card className="w-full max-w-xl shadow-2xl border-none">
           <CardContent className="p-12 text-center">
             {analysisStep === 0 ? (
               <div className="space-y-6">
-                <div className="mx-auto w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center text-blue-600 shadow-inner">
+                <div className="mx-auto w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center text-[#0f6d7c] shadow-inner">
                   <Layers size={36} />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-800">
+                  <h2 className="text-lg font-bold text-[#123B5D]">
                     معالج الصكوك المتعددة
                   </h2>
-                  <p className="text-slate-500 mt-2 text-sm">
+                  <p className="text-[#71839a] mt-2 text-sm">
                     ارفع ملف PDF يحتوي على عدة صكوك وسنقوم بفرزها آلياً
                   </p>
                 </div>
@@ -111,16 +111,16 @@ export const PropertyAIWorkspace = () => {
                 />
                 <label
                   htmlFor="bulk-upload"
-                  className="block p-8 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:bg-blue-50 transition-all"
+                  className="block p-8 border-2 border-dashed border-[#d8e6ee] rounded-[24px] cursor-pointer hover:bg-blue-50 transition-all"
                 >
-                  <span className="text-slate-600 font-medium">
+                  <span className="text-[#52677e] font-medium">
                     {file ? file.name : "اختر ملف PDF الصكوك"}
                   </span>
                 </label>
                 {file && (
                   <Button
                     onClick={startAnalysis}
-                    className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-lg font-bold rounded-xl"
+                    className="w-full h-14 bg-[#083646] hover:bg-[#0f6d7c] text-lg font-bold rounded-xl"
                   >
                     بدء تحليل {file.name} <Zap className="mr-2" size={18} />
                   </Button>
@@ -139,7 +139,7 @@ export const PropertyAIWorkspace = () => {
                       cy="50"
                     />
                     <circle
-                      className="text-blue-600 stroke-current transition-all duration-500"
+                      className="text-[#0f6d7c] stroke-current transition-all duration-500"
                       strokeWidth="8"
                       strokeDasharray={251}
                       strokeDashoffset={251 - (251 * progress) / 100}
@@ -150,15 +150,15 @@ export const PropertyAIWorkspace = () => {
                       cy="50"
                     />
                   </svg>
-                  <div className="absolute inset-0 flex items-center justify-center font-bold text-2xl text-slate-800">
+                  <div className="absolute inset-0 flex items-center justify-center font-bold text-2xl text-[#123B5D]">
                     {progress}%
                   </div>
                 </div>
                 <div className="animate-pulse">
-                  <h3 className="text-lg font-bold text-blue-600">
+                  <h3 className="text-lg font-bold text-[#0f6d7c]">
                     جاري تحليل الصفحات بالتوازي...
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-[#71839a] mt-1">
                     يتم الآن قراءة البيانات من 8 صفحات مختلفة
                   </p>
                 </div>
@@ -174,14 +174,14 @@ export const PropertyAIWorkspace = () => {
 
   // واجهة المراجعة الاحترافية
   return (
-    <div className="flex h-full bg-slate-50 overflow-hidden animate-in fade-in duration-700">
+    <div className="flex h-full bg-[#f7fbfd] overflow-hidden animate-in fade-in duration-700">
       {/* 1. القائمة الجانبية للصكوك المكتشفة */}
       <div className="w-80 bg-white border-l flex flex-col shadow-xl z-20">
-        <div className="p-6 border-b bg-slate-50/50">
-          <h2 className="text-sm font-bold text-slate-800">
+        <div className="p-6 border-b bg-[#f7fbfd]/50">
+          <h2 className="text-sm font-bold text-[#123B5D]">
             الصكوك المكتشفة ({extractedDocs.length})
           </h2>
-          <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">
+          <p className="text-[10px] text-[#71839a] mt-1 uppercase tracking-wider">
             انقر للمراجعة والتبديل
           </p>
         </div>
@@ -192,13 +192,13 @@ export const PropertyAIWorkspace = () => {
               onClick={() => setSelectedIdx(idx)}
               className={`w-full p-4 rounded-xl text-right transition-all border ${
                 selectedIdx === idx
-                  ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200"
-                  : "bg-white border-slate-100 hover:border-blue-200 text-slate-600"
+                  ? "bg-[#083646] border-blue-600 text-white shadow-lg shadow-blue-200"
+                  : "bg-white border-[#e7eef2] hover:border-blue-200 text-[#52677e]"
               }`}
             >
               <div className="flex justify-between items-start mb-1">
                 <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full ${selectedIdx === idx ? "bg-blue-500 text-white" : "bg-slate-100"}`}
+                  className={`text-[10px] px-2 py-0.5 rounded-full ${selectedIdx === idx ? "bg-blue-500 text-white" : "bg-[#f7fbfd]"}`}
                 >
                   صفحة {doc.page}
                 </span>
@@ -220,11 +220,11 @@ export const PropertyAIWorkspace = () => {
             </button>
           ))}
         </div>
-        <div className="p-4 bg-slate-50 border-t">
+        <div className="p-4 bg-[#f7fbfd] border-t">
           <Button
             onClick={() => setAnalysisStep(0)}
             variant="outline"
-            className="w-full text-xs h-10 border-slate-200"
+            className="w-full text-xs h-10 border-[#d8e6ee]"
           >
             <RefreshCcw size={12} className="ml-2" /> رفع ملف جديد
           </Button>
@@ -235,7 +235,7 @@ export const PropertyAIWorkspace = () => {
       <div className="flex-1 flex overflow-hidden">
         {/* معاينة الصك */}
         <div className="flex-1 p-6 flex flex-col border-l">
-          <div className="bg-white rounded-2xl shadow-inner border border-slate-200 flex-1 overflow-hidden relative">
+          <div className="bg-white rounded-[24px] shadow-inner border border-[#d8e6ee] flex-1 overflow-hidden relative">
             <iframe
               src={`${previewUrl}#page=${currentDoc.page}`}
               className="w-full h-full border-none"
@@ -246,10 +246,10 @@ export const PropertyAIWorkspace = () => {
         {/* نموذج البيانات */}
         <div className="w-[450px] bg-white overflow-y-auto p-8 shadow-2xl z-10">
           <div className="mb-10">
-            <h3 className="text-xl font-bold text-slate-800 mb-2">
+            <h3 className="text-xl font-bold text-[#123B5D] mb-2">
               مراجعة الصك الحالي
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[#71839a]">
               يرجى التأكد من مطابقة أرقام الصفحة {currentDoc.page} مع البيانات
               أدناه
             </p>
@@ -257,7 +257,7 @@ export const PropertyAIWorkspace = () => {
 
           <div className="space-y-8">
             <section className="space-y-4">
-              <h4 className="text-[10px] font-bold text-blue-600 uppercase tracking-widest border-b pb-2">
+              <h4 className="text-[10px] font-bold text-[#0f6d7c] uppercase tracking-widest border-b pb-2">
                 بيانات الصك الأساسية
               </h4>
               <InputWithCopy
@@ -286,12 +286,12 @@ export const PropertyAIWorkspace = () => {
             </section>
 
             <div className="pt-10 flex gap-3">
-              <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white h-14 font-bold rounded-xl shadow-lg shadow-emerald-100 transition-transform active:scale-95">
+              <Button className="flex-1 bg-[#083646] hover:bg-[#0f6d7c] text-white h-14 font-bold rounded-xl shadow-lg shadow-emerald-100 transition-transform active:scale-95">
                 <Save size={18} className="ml-2" /> اعتماد وحفظ الصك
               </Button>
               <Button
                 variant="outline"
-                className="h-14 px-6 border-slate-200 text-slate-400"
+                className="h-14 px-6 border-[#d8e6ee] text-[#71839a]"
               >
                 تجاهل
               </Button>

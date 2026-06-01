@@ -4,9 +4,9 @@ import { StickyNote } from "lucide-react";
 export const NotesTab = ({ localData, handleBasicFieldChange }) => {
   return (
     <div className="animate-in fade-in max-w-4xl mx-auto">
-      <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-slate-200">
-        <span className="text-sm font-black text-slate-800 flex items-center gap-2">
-          <StickyNote className="w-5 h-5 text-blue-600" /> ملاحظات الملف
+      <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-[#d8e6ee]">
+        <span className="text-sm font-black text-[#123B5D] flex items-center gap-2">
+          <StickyNote className="w-5 h-5 text-[#0f6d7c]" /> ملاحظات الملف
           الداخلية
         </span>
       </div>
@@ -18,7 +18,7 @@ export const NotesTab = ({ localData, handleBasicFieldChange }) => {
         <textarea
           value={localData.notes || ""}
           onChange={(e) => handleBasicFieldChange("notes", e.target.value)}
-          className="w-full bg-white border border-yellow-300 rounded-lg p-4 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-yellow-400 min-h-[250px]"
+          className="w-full bg-white border border-yellow-300 rounded-xl p-4 text-sm text-[#123B5D] outline-none focus:ring-2 focus:ring-yellow-400 min-h-[250px]"
           placeholder="لا توجد ملاحظات. ابدأ بالكتابة هنا..."
         />
       </div>

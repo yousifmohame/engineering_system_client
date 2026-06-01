@@ -64,7 +64,7 @@ const getStatusStyles = (status) => {
     return { bg: "bg-red-50 text-red-700 border-red-200", label: "متنازع" };
   }
   return {
-    bg: "bg-slate-50 text-slate-700 border-slate-200",
+    bg: "bg-[#f7fbfd] text-[#123B5D] border-[#d8e6ee]",
     label: status || "غير محدد",
   };
 };
@@ -136,7 +136,7 @@ const PropertiesDashboardTab = ({ onNavigate, onOpenDetails }) => {
       title: "الإجمالي",
       value: properties.length,
       icon: Building,
-      color: "text-blue-600",
+      color: "text-[#0f6d7c]",
       bg: "bg-blue-50 border-blue-100",
     },
     {
@@ -164,7 +164,7 @@ const PropertiesDashboardTab = ({ onNavigate, onOpenDetails }) => {
       title: "وثائق",
       value: stats.totalDocs,
       icon: FileText,
-      color: "text-purple-600",
+      color: "text-[#0f6d7c]",
       bg: "bg-purple-50 border-purple-100",
     },
     {
@@ -181,7 +181,7 @@ const PropertiesDashboardTab = ({ onNavigate, onOpenDetails }) => {
       id: "log",
       title: "السجل",
       icon: FolderOpen,
-      color: "text-blue-600",
+      color: "text-[#0f6d7c]",
       bg: "bg-blue-50",
     },
     {
@@ -202,7 +202,7 @@ const PropertiesDashboardTab = ({ onNavigate, onOpenDetails }) => {
       id: "ai",
       title: "AI محلل",
       icon: Brain,
-      color: "text-purple-600",
+      color: "text-[#0f6d7c]",
       bg: "bg-purple-50",
     },
     {
@@ -223,7 +223,7 @@ const PropertiesDashboardTab = ({ onNavigate, onOpenDetails }) => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-slate-400">
+      <div className="flex flex-col items-center justify-center h-full text-[#71839a]">
         <Loader2 className="w-8 h-8 animate-spin mb-2 text-emerald-500" />
         <p className="font-bold text-sm">جاري إعداد لوحة القيادة...</p>
       </div>
@@ -242,34 +242,47 @@ const PropertiesDashboardTab = ({ onNavigate, onOpenDetails }) => {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-slate-50" dir="rtl">
+    <div className="flex flex-col h-full overflow-hidden bg-[#eef5f7]" dir="rtl">
+      <div className="shrink-0 p-4 pb-2">
+        <div className="prop-page-header flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 prop-gold-icon shrink-0">
+              <Building className="w-5 h-5" />
+            </div>
+            <div className="min-w-0" style={{ fontFamily: "Tajawal, sans-serif" }}>
+              <h1 className="whitespace-nowrap">لوحة الملكيات والصكوك</h1>
+              <p className="whitespace-nowrap">متابعة الصكوك والعقارات والوثائق المرتبطة بها</p>
+            </div>
+          </div>
+        </div>
+      </div>
       {/* 💡 الجزء العلوي المكثف (الإحصائيات والروابط) لا يخضع للاسكرول الأساسي */}
-      <div className="shrink-0 p-4 pb-2 border-b border-slate-200 bg-white shadow-sm z-10">
-        <div className="max-w-7xl mx-auto flex flex-col xl:flex-row gap-4">
+      <div className="shrink-0 px-4 pb-2 bg-transparent z-10">
+        <div className="max-w-7xl mx-auto flex flex-col gap-2">
           {/* ========================================= */}
           {/* الإحصائيات (صف واحد مكثف) */}
           {/* ========================================= */}
-          <div className="flex-1 grid grid-cols-3 sm:grid-cols-6 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
             {compactStats.map((stat, idx) => (
               <button
                 key={idx}
                 onClick={() => onNavigate && onNavigate("log")}
-                className={`rounded-lg p-2.5 flex items-center justify-between border transition-all hover:shadow-md cursor-pointer group ${stat.bg}`}
+                className={`min-h-[54px] rounded-[16px] px-2.5 py-2 flex items-center justify-between border transition-all hover:shadow-md cursor-pointer group bg-white border-[#d8e6ee]`}
               >
                 <div>
-                  <div className="text-[10px] font-bold text-slate-500 mb-0.5 group-hover:text-slate-700">
+                  <div className="text-[9px] font-bold text-[#71839a] mb-0.5 group-hover:text-[#123B5D] leading-tight">
                     {stat.title}
                   </div>
                   <div
-                    className={`text-base font-black ${stat.color} leading-none`}
+                    className="text-[17px] font-black text-[#123B5D] leading-none"
                   >
                     {stat.value}
                   </div>
                 </div>
                 <div
-                  className={`flex items-center justify-center w-7 h-7 rounded-md bg-white shadow-sm ${stat.color} group-hover:scale-110 transition-transform`}
+                  className="flex items-center justify-center w-7 h-7 rounded-xl bg-[#f7fbfd] text-[#0f6d7c] border border-[#d8e6ee] shadow-sm group-hover:scale-110 transition-transform"
                 >
-                  <stat.icon className="w-3.5 h-3.5" />
+                  <stat.icon className="w-3 h-3" />
                 </div>
               </button>
             ))}
@@ -278,8 +291,8 @@ const PropertiesDashboardTab = ({ onNavigate, onOpenDetails }) => {
           {/* ========================================= */}
           {/* الوصول السريع (أزرار أفقية صغيرة) */}
           {/* ========================================= */}
-          <div className="xl:w-1/3 flex items-center gap-2 bg-slate-50 border border-slate-100 p-2 rounded-xl">
-            <div className="text-[10px] text-slate-400 font-black px-2 flex items-center gap-1 border-l border-slate-200">
+          <div className="w-full flex items-center gap-2 bg-white border border-[#d8e6ee] p-1.5 rounded-[16px] shadow-sm">
+            <div className="text-[9px] text-[#71839a] font-black px-2 flex items-center gap-1 border-l border-[#d8e6ee] whitespace-nowrap">
               <Grid3x3 className="w-3 h-3" /> سريع
             </div>
             <div className="flex flex-1 justify-between gap-1">
@@ -287,14 +300,14 @@ const PropertiesDashboardTab = ({ onNavigate, onOpenDetails }) => {
                 <button
                   key={idx}
                   onClick={() => onNavigate && onNavigate(item.id)}
-                  className="flex-1 flex flex-col items-center justify-center gap-1 p-1.5 rounded-lg hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm transition-all group"
+                  className="flex-1 flex flex-row items-center justify-center gap-1.5 px-2 py-1.5 min-h-[38px] rounded-xl hover:bg-white border border-transparent hover:border-[#d8e6ee] hover:shadow-sm transition-all group"
                 >
                   <div
-                    className={`w-6 h-6 rounded-md flex items-center justify-center ${item.bg} ${item.color} group-hover:scale-110 transition-transform`}
+                    className={`w-6 h-6 rounded-lg flex items-center justify-center ${item.bg} ${item.color} group-hover:scale-110 transition-transform`}
                   >
                     <item.icon className="w-3 h-3" />
                   </div>
-                  <span className="text-[9px] font-bold text-slate-600 group-hover:text-slate-900">
+                  <span className="text-[9px] font-bold text-[#52677e] group-hover:text-[#123B5D]">
                     {item.title}
                   </span>
                 </button>
@@ -311,8 +324,8 @@ const PropertiesDashboardTab = ({ onNavigate, onOpenDetails }) => {
           {/* قسم: التوزيع حسب النوع */}
           {/* ========================================= */}
           <div className="lg:col-span-1 flex flex-col gap-4">
-            <div className="rounded-2xl bg-white p-5 border border-slate-200 shadow-sm flex-1">
-              <div className="text-sm mb-4 text-slate-800 font-black flex items-center justify-between border-b border-slate-100 pb-2">
+            <div className="rounded-[24px] bg-white p-5 border border-[#d8e6ee] shadow-sm flex-1">
+              <div className="text-sm mb-4 text-[#123B5D] font-black flex items-center justify-between border-b border-[#e7eef2] pb-2">
                 <span className="flex items-center gap-2">
                   <BarChart3 className="w-4 h-4 text-emerald-500" /> توزيع
                   العقارات
@@ -322,12 +335,12 @@ const PropertiesDashboardTab = ({ onNavigate, onOpenDetails }) => {
                 {propertyTypes.map((type, idx) => (
                   <div
                     key={idx}
-                    className="rounded-xl p-3 text-center bg-slate-50 border border-slate-200 hover:bg-emerald-50 hover:border-emerald-200 transition-colors flex flex-col items-center justify-center gap-1"
+                    className="rounded-xl p-3 text-center bg-[#f7fbfd] border border-[#d8e6ee] hover:bg-emerald-50 hover:border-emerald-200 transition-colors flex flex-col items-center justify-center gap-1"
                   >
-                    <div className="text-xl font-black text-slate-700 leading-none">
+                    <div className="text-xl font-black text-[#123B5D] leading-none">
                       {type.count}
                     </div>
-                    <div className="text-[10px] font-bold text-slate-500">
+                    <div className="text-[10px] font-bold text-[#71839a]">
                       {type.label}
                     </div>
                   </div>
@@ -336,7 +349,7 @@ const PropertiesDashboardTab = ({ onNavigate, onOpenDetails }) => {
             </div>
 
             {/* بطاقة إعلانية أو تنبيه إضافي لموازنة التصميم */}
-            <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-5 shadow-sm text-white flex flex-col items-center justify-center text-center">
+            <div className="rounded-[24px] bg-gradient-to-l from-[#071927] to-[#0f6d7c] p-5 shadow-sm text-white flex flex-col items-center justify-center text-center border border-[#d9b85b]/30">
               <Shield className="w-8 h-8 mb-2 text-blue-200 opacity-80" />
               <h4 className="text-sm font-black mb-1">أرشفة آمنة</h4>
               <p className="text-[10px] text-blue-100 font-medium">
@@ -349,15 +362,15 @@ const PropertiesDashboardTab = ({ onNavigate, onOpenDetails }) => {
           {/* ========================================= */}
           {/* قسم: آخر الملكيات المضافة */}
           {/* ========================================= */}
-          <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
-            <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50 shrink-0">
-              <span className="text-sm font-black text-slate-800 flex items-center gap-2">
+          <div className="lg:col-span-2 rounded-[24px] bg-white border border-[#d8e6ee] shadow-sm overflow-hidden flex flex-col h-full">
+            <div className="flex items-center justify-between p-4 border-b border-[#d8e6ee] bg-[#f7fbfd] shrink-0">
+              <span className="text-sm font-black text-[#123B5D] flex items-center gap-2">
                 <History className="w-4 h-4 text-blue-500" /> أحدث الملفات
                 المضافة
               </span>
               <button
                 onClick={() => onNavigate && onNavigate("log")}
-                className="text-[10px] font-bold text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                className="text-[10px] font-bold text-[#0f6d7c] hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors flex items-center gap-1"
               >
                 عرض السجل كاملاً <ChevronLeft className="w-3 h-3" />
               </button>
@@ -376,27 +389,27 @@ const PropertiesDashboardTab = ({ onNavigate, onOpenDetails }) => {
                       className="w-full flex items-center gap-3 text-right transition-colors p-3.5 hover:bg-blue-50/50 group"
                     >
                       {/* الأيقونة */}
-                      <div className="flex items-center justify-center rounded-xl shrink-0 w-10 h-10 bg-slate-50 border border-slate-200 text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-600 group-hover:border-blue-200 transition-all">
+                      <div className="flex items-center justify-center rounded-xl shrink-0 w-10 h-10 bg-[#f7fbfd] border border-[#d8e6ee] text-[#71839a] group-hover:bg-blue-100 group-hover:text-[#0f6d7c] group-hover:border-blue-200 transition-all">
                         <Building className="w-4 h-4" />
                       </div>
 
                       {/* التفاصيل */}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-mono font-bold text-blue-700 bg-white px-1.5 py-0.5 rounded border border-blue-200 shadow-sm">
+                          <span className="text-[10px] font-mono font-bold text-[#123B5D] bg-white px-1.5 py-0.5 rounded border border-blue-200 shadow-sm">
                             {prop.code}
                           </span>
-                          <span className="text-xs font-black text-slate-700 truncate group-hover:text-blue-700 transition-colors">
+                          <span className="text-xs font-black text-[#123B5D] truncate group-hover:text-[#123B5D] transition-colors">
                             {prop.plots?.[0]?.propertyType || "أرض"}{" "}
                             {prop.district ? `- ${prop.district}` : ""}
                           </span>
                         </div>
-                        <div className="text-[10px] text-slate-500 font-bold flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-slate-400" />{" "}
+                        <div className="text-[10px] text-[#71839a] font-bold flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-[#71839a]" />{" "}
                           {prop.city || "---"} - {prop.district || "---"}
                           <span className="mx-1 text-slate-300">|</span>
-                          <User className="w-3 h-3 text-slate-400" />{" "}
-                          <span className="text-slate-700 truncate max-w-[150px]">
+                          <User className="w-3 h-3 text-[#71839a]" />{" "}
+                          <span className="text-[#123B5D] truncate max-w-[150px]">
                             {clientName}
                           </span>
                         </div>
@@ -409,7 +422,7 @@ const PropertiesDashboardTab = ({ onNavigate, onOpenDetails }) => {
                         >
                           {statusInfo.label}
                         </span>
-                        <span className="text-[9px] text-slate-400 font-mono font-bold flex items-center gap-1">
+                        <span className="text-[9px] text-[#71839a] font-mono font-bold flex items-center gap-1">
                           {format(new Date(prop.createdAt), "dd MMM yyyy", {
                             locale: ar,
                           })}
@@ -419,7 +432,7 @@ const PropertiesDashboardTab = ({ onNavigate, onOpenDetails }) => {
                   );
                 })
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center p-10 text-center text-slate-400">
+                <div className="flex-1 flex flex-col items-center justify-center p-10 text-center text-[#71839a]">
                   <Building className="w-8 h-8 mx-auto mb-2 opacity-30" />
                   <p className="text-xs font-bold">
                     لا توجد ملكيات مضافة حتى الآن.

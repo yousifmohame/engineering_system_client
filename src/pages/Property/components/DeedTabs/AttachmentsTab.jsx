@@ -8,12 +8,12 @@ export const AttachmentsTab = ({
 }) => {
   return (
     <div className="animate-in fade-in max-w-7xl mx-auto">
-      <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-slate-200">
-        <span className="text-sm font-black text-slate-800 flex items-center gap-2">
-          <Upload className="w-5 h-5 text-purple-600" /> المرفقات العامة (
+      <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-[#d8e6ee]">
+        <span className="text-sm font-black text-[#123B5D] flex items-center gap-2">
+          <Upload className="w-5 h-5 text-[#0f6d7c]" /> المرفقات العامة (
           {localData.attachments?.length || 0})
         </span>
-        <label className="bg-purple-600 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-purple-700 cursor-pointer shadow-sm">
+        <label className="bg-[#083646] text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-[#0f6d7c] cursor-pointer shadow-sm">
           <Plus className="w-4 h-4" /> رفع مرفق جديد
           <input
             type="file"
@@ -28,17 +28,17 @@ export const AttachmentsTab = ({
           {localData.attachments.map((att) => (
             <div
               key={att.id}
-              className="bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between shadow-sm hover:border-purple-300 transition-all group"
+              className="bg-white border border-[#d8e6ee] rounded-xl p-3 flex items-center justify-between shadow-sm hover:border-purple-300 transition-all group"
             >
               <div className="flex items-center gap-3 overflow-hidden">
-                <div className="p-2.5 bg-purple-50 text-purple-600 rounded-lg shrink-0">
+                <div className="p-2.5 bg-purple-50 text-[#0f6d7c] rounded-xl shrink-0">
                   <Paperclip className="w-5 h-5" />
                 </div>
                 <div className="overflow-hidden">
-                  <p className="font-bold text-xs text-slate-700 truncate">
+                  <p className="font-bold text-xs text-[#123B5D] truncate">
                     {att.name}
                   </p>
-                  <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                  <p className="text-[10px] text-[#71839a] font-mono mt-0.5">
                     {att.size}
                   </p>
                 </div>
@@ -53,9 +53,9 @@ export const AttachmentsTab = ({
           ))}
         </div>
       ) : (
-        <div className="text-center py-16 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl">
+        <div className="text-center py-16 bg-[#f7fbfd] border-2 border-dashed border-slate-300 rounded-xl">
           <Upload className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500 font-bold">لا توجد مرفقات عامة للملف</p>
+          <p className="text-[#71839a] font-bold">لا توجد مرفقات عامة للملف</p>
         </div>
       )}
     </div>

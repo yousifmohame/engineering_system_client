@@ -112,20 +112,28 @@ const DocumentViewer = ({ doc, onClose }) => {
 
   const handlePrint = () => {
     const printWindow = window.open("", "_blank");
+    if (!printWindow) return toast.error("المتصفح منع نافذة الطباعة");
+
     if (isPdf) {
-      printWindow.document.write(
-        `<iframe src="${fileSource}" width="100%" height="100%" style="border:none;"></iframe>`,
-      );
+      printWindow.document.write(`
+        <!doctype html>
+        <html><head><title>طباعة الوثيقة</title>
+        <style>html,body{margin:0;width:100%;height:100%;overflow:hidden} iframe{width:100%;height:100vh;border:0}</style>
+        </head><body>
+          <iframe src="${fileSource}" onload="setTimeout(() => { window.focus(); window.print(); }, 700)"></iframe>
+        </body></html>
+      `);
     } else {
-      printWindow.document.write(
-        `<div style="text-align:center;"><img src="${fileSource}" style="max-width:100%;" /></div>`,
-      );
+      printWindow.document.write(`
+        <!doctype html>
+        <html dir="rtl"><head><title>طباعة الوثيقة</title>
+        <style>@page{margin:12mm} body{margin:0;text-align:center;font-family:Arial,sans-serif} img{max-width:100%;height:auto}</style>
+        </head><body>
+          <img src="${fileSource}" onload="setTimeout(() => { window.focus(); window.print(); }, 500)" />
+        </body></html>
+      `);
     }
     printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-    }, 500);
   };
 
   return (
@@ -133,11 +141,11 @@ const DocumentViewer = ({ doc, onClose }) => {
       className="fixed inset-0 bg-black/90 z-[200] flex flex-col backdrop-blur-sm animate-in fade-in"
       dir="rtl"
     >
-      <div className="bg-slate-900 text-white p-4 flex justify-between items-center shadow-lg">
+      <div className="bg-[#083646] text-white p-4 flex justify-between items-center shadow-lg">
         <div className="flex items-center gap-4">
           <button
             onClick={onClose}
-            className="p-2 bg-slate-800 hover:bg-red-500 rounded-lg transition-colors"
+            className="p-2 bg-slate-800 hover:bg-red-500 rounded-xl transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -145,7 +153,7 @@ const DocumentViewer = ({ doc, onClose }) => {
             <h3 className="font-bold text-sm">
               {doc.type} - {doc.number}
             </h3>
-            <p className="text-[10px] text-slate-400 font-mono">
+            <p className="text-[10px] text-[#71839a] font-mono">
               الرمز: {doc.sysCode}
             </p>
           </div>
@@ -155,7 +163,7 @@ const DocumentViewer = ({ doc, onClose }) => {
             <>
               <button
                 onClick={() => setScale((s) => Math.max(0.5, s - 0.2))}
-                className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg"
+                className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl"
               >
                 <ZoomOut className="w-4 h-4" />
               </button>
@@ -164,13 +172,13 @@ const DocumentViewer = ({ doc, onClose }) => {
               </span>
               <button
                 onClick={() => setScale((s) => Math.min(3, s + 0.2))}
-                className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg"
+                className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl"
               >
                 <ZoomIn className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setScale(1)}
-                className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg mr-2"
+                className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl mr-2"
               >
                 <Maximize className="w-4 h-4" />
               </button>
@@ -179,7 +187,7 @@ const DocumentViewer = ({ doc, onClose }) => {
           <div className="w-px h-6 bg-slate-700 mx-2"></div>
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-xs font-bold transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-[#083646] hover:bg-[#0f6d7c] rounded-xl text-xs font-bold transition-colors"
           >
             <Printer className="w-4 h-4" /> طباعة
           </button>
@@ -190,7 +198,7 @@ const DocumentViewer = ({ doc, onClose }) => {
           isPdf ? (
             <iframe
               src={fileSource}
-              className="w-full h-full rounded-lg bg-white"
+              className="w-full h-full rounded-xl bg-white"
               title="PDF Viewer"
             />
           ) : (
@@ -207,7 +215,7 @@ const DocumentViewer = ({ doc, onClose }) => {
             </div>
           )
         ) : (
-          <div className="text-slate-500 flex flex-col items-center">
+          <div className="text-[#71839a] flex flex-col items-center">
             <FileText className="w-16 h-16 mb-4 opacity-50" />
             <p>لا توجد معاينة متاحة لهذه الوثيقة</p>
           </div>
@@ -592,9 +600,105 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
   const triggerPrint = (type) => {
     setReportType(type);
     toast.success(`جاري تجهيز ${type} للطباعة...`);
+
+    // Print in a dedicated portrait A4 window instead of printing the whole app.
+    // This prevents landscape output and avoids the browser using the screen layout.
     setTimeout(() => {
-      window.print();
-    }, 300);
+      const printReport = document.getElementById("print-report");
+      if (!printReport) {
+        toast.error("تعذر تجهيز قالب الطباعة");
+        return;
+      }
+
+      const printWindow = window.open("", "_blank", "width=900,height=1200");
+      if (!printWindow) {
+        toast.error("المتصفح منع نافذة الطباعة");
+        return;
+      }
+
+      const appStyles = Array.from(
+        document.querySelectorAll('link[rel="stylesheet"], style')
+      )
+        .map((node) => node.outerHTML)
+        .join("\n");
+
+      printWindow.document.open();
+      printWindow.document.write(`
+        <!doctype html>
+        <html dir="rtl" lang="ar">
+          <head>
+            <meta charset="utf-8" />
+            <title>${type}</title>
+            ${appStyles}
+            <style>
+              @page { size: 210mm 297mm; margin: 6mm; }
+              * { box-sizing: border-box; }
+              html, body {
+                width: 210mm;
+                min-height: 297mm;
+                margin: 0;
+                padding: 0;
+                background: #ffffff;
+                color: #123B5D;
+                direction: rtl;
+                font-family: Tajawal, Cairo, Arial, sans-serif;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              body { display: flex; justify-content: center; align-items: flex-start; }
+              #print-report {
+                display: block !important;
+                visibility: visible !important;
+                width: 198mm !important;
+                max-width: 198mm !important;
+                min-height: 285mm !important;
+                max-height: 285mm !important;
+                overflow: hidden !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                background: #fff !important;
+                color: #123B5D !important;
+                font-size: 9px !important;
+                line-height: 1.22 !important;
+                transform: none !important;
+                zoom: 1 !important;
+              }
+              #print-report, #print-report * { visibility: visible !important; }
+              #print-report .print-header { padding-bottom: 6px !important; margin-bottom: 8px !important; }
+              #print-report h1 { font-size: 16px !important; margin: 0 0 2px 0 !important; }
+              #print-report h2 { font-size: 12px !important; padding: 5px 8px !important; margin: 8px 0 6px 0 !important; }
+              #print-report h3 { font-size: 10px !important; margin: 0 !important; }
+              #print-report p { margin: 0 !important; }
+              #print-report .grid { display: grid !important; gap: 6px !important; }
+              #print-report .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+              #print-report .print-section { margin-bottom: 8px !important; }
+              #print-report .print-card { padding: 8px !important; border-radius: 8px !important; }
+              #print-report table { width: 100% !important; border-collapse: collapse !important; font-size: 8px !important; }
+              #print-report th, #print-report td { padding: 4px 5px !important; border: 1px solid #d8e6ee !important; }
+              #print-report .print-signatures { margin-top: 12px !important; padding-top: 8px !important; }
+              #print-report .print-signatures p { margin-top: 10px !important; }
+              @media print {
+                html, body { width: 210mm; min-height: 297mm; overflow: hidden; }
+                body { display: flex; justify-content: center; align-items: flex-start; }
+                #print-report { page-break-after: avoid; page-break-before: avoid; }
+              }
+            </style>
+          </head>
+          <body>
+            <div id="print-report">${printReport.innerHTML}</div>
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.focus();
+                  window.print();
+                }, 500);
+              };
+            <\/script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }, 1000);
   };
 
   const updateMutation = useMutation({
@@ -615,18 +719,18 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
   // --- حالات جلب البيانات (Loading / Error) ---
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-slate-50 w-full">
-        <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
-        <p className="text-slate-600 font-bold">جاري تحميل تفاصيل الملكية...</p>
+      <div className="flex flex-col items-center justify-center h-full bg-[#f7fbfd] w-full">
+        <Loader2 className="w-10 h-10 text-[#0f6d7c] animate-spin mb-4" />
+        <p className="text-[#52677e] font-bold">جاري تحميل تفاصيل الملكية...</p>
       </div>
     );
   }
 
   if (isError || !deed.id) {
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-slate-50 w-full">
+      <div className="flex flex-col items-center justify-center h-full bg-[#f7fbfd] w-full">
         <TriangleAlert className="w-10 h-10 text-red-500 mb-4" />
-        <p className="text-slate-600 font-bold mb-4">
+        <p className="text-[#52677e] font-bold mb-4">
           فشل تحميل البيانات أو الملف غير موجود.
         </p>
         <button
@@ -837,7 +941,7 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
         );
       default:
         return (
-          <div className="p-20 text-center text-slate-400 font-bold">
+          <div className="p-20 text-center text-[#71839a] font-bold">
             جاري تطوير هذا القسم...
           </div>
         );
@@ -847,7 +951,7 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
   return (
     <>
       <div
-        className="print:hidden flex flex-col h-full bg-slate-100 w-full animate-in fade-in duration-300"
+        className="print:hidden flex flex-col h-full bg-[#f7fbfd] w-full animate-in fade-in duration-300"
         dir="rtl"
       >
         {/* زر الحفظ العائم */}
@@ -857,7 +961,7 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
           <button
             onClick={saveChangesToDB}
             disabled={updateMutation.isPending}
-            className="px-6 py-3 bg-blue-600 text-white rounded-full font-bold shadow-[0_10px_25px_rgba(37,99,235,0.4)] hover:bg-blue-700 flex items-center gap-2 hover:scale-105 transition-all"
+            className="px-6 py-3 bg-[#083646] text-white rounded-full font-bold shadow-[0_10px_25px_rgba(37,99,235,0.4)] hover:bg-[#0f6d7c] flex items-center gap-2 hover:scale-105 transition-all"
           >
             {updateMutation.isPending ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -868,91 +972,90 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
           </button>
         </div>
 
-        {/* الهيدر العلوي */}
-        <div className="bg-white px-6 py-5 flex items-start justify-between border-b border-slate-200 shrink-0 shadow-sm relative z-20">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 shadow-inner shrink-0">
-              <Building className="w-7 h-7" />
+        {/* Compact redesigned top header */}
+        <div className="bg-white px-4 py-3 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 border-b border-[#d8e6ee] shrink-0 shadow-sm relative z-20">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center justify-center w-12 h-12 rounded-[18px] bg-[#fbf7ef] text-[#083646] border border-[#ecd8a6] shadow-sm shrink-0">
+              <Building className="w-6 h-6" />
             </div>
-            <div>
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <h2 className="text-lg font-black text-slate-800">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h2 className="text-[18px] font-black text-[#123B5D] leading-tight truncate">
                   {propertyType}{" "}
                   {localData.district ? `- ${localData.district}` : ""}
                 </h2>
-                <span className="text-xs font-mono font-bold rounded px-2 py-0.5 bg-blue-100 text-blue-700 border border-blue-200">
+                <span className="text-[11px] font-mono font-black rounded-lg px-2 py-1 bg-[#eef5f7] text-[#123B5D] border border-[#d8e6ee]">
                   {deed.code}
                 </span>
               </div>
-              <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
-                <span className="flex items-center gap-1">
-                  <FileText className="w-3.5 h-3.5" /> صك:{" "}
-                  <span className="font-mono text-slate-700 font-bold">
+              <div className="flex items-center gap-2.5 text-[11px] text-[#71839a] font-bold flex-wrap">
+                <span className="flex items-center gap-1 bg-[#f7fbfd] px-2 py-1 rounded-lg border border-[#d8e6ee]">
+                  <FileText className="w-3.5 h-3.5" /> صك:
+                  <span className="font-mono text-[#123B5D] font-black">
                     {localData.deedNumber || "---"}
                   </span>
                 </span>
-                <span className="flex items-center gap-1">
-                  <MapIcon className="w-3.5 h-3.5" /> مساحة:{" "}
-                  <span className="font-bold text-emerald-600">
+                <span className="flex items-center gap-1 bg-[#f7fbfd] px-2 py-1 rounded-lg border border-[#d8e6ee]">
+                  <MapIcon className="w-3.5 h-3.5" /> مساحة:
+                  <span className="font-black text-[#0f6d7c]">
                     {totalArea} م²
                   </span>
                 </span>
-                <span className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 text-amber-800">
-                  <Crown className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="font-bold">{safeClientName}</span>
+                <span className="flex items-center gap-1 bg-[#fbf7ef] px-2 py-1 rounded-lg border border-[#ecd8a6] text-[#123B5D] max-w-[260px] truncate">
+                  <Crown className="w-3.5 h-3.5 text-[#d9b85b] shrink-0" />
+                  <span className="font-black truncate">{safeClientName}</span>
                 </span>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
             <button
               onClick={() => copyToClipboard(deed.code)}
-              className="flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 hover:bg-blue-100 transition-colors shadow-sm"
+              className="h-10 px-3.5 flex items-center gap-1.5 text-[12px] font-black text-[#123B5D] bg-white border border-[#d8e6ee] rounded-xl hover:bg-[#f7fbfd] transition-colors shadow-sm"
             >
-              <Copy className="w-4 h-4" /> نسخ الكود
+              <Copy className="w-4 h-4" /> <span>نسخ الكود</span>
             </button>
             <button
               onClick={() => triggerPrint("تقرير ملكية شامل")}
-              className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 hover:bg-emerald-100 transition-colors shadow-sm"
+              className="h-10 px-3.5 flex items-center gap-1.5 text-[12px] font-black text-[#123B5D] bg-white border border-[#d8e6ee] rounded-xl hover:bg-[#f7fbfd] transition-colors shadow-sm"
             >
-              <Printer className="w-4 h-4" /> طباعة
+              <Printer className="w-4 h-4" /> <span>طباعة</span>
             </button>
-            <div className="w-px h-8 bg-slate-200 mx-1"></div>
             <button
               onClick={onBack}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-100 border border-slate-200 hover:bg-slate-200 hover:text-slate-800 transition-all text-slate-600 font-bold text-xs shadow-sm"
+              className="h-10 px-4 flex items-center gap-1.5 rounded-xl bg-[#083646] border border-[#d9b85b]/40 hover:bg-[#0f6d7c] transition-all text-white font-black text-[12px] shadow-sm"
             >
-              <ArrowRight className="w-4 h-4" /> عودة للسجل
+              <ArrowRight className="w-4 h-4" /> <span>عودة للسجل</span>
             </button>
           </div>
         </div>
 
         {/* 💡 الشريط الجانبي ومساحة المحتوى */}
-        <div className="flex flex-row flex-1 overflow-hidden bg-slate-50/50 min-h-0">
+        <div className="flex flex-row flex-1 overflow-hidden bg-[#f7fbfd]/50 min-h-0">
           {/* 👈 Sidebar (Vertical Tabs) */}
-          <div className="w-full md:w-[240px] bg-white border-l border-slate-200 overflow-y-auto custom-scrollbar-slim p-3 flex flex-col gap-1.5 shrink-0 h-full shadow-[2px_0_10px_-5px_rgba(0,0,0,0.1)] z-10 min-h-0">
+          <div className="w-full md:w-[190px] bg-white border-l border-[#d8e6ee] overflow-y-auto custom-scrollbar-slim p-3 flex flex-col gap-2 shrink-0 h-full shadow-[2px_0_10px_-5px_rgba(0,0,0,0.08)] z-10 min-h-0">
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-4 py-3.5 rounded-lg text-sm font-bold transition-all text-right w-full shrink-0 relative ${
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[16px] text-[12px] font-black transition-all text-right w-full shrink-0 relative border ${
                     isActive
-                      ? "bg-blue-50 text-blue-700 shadow-sm border border-blue-100"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent"
+                      ? "bg-[#fbf7ef] text-[#123B5D] shadow-sm border-[#ecd8a6]"
+                      : "bg-[#f7fbfd] text-[#52677e] hover:bg-white hover:text-[#123B5D] border-[#d8e6ee]"
                   }`}
                 >
                   {/* خط التحديد النشط الجانبي */}
                   {isActive && (
-                    <div className="absolute right-0 top-1/4 bottom-1/4 w-[3px] bg-blue-600 rounded-l-full"></div>
+                    <div className="absolute right-0 top-1/4 bottom-1/4 w-[3px] bg-[#d9b85b] rounded-l-full"></div>
                   )}
 
                   <tab.icon
                     className={`w-4 h-4 shrink-0 transition-transform ${
                       isActive
-                        ? "text-blue-600 scale-110"
-                        : "text-slate-400 group-hover:scale-110"
+                        ? "text-[#0f6d7c] scale-110"
+                        : "text-[#71839a] group-hover:scale-110"
                     }`}
                   />
                   <span className="truncate">{tab.label}</span>
@@ -963,7 +1066,7 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
                       className={`mr-auto px-2 py-0.5 rounded-full text-[10px] font-black shadow-sm ${
                         isActive
                           ? "bg-blue-200 text-blue-800"
-                          : "bg-slate-100 text-slate-500 border border-slate-200"
+                          : "bg-[#f7fbfd] text-[#71839a] border border-[#d8e6ee]"
                       }`}
                     >
                       {tab.badge}
@@ -988,34 +1091,78 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
         dangerouslySetInnerHTML={{
           __html: `
         @media print {
-          @page { size: A4 portrait; margin: 15mm; }
-          body * { visibility: hidden; }
-          #print-report, #print-report * { visibility: visible; }
-          #print-report { position: absolute; left: 0; top: 0; width: 100%; background: white !important; }
-          html, body { height: auto !important; overflow: visible !important; }
+          @page { size: A4 portrait; margin: 6mm; }
+          html, body {
+            width: 210mm !important;
+            height: 297mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            background: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          body * { visibility: hidden !important; }
+          #print-report, #print-report * { visibility: visible !important; }
+          #print-report {
+            display: block !important;
+            position: fixed !important;
+            top: 0 !important;
+            right: 0 !important;
+            left: 0 !important;
+            width: 198mm !important;
+            max-width: 198mm !important;
+            height: 285mm !important;
+            max-height: 285mm !important;
+            overflow: hidden !important;
+            background: #ffffff !important;
+            color: #123B5D !important;
+            padding: 0 !important;
+            margin: 0 auto !important;
+            box-sizing: border-box !important;
+            font-family: Tajawal, Cairo, Arial, sans-serif !important;
+            font-size: 9px !important;
+            line-height: 1.22 !important;
+            transform: none !important;
+            zoom: 1 !important;
+          }
+          #print-report .print-header { padding-bottom: 6px !important; margin-bottom: 8px !important; }
+          #print-report h1 { font-size: 16px !important; margin: 0 0 2px 0 !important; }
+          #print-report h2 { font-size: 12px !important; padding: 5px 8px !important; margin: 8px 0 6px 0 !important; }
+          #print-report h3 { font-size: 10px !important; margin: 0 !important; }
+          #print-report p { margin: 0 !important; }
+          #print-report .grid { display: grid !important; gap: 6px !important; }
+          #print-report .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+          #print-report .print-section { margin-bottom: 8px !important; }
+          #print-report .print-card { padding: 8px !important; border-radius: 8px !important; }
+          #print-report table { width: 100% !important; border-collapse: collapse !important; font-size: 8px !important; }
+          #print-report th, #print-report td { padding: 4px 5px !important; border: 1px solid #d8e6ee !important; }
+          #print-report .print-signatures { margin-top: 12px !important; padding-top: 8px !important; }
+          #print-report .print-signatures p { margin-top: 10px !important; }
+          .print\:hidden { display: none !important; }
         }
       `,
         }}
       />
       <div
         id="print-report"
-        className="hidden print:block bg-white text-slate-900"
+        className="hidden print:block bg-white text-[#123B5D]"
         dir="rtl"
       >
-        <div className="flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-8">
+        <div className="print-header flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-8">
           <div>
-            <h1 className="text-3xl font-black text-slate-900 mb-1">
+            <h1 className="text-xl font-black text-[#123B5D] mb-1">
               {reportType || "تقرير ملكية"}
             </h1>
-            <p className="text-sm text-slate-600 font-bold">
+            <p className="text-sm text-[#52677e] font-bold">
               الرقم المرجعي للنظام: {deed.code}
             </p>
           </div>
           <div className="text-left">
-            <h2 className="text-xl font-bold text-slate-800">
+            <h2 className="text-xl font-bold text-[#123B5D]">
               نظام إدارة الأملاك والعقارات
             </h2>
-            <p className="text-sm text-slate-500 mt-1 font-mono">
+            <p className="text-sm text-[#71839a] mt-1 font-mono">
               تاريخ الطباعة: {format(new Date(), "yyyy-MM-dd HH:mm")}
             </p>
           </div>
@@ -1023,13 +1170,13 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
 
         {(reportType === "تقرير ملكية شامل" ||
           reportType === "شهادة ملكية") && (
-          <div className="mb-8">
-            <h2 className="text-lg font-bold bg-slate-100 p-2 border-r-4 border-blue-600 mb-4 text-blue-900">
+          <div className="print-section mb-8">
+            <h2 className="text-lg font-bold bg-[#f7fbfd] p-2 border-r-4 border-blue-600 mb-4 text-[#123B5D]">
               البيانات الأساسية للملكية
             </h2>
-            <div className="grid grid-cols-4 gap-4 border border-slate-200 rounded-lg p-4">
+            <div className="print-card grid grid-cols-4 gap-4 border border-[#d8e6ee] rounded-xl p-4">
               <div>
-                <span className="text-slate-500 block text-xs mb-1">
+                <span className="text-[#71839a] block text-xs mb-1">
                   المدينة / الحي
                 </span>
                 <strong className="text-sm">
@@ -1037,7 +1184,7 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
                 </strong>
               </div>
               <div>
-                <span className="text-slate-500 block text-xs mb-1">
+                <span className="text-[#71839a] block text-xs mb-1">
                   رقم الصك
                 </span>
                 <strong className="text-sm font-mono">
@@ -1045,7 +1192,7 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
                 </strong>
               </div>
               <div>
-                <span className="text-slate-500 block text-xs mb-1">
+                <span className="text-[#71839a] block text-xs mb-1">
                   تاريخ الصك
                 </span>
                 <strong className="text-sm font-mono">
@@ -1053,7 +1200,7 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
                 </strong>
               </div>
               <div>
-                <span className="text-slate-500 block text-xs mb-1">
+                <span className="text-[#71839a] block text-xs mb-1">
                   المساحة الإجمالية
                 </span>
                 <strong className="text-sm font-bold text-emerald-700">
@@ -1061,13 +1208,13 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
                 </strong>
               </div>
               <div className="col-span-2 mt-2">
-                <span className="text-slate-500 block text-xs mb-1">
+                <span className="text-[#71839a] block text-xs mb-1">
                   المالك الرئيسي
                 </span>
                 <strong className="text-sm">{safeClientName}</strong>
               </div>
               <div className="mt-2">
-                <span className="text-slate-500 block text-xs mb-1">
+                <span className="text-[#71839a] block text-xs mb-1">
                   الحالة
                 </span>
                 <strong className="text-sm">
@@ -1077,7 +1224,7 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
                 </strong>
               </div>
               <div className="mt-2">
-                <span className="text-slate-500 block text-xs mb-1">
+                <span className="text-[#71839a] block text-xs mb-1">
                   نوع العقار
                 </span>
                 <strong className="text-sm">{propertyType}</strong>
@@ -1089,12 +1236,12 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
         {(reportType === "تقرير ملكية شامل" ||
           reportType === "تقرير المُلّاك") &&
           localData.owners.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-lg font-bold bg-slate-100 p-2 border-r-4 border-amber-500 mb-4 text-amber-900">
+            <div className="print-section mb-8">
+              <h2 className="text-lg font-bold bg-[#f7fbfd] p-2 border-r-4 border-amber-500 mb-4 text-amber-900">
                 جدول المُلّاك والحصص
               </h2>
               <table className="w-full border-collapse border border-slate-300 text-sm">
-                <thead className="bg-slate-100">
+                <thead className="bg-[#f7fbfd]">
                   <tr>
                     <th className="border border-slate-300 p-2 text-right">
                       الاسم
@@ -1116,7 +1263,7 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
                       <td className="border border-slate-300 p-2 font-mono">
                         {owner.idNumber || owner.identityNumber}
                       </td>
-                      <td className="border border-slate-300 p-2 text-center font-bold text-blue-600">
+                      <td className="border border-slate-300 p-2 text-center font-bold text-[#0f6d7c]">
                         {owner.sharePercentage || owner.share}%
                       </td>
                     </tr>
@@ -1130,8 +1277,8 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
           reportType === "تقرير القطع" ||
           reportType === "تقرير الحدود") &&
           localData.plots.length > 0 && (
-            <div className="mb-8" style={{ pageBreakInside: "avoid" }}>
-              <h2 className="text-lg font-bold bg-slate-100 p-2 border-r-4 border-emerald-500 mb-4 text-emerald-900">
+            <div className="print-section mb-8" style={{ pageBreakInside: "avoid" }}>
+              <h2 className="text-lg font-bold bg-[#f7fbfd] p-2 border-r-4 border-emerald-500 mb-4 text-emerald-900">
                 تفاصيل القطع والأطوال
               </h2>
               {localData.plots.map((plot, i) => {
@@ -1142,7 +1289,7 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
                 return (
                   <div
                     key={i}
-                    className="mb-6 border border-slate-300 rounded-lg p-4"
+                    className="print-card mb-6 border border-slate-300 rounded-xl p-4"
                   >
                     <div className="flex justify-between items-center mb-4 border-b pb-2">
                       <h3 className="font-bold">
@@ -1153,41 +1300,41 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
                         المساحة: {plot.area} م²
                       </div>
                     </div>
-                    <table className="w-full border-collapse border border-slate-200 text-sm text-center">
-                      <thead className="bg-slate-50">
+                    <table className="w-full border-collapse border border-[#d8e6ee] text-sm text-center">
+                      <thead className="bg-[#f7fbfd]">
                         <tr>
-                          <th className="border border-slate-200 p-2">شمال</th>
-                          <th className="border border-slate-200 p-2">جنوب</th>
-                          <th className="border border-slate-200 p-2">شرق</th>
-                          <th className="border border-slate-200 p-2">غرب</th>
+                          <th className="border border-[#d8e6ee] p-2">شمال</th>
+                          <th className="border border-[#d8e6ee] p-2">جنوب</th>
+                          <th className="border border-[#d8e6ee] p-2">شرق</th>
+                          <th className="border border-[#d8e6ee] p-2">غرب</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
-                          <td className="border border-slate-200 p-2 font-mono font-bold text-blue-700">
+                          <td className="border border-[#d8e6ee] p-2 font-mono font-bold text-[#123B5D]">
                             {n.length || 0}م
                           </td>
-                          <td className="border border-slate-200 p-2 font-mono font-bold text-blue-700">
+                          <td className="border border-[#d8e6ee] p-2 font-mono font-bold text-[#123B5D]">
                             {s.length || 0}م
                           </td>
-                          <td className="border border-slate-200 p-2 font-mono font-bold text-blue-700">
+                          <td className="border border-[#d8e6ee] p-2 font-mono font-bold text-[#123B5D]">
                             {e.length || 0}م
                           </td>
-                          <td className="border border-slate-200 p-2 font-mono font-bold text-blue-700">
+                          <td className="border border-[#d8e6ee] p-2 font-mono font-bold text-[#123B5D]">
                             {w.length || 0}م
                           </td>
                         </tr>
-                        <tr className="text-xs text-slate-500">
-                          <td className="border border-slate-200 p-2">
+                        <tr className="text-xs text-[#71839a]">
+                          <td className="border border-[#d8e6ee] p-2">
                             {n.description || "---"}
                           </td>
-                          <td className="border border-slate-200 p-2">
+                          <td className="border border-[#d8e6ee] p-2">
                             {s.description || "---"}
                           </td>
-                          <td className="border border-slate-200 p-2">
+                          <td className="border border-[#d8e6ee] p-2">
                             {e.description || "---"}
                           </td>
-                          <td className="border border-slate-200 p-2">
+                          <td className="border border-[#d8e6ee] p-2">
                             {w.description || "---"}
                           </td>
                         </tr>
@@ -1202,31 +1349,31 @@ const DeedDetailsTab = ({ deedId, onBack }) => {
         {(reportType === "شهادة ملكية" ||
           reportType === "تقرير ملكية شامل") && (
           <div
-            className="mt-20 pt-8 flex justify-between border-t border-slate-300 text-center"
+            className="print-signatures mt-20 pt-8 flex justify-between border-t border-slate-300 text-center"
             style={{ pageBreakInside: "avoid" }}
           >
             <div className="w-1/3">
               <p className="font-bold text-sm">المراجع القانوني</p>
-              <p className="text-slate-400 mt-8">
+              <p className="text-[#71839a] mt-8">
                 ....................................
               </p>
             </div>
             <div className="w-1/3">
               <p className="font-bold text-sm">مدير الإدارة</p>
-              <p className="text-slate-400 mt-8">
+              <p className="text-[#71839a] mt-8">
                 ....................................
               </p>
             </div>
             <div className="w-1/3">
               <p className="font-bold text-sm">الختم والاعتماد</p>
-              <p className="text-slate-400 mt-8">
+              <p className="text-[#71839a] mt-8">
                 ....................................
               </p>
             </div>
           </div>
         )}
 
-        <div className="mt-10 text-center text-xs text-slate-400 border-t pt-4">
+        <div className="mt-10 text-center text-xs text-[#71839a] border-t pt-4">
           هذا التقرير صادر آلياً من النظام ولا يحتاج إلى توقيع في حال وجود الختم
           الإلكتروني.
         </div>

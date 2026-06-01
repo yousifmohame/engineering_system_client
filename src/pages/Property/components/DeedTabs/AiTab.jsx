@@ -10,9 +10,9 @@ export const AiTab = ({
 }) => {
   return (
     <div className="animate-in fade-in h-full flex flex-col max-w-7xl mx-auto w-full">
-      <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-slate-100">
-        <span className="text-sm font-bold text-slate-800 flex items-center gap-1">
-          <Brain className="w-4 h-4 text-purple-600" /> تحليل الذكاء الاصطناعي
+      <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-[#e7eef2]">
+        <span className="text-sm font-bold text-[#123B5D] flex items-center gap-1">
+          <Brain className="w-4 h-4 text-[#0f6d7c]" /> تحليل الذكاء الاصطناعي
         </span>
       </div>
 
@@ -25,7 +25,7 @@ export const AiTab = ({
               </span>
               <Upload className="w-5 h-5" />
             </div>
-            <div className="bg-[#1d4ed8] p-8 relative cursor-pointer hover:bg-blue-700 transition-colors">
+            <div className="bg-[#1d4ed8] p-8 relative cursor-pointer hover:bg-[#0f6d7c] transition-colors">
               <input
                 type="file"
                 accept="image/*,application/pdf"
@@ -33,7 +33,7 @@ export const AiTab = ({
                 onChange={handleAiUpload}
               />
               <div className="flex flex-col justify-center items-center text-white text-sm font-bold gap-3">
-                <span className="bg-white/20 hover:bg-white/30 text-white px-8 py-3 rounded-lg transition-colors text-base">
+                <span className="bg-white/20 hover:bg-white/30 text-white px-8 py-3 rounded-xl transition-colors text-base">
                   اضغط لاختيار ملف PDF أو صورة
                 </span>
                 <span className="text-blue-200 font-normal">
@@ -45,9 +45,9 @@ export const AiTab = ({
         )}
 
         {aiAnalyzing && (
-          <div className="max-w-4xl mx-auto bg-slate-50 border-2 border-dashed border-blue-200 rounded-xl p-20 flex flex-col items-center justify-center mt-6">
-            <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
-            <h4 className="text-lg font-bold text-blue-900">
+          <div className="max-w-4xl mx-auto bg-[#f7fbfd] border-2 border-dashed border-blue-200 rounded-xl p-20 flex flex-col items-center justify-center mt-6">
+            <Loader2 className="w-12 h-12 text-[#0f6d7c] animate-spin mb-4" />
+            <h4 className="text-lg font-bold text-[#123B5D]">
               جاري قراءة وتحليل الصك بالذكاء الاصطناعي... يرجى الانتظار
             </h4>
           </div>
@@ -71,13 +71,13 @@ export const AiTab = ({
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   onClick={handleConfirmAiData}
-                  className="bg-green-600 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-green-700 shadow-md"
+                  className="bg-[#083646] text-white px-6 py-2.5 rounded-xl font-bold hover:bg-[#0f6d7c] shadow-md"
                 >
                   تأكيد وتطبيق البيانات على الملف
                 </button>
                 <button
                   onClick={() => setAiResult(null)}
-                  className="bg-white border border-slate-300 text-slate-700 px-6 py-2.5 rounded-lg font-bold hover:bg-slate-50"
+                  className="bg-white border border-slate-300 text-[#123B5D] px-6 py-2.5 rounded-xl font-bold hover:bg-[#f7fbfd]"
                 >
                   إلغاء وإعادة المحاولة
                 </button>

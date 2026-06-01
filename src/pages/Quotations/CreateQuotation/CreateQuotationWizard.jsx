@@ -2,7 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "../../../api/axios";
 import { toast } from "sonner";
-import { ChevronRight, ChevronLeft, CircleCheckBig, Save, Loader2 } from "lucide-react";
+import {
+  ChevronRight,
+  ChevronLeft,
+  CircleCheckBig,
+  Save,
+  Loader2,
+} from "lucide-react";
 
 import {
   STEPS,
@@ -56,9 +62,11 @@ const IconWithText = ({
 
 // 🔥 التصحيح الأول: استخراج البيانات بذكاء ليتوافق مع نظام التابات
 const CreateQuotationWizard = (incomingProps) => {
-  const quotationId = incomingProps.quotationId || incomingProps.props?.quotationId;
-  const onComplete = incomingProps.onComplete || incomingProps.props?.onComplete;
-  
+  const quotationId =
+    incomingProps.quotationId || incomingProps.props?.quotationId;
+  const onComplete =
+    incomingProps.onComplete || incomingProps.props?.onComplete;
+
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(0);
   const tabsContainerRef = useRef(null);
@@ -77,7 +85,9 @@ const CreateQuotationWizard = (incomingProps) => {
   const [selectedMeeting, setSelectedMeeting] = useState("");
   const [meetingSearch, setMeetingSearch] = useState("");
 
-  const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0]);
+  const [issueDate, setIssueDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
   const [validityDays, setValidityDays] = useState(30);
   const [isRenewable, setIsRenewable] = useState(false);
   const [transactionType, setTransactionType] = useState("");
@@ -102,7 +112,9 @@ const CreateQuotationWizard = (incomingProps) => {
   const [missingDocs, setMissingDocs] = useState("");
   const [showMissingDocs, setShowMissingDocs] = useState(false);
 
-  const [termsText, setTermsText] = useState("1. الدفعة المقدمة غير مستردة.\n2. الرسوم الحكومية على المالك.");
+  const [termsText, setTermsText] = useState(
+    "1. الدفعة المقدمة غير مستردة.\n2. الرسوم الحكومية على المالك.",
+  );
   const [clientTitle, setClientTitle] = useState("المواطن");
   const [handlingMethod, setHandlingMethod] = useState("المالك مباشرة");
   const [selectedPresetTerm, setSelectedPresetTerm] = useState("manual");
@@ -113,12 +125,16 @@ const CreateQuotationWizard = (incomingProps) => {
   // ==========================================
   const { data: clientsData, isLoading: clientsLoading } = useQuery({
     queryKey: ["clients", clientSearch],
-    queryFn: async () => (await axios.get("/clients/simple", { params: { search: clientSearch } })).data,
+    queryFn: async () =>
+      (await axios.get("/clients/simple", { params: { search: clientSearch } }))
+        .data,
   });
 
   const { data: propertiesData, isLoading: propertiesLoading } = useQuery({
     queryKey: ["properties", propertySearch],
-    queryFn: async () => (await axios.get("/properties", { params: { search: propertySearch } })).data?.data || [],
+    queryFn: async () =>
+      (await axios.get("/properties", { params: { search: propertySearch } }))
+        .data?.data || [],
   });
 
   const { data: serverTemplates = [], isLoading: templatesLoading } = useQuery({
@@ -128,7 +144,8 @@ const CreateQuotationWizard = (incomingProps) => {
 
   const { data: serverItems = [], isLoading: libItemsLoading } = useQuery({
     queryKey: ["library-items"],
-    queryFn: async () => (await axios.get("/quotation-library/items")).data.data,
+    queryFn: async () =>
+      (await axios.get("/quotation-library/items")).data.data,
   });
 
   const { data: transactionsData, isLoading: transactionsLoading } = useQuery({
@@ -156,8 +173,18 @@ const CreateQuotationWizard = (incomingProps) => {
   // ==========================================
   const { data: existingQuote, isLoading: isQuoteLoading } = useQuery({
     queryKey: ["quotation", quotationId],
-    queryFn: async () => (await axios.get(`/quotations/${quotationId}`)).data.data,
-    enabled: isEditMode, 
+    queryFn: async () =>
+      (await axios.get(`/quotations/${quotationId}`)).data.data,
+    enabled: isEditMode,
+  });
+
+  // 👈 إضافة استعلام جلب خدمات المكتب
+  const { data: officeServices = [], isLoading: servicesLoading } = useQuery({
+    queryKey: ["office-services"],
+    queryFn: async () =>
+      (await axios.get("/services")).data?.data ||
+      (await axios.get("/services")).data ||
+      [],
   });
 
   useEffect(() => {
@@ -186,7 +213,7 @@ const CreateQuotationWizard = (incomingProps) => {
       setServiceNumber(existingQuote.serviceNumber || "");
       setServiceYear(existingQuote.serviceYear || "");
 
-      setTaxRate(existingQuote.taxRate * 100); 
+      setTaxRate(existingQuote.taxRate * 100);
       setOfficeTaxBearing(existingQuote.officeTaxBearing);
       setStampType(existingQuote.stampType || "NONE");
 
@@ -223,7 +250,8 @@ const CreateQuotationWizard = (incomingProps) => {
 
   useEffect(() => {
     if (!isEditMode && serverTemplates.length > 0 && !selectedTemplate) {
-      const defaultTpl = serverTemplates.find((t) => t.isDefault) || serverTemplates[0];
+      const defaultTpl =
+        serverTemplates.find((t) => t.isDefault) || serverTemplates[0];
       setSelectedTemplate(defaultTpl.id);
       setTemplateType(defaultTpl.type);
       setTermsText(defaultTpl.defaultTerms || termsText);
@@ -234,13 +262,30 @@ const CreateQuotationWizard = (incomingProps) => {
     if (tabsContainerRef.current) {
       const activeTab = tabsContainerRef.current.children[currentStep];
       if (activeTab) {
-        activeTab.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        activeTab.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
       }
     }
   }, [currentStep]);
 
-  const subtotal = items.reduce((sum, item) => sum + (item.qty * item.price - item.discount), 0);
-  const taxAmount = subtotal * (taxRate / 100);
+  // 1. حساب الإجمالي قبل الضريبة
+  const subtotal = items.reduce(
+    (sum, item) => sum + (item.qty * item.price - item.discount),
+    0,
+  );
+
+  // 2. حساب إجمالي الضريبة (بجمع ضريبة كل بند على حدة)
+  const taxAmount = items.reduce((sum, item) => {
+    const lineSubtotal = item.qty * item.price - item.discount;
+    // إذا لم يحدد الموظف ضريبة للبند، نفترض أنها 15%
+    const itemTaxRate = item.taxRate !== undefined ? item.taxRate : 15;
+    return sum + lineSubtotal * (itemTaxRate / 100);
+  }, 0);
+
+  // 3. الإجمالي الشامل
   const grandTotal = subtotal + taxAmount;
 
   useEffect(() => {
@@ -255,7 +300,12 @@ const CreateQuotationWizard = (incomingProps) => {
             label: `الدفعة ${i}`,
             percentage: percentagePerPayment.toFixed(0),
             amount: amountPerPayment,
-            condition: i === 1 ? "عند التعاقد" : i === paymentCount ? "عند التسليم" : "حسب الإنجاز",
+            condition:
+              i === 1
+                ? "عند التعاقد"
+                : i === paymentCount
+                  ? "عند التسليم"
+                  : "حسب الإنجاز",
           });
         }
       }
@@ -267,9 +317,13 @@ const CreateQuotationWizard = (incomingProps) => {
     setItems(
       items.map((i) =>
         i.id === id
-          ? { ...i, [field]: field === "title" || field === "unit" ? value : Number(value) }
-          : i
-      )
+          ? {
+              ...i,
+              [field]:
+                field === "title" || field === "unit" ? value : Number(value),
+            }
+          : i,
+      ),
     );
   };
 
@@ -306,7 +360,9 @@ const CreateQuotationWizard = (incomingProps) => {
       }
     },
     onSuccess: (data) => {
-      toast.success(isEditMode ? "تم تحديث عرض السعر بنجاح!" : "تم حفظ عرض السعر بنجاح!");
+      toast.success(
+        isEditMode ? "تم تحديث عرض السعر بنجاح!" : "تم حفظ عرض السعر بنجاح!",
+      );
       queryClient.invalidateQueries(["quotations", "quotations-list"]);
       if (onComplete) onComplete(data);
     },
@@ -355,6 +411,7 @@ const CreateQuotationWizard = (incomingProps) => {
         price: i.price,
         discount: i.discount,
         discountType: i.discountType || "PERCENTAGE",
+        taxRate: i.taxRate !== undefined ? i.taxRate : 15, // 👈 أضفنا هذا السطر لنرسل نسبة الضريبة للسيرفر
       })),
 
       taxRate,
@@ -374,7 +431,11 @@ const CreateQuotationWizard = (incomingProps) => {
       handlingMethod: mapHandlingToEnum(handlingMethod),
       stampType,
       isDraft,
-      status: isDraft ? "DRAFT" : existingQuote ? existingQuote.status : "PENDING_APPROVAL",
+      status: isDraft
+        ? "DRAFT"
+        : existingQuote
+          ? existingQuote.status
+          : "PENDING_APPROVAL",
     };
 
     saveMutation.mutate(payload);
@@ -385,39 +446,136 @@ const CreateQuotationWizard = (incomingProps) => {
   };
 
   const stepProps = {
-    selectedClient, setSelectedClient, selectedProperty, setSelectedProperty,
-    clientSearch, setClientSearch, propertySearch, setPropertySearch,
-    clientsData, propertiesData, clientsLoading, propertiesLoading,
-    selectedTransaction, setSelectedTransaction, transactionSearch, setTransactionSearch, transactionsData, transactionsLoading,
-    selectedMeeting, setSelectedMeeting, meetingSearch, setMeetingSearch, meetingsData, meetingsLoading,
-    
-    issueDate, setIssueDate, validityDays, setValidityDays, isRenewable, setIsRenewable,
-    transactionType, setTransactionType, licenseNumber, setLicenseNumber,
-    licenseYear, setLicenseYear, serviceYear, setServiceYear, serviceNumber, setServiceNumber,
+    selectedClient,
+    setSelectedClient,
+    selectedProperty,
+    setSelectedProperty,
+    clientSearch,
+    setClientSearch,
+    propertySearch,
+    setPropertySearch,
+    clientsData,
+    propertiesData,
+    clientsLoading,
+    propertiesLoading,
+    selectedTransaction,
+    setSelectedTransaction,
+    transactionSearch,
+    setTransactionSearch,
+    transactionsData,
+    transactionsLoading,
+    selectedMeeting,
+    setSelectedMeeting,
+    meetingSearch,
+    setMeetingSearch,
+    meetingsData,
+    meetingsLoading,
+
+    issueDate,
+    setIssueDate,
+    validityDays,
+    setValidityDays,
+    isRenewable,
+    setIsRenewable,
+    transactionType,
+    setTransactionType,
+    licenseNumber,
+    setLicenseNumber,
+    licenseYear,
+    setLicenseYear,
+    serviceYear,
+    setServiceYear,
+    serviceNumber,
+    setServiceNumber,
     licenseYearsList: generateHijriYears(1400, getCurrentHijriYear()),
 
-    templateType, setTemplateType, selectedTemplate, setSelectedTemplate,
-    serverTemplates, templatesLoading, showClientCode, setShowClientCode, showPropertyCode, setShowPropertyCode,
-    
-    items, setItems, handleItemChange, removeItem, addItemFromLibrary,
-    serverItems, libItemsLoading, subtotal, taxRate, setTaxRate,
-    officeTaxBearing, setOfficeTaxBearing, taxAmount, grandTotal,
-    
-    paymentCount, setPaymentCount, paymentsList, setPaymentsList, acceptedMethods,
-    toggleMethod: (m) => setAcceptedMethods((prev) => prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]),
-    missingDocs, setMissingDocs, showMissingDocs, setShowMissingDocs,
-    termsText, setTermsText, clientTitle, setClientTitle, handlingMethod, setHandlingMethod,
-    selectedPresetTerm, setSelectedPresetTerm,
-    handleSave, saveMutation, stampType, setStampType,
+    templateType,
+    setTemplateType,
+    selectedTemplate,
+    setSelectedTemplate,
+    serverTemplates,
+    templatesLoading,
+    showClientCode,
+    setShowClientCode,
+    showPropertyCode,
+    setShowPropertyCode,
+
+    items,
+    setItems,
+    handleItemChange,
+    removeItem,
+    addItemFromLibrary,
+    serverItems,
+    libItemsLoading,
+    subtotal,
+    taxRate,
+    setTaxRate,
+    officeTaxBearing,
+    setOfficeTaxBearing,
+    taxAmount,
+    grandTotal,
+
+    paymentCount,
+    setPaymentCount,
+    paymentsList,
+    setPaymentsList,
+    acceptedMethods,
+    toggleMethod: (m) =>
+      setAcceptedMethods((prev) =>
+        prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m],
+      ),
+    missingDocs,
+    setMissingDocs,
+    showMissingDocs,
+    setShowMissingDocs,
+    termsText,
+    setTermsText,
+    clientTitle,
+    setClientTitle,
+    handlingMethod,
+    setHandlingMethod,
+    selectedPresetTerm,
+    setSelectedPresetTerm,
+    handleSave,
+    saveMutation,
+    stampType,
+    setStampType,
+    officeServices, // 👈 تمرير قائمة الخدمات
+    servicesLoading,
   };
 
   const previewData = {
-    templateType, issueDate, validityDays, clientTitle: clientTitle || "المواطن",
-    clientNameForPreview: getClientName(clientsData?.find((c) => c.id === selectedClient)) || getClientName(existingQuote?.client) || "عميل غير محدد",
-    propertyCodeForPreview: propertiesData?.find((p) => p.id === selectedProperty)?.code || existingQuote?.ownership?.code || "الملكية...",
-    transactionType, licenseNumber, licenseYear, serviceNumber, serviceYear,
-    items, subtotal, taxRate, taxAmount, grandTotal, termsText, missingDocs, showMissingDocs, 
-    paymentsList, stampType, acceptedMethods, showPropertyCode, showClientCode, officeTaxBearing
+    templateType,
+    issueDate,
+    validityDays,
+    clientTitle: clientTitle || "المواطن",
+    clientNameForPreview:
+      getClientName(clientsData?.find((c) => c.id === selectedClient)) ||
+      getClientName(existingQuote?.client) ||
+      "عميل غير محدد",
+    propertyCodeForPreview:
+      propertiesData?.find((p) => p.id === selectedProperty)?.code ||
+      existingQuote?.ownership?.code ||
+      "الملكية...",
+    transactionType,
+    licenseNumber,
+    licenseYear,
+    serviceNumber,
+    serviceYear,
+    items,
+    subtotal,
+    taxRate,
+    taxAmount,
+    grandTotal,
+    termsText,
+    missingDocs,
+    showMissingDocs,
+    paymentsList,
+    stampType,
+    acceptedMethods,
+    showPropertyCode,
+    showClientCode,
+    officeTaxBearing,
   };
 
   return (
@@ -480,7 +638,8 @@ const CreateQuotationWizard = (incomingProps) => {
                     {isEditMode ? "تعديل عرض سعر" : "إنشاء عرض سعر"}
                   </h2>
                   <p className="mt-0.5 truncate text-[11px] font-bold text-white/60">
-                    بناء العرض، اختيار النموذج، البنود، الضريبة، الدفعات والمراجعة.
+                    بناء العرض، اختيار النموذج، البنود، الضريبة، الدفعات
+                    والمراجعة.
                   </p>
                 </div>
               </div>
@@ -622,4 +781,3 @@ const CreateQuotationWizard = (incomingProps) => {
 };
 
 export default CreateQuotationWizard;
-

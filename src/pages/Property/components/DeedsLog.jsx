@@ -197,7 +197,7 @@ const DeedsLog = ({ onOpenDetails }) => {
         </span>
       );
     return (
-      <span className="text-[9px] font-bold rounded px-2 py-0.5 whitespace-nowrap bg-slate-100 text-slate-800 border border-slate-200">
+      <span className="text-[9px] font-bold rounded px-2 py-0.5 whitespace-nowrap bg-[#f7fbfd] text-[#123B5D] border border-[#d8e6ee]">
         {status || "جديد"}
       </span>
     );
@@ -206,7 +206,7 @@ const DeedsLog = ({ onOpenDetails }) => {
   const getTypeBadge = (type) => {
     if (!type)
       return (
-        <span className="text-[9px] font-bold rounded px-1.5 py-0.5 bg-slate-100 text-slate-600">
+        <span className="text-[9px] font-bold rounded px-1.5 py-0.5 bg-[#f7fbfd] text-[#52677e]">
           أرض
         </span>
       );
@@ -235,7 +235,7 @@ const DeedsLog = ({ onOpenDetails }) => {
         </span>
       );
     return (
-      <span className="text-[9px] font-bold rounded px-1.5 py-0.5 bg-slate-100 text-slate-600">
+      <span className="text-[9px] font-bold rounded px-1.5 py-0.5 bg-[#f7fbfd] text-[#52677e]">
         أرض
       </span>
     );
@@ -244,6 +244,106 @@ const DeedsLog = ({ onOpenDetails }) => {
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
     toast.success("تم نسخ الكود: " + text);
+  };
+
+  const escapeExcelCell = (value) => {
+    if (value === null || value === undefined || value === "") return "---";
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  };
+
+  const formatExcelDate = (value) => {
+    if (!value) return "---";
+    try {
+      return format(new Date(value), "yyyy-MM-dd");
+    } catch {
+      return "---";
+    }
+  };
+
+  const handleExportExcel = () => {
+    const rows = processedData || [];
+
+    if (!rows.length) {
+      toast.error("لا توجد بيانات لتصديرها");
+      return;
+    }
+
+    const columns = [
+      "كود الملف",
+      "رقم الصك",
+      "نوع العقار",
+      "المالك / الموكل",
+      "المدينة",
+      "الحي",
+      "المساحة م²",
+      "عدد الوثائق",
+      "عدد القطع",
+      "حالة الملف",
+      "تاريخ الإضافة",
+    ];
+
+    const tableRows = rows
+      .map((item) => {
+        const propertyType = item.plots?.[0]?.propertyType || "أرض";
+        const values = [
+          item.code,
+          item.deedNumber,
+          propertyType,
+          getSafeClientName(item.client),
+          item.city,
+          item.district,
+          calculateTotalArea(item),
+          item.documents?.length || 0,
+          item.plots?.length || 0,
+          item.status || "جديد",
+          formatExcelDate(item.createdAt),
+        ];
+
+        return `<tr>${values
+          .map((value) => `<td style="mso-number-format:'\@';">${escapeExcelCell(value)}</td>`)
+          .join("")}</tr>`;
+      })
+      .join("");
+
+    const html = `
+      <!doctype html>
+      <html dir="rtl" lang="ar">
+        <head>
+          <meta charset="UTF-8" />
+          <style>
+            table { border-collapse: collapse; width: 100%; direction: rtl; font-family: Arial, Tahoma, sans-serif; }
+            th { background: #083646; color: #ffffff; font-weight: 700; }
+            th, td { border: 1px solid #d8e6ee; padding: 8px 10px; text-align: right; font-size: 12px; }
+            td { color: #123B5D; }
+          </style>
+        </head>
+        <body>
+          <table>
+            <thead><tr>${columns.map((column) => `<th>${column}</th>`).join("")}</tr></thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    const blob = new Blob(["\ufeff", html], {
+      type: "application/vnd.ms-excel;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `سجل_الصكوك_${format(new Date(), "yyyy-MM-dd")}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(`تم تصدير ${rows.length} ملف من سجل الصكوك بنجاح`);
   };
 
   const handleSort = (key) => {
@@ -265,7 +365,7 @@ const DeedsLog = ({ onOpenDetails }) => {
     return (
       <th
         onClick={() => handleSort(sortKey)}
-        className={`p-3 ${align} ${width} text-[10px] font-bold cursor-pointer hover:bg-slate-200 transition-colors border-b-2 ${isActive ? "border-blue-500 bg-blue-50/50 text-blue-700" : "border-slate-300 text-slate-500"}`}
+        className={`px-3 py-2 ${align} ${width} text-[10px] font-bold cursor-pointer hover:bg-slate-200 transition-colors border-b border-slate-200 h-[38px] ${isActive ? "border-blue-500 bg-blue-50/50 text-[#123B5D]" : "border-slate-200 text-[#71839a]"}`}
       >
         <div
           className={`flex items-center gap-1 ${align === "text-center" ? "justify-center" : ""}`}
@@ -282,36 +382,31 @@ const DeedsLog = ({ onOpenDetails }) => {
   return (
     <div className="flex flex-col h-full bg-white animate-in fade-in" dir="rtl">
       {/* ======================= الشريط العلوي (الفلاتر) ======================= */}
-      <div className="shrink-0 bg-white border-b border-slate-200 shadow-sm z-10 relative">
-        <div className="flex flex-wrap items-center gap-2 p-3">
-          {/* مربع البحث الذكي */}
-          <div className="relative flex-1 min-w-[250px] max-w-[400px]">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+      <div className="shrink-0 bg-white border-b border-[#d8e6ee] shadow-sm z-10 relative">
+        <div className="flex flex-wrap lg:flex-nowrap items-center gap-2 px-3 py-2 min-h-[58px]">
+          {/* البحث */}
+          <div className="relative flex-1 min-w-[260px]">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#71839a] w-4 h-4" />
             <input
               type="text"
               placeholder="ابحث بالكود، الصك، اسم العميل، المدينة..."
-              className="w-full text-xs rounded-lg border border-slate-300 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all bg-slate-50 focus:bg-white"
-              style={{
-                height: "36px",
-                paddingRight: "36px",
-                paddingLeft: "36px",
-              }}
+              className="w-full h-[36px] text-xs rounded-xl border border-[#d8e6ee] outline-none bg-[#f7fbfd] focus:bg-white focus:border-[#d9b85b] focus:ring-2 focus:ring-[#d9b85b]/20 transition-all pr-9 pl-9 font-bold text-[#123B5D] placeholder:text-[#8aa0b4]"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
             />
             {searchInput && (
               <button
                 onClick={() => setSearchInput("")}
-                className="absolute left-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
+                className="absolute left-2 top-1/2 -translate-y-1/2 p-1 text-[#71839a] hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
               >
                 <XIcon className="w-3 h-3" />
               </button>
             )}
           </div>
 
-          {/* فلاتر سريعة */}
+          {/* الفلاتر */}
           <select
-            className="h-[36px] px-3 border border-slate-300 rounded-lg text-xs bg-slate-50 hover:bg-white outline-none cursor-pointer focus:border-blue-500 font-bold text-slate-600"
+            className="h-[36px] min-w-[135px] px-3 border border-[#d8e6ee] rounded-xl text-xs bg-white hover:bg-[#f7fbfd] outline-none cursor-pointer focus:border-[#d9b85b] font-black text-[#52677e]"
             value={filters.status}
             onChange={(e) => {
               setFilters({ ...filters, status: e.target.value });
@@ -325,7 +420,7 @@ const DeedsLog = ({ onOpenDetails }) => {
           </select>
 
           <select
-            className="h-[36px] px-3 border border-slate-300 rounded-lg text-xs bg-slate-50 hover:bg-white outline-none cursor-pointer focus:border-blue-500 font-bold text-slate-600"
+            className="h-[36px] min-w-[125px] px-3 border border-[#d8e6ee] rounded-xl text-xs bg-white hover:bg-[#f7fbfd] outline-none cursor-pointer focus:border-[#d9b85b] font-black text-[#52677e]"
             value={filters.type}
             onChange={(e) => {
               setFilters({ ...filters, type: e.target.value });
@@ -339,10 +434,19 @@ const DeedsLog = ({ onOpenDetails }) => {
             <option value="صناعي">صناعي</option>
           </select>
 
-          {/* زر إعادة ضبط الفلاتر إذا كانت نشطة */}
+
+          <button
+            onClick={handleExportExcel}
+            disabled={isLoading || processedData.length === 0}
+            className="h-[36px] flex items-center gap-1.5 text-[11px] font-black text-[#52677e] hover:text-[#123B5D] rounded-xl px-3 bg-white border border-[#d8e6ee] shadow-sm hover:shadow transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="w-3.5 h-3.5" /> تصدير إكسيل
+          </button>
+
           {(filters.status !== "all" ||
             filters.type !== "all" ||
             filters.city !== "all" ||
+            filters.district !== "all" ||
             searchInput !== "") && (
             <button
               onClick={() => {
@@ -354,51 +458,18 @@ const DeedsLog = ({ onOpenDetails }) => {
                 });
                 setSearchInput("");
               }}
-              className="flex items-center gap-1.5 text-xs text-red-600 bg-red-50 px-3 h-[36px] rounded-lg font-bold hover:bg-red-100 transition-colors mr-auto"
+              className="h-[36px] flex items-center gap-1.5 text-[11px] text-red-600 bg-red-50 px-3 rounded-xl font-black hover:bg-red-100 transition-colors whitespace-nowrap"
             >
-              <FilterX className="w-3.5 h-3.5" /> مسح الفلاتر
+              <FilterX className="w-3.5 h-3.5" /> مسح
             </button>
           )}
         </div>
-
-        {/* شريط الإحصائيات والأدوات */}
-        <div className="flex items-center justify-between px-4 py-2 border-t border-slate-100 bg-slate-50/50">
-          <div className="flex items-center gap-4 text-[11px] text-slate-500 font-bold">
-            <span>
-              إجمالي النتائج:{" "}
-              <strong className="text-blue-700 text-xs bg-blue-100 px-2 py-0.5 rounded-full">
-                {totalItems}
-              </strong>
-            </span>
-            <div className="w-px h-4 bg-slate-300"></div>
-            <span className="flex items-center gap-1.5 text-slate-500">
-              ترتيب حسب:
-              <span className="flex items-center gap-1 rounded-md px-2 py-1 bg-white border border-slate-200 text-slate-700 shadow-sm">
-                {sortConfig.key === "code"
-                  ? "كود الملكية"
-                  : sortConfig.key === "createdAt"
-                    ? "تاريخ الإضافة"
-                    : "مخصص"}
-                <ArrowUp
-                  className={`w-3 h-3 text-blue-500 transition-transform ${sortConfig.direction === "desc" ? "rotate-180" : ""}`}
-                />
-              </span>
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1.5 text-[10px] font-bold text-slate-600 hover:text-blue-700 rounded-lg px-3 py-1.5 bg-white border border-slate-200 shadow-sm hover:shadow transition-all">
-              <Download className="w-3.5 h-3.5" /> تصدير إكسيل
-            </button>
-          </div>
-        </div>
       </div>
-
       {/* ======================= منطقة الجدول ======================= */}
       <div className="flex-1 overflow-auto bg-white custom-scrollbar relative">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center h-full text-slate-400 absolute inset-0 bg-white/80 z-50">
-            <Loader2 className="w-10 h-10 animate-spin mb-3 text-blue-600" />
+          <div className="flex flex-col items-center justify-center h-full text-[#71839a] absolute inset-0 bg-white/80 z-50">
+            <Loader2 className="w-10 h-10 animate-spin mb-3 text-[#0f6d7c]" />
             <p className="font-bold">جاري تحميل السجل...</p>
           </div>
         ) : isError ? (
@@ -409,9 +480,9 @@ const DeedsLog = ({ onOpenDetails }) => {
             </p>
           </div>
         ) : paginatedData.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-slate-400">
+          <div className="flex flex-col items-center justify-center h-full text-[#71839a]">
             <Search className="w-12 h-12 mb-4 opacity-20" />
-            <p className="font-bold text-sm text-slate-500">
+            <p className="font-bold text-sm text-[#71839a]">
               لا توجد نتائج تطابق معايير البحث.
             </p>
             <p className="text-xs mt-1">جرب تغيير الفلاتر أو كلمات البحث.</p>
@@ -421,7 +492,7 @@ const DeedsLog = ({ onOpenDetails }) => {
             className="w-full border-collapse"
             style={{ minWidth: "1200px" }}
           >
-            <thead className="sticky top-0 z-20 bg-slate-50 shadow-sm">
+            <thead className="sticky top-0 z-20 bg-[#f7fbfd] shadow-sm">
               <tr className="group">
                 <SortableTH
                   label="كود الملف"
@@ -435,7 +506,7 @@ const DeedsLog = ({ onOpenDetails }) => {
                   width="w-[130px]"
                   isMono
                 />
-                <th className="p-3 text-right w-[80px] text-[10px] font-bold text-slate-500 border-b-2 border-slate-300">
+                <th className="px-3 py-2 text-right w-[80px] h-[38px] text-[10px] font-bold text-[#71839a] border-b border-slate-200">
                   النوع
                 </th>
                 <SortableTH
@@ -456,13 +527,13 @@ const DeedsLog = ({ onOpenDetails }) => {
                   isMono
                 />
                 <th
-                  className="p-3 text-center w-[60px] text-[10px] font-bold text-slate-500 border-b-2 border-slate-300"
+                  className="px-3 py-2 text-center w-[60px] h-[38px] text-[10px] font-bold text-[#71839a] border-b border-slate-200"
                   title="عدد الوثائق"
                 >
                   وث
                 </th>
                 <th
-                  className="p-3 text-center w-[60px] text-[10px] font-bold text-slate-500 border-b-2 border-slate-300"
+                  className="px-3 py-2 text-center w-[60px] h-[38px] text-[10px] font-bold text-[#71839a] border-b border-slate-200"
                   title="عدد القطع المستخرجة"
                 >
                   ق
@@ -480,7 +551,7 @@ const DeedsLog = ({ onOpenDetails }) => {
                   align="text-center"
                   isMono
                 />
-                <th className="p-3 text-center w-[80px] text-[10px] font-bold text-slate-500 border-b-2 border-slate-300">
+                <th className="px-3 py-2 text-center w-[80px] h-[38px] text-[10px] font-bold text-[#71839a] border-b border-slate-200">
                   إجراءات
                 </th>
               </tr>
@@ -499,12 +570,12 @@ const DeedsLog = ({ onOpenDetails }) => {
                   <tr
                     key={item.id}
                     onClick={() => onOpenDetails && onOpenDetails(item.id, item.code)}
-                    className="group transition-colors bg-white hover:bg-blue-50/50 cursor-pointer h-[46px]"
+                    className="group transition-colors bg-white hover:bg-[#f7fbfd] cursor-pointer h-[42px]"
                   >
                     {/* Code */}
-                    <td className="p-3">
+                    <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-black text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-100 group-hover:bg-white transition-colors">
+                        <span className="text-xs font-mono font-black text-[#123B5D] bg-blue-50 px-2 py-1 rounded border border-blue-100 group-hover:bg-white transition-colors">
                           {item.code}
                         </span>
                         <button
@@ -512,7 +583,7 @@ const DeedsLog = ({ onOpenDetails }) => {
                             e.stopPropagation();
                             handleCopy(item.code);
                           }}
-                          className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-blue-600 transition-opacity p-1 bg-white rounded shadow-sm"
+                          className="opacity-0 group-hover:opacity-100 text-[#71839a] hover:text-[#0f6d7c] transition-opacity p-1 bg-white rounded shadow-sm"
                           title="نسخ الكود"
                         >
                           <Copy className="w-3 h-3" />
@@ -521,9 +592,9 @@ const DeedsLog = ({ onOpenDetails }) => {
                     </td>
 
                     {/* Deed Number */}
-                    <td className="p-3">
+                    <td className="px-3 py-2">
                       <div
-                        className="text-[11px] font-mono font-bold text-slate-600 truncate max-w-[120px]"
+                        className="text-[11px] font-mono font-bold text-[#52677e] truncate max-w-[120px]"
                         title={item.deedNumber}
                       >
                         {item.deedNumber || "---"}
@@ -531,16 +602,16 @@ const DeedsLog = ({ onOpenDetails }) => {
                     </td>
 
                     {/* Type */}
-                    <td className="p-3">{getTypeBadge(propertyType)}</td>
+                    <td className="px-3 py-2">{getTypeBadge(propertyType)}</td>
 
                     {/* Owner */}
-                    <td className="p-3" title={clientName}>
+                    <td className="px-3 py-2" title={clientName}>
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+                        <div className="w-6 h-6 rounded-full bg-[#f7fbfd] flex items-center justify-center text-[#71839a] shrink-0">
                           <Users className="w-3 h-3" />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-xs text-slate-800 font-bold truncate max-w-[130px]">
+                          <div className="text-xs text-[#123B5D] font-bold truncate max-w-[130px]">
                             {clientName}
                           </div>
                           {item.owners?.length > 1 && (
@@ -553,56 +624,55 @@ const DeedsLog = ({ onOpenDetails }) => {
                     </td>
 
                     {/* Location */}
-                    <td className="p-3">
-                      <div className="text-xs text-slate-700 font-bold">
+                    <td className="px-3 py-2">
+                      <div className="text-xs text-[#123B5D] font-bold">
                         {item.city || "---"}
                       </div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">
+                      <div className="text-[10px] text-[#71839a] mt-0.5">
                         {item.district || "بدون حي"}
                       </div>
                     </td>
 
                     {/* Area */}
-                    <td className="p-3 text-center">
+                    <td className="px-3 py-2 text-center">
                       <span className="text-xs font-mono font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
                         {totalArea.toLocaleString()}
                       </span>
                     </td>
 
                     {/* Counts */}
-                    <td className="p-3 text-center text-xs font-bold text-slate-600">
+                    <td className="px-3 py-2 text-center text-xs font-bold text-[#52677e]">
                       {item.documents?.length || 0}
                     </td>
-                    <td className="p-3 text-center text-xs font-bold text-slate-600">
+                    <td className="px-3 py-2 text-center text-xs font-bold text-[#52677e]">
                       {item.plots?.length || 0}
                     </td>
 
                     {/* Status */}
-                    <td className="p-3 text-center">
+                    <td className="px-3 py-2 text-center">
                       {getStatusBadge(item.status)}
                     </td>
 
                     {/* Date */}
-                    <td className="p-3 text-center text-[10px] font-bold text-slate-500 font-mono">
+                    <td className="px-3 py-2 text-center text-[10px] font-bold text-[#71839a] font-mono">
                       {formattedDate}
                     </td>
 
                     {/* Actions */}
                     <td
-                      className="p-3 text-center"
+                      className="px-3 py-2 text-center w-[110px]"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() =>
-                            onOpenDetails && onOpenDetails(item.id)
-                          }
-                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-600 hover:text-white transition-colors shadow-sm"
-                          title="فتح الملف التفصيلي"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <button
+                        onClick={() =>
+                          onOpenDetails && onOpenDetails(item.id)
+                        }
+                        className="h-8 px-3 mx-auto flex items-center justify-center gap-1.5 rounded-xl bg-[#083646] text-white hover:bg-[#0f6d7c] transition-colors shadow-sm text-[10px] font-black whitespace-nowrap"
+                        title="فتح الملف التفصيلي"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>فتح الملف</span>
+                      </button>
                     </td>
                   </tr>
                 );
@@ -612,68 +682,64 @@ const DeedsLog = ({ onOpenDetails }) => {
         )}
       </div>
 
-      {/* ======================= شريط التصفح السفلي (Pagination) ======================= */}
-      <div className="flex items-center justify-between shrink-0 bg-white border-t border-slate-200 px-5 py-3 rounded-b-lg shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.03)] z-10 relative">
-        <div className="flex items-center gap-4 text-[11px] font-bold text-slate-500">
-          <span>
-            عرض {(currentPage - 1) * pageSize + 1} إلى{" "}
-            {Math.min(currentPage * pageSize, totalItems)} من أصل{" "}
-            <span className="text-blue-600">{totalItems}</span> ملف
-          </span>
-          <div className="flex items-center gap-2">
-            <span>الصفوف:</span>
-            <select
-              className="h-[28px] px-2 border border-slate-300 rounded-md text-[11px] bg-slate-50 outline-none cursor-pointer focus:border-blue-500"
-              value={pageSize}
-              onChange={(e) => {
-                setPageSize(Number(e.target.value));
-                setCurrentPage(1);
-              }}
+      {/* ======================= Clean Pagination Footer ======================= */}
+      <div className="shrink-0 bg-white border-t border-[#d8e6ee] px-4 py-3 rounded-b-[22px] shadow-[0_-6px_18px_rgba(8,54,70,0.04)] z-10 relative">
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 min-h-[44px]" dir="rtl">
+          {/* Right: total results */}
+          <div className="h-9 flex items-center gap-2 px-3 rounded-xl bg-[#f7fbfd] border border-[#d8e6ee] shadow-sm shrink-0">
+            <span className="text-[11px] font-bold text-[#71839a]">النتائج:</span>
+            <strong className="text-[#123B5D] text-[13px] bg-[#eef5f7] min-w-8 h-6 px-2 rounded-full flex items-center justify-center">
+              {totalItems}
+            </strong>
+          </div>
+
+          {/* Center: range */}
+          <div className="justify-self-center h-9 flex items-center justify-center px-4 rounded-xl bg-white border border-[#d8e6ee] shadow-sm text-[12px] font-bold text-[#52677e] whitespace-nowrap">
+            عرض {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, totalItems)} من {totalItems}
+          </div>
+
+          {/* Left: page navigation */}
+          <div className="justify-self-end flex items-center gap-2 shrink-0" dir="ltr">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(1)}
+              aria-label="الصفحة الأولى"
+              className="w-9 h-9 flex items-center justify-center rounded-xl border border-[#d8e6ee] bg-white hover:bg-[#f7fbfd] disabled:opacity-35 disabled:cursor-not-allowed text-[#123B5D] shadow-sm transition-all"
             >
-              <option value="15">15</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
+              <ChevronLeft className="w-4 h-4 -mr-1" />
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              aria-label="السابق"
+              className="w-9 h-9 flex items-center justify-center rounded-xl border border-[#d8e6ee] bg-white hover:bg-[#f7fbfd] disabled:opacity-35 disabled:cursor-not-allowed text-[#123B5D] shadow-sm transition-all"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            <div className="px-4 h-9 flex items-center justify-center rounded-xl bg-[#083646] text-white text-[12px] font-black shadow-sm whitespace-nowrap" dir="rtl">
+              صفحة {currentPage} من {totalPages}
+            </div>
+
+            <button
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              aria-label="التالي"
+              className="w-9 h-9 flex items-center justify-center rounded-xl border border-[#d8e6ee] bg-white hover:bg-[#f7fbfd] disabled:opacity-35 disabled:cursor-not-allowed text-[#123B5D] shadow-sm transition-all"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage(totalPages)}
+              aria-label="الصفحة الأخيرة"
+              className="w-9 h-9 flex items-center justify-center rounded-xl border border-[#d8e6ee] bg-white hover:bg-[#f7fbfd] disabled:opacity-35 disabled:cursor-not-allowed text-[#123B5D] shadow-sm transition-all"
+            >
+              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4 -ml-1" />
+            </button>
           </div>
-        </div>
-
-        <div className="flex items-center gap-1.5" dir="ltr">
-          <button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage(1)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 shadow-sm transition-all"
-          >
-            <ChevronLeft className="w-4 h-4 -mr-1.5" />
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((p) => p - 1)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 shadow-sm transition-all"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
-          <div className="px-3 h-8 flex items-center justify-center rounded-lg bg-blue-600 text-white text-[11px] font-black shadow-md mx-1">
-            صفحة {currentPage} من {totalPages}
-          </div>
-
-          <button
-            disabled={currentPage >= totalPages}
-            onClick={() => setCurrentPage((p) => p + 1)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 shadow-sm transition-all"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-          <button
-            disabled={currentPage >= totalPages}
-            onClick={() => setCurrentPage(totalPages)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 shadow-sm transition-all"
-          >
-            <ChevronRight className="w-4 h-4" />
-            <ChevronRight className="w-4 h-4 -ml-1.5" />
-          </button>
         </div>
       </div>
     </div>

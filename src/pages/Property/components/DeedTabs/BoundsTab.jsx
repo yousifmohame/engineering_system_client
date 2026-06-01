@@ -198,14 +198,14 @@ export const BoundsTab = ({
   return (
     <div className="animate-in fade-in flex flex-col max-w-7xl mx-auto w-full">
       {localData.plots.length === 0 ? (
-        <div className="p-10 flex flex-col items-center justify-center text-slate-400 bg-slate-50 border-2 border-dashed rounded-xl h-full">
+        <div className="p-10 flex flex-col items-center justify-center text-[#71839a] bg-[#f7fbfd] border-2 border-dashed rounded-xl h-full">
           <Layers className="w-16 h-16 mb-4 opacity-50" />
-          <p className="text-lg font-bold text-slate-600">
+          <p className="text-lg font-bold text-[#52677e]">
             الرجاء إضافة قطع الأراضي أولاً
           </p>
           <button
             onClick={() => setActiveTab("plots")}
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg font-bold"
+            className="mt-4 bg-[#083646] text-white px-4 py-2 rounded-xl font-bold"
           >
             الذهاب لتبويب القطع
           </button>
@@ -219,8 +219,8 @@ export const BoundsTab = ({
                 onClick={() => setSelectedPlotForBounds(plot.id)}
                 className={`px-4 py-3 text-sm font-bold rounded-xl border flex items-center gap-3 min-w-[150px] transition-all ${
                   selectedPlotForBounds === plot.id
-                    ? "bg-blue-600 text-white border-blue-600 shadow-md scale-105"
-                    : "bg-white text-slate-600 border-slate-300 hover:bg-blue-50"
+                    ? "bg-[#083646] text-white border-blue-600 shadow-md scale-105"
+                    : "bg-white text-[#52677e] border-slate-300 hover:bg-blue-50"
                 }`}
               >
                 <MapIcon className="w-5 h-5 opacity-80" />
@@ -236,8 +236,8 @@ export const BoundsTab = ({
             ))}
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col md:flex-row mt-2">
-            <div className="w-full md:w-1/3 bg-slate-800 text-white p-6 flex flex-col justify-center relative overflow-hidden">
+          <div className="bg-white border border-[#d8e6ee] rounded-[24px] shadow-sm overflow-hidden flex flex-col md:flex-row mt-2">
+            <div className="w-full md:w-1/3 bg-[#083646] text-white p-6 flex flex-col justify-center relative overflow-hidden">
               <div className="absolute top-0 left-0 p-4 opacity-10">
                 <Compass className="w-32 h-32" />
               </div>
@@ -245,7 +245,7 @@ export const BoundsTab = ({
                 المخطط الكروكي للقطعة
               </h3>
               <div
-                className="bg-blue-500/20 border border-blue-400/30 text-blue-100 px-3 py-1.5 rounded-lg text-sm font-bold mb-6 relative z-10 w-fit"
+                className="bg-blue-500/20 border border-blue-400/30 text-blue-100 px-3 py-1.5 rounded-xl text-sm font-bold mb-6 relative z-10 w-fit"
                 dir="ltr"
               >
                 قطعة: {currentPlotDetails?.plotNumber || "---"}
@@ -253,13 +253,13 @@ export const BoundsTab = ({
 
               <div className="space-y-4 relative z-10">
                 <div className="flex justify-between border-b border-slate-700 pb-2">
-                  <span className="text-slate-400 text-sm">مساحة القطعة:</span>
+                  <span className="text-[#71839a] text-sm">مساحة القطعة:</span>
                   <strong className="text-emerald-400 text-lg">
                     {currentPlotDetails?.area || 0} م²
                   </strong>
                 </div>
                 <div className="flex justify-between border-b border-slate-700 pb-2">
-                  <span className="text-slate-400 text-sm">إجمالي المحيط:</span>
+                  <span className="text-[#71839a] text-sm">إجمالي المحيط:</span>
                   <strong className="text-amber-400 text-lg">
                     {(
                       parseFloat(north.length || 0) +
@@ -290,21 +290,21 @@ export const BoundsTab = ({
               return (
                 <div
                   key={dir}
-                  className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col hover:border-blue-300 transition-all"
+                  className="bg-white border border-[#d8e6ee] rounded-xl shadow-sm overflow-hidden flex flex-col hover:border-blue-300 transition-all"
                 >
-                  <div className="bg-slate-50 border-b border-slate-200 p-3 flex justify-between items-center">
-                    <h4 className="font-black text-slate-800 text-sm flex items-center gap-1.5">
+                  <div className="bg-[#f7fbfd] border-b border-[#d8e6ee] p-3 flex justify-between items-center">
+                    <h4 className="font-black text-[#123B5D] text-sm flex items-center gap-1.5">
                       <Compass className="w-4 h-4 text-blue-500" /> الحد ال{dir}
                     </h4>
                   </div>
                   <div className="p-4 space-y-3 flex-1">
                     <div>
-                      <label className="text-[11px] font-bold text-slate-500 mb-1 block">
+                      <label className="text-[11px] font-bold text-[#71839a] mb-1 block">
                         الطول (متر)
                       </label>
                       <input
                         type="number"
-                        className="w-full border border-slate-300 rounded-lg p-2 text-sm font-bold text-blue-700 outline-none focus:border-blue-500"
+                        className="w-full border border-slate-300 rounded-xl p-2 text-sm font-bold text-[#123B5D] outline-none focus:border-blue-500"
                         value={bound.length}
                         onChange={(e) =>
                           handleUpdateBoundary(
@@ -318,11 +318,11 @@ export const BoundsTab = ({
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-bold text-slate-500 mb-1 block">
+                      <label className="text-[11px] font-bold text-[#71839a] mb-1 block">
                         الوصف / المجاور
                       </label>
                       <textarea
-                        className="w-full border border-slate-300 rounded-lg p-2 text-xs text-slate-700 h-16 resize-none outline-none focus:border-blue-500"
+                        className="w-full border border-slate-300 rounded-xl p-2 text-xs text-[#123B5D] h-16 resize-none outline-none focus:border-blue-500"
                         value={bound.description}
                         onChange={(e) =>
                           handleUpdateBoundary(
@@ -336,9 +336,9 @@ export const BoundsTab = ({
                       />
                     </div>
                   </div>
-                  <div className="p-3 bg-slate-50 border-t border-slate-100">
+                  <div className="p-3 bg-[#f7fbfd] border-t border-[#e7eef2]">
                     {bound.imageUrl ? (
-                      <div className="relative h-20 rounded-lg border border-slate-300 overflow-hidden group">
+                      <div className="relative h-20 rounded-xl border border-slate-300 overflow-hidden group">
                         <img
                           src={bound.imageUrl}
                           alt={dir}
@@ -359,9 +359,9 @@ export const BoundsTab = ({
                         </button>
                       </div>
                     ) : (
-                      <label className="flex flex-col items-center justify-center h-20 border-2 border-dashed border-slate-300 rounded-lg bg-white cursor-pointer hover:bg-blue-50 transition-colors">
-                        <Camera className="w-5 h-5 text-slate-400 mb-1" />
-                        <span className="text-[10px] text-slate-500 font-bold">
+                      <label className="flex flex-col items-center justify-center h-20 border-2 border-dashed border-slate-300 rounded-xl bg-white cursor-pointer hover:bg-blue-50 transition-colors">
+                        <Camera className="w-5 h-5 text-[#71839a] mb-1" />
+                        <span className="text-[10px] text-[#71839a] font-bold">
                           إرفاق صورة للمجاور
                         </span>
                         <input

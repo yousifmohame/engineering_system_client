@@ -231,7 +231,7 @@ const HeirCard = ({
         <div className="w-6 h-6 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center text-xs font-bold">
           {index + 1}
         </div>
-        <span className="text-sm font-bold text-slate-700">بيانات الوريث</span>
+        <span className="text-[12px] font-black text-[#123B5D]">بيانات الوريث</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -825,29 +825,29 @@ const CreateClientWizard = ({ onComplete }) => {
     switch (currentStep) {
       case 1:
         return (
-          <div className="bg-white rounded-xl p-6 mb-6 shadow-sm min-h-[400px]">
+          <div className="bg-white rounded-[24px] p-4 md:p-5 mb-4 shadow-sm border border-[#d8e6ee]">
             {!aiResults && !isAnalyzingId && !previewImage && (
               <>
-                <h3 className="text-xl font-bold mb-2 text-slate-800">
-                  طريقة إنشاء ملف العميل
-                </h3>
-                <p className="text-[13px] text-slate-500 mb-6">
-                  يمكنك رفع وثيقة هوية العميل لاستخراج البيانات تلقائياً بالذكاء
-                  الاصطناعي، أو الإدخال يدوياً
-                </p>
+                <div className="flex items-center justify-between gap-3 mb-4 border-b border-[#e8dcc8] pb-3">
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#123B5D]">طريقة إنشاء ملف العميل</h3>
+                    <p className="text-[11px] text-[#71839a] font-bold mt-1">رفع وثيقة الهوية بالذكاء الاصطناعي أو إدخال البيانات يدوياً</p>
+                  </div>
+                  <UserPlus className="w-6 h-6 text-[#0f6d7c]" />
+                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                   <div
                     onClick={() => setCreationMethod("ai")}
-                    className={`p-7 bg-white border-2 rounded-2xl cursor-pointer transition-all duration-200 text-center relative overflow-hidden shadow-sm hover:shadow-md ${creationMethod === "ai" ? "border-violet-500 ring-4 ring-violet-50 scale-[1.02]" : "border-slate-200 hover:border-violet-200"}`}
+                    className={`p-4 bg-white border rounded-[20px] cursor-pointer transition-all duration-200 flex items-center gap-4 text-right shadow-sm hover:shadow-md ${creationMethod === "ai" ? "border-[#d9b85b] ring-2 ring-[#fbf7ef]" : "border-[#d8e6ee] hover:border-[#d9b85b]"}`}
                   >
-                    <div className="w-[72px] h-[72px] bg-gradient-to-br from-violet-500 to-purple-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/30">
-                      <Upload className="w-8 h-8 text-white" />
+                    <div className="w-14 h-14 bg-[#083646] rounded-[18px] flex items-center justify-center shrink-0 shadow-sm">
+                      <Upload className="w-6 h-6 text-white" />
                     </div>
-                    <div className="text-[17px] font-bold text-slate-800 mb-2">
+                    <div className="text-[14px] font-black text-[#123B5D] mb-1">
                       رفع وثيقة هوية (AI)
                     </div>
-                    <div className="text-xs text-slate-500 leading-relaxed mb-3">
+                    <div className="text-[11px] text-[#71839a] font-bold leading-relaxed">
                       ارفع صورة أو ملف PDF لهوية العميل وسيتم استخراج البيانات
                       تلقائياً
                     </div>
@@ -858,27 +858,27 @@ const CreateClientWizard = ({ onComplete }) => {
                       setAiResults(null);
                       nextStep();
                     }}
-                    className={`p-7 bg-white border-2 rounded-2xl cursor-pointer transition-all duration-200 text-center relative overflow-hidden shadow-sm hover:shadow-md ${creationMethod === "manual" ? "border-emerald-500 ring-4 ring-emerald-50 scale-[1.02]" : "border-slate-200 hover:border-emerald-200"}`}
+                    className={`p-4 bg-white border rounded-[20px] cursor-pointer transition-all duration-200 flex items-center gap-4 text-right shadow-sm hover:shadow-md ${creationMethod === "manual" ? "border-[#d9b85b] ring-2 ring-[#fbf7ef]" : "border-[#d8e6ee] hover:border-[#d9b85b]"}`}
                   >
-                    <div className="w-[72px] h-[72px] bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/30">
-                      <SquarePen className="w-8 h-8 text-white" />
+                    <div className="w-14 h-14 bg-[#0f6d7c] rounded-[18px] flex items-center justify-center shrink-0 shadow-sm">
+                      <SquarePen className="w-6 h-6 text-white" />
                     </div>
-                    <div className="text-[17px] font-bold text-slate-800 mb-2">
+                    <div className="text-[14px] font-black text-[#123B5D] mb-1">
                       إدخال يدوي
                     </div>
-                    <div className="text-xs text-slate-500 leading-relaxed mb-3">
+                    <div className="text-[11px] text-[#71839a] font-bold leading-relaxed">
                       أدخل بيانات العميل يدوياً اختيار النوع ثم تعبئة الحقول
                     </div>
                   </div>
                 </div>
 
                 {creationMethod === "ai" && (
-                  <div className="p-6 bg-violet-50/50 border border-violet-100 rounded-2xl animate-in fade-in zoom-in-95 duration-200">
+                  <div className="p-4 bg-[#f7fbfd] border border-[#d8e6ee] rounded-[20px] animate-in fade-in zoom-in-95 duration-200">
                     <div className="mb-4">
-                      <label className="block text-sm font-bold text-slate-700 mb-3">
+                      <label className="block text-[12px] font-black text-[#123B5D] mb-2">
                         نوع وثيقة الهوية المرفوعة *
                       </label>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                         {[
                           {
                             id: "هوية شخصية",
@@ -931,10 +931,10 @@ const CreateClientWizard = ({ onComplete }) => {
                     </div>
                     <div
                       onClick={() => identityInputRef.current?.click()}
-                      className="border-2 border-dashed border-violet-300 rounded-xl p-8 text-center bg-white cursor-pointer hover:bg-violet-50 transition-colors mt-4"
+                      className="border-2 border-dashed border-[#d9b85b] rounded-[18px] p-5 text-center bg-white cursor-pointer hover:bg-[#fbf7ef] transition-colors mt-3"
                     >
-                      <Upload className="w-10 h-10 text-violet-400 mx-auto mb-3" />
-                      <p className="text-sm font-bold text-slate-700">
+                      <Upload className="w-8 h-8 text-[#0f6d7c] mx-auto mb-2" />
+                      <p className="text-[12px] font-black text-[#123B5D]">
                         انقر هنا لرفع الوثيقة (PDF, JPG, PNG)
                       </p>
                       <input
@@ -1270,7 +1270,7 @@ const CreateClientWizard = ({ onComplete }) => {
 
       case 2:
         return (
-          <div className="bg-white rounded-xl p-6 mb-6 shadow-sm min-h-[400px]">
+          <div className="bg-white rounded-[24px] p-4 md:p-5 mb-4 shadow-sm border border-[#d8e6ee]">
             <h3 className="text-lg font-bold mb-6 text-slate-800">
               اختر نوع العميل
             </h3>
@@ -1386,7 +1386,7 @@ const CreateClientWizard = ({ onComplete }) => {
         const labelNameAr4 = isWaqf ? "عائلة الناظر" : "اسم العائلة *";
 
         return (
-          <div className="bg-white rounded-xl p-6 mb-6 shadow-sm min-h-[400px]">
+          <div className="bg-white rounded-[24px] p-4 md:p-5 mb-4 shadow-sm border border-[#d8e6ee]">
             <h3 className="text-lg font-bold mb-4 text-slate-800">
               {isWaqf
                 ? "بيانات الوقف والناظر"
@@ -1887,7 +1887,7 @@ const CreateClientWizard = ({ onComplete }) => {
 
       case 4:
         return (
-          <div className="bg-white rounded-xl p-6 mb-6 shadow-sm min-h-[400px]">
+          <div className="bg-white rounded-[24px] p-4 md:p-5 mb-4 shadow-sm border border-[#d8e6ee]">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold text-slate-800">
                 العنوان الوطني
@@ -2048,7 +2048,7 @@ const CreateClientWizard = ({ onComplete }) => {
 
       case 5:
         return (
-          <div className="bg-white rounded-xl p-6 mb-6 shadow-sm min-h-[400px]">
+          <div className="bg-white rounded-[24px] p-4 md:p-5 mb-4 shadow-sm border border-[#d8e6ee]">
             <h3 className="text-lg font-bold mb-5 text-slate-800">
               بيانات الاتصال والتواصل
             </h3>
@@ -2577,33 +2577,28 @@ const CreateClientWizard = ({ onComplete }) => {
 
   return (
     <div
-      className="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-8 custom-scrollbar"
+      className="flex-1 overflow-y-auto bg-[#eef5f7] p-3 md:p-4 custom-scrollbar"
       dir="rtl"
     >
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* شريط التقدم (الخطوات) */}
-        <div className="bg-white rounded-xl p-5 mb-6 shadow-sm border border-slate-100 overflow-x-auto custom-scrollbar">
-          <div className="flex items-center justify-between relative min-w-[600px] px-4">
-            <div className="absolute left-10 right-10 top-1/2 -translate-y-1/2 h-1 bg-slate-100 z-0 rounded-full"></div>
-            {WIZARD_STEPS.map((step, index) => {
+        <div className="bg-white rounded-[22px] px-4 py-3 mb-4 shadow-sm border border-[#d8e6ee] overflow-x-auto custom-scrollbar">
+          <div className="flex items-center gap-2 min-w-max">
+            {WIZARD_STEPS.map((step) => {
               const isActive = step.id === currentStep;
               const isCompleted = step.id < currentStep;
               return (
-                <div
+                <button
                   key={step.id}
-                  className="relative z-10 flex flex-col items-center group"
+                  type="button"
+                  onClick={() => setCurrentStep(step.id)}
+                  className={`h-9 px-3 rounded-xl flex items-center gap-2 border transition-all whitespace-nowrap ${isActive ? "bg-[#083646] text-white border-[#d9b85b] shadow-sm" : isCompleted ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-[#f7fbfd] text-[#71839a] border-[#d8e6ee]"}`}
                 >
-                  <div
-                    className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-xs md:text-sm font-bold shadow-sm transition-colors duration-300 ${isActive ? "bg-violet-600 text-white ring-4 ring-violet-100" : isCompleted ? "bg-emerald-500 text-white border border-emerald-600" : "bg-white border-2 border-slate-200 text-slate-400"}`}
-                  >
-                    {isCompleted ? <Check className="w-4 h-4" /> : step.id}
-                  </div>
-                  <span
-                    className={`text-[9px] md:text-[10px] mt-2 font-bold absolute -bottom-6 whitespace-nowrap transition-colors duration-300 ${isActive ? "text-violet-700" : "text-slate-500"}`}
-                  >
-                    {step.label}
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black ${isActive ? "bg-white/15 text-white" : isCompleted ? "bg-emerald-100 text-emerald-700" : "bg-white text-[#71839a]"}`}>
+                    {isCompleted ? <Check className="w-3 h-3" /> : step.id}
                   </span>
-                </div>
+                  <span className="text-[11px] font-black">{step.label}</span>
+                </button>
               );
             })}
           </div>
@@ -2612,10 +2607,10 @@ const CreateClientWizard = ({ onComplete }) => {
         {renderStepContent()}
 
         {/* أزرار التنقل السفلية */}
-        <div className="bg-white rounded-xl p-4 shadow-sm flex justify-between items-center border border-slate-100 sticky bottom-4 z-20">
+        <div className="bg-white rounded-[20px] px-4 py-3 shadow-sm flex justify-between items-center border border-[#d8e6ee] sticky bottom-3 z-20">
           <button
             onClick={prevStep}
-            className={`px-6 py-2.5 bg-slate-100 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-200 transition-colors ${currentStep === 1 ? "invisible" : ""}`}
+            className={`h-10 px-5 bg-[#f7fbfd] text-[#123B5D] border border-[#d8e6ee] rounded-xl text-[12px] font-black hover:bg-[#eef5f7] transition-colors ${currentStep === 1 ? "invisible" : ""}`}
           >
             السابق
           </button>
@@ -2625,7 +2620,7 @@ const CreateClientWizard = ({ onComplete }) => {
             <button
               onClick={handleFinalSave}
               disabled={saveMutation.isPending}
-              className="px-8 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold shadow-md shadow-emerald-200 hover:bg-emerald-700 flex items-center gap-2 transition-colors disabled:opacity-70"
+              className="h-10 px-6 bg-[#083646] text-white rounded-xl text-[12px] font-black shadow-sm hover:bg-[#0f6d7c] flex items-center gap-2 transition-colors disabled:opacity-70"
             >
               {saveMutation.isPending ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -2637,7 +2632,7 @@ const CreateClientWizard = ({ onComplete }) => {
           ) : (
             <button
               onClick={nextStep}
-              className="px-8 py-2.5 bg-violet-600 text-white rounded-lg text-sm font-bold shadow-md shadow-violet-200 hover:bg-violet-700 active:scale-95 transition-all"
+              className="h-10 px-6 bg-[#083646] text-white rounded-xl text-[12px] font-black shadow-sm hover:bg-[#0f6d7c] active:scale-95 transition-all"
             >
               التالي
             </button>

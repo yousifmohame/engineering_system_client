@@ -1,5 +1,6 @@
 import React from "react";
-import { FileSearch } from "lucide-react";
+import { FileSearch, Loader2 } from "lucide-react";
+
 const IconWithText = ({
   icon: Icon,
   text,
@@ -54,12 +55,13 @@ export const Step1BasicInfo = ({ props }) => {
     setLicenseYear,
     serviceYearsList,
     licenseYearsList,
+    officeServices, // 👈 استقبال قائمة الخدمات
+    servicesLoading, // 👈 استقبال حالة التحميل
   } = props;
 
   return (
     <div className="animate-in fade-in duration-300">
       
-
       <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 mb-3 shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <div>
@@ -128,23 +130,41 @@ export const Step1BasicInfo = ({ props }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
           <div>
             <label className="block text-[11px] font-bold text-[#475569] mb-1">
-              نوع المعاملة
+              نوع الخدمة / المعاملة
             </label>
-            <select
-              value={transactionType}
-              onChange={(e) => setTransactionType(e.target.value)}
-              className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-[#c5983c]/70 bg-white"
-            >
-              <option value="">— اختر المعاملة —</option>
-              <option value="إفراغ عقاري">إفراغ عقاري</option>
-              <option value="رهن عقاري">رهن عقاري</option>
-              <option value="تصحيح وضع مبنى قائم">تصحيح وضع مبنى قائم</option>
-            </select>
+            <div className="relative">
+              <select
+                value={transactionType}
+                onChange={(e) => setTransactionType(e.target.value)}
+                disabled={servicesLoading}
+                className="w-full p-2 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-[#c5983c]/70 bg-white disabled:opacity-50 appearance-none"
+              >
+                <option value="">— اختر الخدمة —</option>
+                {/* 👈 جلب الخدمات بشكل ديناميكي من قاعدة البيانات */}
+                {officeServices && officeServices.length > 0 ? (
+                  officeServices.map((srv) => (
+                    <option key={srv.id || srv.code} value={srv.name}>
+                      {srv.name}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    {/* خيارات احتياطية في حال لم تكن هناك خدمات مسجلة بعد */}
+                    <option value="إفراغ عقاري">إفراغ عقاري</option>
+                    <option value="رهن عقاري">رهن عقاري</option>
+                    <option value="تصحيح وضع مبنى قائم">تصحيح وضع مبنى قائم</option>
+                  </>
+                )}
+              </select>
+              {servicesLoading && (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-600 absolute left-3 top-2.5" />
+              )}
+            </div>
           </div>
 
           <div>
             <label className="block text-[11px] font-bold text-[#475569] mb-1">
-              رقم الخدمة
+              رقم الطلب / الخدمة
             </label>
             <input
               type="text"
@@ -176,7 +196,7 @@ export const Step1BasicInfo = ({ props }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-[11px] font-bold text-[#475569] mb-1">
-              رقم الرخصة
+              رقم الرخصة (إن وُجد)
             </label>
             <input
               type="text"

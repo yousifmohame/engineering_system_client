@@ -148,57 +148,61 @@ const ClientsRatingsPanel = () => {
       {/* ==========================================
           Header & Stats
       ========================================== */}
-      <div className="text-lg font-bold mb-5 text-slate-800 flex items-center gap-2">
-        <Star className="w-5 h-5 text-amber-500" /> تقييمات وتصنيفات العملاء
+      <div className="mb-3 flex items-center justify-between gap-3 rounded-[20px] bg-gradient-to-l from-[#071927] via-[#0b2f3f] to-[#147785] px-4 py-3 shadow-sm border border-[#d9b85b]/25">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-[14px] bg-[#d9b85b] text-[#083646] flex items-center justify-center shrink-0">
+            <Star className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-[15px] font-black text-white leading-tight">تقييمات وتصنيفات العملاء</h3>
+            <p className="text-[10px] font-bold text-white/75 mt-0.5">متابعة درجات العملاء ومستوى المخاطرة</p>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-sm text-center">
-          <div className="text-3xl font-bold text-green-700">
-            {stats.gradeA}
-          </div>
-          <div className="text-xs text-slate-500 mt-1">تقييم A — ممتاز</div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3">
+        <div className="p-3 bg-white rounded-[18px] border border-[#d8e6ee] shadow-sm text-center">
+          <div className="text-xl font-black text-green-700 leading-none">{stats.gradeA}</div>
+          <div className="text-[11px] font-bold text-slate-500 mt-1.5">A — ممتاز</div>
         </div>
-        <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-sm text-center">
-          <div className="text-3xl font-bold text-blue-600">{stats.gradeB}</div>
-          <div className="text-xs text-slate-500 mt-1">تقييم B — جيد</div>
+        <div className="p-3 bg-white rounded-[18px] border border-[#d8e6ee] shadow-sm text-center">
+          <div className="text-xl font-black text-blue-600 leading-none">{stats.gradeB}</div>
+          <div className="text-[11px] font-bold text-slate-500 mt-1.5">B — جيد</div>
         </div>
-        <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-sm text-center">
-          <div className="text-3xl font-bold text-amber-600">
-            {stats.gradeC}
-          </div>
-          <div className="text-xs text-slate-500 mt-1">تقييم C — مقبول</div>
+        <div className="p-3 bg-white rounded-[18px] border border-[#d8e6ee] shadow-sm text-center">
+          <div className="text-xl font-black text-amber-600 leading-none">{stats.gradeC}</div>
+          <div className="text-[11px] font-bold text-slate-500 mt-1.5">C — مقبول</div>
         </div>
-        <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-sm text-center">
-          <div className="text-3xl font-bold text-red-600">{stats.gradeD}</div>
-          <div className="text-xs text-slate-500 mt-1">تقييم D — متعثر</div>
+        <div className="p-3 bg-white rounded-[18px] border border-[#d8e6ee] shadow-sm text-center">
+          <div className="text-xl font-black text-red-600 leading-none">{stats.gradeD}</div>
+          <div className="text-[11px] font-bold text-slate-500 mt-1.5">D — متعثر</div>
         </div>
       </div>
 
       {/* ==========================================
           Data Table
       ========================================== */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-[20px] border border-[#d8e6ee] shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-right border-collapse min-w-[800px]">
-            <thead className="bg-slate-50">
+            <thead className="bg-[#083646] text-white">
               <tr>
-                <th className="p-4 text-xs text-slate-500 font-bold border-b-2 border-slate-200">
+                <th className="p-2.5 text-[11px] text-white font-black border-b border-[#0f6d7c]">
                   العميل
                 </th>
-                <th className="p-4 text-xs text-slate-500 font-bold border-b-2 border-slate-200">
+                <th className="p-2.5 text-[11px] text-white font-black border-b border-[#0f6d7c]">
                   التقييم
                 </th>
-                <th className="p-4 text-xs text-slate-500 font-bold border-b-2 border-slate-200">
+                <th className="p-2.5 text-[11px] text-white font-black border-b border-[#0f6d7c]">
                   الأهمية
                 </th>
-                <th className="p-4 text-xs text-slate-500 font-bold border-b-2 border-slate-200">
+                <th className="p-2.5 text-[11px] text-white font-black border-b border-[#0f6d7c]">
                   مؤشر الالتزام (100)
                 </th>
-                <th className="p-4 text-xs text-slate-500 font-bold border-b-2 border-slate-200">
+                <th className="p-2.5 text-[11px] text-white font-black border-b border-[#0f6d7c]">
                   مستوى المخاطرة
                 </th>
-                <th className="p-4 text-xs text-slate-500 font-bold border-b-2 border-slate-200 text-center">
+                <th className="p-2.5 text-[11px] text-white font-black border-b border-[#0f6d7c] text-center">
                   إجراء
                 </th>
               </tr>
@@ -210,9 +214,9 @@ const ClientsRatingsPanel = () => {
                 return (
                   <tr
                     key={client.id}
-                    className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                    className="border-b border-[#e7eef2] hover:bg-[#f7fbfd] transition-colors"
                   >
-                    <td className="p-4">
+                    <td className="p-2.5">
                       <div className="font-bold text-sm text-slate-800">
                         {name}
                       </div>
@@ -220,7 +224,7 @@ const ClientsRatingsPanel = () => {
                         {client.clientCode}
                       </div>
                     </td>
-                    <td className="p-4">{getGradeFullText(client.grade)}</td>
+                    <td className="p-2.5">{getGradeFullText(client.grade)}</td>
                     <td className="p-4 text-xs font-bold text-blue-600">
                       {client.category || "عادي"}
                     </td>
@@ -230,8 +234,8 @@ const ClientsRatingsPanel = () => {
                         / 100
                       </span>
                     </td>
-                    <td className="p-4">{getRiskBadge(client.riskTier)}</td>
-                    <td className="p-4 text-center">
+                    <td className="p-2.5">{getRiskBadge(client.riskTier)}</td>
+                    <td className="p-2.5 text-center">
                       <button
                         onClick={() => handleEditClick(client)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-colors"
@@ -259,14 +263,14 @@ const ClientsRatingsPanel = () => {
       ========================================== */}
       {editingClient && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-[24px] shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-[#d8e6ee]">
             {/* Modal Header */}
-            <div className="flex justify-between items-center p-4 bg-slate-50 border-b border-slate-200">
+            <div className="flex justify-between items-center p-3.5 bg-[#083646] border-b border-[#d8e6ee]">
               <div>
-                <h3 className="font-bold text-slate-800 text-sm">
+                <h3 className="font-black text-white text-sm">
                   تعديل تصنيف العميل
                 </h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-[11px] text-white/70 mt-0.5">
                   {editingClient.name?.ar || editingClient.name?.firstName} (
                   {editingClient.clientCode})
                 </p>
@@ -280,7 +284,7 @@ const ClientsRatingsPanel = () => {
             </div>
 
             {/* Modal Body */}
-            <div className="p-5 space-y-4">
+            <div className="p-4 space-y-3">
               {/* التقييم */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
@@ -291,7 +295,7 @@ const ClientsRatingsPanel = () => {
                   onChange={(e) =>
                     setEditForm({ ...editForm, grade: e.target.value })
                   }
-                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500"
+                  className="w-full h-10 px-3 border border-[#d8e6ee] rounded-xl text-[13px] outline-none focus:border-[#0f6d7c] bg-[#f7fbfd]"
                 >
                   <option value="أ">A — ممتاز</option>
                   <option value="ب">B — جيد</option>
@@ -310,7 +314,7 @@ const ClientsRatingsPanel = () => {
                   onChange={(e) =>
                     setEditForm({ ...editForm, category: e.target.value })
                   }
-                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500"
+                  className="w-full h-10 px-3 border border-[#d8e6ee] rounded-xl text-[13px] outline-none focus:border-[#0f6d7c] bg-[#f7fbfd]"
                 >
                   <option value="VIP">VIP - كبار العملاء</option>
                   <option value="مهم">مهم</option>
@@ -328,7 +332,7 @@ const ClientsRatingsPanel = () => {
                   onChange={(e) =>
                     setEditForm({ ...editForm, riskTier: e.target.value })
                   }
-                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500"
+                  className="w-full h-10 px-3 border border-[#d8e6ee] rounded-xl text-[13px] outline-none focus:border-[#0f6d7c] bg-[#f7fbfd]"
                 >
                   <option value="LOW">منخفض (آمن)</option>
                   <option value="MEDIUM">متوسط</option>
@@ -349,7 +353,7 @@ const ClientsRatingsPanel = () => {
                   onChange={(e) =>
                     setEditForm({ ...editForm, secretRating: e.target.value })
                   }
-                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500 text-left font-mono"
+                  className="w-full h-10 px-3 border border-[#d8e6ee] rounded-xl text-[13px] outline-none focus:border-[#0f6d7c] text-left font-mono bg-[#f7fbfd]"
                   dir="ltr"
                 />
                 <p className="text-[10px] text-slate-500 mt-1">
@@ -360,11 +364,11 @@ const ClientsRatingsPanel = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex gap-3">
+            <div className="p-3.5 bg-[#f7fbfd] border-t border-[#d8e6ee] flex gap-3">
               <button
                 onClick={handleSave}
                 disabled={updateMutation.isPending}
-                className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-bold shadow hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+                className="flex-1 bg-[#083646] text-white py-2.5 rounded-xl text-[13px] font-black shadow hover:bg-[#0f6d7c] transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
               >
                 {updateMutation.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -375,7 +379,7 @@ const ClientsRatingsPanel = () => {
               </button>
               <button
                 onClick={() => setEditingClient(null)}
-                className="px-5 bg-white border border-slate-300 text-slate-700 py-2.5 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50 transition-colors"
+                className="px-5 bg-white border border-[#d8e6ee] text-[#123B5D] py-2.5 rounded-xl text-[13px] font-black shadow-sm hover:bg-slate-50 transition-colors"
               >
                 إلغاء
               </button>

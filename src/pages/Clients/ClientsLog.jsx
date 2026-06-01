@@ -634,16 +634,16 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
         </div>
 
         {/* 2. شريط الفلترة المدمج */}
-        <div className="bg-white rounded-lg p-1 shadow-sm border border-slate-200 shrink-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative flex-1 min-w-[150px] max-w-[250px]">
+        <div className="clients-log-filters shrink-0 py-1.5 px-2 bg-white border border-[#d8e6ee] rounded-[18px] shadow-sm mb-2">
+          <div className="flex items-center gap-2 flex-nowrap min-h-[42px]">
+            <div className="relative flex-1 min-w-[260px] max-w-none">
               <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <input
                 type="text"
                 placeholder="بحث سريع (كود/اسم/جوال)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-2 pr-7 py-1.5 border border-slate-300 rounded-md text-xs font-medium outline-none focus:border-blue-500 bg-slate-50 focus:bg-white"
+                className="w-full h-9 pl-3 pr-9 border border-[#d8e6ee] rounded-[14px] text-[12px] font-bold outline-none focus:border-[#0f6d7c] bg-[#f7fbfd] focus:bg-white"
               />
             </div>
 
@@ -652,24 +652,25 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
               onChange={(e) =>
                 setFilters({ ...filters, status: e.target.value })
               }
-              className="py-1.5 px-2 border border-slate-300 rounded-md text-xs font-bold text-slate-700 outline-none focus:border-blue-500 bg-slate-50"
+              className="h-9 px-3 border border-[#d8e6ee] rounded-[14px] text-[12px] font-bold text-[#123B5D] outline-none focus:border-[#0f6d7c] bg-[#f7fbfd] min-w-[130px]"
             >
               <option value="all">كل الحالات</option>
               <option value="active">النشطين فقط</option>
               <option value="inactive">المجمدين فقط</option>
             </select>
 
-            <div className="flex-1 flex justify-end gap-2">
+            <div className="flex justify-end gap-2 shrink-0">
               <button
                 onClick={clearFilters}
-                className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-md transition-colors"
+                className="h-9 px-3 bg-[#eef5f7] text-[#123B5D] hover:bg-[#e4eef3] border border-[#d8e6ee] rounded-[14px] transition-colors inline-flex items-center gap-1.5 text-[12px] font-black"
                 title="مسح الفلاتر"
               >
                 <FilterX className="w-4 h-4" />
+                <span>مسح الفلاتر</span>
               </button>
               <button
                 onClick={() => refetch()}
-                className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-xs font-bold cursor-pointer inline-flex items-center gap-1.5 shadow-sm hover:bg-blue-700 transition-all active:scale-95"
+                className="h-9 px-3 bg-[#083646] text-white rounded-[14px] text-[12px] font-black cursor-pointer inline-flex items-center gap-1.5 shadow-sm hover:bg-[#0f6d7c] transition-all active:scale-95"
               >
                 <RefreshCw
                   className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`}
@@ -681,7 +682,7 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
         </div>
 
         {/* 3. الجدول الرئيسي (متكيف ومكثف مع جميع الأعمدة) */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 flex flex-col flex-1 overflow-hidden w-full">
+        <div className="clients-log-table flex flex-col flex-1 overflow-hidden w-full">
           <div
             className="flex-1 overflow-auto custom-scrollbar relative"
             onScroll={handleScroll}
@@ -807,7 +808,7 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                           </span>
                         </td>
                         <td className="p-1.5 px-2 text-[11px] font-bold border-l border-slate-200 group-hover:text-blue-700 transition-colors">
-                          <div className="flex items-center gap-1.5 truncate max-w-[180px]">
+                          <div className="client-name-cell flex items-center gap-1.5 truncate">
                             {isFrozen && (
                               <Ban className="w-3.5 h-3.5 text-red-500 shrink-0" />
                             )}
@@ -935,7 +936,7 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                         </td>
 
                         <td className="p-1.5 px-2">
-                          <div className="flex gap-1.5 justify-center opacity-30 group-hover:opacity-100 transition-opacity">
+                          <div className="client-row-actions">
                             <AccessControl
                               code="CLIENT_ACTION_TOGGLE_STATUS"
                               name="تجميد/تنشيط"
@@ -944,12 +945,19 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                             >
                               <button
                                 onClick={(e) => handleToggleStatus(e, client)}
-                                className={`p-1 rounded transition-colors ${isFrozen ? "bg-amber-100 text-amber-600 hover:bg-amber-600 hover:text-white" : "bg-slate-200 text-slate-600 hover:bg-amber-500 hover:text-white"}`}
+                                className={`px-2 py-1 rounded-lg transition-colors inline-flex items-center gap-1 text-[10px] font-black ${isFrozen ? "bg-amber-100 text-amber-600 hover:bg-amber-600 hover:text-white" : "bg-slate-200 text-slate-600 hover:bg-amber-500 hover:text-white"}` }
+                                title={isFrozen ? "تنشيط" : "تجميد"}
                               >
                                 {isFrozen ? (
-                                  <ToggleRight className="w-3.5 h-3.5" />
+                                  <>
+                                    <ToggleRight className="w-3.5 h-3.5" />
+                                    <span>تنشيط</span>
+                                  </>
                                 ) : (
-                                  <ToggleLeft className="w-3.5 h-3.5" />
+                                  <>
+                                    <ToggleLeft className="w-3.5 h-3.5" />
+                                    <span>تجميد</span>
+                                  </>
                                 )}
                               </button>
                             </AccessControl>
@@ -965,9 +973,11 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                                   if (onOpenDetails)
                                     onOpenDetails(client.id, client.clientCode);
                                 }}
-                                className="p-1 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition-colors"
+                                className="px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-colors inline-flex items-center gap-1 text-[10px] font-black"
+                                title="عرض الملف"
                               >
                                 <Eye className="w-3.5 h-3.5" />
+                                <span>عرض</span>
                               </button>
                             </AccessControl>
                             <AccessControl
@@ -983,9 +993,11 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                                     client.mobile || client.contact?.mobile,
                                   );
                                 }}
-                                className="p-1 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded transition-colors"
+                                className="px-2 py-1 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-lg transition-colors inline-flex items-center gap-1 text-[10px] font-black"
+                                title="واتساب"
                               >
                                 <MessageCircle className="w-3.5 h-3.5" />
+                                <span>واتساب</span>
                               </button>
                             </AccessControl>
                             <AccessControl
@@ -997,9 +1009,10 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                               <button
                                 onClick={(e) => handleDelete(e, client.id)}
                                 title="حذف نهائي"
-                                className="p-1 bg-red-50 text-red-500 hover:bg-red-600 hover:text-white rounded transition-colors"
+                                className="px-2 py-1 bg-red-50 text-red-500 hover:bg-red-600 hover:text-white rounded-lg transition-colors inline-flex items-center gap-1 text-[10px] font-black"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
+                                <span>حذف</span>
                               </button>
                             </AccessControl>
                           </div>

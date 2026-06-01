@@ -19,7 +19,8 @@ import {
   History,
   Archive,
   Loader2,
-  Lock // 👈 إضافة أيقونة القفل للحقول المخفية
+  Lock, // 👈 إضافة أيقونة القفل للحقول المخفية
+  ArrowLeft
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -186,129 +187,143 @@ const ClientsDashboard = ({ onNavigate }) => {
     return tool;
   });
 
+  const cardAccents = [
+    "from-purple-500 to-indigo-500",
+    "from-sky-500 to-cyan-500",
+    "from-teal-500 to-emerald-500",
+    "from-emerald-500 to-green-500",
+    "from-indigo-500 to-blue-500",
+    "from-orange-500 to-amber-500",
+    "from-fuchsia-500 to-purple-500",
+    "from-amber-500 to-yellow-500",
+    "from-rose-500 to-red-500",
+    "from-blue-500 to-indigo-500",
+    "from-cyan-500 to-teal-500",
+    "from-slate-500 to-slate-700",
+  ];
+
+  const iconSoftClasses = [
+    "bg-purple-50 text-purple-600 border-purple-100",
+    "bg-cyan-50 text-cyan-600 border-cyan-100",
+    "bg-emerald-50 text-emerald-600 border-emerald-100",
+    "bg-green-50 text-green-600 border-green-100",
+    "bg-blue-50 text-blue-600 border-blue-100",
+    "bg-orange-50 text-orange-600 border-orange-100",
+    "bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100",
+    "bg-amber-50 text-amber-600 border-amber-100",
+    "bg-rose-50 text-rose-600 border-rose-100",
+    "bg-indigo-50 text-indigo-600 border-indigo-100",
+    "bg-teal-50 text-teal-600 border-teal-100",
+    "bg-slate-50 text-slate-600 border-slate-200",
+  ];
+
   return (
-    <div className="flex flex-col h-full bg-slate-50" dir="rtl">
-      {/* المنطقة العلوية الثابتة (Header) */}
-      <div className="sticky top-0 z-20 bg-white border-b border-slate-200 shadow-sm">
-        <div className="px-6 py-5 flex flex-wrap lg:flex-nowrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
-              <Users className="w-6 h-6 text-blue-500" />
-            </div>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-xl font-black text-slate-800 m-0">
-                  ملفات العملاء
-                </h1>
-                <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[11px] font-bold">
-                  066
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 mt-1 font-medium">
-                إدارة ملفات العملاء وربطها ثنائيًا بالمعاملات والمستندات
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-5">
-            {/* الإحصائيات السريعة من السيرفر */}
-            <div className="flex gap-2">
-              <div className="text-center px-4 py-1.5 bg-slate-50 rounded-lg border border-slate-200 min-w-[80px]">
-                <div className="text-lg font-black text-blue-600 leading-none mb-1">
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 mx-auto animate-spin" />
-                  ) : (
-                    stats.totalClients
-                  )}
-                </div>
-                <div className="text-[10px] font-bold text-slate-500">
-                  إجمالي العملاء
-                </div>
-              </div>
-              
-              {/* 👈 3. حماية إحصائية المتعثرين (بيانات حساسة) */}
-              <AccessControl 
-                code="CLIENT_DASH_STAT_DEFAULTERS" 
-                name="إحصائية المتعثرين مالياً" 
-                moduleName="لوحة تحكم العملاء" 
-                tabName="الشريط العلوي"
-                fallback={<div className="text-center px-4 py-1.5 bg-slate-100 rounded-lg border border-slate-200 flex flex-col justify-center items-center opacity-70 min-w-[80px]"><Lock className="w-4 h-4 mb-1 text-slate-400"/><span className="text-[10px] font-bold text-slate-400">محمية</span></div>}
+    <div className="flex flex-col h-full bg-[#eef5f7]" dir="rtl">
+      {/* Header redesigned like Archives & Records */}
+      <div className="sticky top-0 z-20 px-4 pt-3 pb-2 bg-[#eef5f7] border-b border-[#d8e6ee]">
+        <div className="rounded-[24px] bg-gradient-to-l from-[#071927] via-[#0b2f3f] to-[#147785] border border-[#d9b85b]/25 shadow-[0_12px_24px_rgba(8,54,70,0.14)] px-4 md:px-5 py-2.5">
+          <div className="flex items-center justify-between gap-4" dir="ltr">
+            <div className="flex items-center gap-2.5 shrink-0" dir="rtl">
+              <button
+                onClick={() => onNavigate && onNavigate("300-MAIN")}
+                className="h-10 min-w-[240px] px-3 rounded-[17px] bg-white text-[#123B5D] border border-white/40 shadow-sm font-black text-[12px] flex items-center gap-2 hover:bg-[#f8fbfd]"
               >
-                <div className="text-center px-4 py-1.5 bg-amber-50 rounded-lg border border-amber-200 min-w-[80px]">
-                  <div className="text-lg font-black text-amber-600 leading-none mb-1">
-                    {isLoading ? (
-                      <Loader2 className="w-4 h-4 mx-auto animate-spin" />
-                    ) : (
-                      stats.defaulters
-                    )}
-                  </div>
-                  <div className="text-[10px] font-bold text-amber-700">
-                    متعثرين مالياً
-                  </div>
-                </div>
-              </AccessControl>
-
-              <div className="text-center px-4 py-1.5 bg-red-50 rounded-lg border border-red-200 min-w-[80px]">
-                <div className="text-lg font-black text-red-600 leading-none mb-1">
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 mx-auto animate-spin" />
-                  ) : (
-                    stats.missingDocs
-                  )}
-                </div>
-                <div className="text-[10px] font-bold text-red-700">
-                  وثائق ناقصة
-                </div>
-              </div>
-            </div>
-
-            <div className="h-8 w-px bg-slate-200 hidden md:block"></div>
-
-            {/* الأزرار والإجراءات */}
-            <div className="flex items-center gap-2">
-              {/* 👈 4. حماية زر الإضافة السريعة */}
-              <AccessControl 
-                code="CLIENT_DASH_BTN_ADD" 
-                name="زر إضافة عميل جديد سريع" 
-                moduleName="لوحة تحكم العملاء" 
-                tabName="الشريط العلوي"
-              >
-                <button
-                  onClick={() => onNavigate && onNavigate("NEW_CLIENT_TAB")}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-95"
-                >
-                  <Plus className="w-4 h-4" /> إضافة عميل جديد
-                </button>
-              </AccessControl>
-
-              <button className="p-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-600 transition-colors shadow-sm">
-                <Search className="w-4 h-4" />
+                <Search className="w-4.5 h-4.5 text-[#123B5D]" />
+                <span className="text-[12px] font-black">بحث</span>
+                <span className="text-[12px] font-bold text-[#8aa0b4] truncate">داخل ملفات العملاء...</span>
               </button>
               <button
                 onClick={() => refetch()}
                 disabled={isFetching}
-                className="p-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-600 transition-colors shadow-sm disabled:opacity-50"
+                className="h-10 px-3.5 rounded-[17px] bg-white/12 text-white border border-white/20 shadow-sm font-black text-[12px] flex items-center gap-2 hover:bg-white/18 disabled:opacity-50"
               >
-                <RefreshCw
-                  className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`}
-                />
+                <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
+                <span>تحديث</span>
               </button>
+              <AccessControl
+                code="CLIENT_DASH_BTN_ADD"
+                name="زر إضافة عميل جديد سريع"
+                moduleName="لوحة تحكم العملاء"
+                tabName="الشريط العلوي"
+              >
+                <button
+                  onClick={() => onNavigate && onNavigate("NEW_CLIENT_TAB")}
+                  className="h-10 px-4 rounded-[17px] bg-[#d9b85b] text-[#083646] border border-[#f0d98d] shadow-sm font-black text-[12px] flex items-center gap-2 hover:bg-[#e6c86c] active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>عميل جديد</span>
+                </button>
+              </AccessControl>
+            </div>
+
+            <div className="flex items-center gap-3 min-w-0 text-right" dir="rtl">
+              <div className="w-11 h-11 rounded-xl bg-[#d9b85b] text-[#083646] flex items-center justify-center shadow-md shrink-0">
+                <Users className="w-5 h-5" />
+              </div>
+              <div className="min-w-0" style={{ fontFamily: "Tajawal, sans-serif" }}>
+                <h1 className="text-[16px] font-bold leading-tight whitespace-nowrap m-0 text-white">ملفات العملاء</h1>
+                <p className="text-[10px] font-semibold text-white/75 mt-0.5 whitespace-nowrap">
+                  مركز ذكي لإدارة ملفات العملاء وربطها بالمعاملات والمستندات
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* منطقة المحتوى (الشبكة) */}
-      <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-50/50 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-4 md:p-5 bg-[#eef5f7] custom-scrollbar">
         <div className="max-w-[1600px] mx-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-black text-slate-800 m-0 flex items-center gap-2">
-              <Grid3x3 className="w-5 h-5 text-slate-400" />
-              أدوات إدارة العملاء
-            </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <div className="bg-white rounded-[20px] border border-[#d8e6ee] shadow-sm p-3 flex items-center justify-between">
+              <div className="text-right">
+                <div className="text-[11px] font-bold text-[#71839a]">إجمالي العملاء</div>
+                <div className="text-[22px] font-black text-[#123B5D] leading-none mt-1">
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : stats.totalClients}
+                </div>
+              </div>
+              <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center">
+                <Users className="w-5 h-5" />
+              </div>
+            </div>
+            <AccessControl
+              code="CLIENT_DASH_STAT_DEFAULTERS"
+              name="إحصائية المتعثرين مالياً"
+              moduleName="لوحة تحكم العملاء"
+              tabName="المؤشرات"
+              fallback={
+                <div className="bg-white rounded-[20px] border border-[#d8e6ee] shadow-sm p-3 flex items-center justify-between opacity-70">
+                  <div className="text-[11px] font-bold text-[#71839a]">مؤشر محمي</div>
+                  <Lock className="w-5 h-5 text-[#8aa0b4]" />
+                </div>
+              }
+            >
+              <div className="bg-white rounded-[20px] border border-[#ecd8a6] shadow-sm p-3 flex items-center justify-between">
+                <div className="text-right">
+                  <div className="text-[11px] font-bold text-[#8a5a16]">متعثرين مالياً</div>
+                  <div className="text-[22px] font-black text-[#b7791f] leading-none mt-1">
+                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : stats.defaulters}
+                  </div>
+                </div>
+                <div className="w-11 h-11 rounded-2xl bg-[#fff8e8] text-[#b7791f] border border-[#ecd8a6] flex items-center justify-center">
+                  <BarChart3 className="w-5 h-5" />
+                </div>
+              </div>
+            </AccessControl>
+            <div className="bg-white rounded-[20px] border border-[#fecdd3] shadow-sm p-3 flex items-center justify-between">
+              <div className="text-right">
+                <div className="text-[11px] font-bold text-[#9f1239]">وثائق ناقصة</div>
+                <div className="text-[22px] font-black text-[#be123c] leading-none mt-1">
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : stats.missingDocs}
+                </div>
+              </div>
+              <div className="w-11 h-11 rounded-2xl bg-[#fff1f2] text-[#be123c] border border-[#fecdd3] flex items-center justify-center">
+                <FileText className="w-5 h-5" />
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-5">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(235px,1fr))] gap-4">
             {toolsWithStats.map((tool, idx) => (
               /* 👈 5. تغليف كل أداة في الشبكة بمكون AccessControl */
               <AccessControl 
@@ -330,24 +345,32 @@ const ClientsDashboard = ({ onNavigate }) => {
                         position: "top-center",
                       });
                   }}
-                  className="p-6 bg-white rounded-2xl border border-slate-200 hover:border-blue-400 cursor-pointer transition-all duration-300 relative shadow-sm hover:shadow-lg hover:-translate-y-1 group flex flex-col items-center text-center w-full"
+                  className="group relative overflow-hidden rounded-[24px] bg-white border border-[#e8dcc8] shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all text-right min-h-[132px] cursor-pointer"
                 >
+                  <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-l ${cardAccents[idx % cardAccents.length]}`} />
                   {tool.badge > 0 && (
                     <div className="absolute top-3 left-3 min-w-[24px] h-6 px-1.5 bg-red-500 text-white rounded-full flex items-center justify-center text-[11px] font-bold shadow-sm z-10">
                       {tool.badge}
                     </div>
                   )}
-                  <div
-                    className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 ${tool.bg} ${tool.color}`}
-                  >
-                    <tool.icon className="w-8 h-8" />
+                  <div className="p-4 flex flex-col h-full justify-between gap-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className={`w-11 h-11 rounded-2xl border flex items-center justify-center ${iconSoftClasses[idx % iconSoftClasses.length]} shadow-sm`}>
+                        <tool.icon className="w-5 h-5" strokeWidth={2.4} />
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 group-hover:bg-[#0f3d50] group-hover:text-white flex items-center justify-center transition-all">
+                        <ArrowLeft className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-[15px] font-black text-[#123B5D] leading-tight mb-1 group-hover:text-[#0f6d7c] transition-colors">
+                        {tool.title}
+                      </h3>
+                      <p className="text-[10px] font-bold text-[#71839a] leading-tight">
+                        {tool.permName || "أداة ضمن مركز ملفات العملاء"}
+                      </p>
+                    </div>
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 mb-1 group-hover:text-blue-600 transition-colors">
-                    {tool.title}
-                  </h3>
-                  <p className="text-[10px] text-slate-400 font-mono font-bold">
-                    {tool.id}
-                  </p>
                 </div>
               </AccessControl>
             ))}

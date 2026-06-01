@@ -107,12 +107,12 @@ const AddDeedModal = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-lg w-full max-w-2xl shadow-2xl overflow-hidden scale-100 animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden scale-100 animate-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-green-800 text-white p-4 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-[#0b2f3f] to-[#071927] text-white p-4 flex items-center justify-between">
           <h3 className="text-lg font-bold">إنشاء ملف ملكية (صك) جديد</h3>
-          <button onClick={handleClose} className="p-1 hover:bg-white/20 rounded transition-colors">
+          <button onClick={handleClose} className="p-1 hover:bg-white/20 rounded transition-colors" title="إغلاق">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -121,16 +121,16 @@ const AddDeedModal = ({ isOpen, onClose }) => {
         <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
           
           {/* رسالة النظام */}
-          <div className="bg-blue-50 border border-blue-300 rounded-lg p-3">
-            <p className="text-xs font-bold text-blue-900">كود النظام التلقائي: PRO-800-XXX</p>
-            <p className="text-[10px] text-blue-700 mt-1">سيتم توليد الكود الخاص بالملكية تلقائياً عند الحفظ</p>
+          <div className="bg-blue-50 border border-blue-300 rounded-xl p-3">
+            <p className="text-xs font-bold text-[#123B5D]">كود النظام التلقائي: PRO-800-XXX</p>
+            <p className="text-[10px] text-[#123B5D] mt-1">سيتم توليد الكود الخاص بالملكية تلقائياً عند الحفظ</p>
           </div>
 
           {/* 1. اختيار العميل (مهم جداً للربط) */}
-          <div className="bg-stone-50 p-4 rounded-lg border border-stone-200 relative z-20">
-            <label className="block text-sm font-bold text-stone-700 mb-2">المالك (العميل) <span className="text-red-500">*</span></label>
+          <div className="bg-[#f7fbfd] p-4 rounded-xl border border-[#d8e6ee] relative z-20">
+            <label className="block text-sm font-bold text-[#123B5D] mb-2">المالك (العميل) <span className="text-red-500">*</span></label>
             <div className="relative">
-              <Search className="absolute right-3 top-2.5 w-4 h-4 text-stone-400" />
+              <Search className="absolute right-3 top-2.5 w-4 h-4 text-[#71839a]" />
               <input
                 type="text"
                 className={`w-full pl-3 pr-10 py-2 text-sm border rounded focus:outline-none transition-colors ${formData.clientId ? 'border-green-500 bg-green-50 text-green-900 font-bold' : 'border-stone-300 focus:border-blue-500'}`}
@@ -149,7 +149,7 @@ const AddDeedModal = ({ isOpen, onClose }) => {
 
               {/* نتائج البحث */}
               {searchResults.length > 0 && !formData.clientId && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-stone-200 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#d8e6ee] rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto">
                   {searchResults.map((client) => {
                     const safeName = getSafeClientName(client);
                     return (
@@ -164,10 +164,10 @@ const AddDeedModal = ({ isOpen, onClose }) => {
                         className="flex items-center justify-between p-3 hover:bg-blue-50 cursor-pointer border-b border-stone-100 last:border-0"
                       >
                         <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-stone-400" />
+                          <User className="w-4 h-4 text-[#71839a]" />
                           <div>
-                            <div className="font-bold text-sm text-stone-800">{safeName}</div>
-                            <div className="text-[10px] text-stone-500 font-mono">الهوية: {client.idNumber} | جوال: {client.mobile}</div>
+                            <div className="font-bold text-sm text-[#123B5D]">{safeName}</div>
+                            <div className="text-[10px] text-[#71839a] font-mono">الهوية: {client.idNumber} | جوال: {client.mobile}</div>
                           </div>
                         </div>
                         <ChevronLeft className="w-4 h-4 text-stone-300" />
@@ -181,7 +181,7 @@ const AddDeedModal = ({ isOpen, onClose }) => {
 
           {/* 2. اسم العرض / رقم الصك */}
           <div>
-            <label className="block text-sm font-bold text-stone-700 mb-1">اسم العرض / رقم الصك <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-bold text-[#123B5D] mb-1">اسم العرض / رقم الصك <span className="text-red-500">*</span></label>
             <input 
               type="text" 
               className="w-full px-3 py-2 text-sm border border-stone-300 rounded focus:outline-none focus:border-green-500" 
@@ -194,7 +194,7 @@ const AddDeedModal = ({ isOpen, onClose }) => {
           {/* 3. الحي والمدينة */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-bold text-stone-700 mb-1">الحي <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-bold text-[#123B5D] mb-1">الحي <span className="text-red-500">*</span></label>
               <input 
                 type="text" 
                 className="w-full px-3 py-2 text-sm border border-stone-300 rounded focus:outline-none focus:border-green-500" 
@@ -204,7 +204,7 @@ const AddDeedModal = ({ isOpen, onClose }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-stone-700 mb-1">المدينة <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-bold text-[#123B5D] mb-1">المدينة <span className="text-red-500">*</span></label>
               <input 
                 type="text" 
                 className="w-full px-3 py-2 text-sm border border-stone-300 rounded focus:outline-none focus:border-green-500" 
@@ -218,7 +218,7 @@ const AddDeedModal = ({ isOpen, onClose }) => {
           {/* 4. المساحة والهوية العقارية */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-bold text-stone-700 mb-1">إجمالي المساحة (م²) <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-bold text-[#123B5D] mb-1">إجمالي المساحة (م²) <span className="text-red-500">*</span></label>
               <input 
                 type="number" 
                 className="w-full px-3 py-2 text-sm border border-stone-300 rounded focus:outline-none focus:border-green-500" 
@@ -228,7 +228,7 @@ const AddDeedModal = ({ isOpen, onClose }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-stone-700 mb-1">الهوية العقارية (اختياري)</label>
+              <label className="block text-sm font-bold text-[#123B5D] mb-1">الهوية العقارية (اختياري)</label>
               <input 
                 type="text" 
                 className="w-full px-3 py-2 text-sm border border-stone-300 rounded font-mono focus:outline-none focus:border-green-500" 
@@ -240,7 +240,7 @@ const AddDeedModal = ({ isOpen, onClose }) => {
           </div>
 
           {/* ملاحظة */}
-          <div className="bg-amber-50 border border-amber-400 rounded-lg p-3">
+          <div className="bg-amber-50 border border-amber-400 rounded-xl p-3">
             <div className="flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
               <div>
@@ -253,17 +253,17 @@ const AddDeedModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 p-4 border-t border-stone-200 bg-stone-50 rounded-b-lg">
+        <div className="flex items-center justify-end gap-2 p-4 border-t border-[#d8e6ee] bg-[#f7fbfd] rounded-b-lg">
           <button 
             onClick={handleClose} 
-            className="px-4 py-2 text-sm text-stone-600 hover:bg-stone-200 rounded-lg font-bold transition-colors"
+            className="px-4 py-2 text-sm text-stone-600 hover:bg-stone-200 rounded-xl font-bold transition-colors"
           >
             إلغاء
           </button>
           <button 
             onClick={handleSubmit}
             disabled={mutation.isPending || !formData.clientId || !formData.deedNumber || !formData.district || !formData.area}
-            className="px-6 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold flex items-center gap-2 disabled:opacity-50 transition-colors shadow-sm"
+            className="px-6 py-2 text-sm bg-[#083646] text-white rounded-xl hover:bg-[#0f6d7c] font-bold flex items-center gap-2 disabled:opacity-50 transition-colors shadow-sm"
           >
             {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             حفظ ملف الملكية

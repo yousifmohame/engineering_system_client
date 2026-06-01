@@ -687,57 +687,53 @@ const ClientFileView = ({ clientId, onBack }) => {
       dir="rtl"
     >
       {/* 💡 Top Header Area (Fixed at top) */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm mb-4 shrink-0 p-4">
-        <div className="flex flex-wrap justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
+      <div className="bg-white border border-[#d8e6ee] rounded-2xl shadow-sm mb-3 shrink-0 px-4 py-2.5 overflow-x-auto custom-scrollbar-slim">
+        <div className="flex items-center justify-between gap-3 whitespace-nowrap">
+          <div className="flex items-center gap-2.5 min-w-0">
             <button
               onClick={onBack}
-              className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors flex items-center gap-2 font-bold text-sm"
+              className="h-9 px-3 bg-[#f7fbfd] hover:bg-[#eef5f7] text-[#123B5D] rounded-xl transition-colors flex items-center gap-2 font-black text-[12px] border border-[#d8e6ee] shrink-0"
             >
               <ArrowLeft className="w-4 h-4" /> العودة
             </button>
 
-            <div className="h-6 w-px bg-slate-200 mx-1 hidden md:block"></div>
+            <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
 
-            <div className="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-mono font-bold text-sm flex items-center gap-2 shadow-sm">
+            <div className="h-9 px-3 bg-[#083646] text-white rounded-xl font-mono font-black text-[12px] flex items-center gap-2 shadow-sm shrink-0">
               {client.clientCode}
-              <button
-                onClick={() => handleCopy(client.clientCode)}
-                className="text-blue-200 hover:text-white"
-              >
+              <button onClick={() => handleCopy(client.clientCode)} className="text-white/70 hover:text-white" title="نسخ الكود">
                 <Copy className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <span className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold border border-blue-100">
+            <span className="h-9 px-3 bg-[#eef5f7] text-[#123B5D] rounded-xl text-[12px] font-black border border-[#d8e6ee] flex items-center shrink-0">
               {client.type || "عميل"}
             </span>
 
-            <div className="hidden md:flex items-center gap-3 border-r border-slate-200 pr-4 ml-2">
-              <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-inner">
-                <User className="w-5 h-5" />
+            <div className="flex items-center gap-2 min-w-0 border-r border-slate-200 pr-3">
+              <div className="w-9 h-9 rounded-xl bg-[#083646] flex items-center justify-center text-white shrink-0 shadow-sm">
+                <User className="w-4 h-4" />
               </div>
-              <div className="font-black text-slate-800 text-base max-w-[250px] truncate">
+              <div className="font-black text-[#123B5D] text-[13px] md:text-[14px] max-w-[260px] truncate">
                 {clientName}
               </div>
             </div>
           </div>
 
-          {/* Quick Actions (WhatsApp, Phone) */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => openWhatsApp(client.contact?.mobile)}
-              className="px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-600 hover:text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-bold"
+              className="h-9 px-3 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white rounded-xl transition-colors flex items-center gap-2 text-[12px] font-black"
             >
               <MessageCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">مراسلة</span>
+              <span>مراسلة</span>
             </button>
             <a
               href={`tel:${client.contact?.mobile}`}
-              className="px-4 py-2 bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-600 hover:text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-bold"
+              className="h-9 px-3 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-600 hover:text-white rounded-xl transition-colors flex items-center gap-2 text-[12px] font-black"
             >
               <PhoneCall className="w-4 h-4" />
-              <span className="hidden sm:inline">اتصال</span>
+              <span>اتصال</span>
             </a>
           </div>
         </div>
@@ -746,7 +742,7 @@ const ClientFileView = ({ clientId, onBack }) => {
       {/* 💡 Main Body Layout: Sidebar + Content */}
       <div className="flex flex-col md:flex-row gap-4 flex-1 overflow-hidden">
         {/* 👈 Sidebar (Vertical Tabs) */}
-        <div className="w-full md:w-[260px] bg-white border border-slate-200 rounded-xl shadow-sm p-3 flex flex-col gap-1 overflow-y-auto custom-scrollbar-slim shrink-0 h-full">
+        <div className="w-full md:w-[240px] bg-white border border-[#d8e6ee] rounded-[20px] shadow-sm p-3 flex flex-col gap-2 overflow-y-auto custom-scrollbar-slim shrink-0 h-full">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -761,11 +757,11 @@ const ClientFileView = ({ clientId, onBack }) => {
               >
                 {/* Active Indicator Line */}
                 {isActive && (
-                  <div className="absolute right-0 top-1/4 bottom-1/4 w-1 bg-blue-600 rounded-l-full"></div>
+                  <div className="absolute right-0 top-1/4 bottom-1/4 w-1 bg-[#d9b85b] rounded-l-full"></div>
                 )}
 
                 <tab.icon
-                  className={`w-4 h-4 shrink-0 ${isActive ? "text-blue-600" : "text-slate-400"}`}
+                  className={`w-4 h-4 shrink-0 ${isActive ? "text-[#d9b85b]" : "text-[#8aa0b4]"}`}
                 />
                 <span className="truncate">{tab.label}</span>
 

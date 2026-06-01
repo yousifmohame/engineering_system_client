@@ -79,8 +79,8 @@ const MultiDeedInput = ({ value, onChange }) => {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 w-full p-2 border border-slate-300 rounded-lg bg-white focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all min-h-[46px]">
-      <Hash className="w-4 h-4 text-slate-400 ml-1" />
+    <div className="flex flex-wrap items-center gap-2 w-full p-2 border border-slate-300 rounded-xl bg-white focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all min-h-[46px]">
+      <Hash className="w-4 h-4 text-[#71839a] ml-1" />
       {tags.map((tag, idx) => (
         <span
           key={idx}
@@ -107,7 +107,7 @@ const MultiDeedInput = ({ value, onChange }) => {
             ? "أدخل رقم الصك ثم اضغط Enter..."
             : "أضف صكاً آخر..."
         }
-        className="flex-1 min-w-[150px] outline-none text-sm font-mono bg-transparent placeholder:text-slate-400"
+        className="flex-1 min-w-[150px] outline-none text-sm font-mono bg-transparent placeholder:text-[#71839a]"
       />
     </div>
   );
@@ -677,16 +677,16 @@ const NewPropertyWizard = ({ onComplete }) => {
           <div className="space-y-4 animate-in fade-in duration-300 max-w-3xl mx-auto mt-6">
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-colors hover:bg-blue-50 border-2 border-dashed border-blue-300 bg-slate-50 py-16 px-4"
+              className="rounded-[24px] flex flex-col items-center justify-center cursor-pointer transition-colors hover:bg-blue-50 border-2 border-dashed border-blue-300 bg-[#f7fbfd] py-16 px-4"
             >
-              <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 shadow-sm">
+              <div className="w-16 h-16 bg-blue-100 text-[#0f6d7c] rounded-full flex items-center justify-center mb-4 shadow-sm">
                 <Upload className="w-8 h-8 animate-bounce" />
               </div>
-              <div className="text-lg font-bold text-slate-700">
+              <div className="text-lg font-bold text-[#123B5D]">
                 اسحب وأفلت الصكوك هنا أو{" "}
-                <span className="text-blue-600 underline">تصفح الملفات</span>
+                <span className="text-[#0f6d7c] underline">تصفح الملفات</span>
               </div>
-              <div className="text-sm text-slate-400 mt-2 font-medium">
+              <div className="text-sm text-[#71839a] mt-2 font-medium">
                 يدعم PDF, JPG, PNG (يمكنك رفع صكوك متعددة للملف الواحد)
               </div>
               <input
@@ -704,27 +704,27 @@ const NewPropertyWizard = ({ onComplete }) => {
                 {uploadedFiles.map((file, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between p-3.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition-all group"
+                    className="flex items-center justify-between p-3.5 bg-white border border-[#d8e6ee] rounded-xl shadow-sm hover:border-blue-300 transition-all group"
                   >
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="p-2.5 bg-blue-50 rounded-lg text-blue-600 group-hover:scale-110 transition-transform">
+                      <div className="p-2.5 bg-blue-50 rounded-xl text-[#0f6d7c] group-hover:scale-110 transition-transform">
                         <FileText className="w-5 h-5" />
                       </div>
                       <div>
                         <div
-                          className="text-sm font-bold text-slate-700 truncate max-w-[200px]"
+                          className="text-sm font-bold text-[#123B5D] truncate max-w-[200px]"
                           dir="ltr"
                         >
                           {file.name}
                         </div>
-                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                        <div className="text-[10px] text-[#71839a] font-mono mt-0.5">
                           {(file.size / 1024 / 1024).toFixed(2)} MB
                         </div>
                       </div>
                     </div>
                     <button
                       onClick={() => removeFile(idx)}
-                      className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                      className="text-[#71839a] hover:text-red-500 hover:bg-red-50 p-2 rounded-xl transition-colors"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -740,12 +740,12 @@ const NewPropertyWizard = ({ onComplete }) => {
           <div className="animate-in fade-in duration-300 max-w-2xl mx-auto text-center mt-12 space-y-6">
             <div className="relative inline-block">
               <div className="absolute inset-0 bg-purple-200 blur-2xl rounded-full opacity-50"></div>
-              <Brain className="w-24 h-24 text-purple-600 mx-auto relative z-10" />
+              <Brain className="w-24 h-24 text-[#0f6d7c] mx-auto relative z-10" />
             </div>
-            <h2 className="text-3xl font-black text-slate-800">
+            <h2 className="text-xl font-black text-[#123B5D]">
               استخراج البيانات الذكي
             </h2>
-            <p className="text-slate-500 text-base leading-relaxed max-w-lg mx-auto">
+            <p className="text-[#71839a] text-base leading-relaxed max-w-lg mx-auto">
               سيقوم محرك الذكاء الاصطناعي بقراءة الصكوك المرفقة واستخراج كافة
               التفاصيل (أرقام الصكوك، التواريخ، الملاك، المساحات، والحدود) لبناء
               ملف ملكية متكامل آلياً.
@@ -753,7 +753,7 @@ const NewPropertyWizard = ({ onComplete }) => {
             <button
               onClick={handleAiExtraction}
               disabled={isAiAnalyzing || uploadedFiles.length === 0}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-10 py-4 rounded-xl font-bold shadow-lg flex items-center gap-3 mx-auto disabled:opacity-50 transition-all hover:scale-105 text-lg"
+              className="bg-[#083646] hover:bg-[#0f6d7c] text-white px-10 py-4 rounded-xl font-bold shadow-lg flex items-center gap-3 mx-auto disabled:opacity-50 transition-all hover:scale-105 text-lg"
             >
               {isAiAnalyzing ? (
                 <>
@@ -777,13 +777,13 @@ const NewPropertyWizard = ({ onComplete }) => {
       case 2:
         return (
           <div className="animate-in fade-in duration-300 max-w-2xl mx-auto mt-8 space-y-6">
-            <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+            <h3 className="text-xl font-black text-[#123B5D] mb-6 flex items-center gap-2">
               <Users className="w-6 h-6 text-blue-500" /> لمن يعود هذا العقار؟
               (ربط العميل)
             </h3>
-            <div className="bg-white border border-slate-200 shadow-sm p-6 rounded-2xl space-y-6">
+            <div className="bg-white border border-[#d8e6ee] shadow-sm p-6 rounded-[24px] space-y-6">
               <div>
-                <label className="text-sm font-bold text-slate-700 block mb-2">
+                <label className="text-sm font-bold text-[#123B5D] block mb-2">
                   اختر عميلاً مسجلاً في النظام:
                 </label>
                 <select
@@ -792,7 +792,7 @@ const NewPropertyWizard = ({ onComplete }) => {
                     handleChange("clientId", e.target.value);
                     handleChange("customClientName", "");
                   }}
-                  className="w-full p-3.5 border border-slate-300 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-slate-50 hover:bg-white font-bold text-slate-700 transition-all"
+                  className="w-full p-3.5 border border-slate-300 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-[#f7fbfd] hover:bg-white font-bold text-[#123B5D] transition-all"
                 >
                   <option value="">-- اضغط للبحث واختيار عميل --</option>
                   {clientsList.map((client) => {
@@ -815,14 +815,14 @@ const NewPropertyWizard = ({ onComplete }) => {
 
               <div className="flex items-center gap-4 py-2">
                 <div className="flex-1 h-px bg-slate-200"></div>
-                <span className="text-xs font-black text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
+                <span className="text-xs font-black text-[#71839a] bg-[#f7fbfd] px-3 py-1 rounded-full">
                   أو
                 </span>
                 <div className="flex-1 h-px bg-slate-200"></div>
               </div>
 
               <div>
-                <label className="text-sm font-bold text-slate-700 block mb-2">
+                <label className="text-sm font-bold text-[#123B5D] block mb-2">
                   تسجيل عميل جديد مؤقت (سيتم إنشاؤه تلقائياً):
                 </label>
                 <input
@@ -833,7 +833,7 @@ const NewPropertyWizard = ({ onComplete }) => {
                     handleChange("clientId", "");
                   }}
                   placeholder="اكتب اسم العميل (مثال: شركة العقار المتقدمة)..."
-                  className="w-full p-3.5 border border-slate-300 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-bold text-slate-700 transition-all placeholder:font-normal"
+                  className="w-full p-3.5 border border-slate-300 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-bold text-[#123B5D] transition-all placeholder:font-normal"
                 />
               </div>
             </div>
@@ -852,9 +852,9 @@ const NewPropertyWizard = ({ onComplete }) => {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-white p-6 rounded-[24px] shadow-sm border border-[#d8e6ee]">
               <div className="md:col-span-2">
-                <label className="text-xs font-bold text-slate-600 block mb-1.5">
+                <label className="text-xs font-bold text-[#52677e] block mb-1.5">
                   رقم الصك (أو الصكوك المتعددة)
                 </label>
                 {/* 👈 استخدام مكون Tags للأرقام المتعددة */}
@@ -865,7 +865,7 @@ const NewPropertyWizard = ({ onComplete }) => {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-600 block mb-1.5">
+                <label className="text-xs font-bold text-[#52677e] block mb-1.5">
                   تاريخ الصك الرئيسي
                 </label>
                 <input
@@ -873,28 +873,28 @@ const NewPropertyWizard = ({ onComplete }) => {
                   value={formData.deedDate}
                   onChange={(e) => handleChange("deedDate", e.target.value)}
                   placeholder="مثال: 1445-05-20"
-                  className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-mono"
+                  className="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-mono"
                 />
               </div>
 
-              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-5 border-t border-slate-100 pt-5 mt-2">
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-5 border-t border-[#e7eef2] pt-5 mt-2">
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1.5">
+                  <label className="text-xs font-bold text-[#52677e] block mb-1.5">
                     المدينة
                   </label>
                   <div className="relative">
-                    <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#71839a]" />
                     <input
                       type="text"
                       value={formData.city}
                       onChange={(e) => handleChange("city", e.target.value)}
-                      className="w-full p-3 pr-10 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-bold"
+                      className="w-full p-3 pr-10 border border-slate-300 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-bold"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1.5 flex justify-between">
+                  <label className="text-xs font-bold text-[#52677e] block mb-1.5 flex justify-between">
                     الحي
                     {formData.districtId && (
                       <span className="text-[9px] text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
@@ -907,12 +907,12 @@ const NewPropertyWizard = ({ onComplete }) => {
                     value={formData.district}
                     onChange={(e) => handleChange("district", e.target.value)}
                     placeholder="اكتب اسم الحي (مثال: الملقا)"
-                    className={`w-full p-3 border rounded-lg outline-none transition-all font-bold ${isDistrictNotFound ? "border-amber-400 focus:ring-amber-100 bg-amber-50" : formData.districtId ? "border-emerald-300 focus:ring-emerald-100 bg-emerald-50 text-emerald-800" : "border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"}`}
+                    className={`w-full p-3 border rounded-xl outline-none transition-all font-bold ${isDistrictNotFound ? "border-amber-400 focus:ring-amber-100 bg-amber-50" : formData.districtId ? "border-emerald-300 focus:ring-emerald-100 bg-emerald-50 text-emerald-800" : "border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"}`}
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1.5">
+                  <label className="text-xs font-bold text-[#52677e] block mb-1.5">
                     القطاع التابع له
                   </label>
                   <input
@@ -920,7 +920,7 @@ const NewPropertyWizard = ({ onComplete }) => {
                     readOnly
                     value={formData.sectorName || "---"}
                     placeholder="يتم تحديده تلقائياً"
-                    className="w-full p-3 border border-slate-200 bg-slate-100 text-slate-500 rounded-lg outline-none font-bold cursor-not-allowed"
+                    className="w-full p-3 border border-[#d8e6ee] bg-[#f7fbfd] text-[#71839a] rounded-xl outline-none font-bold cursor-not-allowed"
                   />
                 </div>
 
@@ -942,7 +942,7 @@ const NewPropertyWizard = ({ onComplete }) => {
                     </div>
                     <button
                       onClick={() => setIsAddDistrictModalOpen(true)}
-                      className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm"
+                      className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-sm"
                     >
                       + إضافة الحي للتقسيم
                     </button>
@@ -951,25 +951,25 @@ const NewPropertyWizard = ({ onComplete }) => {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-600 block mb-1.5">
+                <label className="text-xs font-bold text-[#52677e] block mb-1.5">
                   إجمالي المساحة (م²)
                 </label>
                 <input
                   type="number"
                   value={formData.area}
                   onChange={(e) => handleChange("area", e.target.value)}
-                  className="w-full p-3 border border-emerald-300 bg-emerald-50 rounded-lg outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all font-black text-emerald-700 text-lg"
+                  className="w-full p-3 border border-emerald-300 bg-emerald-50 rounded-xl outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all font-black text-emerald-700 text-lg"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="text-xs font-bold text-slate-600 block mb-1.5">
+                <label className="text-xs font-bold text-[#52677e] block mb-1.5">
                   نوع العقار
                 </label>
                 <select
                   value={formData.propertyType}
                   onChange={(e) => handleChange("propertyType", e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all bg-white font-bold text-slate-700 cursor-pointer"
+                  className="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all bg-white font-bold text-[#123B5D] cursor-pointer"
                 >
                   <option value="أرض">قطعة أرض</option>
                   <option value="سكني">مبنى سكني (فيلا / عمارة)</option>
@@ -993,11 +993,11 @@ const NewPropertyWizard = ({ onComplete }) => {
           <div className="animate-in fade-in duration-300 max-w-4xl mx-auto mt-6">
             <div className="flex justify-between items-end mb-6">
               <div>
-                <h3 className="text-xl font-black text-slate-800">
+                <h3 className="text-xl font-black text-[#123B5D]">
                   قائمة المُلاّك ({formData.owners.length})
                 </h3>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-xs font-bold text-slate-500">
+                  <span className="text-xs font-bold text-[#71839a]">
                     إجمالي الحصص:
                   </span>
                   <span
@@ -1026,7 +1026,7 @@ const NewPropertyWizard = ({ onComplete }) => {
                     ],
                   }))
                 }
-                className="bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-blue-700 shadow-sm transition-all hover:scale-105"
+                className="bg-[#083646] text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-[#0f6d7c] shadow-sm transition-all hover:scale-105"
               >
                 <Plus className="w-4 h-4" /> إضافة مالك جديد
               </button>
@@ -1036,10 +1036,10 @@ const NewPropertyWizard = ({ onComplete }) => {
               {formData.owners.map((owner, idx) => (
                 <div
                   key={owner.id}
-                  className="flex flex-wrap md:flex-nowrap gap-4 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-blue-300 transition-all"
+                  className="flex flex-wrap md:flex-nowrap gap-4 items-center bg-white p-4 rounded-xl border border-[#d8e6ee] shadow-sm hover:border-blue-300 transition-all"
                 >
                   <div className="flex-1 min-w-[200px]">
-                    <label className="text-[11px] font-bold text-slate-500 block mb-1">
+                    <label className="text-[11px] font-bold text-[#71839a] block mb-1">
                       اسم المالك / الشركة
                     </label>
                     <input
@@ -1051,11 +1051,11 @@ const NewPropertyWizard = ({ onComplete }) => {
                         handleChange("owners", newOwners);
                       }}
                       placeholder="الاسم الكامل"
-                      className="w-full p-2.5 text-sm font-bold text-slate-800 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                      className="w-full p-2.5 text-sm font-bold text-[#123B5D] border border-slate-300 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
                     />
                   </div>
                   <div className="w-full md:w-48">
-                    <label className="text-[11px] font-bold text-slate-500 block mb-1">
+                    <label className="text-[11px] font-bold text-[#71839a] block mb-1">
                       رقم الهوية / السجل
                     </label>
                     <input
@@ -1067,11 +1067,11 @@ const NewPropertyWizard = ({ onComplete }) => {
                         handleChange("owners", newOwners);
                       }}
                       placeholder="10xxxxxxx"
-                      className="w-full p-2.5 text-sm font-mono border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                      className="w-full p-2.5 text-sm font-mono border border-slate-300 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
                     />
                   </div>
                   <div className="w-full md:w-32">
-                    <label className="text-[11px] font-bold text-slate-500 block mb-1">
+                    <label className="text-[11px] font-bold text-[#71839a] block mb-1">
                       النسبة %
                     </label>
                     <div className="relative">
@@ -1083,9 +1083,9 @@ const NewPropertyWizard = ({ onComplete }) => {
                           newOwners[idx].share = e.target.value;
                           handleChange("owners", newOwners);
                         }}
-                        className="w-full p-2.5 text-lg font-black text-blue-700 text-center border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all pr-8"
+                        className="w-full p-2.5 text-lg font-black text-[#123B5D] text-center border border-slate-300 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all pr-8"
                       />
-                      <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#71839a]" />
                     </div>
                   </div>
                   <button
@@ -1095,7 +1095,7 @@ const NewPropertyWizard = ({ onComplete }) => {
                         formData.owners.filter((o) => o.id !== owner.id),
                       )
                     }
-                    className="mt-5 text-slate-400 hover:text-red-500 hover:bg-red-50 p-3 rounded-lg transition-colors"
+                    className="mt-5 text-[#71839a] hover:text-red-500 hover:bg-red-50 p-3 rounded-xl transition-colors"
                     title="حذف المالك"
                   >
                     <Trash2 className="w-5 h-5" />
@@ -1103,7 +1103,7 @@ const NewPropertyWizard = ({ onComplete }) => {
                 </div>
               ))}
               {formData.owners.length === 0 && (
-                <div className="flex flex-col items-center justify-center p-12 text-slate-400 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl">
+                <div className="flex flex-col items-center justify-center p-12 text-[#71839a] bg-[#f7fbfd] border-2 border-dashed border-slate-300 rounded-xl">
                   <Users className="w-12 h-12 mb-3 opacity-50" />
                   <p className="font-bold">لا يوجد ملاك مسجلين في هذا الملف</p>
                 </div>
@@ -1124,12 +1124,12 @@ const NewPropertyWizard = ({ onComplete }) => {
         return (
           <div className="animate-in fade-in duration-300 flex flex-col max-w-7xl mx-auto w-full">
             {formData.plots.length === 0 ? (
-              <div className="p-16 flex flex-col items-center justify-center text-slate-400 bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl">
+              <div className="p-16 flex flex-col items-center justify-center text-[#71839a] bg-[#f7fbfd] border-2 border-dashed border-slate-300 rounded-[24px]">
                 <Layers className="w-16 h-16 mb-4 opacity-50 text-blue-500" />
-                <h3 className="text-xl font-bold text-slate-700 mb-2">
+                <h3 className="text-xl font-bold text-[#123B5D] mb-2">
                   لا توجد قطع أراضي مضافة
                 </h3>
-                <p className="text-sm text-slate-500 mb-6 max-w-md text-center">
+                <p className="text-sm text-[#71839a] mb-6 max-w-md text-center">
                   أضف قطعة الأرض الأولى للبدء في تحديد أطوالها وحدودها وإنشاء
                   المخطط الكروكي التفاعلي.
                 </p>
@@ -1143,7 +1143,7 @@ const NewPropertyWizard = ({ onComplete }) => {
                     setFormData((p) => ({ ...p, plots: [newPlot] }));
                     setSelectedPlotForBounds(newPlot.id);
                   }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-md flex items-center gap-2 transition-transform hover:scale-105"
+                  className="bg-[#083646] hover:bg-[#0f6d7c] text-white px-6 py-3 rounded-xl font-bold shadow-md flex items-center gap-2 transition-transform hover:scale-105"
                 >
                   <Plus className="w-5 h-5" /> إضافة القطعة الأولى
                 </button>
@@ -1155,7 +1155,7 @@ const NewPropertyWizard = ({ onComplete }) => {
                     <button
                       key={plot.id}
                       onClick={() => setSelectedPlotForBounds(plot.id)}
-                      className={`px-5 py-3 text-sm font-bold rounded-xl border flex items-center gap-3 min-w-[140px] transition-all ${selectedPlotForBounds === plot.id ? "bg-blue-600 text-white border-blue-600 shadow-md scale-105" : "bg-white text-slate-600 border-slate-300 hover:bg-blue-50"}`}
+                      className={`px-5 py-3 text-sm font-bold rounded-xl border flex items-center gap-3 min-w-[140px] transition-all ${selectedPlotForBounds === plot.id ? "bg-[#083646] text-white border-blue-600 shadow-md scale-105" : "bg-white text-[#52677e] border-slate-300 hover:bg-blue-50"}`}
                     >
                       <MapIcon className="w-5 h-5 opacity-80" />
                       <div className="text-right">
@@ -1181,24 +1181,24 @@ const NewPropertyWizard = ({ onComplete }) => {
                       }));
                       setSelectedPlotForBounds(newPlot.id);
                     }}
-                    className="px-5 py-3 text-sm font-bold rounded-xl border border-dashed border-blue-400 text-blue-600 hover:bg-blue-50 flex items-center justify-center min-w-[140px] transition-colors"
+                    className="px-5 py-3 text-sm font-bold rounded-xl border border-dashed border-blue-400 text-[#0f6d7c] hover:bg-blue-50 flex items-center justify-center min-w-[140px] transition-colors"
                   >
                     <Plus className="w-5 h-5 ml-1" /> إضافة قطعة أخرى
                   </button>
                 </div>
 
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col md:flex-row mt-2">
-                  <div className="w-full md:w-1/3 bg-slate-800 text-white p-8 flex flex-col justify-center relative overflow-hidden">
+                <div className="bg-white border border-[#d8e6ee] rounded-[24px] shadow-sm overflow-hidden flex flex-col md:flex-row mt-2">
+                  <div className="w-full md:w-1/3 bg-[#083646] text-white p-8 flex flex-col justify-center relative overflow-hidden">
                     <div className="absolute top-0 left-0 p-4 opacity-10">
                       <Compass className="w-40 h-40" />
                     </div>
-                    <h3 className="text-2xl font-black mb-6 relative z-10">
+                    <h3 className="text-lg font-black mb-6 relative z-10">
                       بيانات القطعة والمخطط
                     </h3>
 
                     <div className="space-y-5 relative z-10">
                       <div>
-                        <label className="text-slate-400 text-xs font-bold block mb-1.5">
+                        <label className="text-[#71839a] text-xs font-bold block mb-1.5">
                           رقم القطعة / البلك:
                         </label>
                         <input
@@ -1213,11 +1213,11 @@ const NewPropertyWizard = ({ onComplete }) => {
                             handleChange("plots", p);
                           }}
                           placeholder="مثال: 145"
-                          className="bg-slate-700 text-white border border-slate-600 outline-none w-full px-4 py-3 rounded-xl text-base font-bold focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all"
+                          className="bg-[#0b2f3f] text-white border border-slate-600 outline-none w-full px-4 py-3 rounded-xl text-base font-bold focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all"
                         />
                       </div>
                       <div>
-                        <label className="text-slate-400 text-xs font-bold block mb-1.5">
+                        <label className="text-[#71839a] text-xs font-bold block mb-1.5">
                           مساحة القطعة (م²):
                         </label>
                         <input
@@ -1255,22 +1255,22 @@ const NewPropertyWizard = ({ onComplete }) => {
                     return (
                       <div
                         key={dir}
-                        className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col hover:border-blue-400 transition-colors group"
+                        className="bg-white border border-[#d8e6ee] rounded-[24px] shadow-sm overflow-hidden flex flex-col hover:border-blue-400 transition-colors group"
                       >
-                        <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center">
-                          <h4 className="font-black text-slate-800 text-sm flex items-center gap-2">
+                        <div className="bg-[#f7fbfd] border-b border-[#d8e6ee] p-4 flex justify-between items-center">
+                          <h4 className="font-black text-[#123B5D] text-sm flex items-center gap-2">
                             <Compass className="w-5 h-5 text-blue-500" /> الحد
                             ال{dir}
                           </h4>
                         </div>
                         <div className="p-5 space-y-4 flex-1">
                           <div>
-                            <label className="text-xs font-bold text-slate-500 mb-1.5 block">
+                            <label className="text-xs font-bold text-[#71839a] mb-1.5 block">
                               الطول (متر)
                             </label>
                             <input
                               type="number"
-                              className="w-full border border-slate-300 rounded-lg p-2.5 text-base font-black text-blue-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                              className="w-full border border-slate-300 rounded-xl p-2.5 text-base font-black text-[#123B5D] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
                               value={bound.length}
                               onChange={(e) =>
                                 handleUpdateBoundary(
@@ -1284,11 +1284,11 @@ const NewPropertyWizard = ({ onComplete }) => {
                             />
                           </div>
                           <div>
-                            <label className="text-xs font-bold text-slate-500 mb-1.5 block">
+                            <label className="text-xs font-bold text-[#71839a] mb-1.5 block">
                               الوصف / المجاور
                             </label>
                             <textarea
-                              className="w-full border border-slate-300 rounded-lg p-2.5 text-sm font-medium text-slate-700 h-20 resize-none outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                              className="w-full border border-slate-300 rounded-xl p-2.5 text-sm font-medium text-[#123B5D] h-20 resize-none outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
                               value={bound.description}
                               onChange={(e) =>
                                 handleUpdateBoundary(
@@ -1302,9 +1302,9 @@ const NewPropertyWizard = ({ onComplete }) => {
                             />
                           </div>
                         </div>
-                        <div className="p-4 bg-slate-50 border-t border-slate-100">
+                        <div className="p-4 bg-[#f7fbfd] border-t border-[#e7eef2]">
                           {bound.imageUrl ? (
-                            <div className="relative h-24 rounded-lg border border-slate-300 overflow-hidden group/img">
+                            <div className="relative h-24 rounded-xl border border-slate-300 overflow-hidden group/img">
                               <img
                                 src={bound.imageUrl}
                                 alt={dir}
@@ -1325,9 +1325,9 @@ const NewPropertyWizard = ({ onComplete }) => {
                               </button>
                             </div>
                           ) : (
-                            <label className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-slate-300 rounded-lg bg-white cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all">
-                              <Camera className="w-6 h-6 text-slate-400 mb-2 group-hover:text-blue-500" />
-                              <span className="text-[11px] text-slate-500 font-bold group-hover:text-blue-700">
+                            <label className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-slate-300 rounded-xl bg-white cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all">
+                              <Camera className="w-6 h-6 text-[#71839a] mb-2 group-hover:text-blue-500" />
+                              <span className="text-[11px] text-[#71839a] font-bold group-hover:text-[#123B5D]">
                                 إرفاق صورة من الطبيعة
                               </span>
                               <input
@@ -1361,40 +1361,40 @@ const NewPropertyWizard = ({ onComplete }) => {
               <div className="absolute inset-0 bg-emerald-200 blur-2xl rounded-full opacity-60"></div>
               <CheckCircle className="w-24 h-24 text-emerald-500 relative z-10" />
             </div>
-            <h2 className="text-3xl font-black text-slate-800">
+            <h2 className="text-xl font-black text-[#123B5D]">
               البيانات جاهزة للاعتماد!
             </h2>
-            <p className="text-slate-500 text-base mt-3 mb-10 max-w-md mx-auto">
+            <p className="text-[#71839a] text-base mt-3 mb-10 max-w-md mx-auto">
               تم تجميع بيانات الملكية وإنشاء المخططات الكروكية بنجاح. راجع
               الملخص أدناه قبل الحفظ النهائي.
             </p>
 
-            <div className="bg-white shadow-xl border border-slate-200 rounded-2xl p-8 text-right mb-10">
-              <h3 className="text-sm font-bold text-blue-600 mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
+            <div className="bg-white shadow-xl border border-[#d8e6ee] rounded-[24px] p-8 text-right mb-10">
+              <h3 className="text-sm font-bold text-[#0f6d7c] mb-4 border-b border-[#e7eef2] pb-2 flex items-center gap-2">
                 <Building className="w-4 h-4" /> ملخص الملف النهائي
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
                 <div>
-                  <span className="text-slate-400 block text-xs mb-1">
+                  <span className="text-[#71839a] block text-xs mb-1">
                     المدينة والحي
                   </span>
-                  <strong className="text-slate-800 text-base">
+                  <strong className="text-[#123B5D] text-base">
                     {formData.city} - {formData.district}
                   </strong>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-xs mb-1">
+                  <span className="text-[#71839a] block text-xs mb-1">
                     أرقام الصكوك
                   </span>
                   <strong
-                    className="text-slate-800 font-mono text-base truncate block max-w-[150px]"
+                    className="text-[#123B5D] font-mono text-base truncate block max-w-[150px]"
                     title={formData.deedNumber}
                   >
                     {formData.deedNumber || "---"}
                   </strong>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-xs mb-1">
+                  <span className="text-[#71839a] block text-xs mb-1">
                     المساحة الإجمالية
                   </span>
                   <strong className="text-emerald-600 text-xl font-black">
@@ -1402,10 +1402,10 @@ const NewPropertyWizard = ({ onComplete }) => {
                   </strong>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-xs mb-1">
+                  <span className="text-[#71839a] block text-xs mb-1">
                     القطع والمُلاّك
                   </span>
-                  <strong className="text-blue-600 text-lg font-black">
+                  <strong className="text-[#0f6d7c] text-lg font-black">
                     {formData.plots.length} قطع | {formData.owners.length} ملاك
                   </strong>
                 </div>
@@ -1415,7 +1415,7 @@ const NewPropertyWizard = ({ onComplete }) => {
             <button
               onClick={handleSave}
               disabled={saveMutation.isPending}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-12 py-4 rounded-xl text-lg font-bold shadow-[0_10px_20px_rgba(5,150,105,0.3)] flex items-center gap-3 mx-auto transition-transform hover:scale-105 disabled:opacity-70 disabled:scale-100"
+              className="bg-[#083646] hover:bg-[#0f6d7c] text-white px-12 py-4 rounded-xl text-lg font-bold shadow-[0_10px_20px_rgba(5,150,105,0.3)] flex items-center gap-3 mx-auto transition-transform hover:scale-105 disabled:opacity-70 disabled:scale-100"
             >
               {saveMutation.isPending ? (
                 <>
@@ -1437,12 +1437,12 @@ const NewPropertyWizard = ({ onComplete }) => {
 
   return (
     <div
-      className="flex-1 overflow-y-auto bg-slate-50 animate-in fade-in h-full flex flex-col"
+      className="flex-1 overflow-y-auto bg-[#f7fbfd] animate-in fade-in h-full flex flex-col"
       dir="rtl"
     >
-      <div className="flex flex-col flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 m-4 overflow-hidden">
+      <div className="flex flex-col flex-1 bg-white rounded-[24px] shadow-sm border border-[#d8e6ee] m-4 overflow-hidden">
         {/* شريط التقدم العلوي */}
-        <div className="shrink-0 flex items-center px-6 py-4 bg-slate-50 border-b border-slate-200 overflow-x-auto custom-scrollbar">
+        <div className="shrink-0 flex items-center px-4 py-2 bg-[#f7fbfd] border-b border-[#d8e6ee] overflow-x-auto custom-scrollbar min-h-[56px]">
           {STEPS.map((step, index) => {
             const isActive = currentStep === step.id;
             const isCompleted = currentStep > step.id;
@@ -1453,12 +1453,12 @@ const NewPropertyWizard = ({ onComplete }) => {
                 <button
                   onClick={() => isCompleted && setCurrentStep(step.id)}
                   disabled={!isCompleted && !isActive}
-                  className={`flex items-center gap-2 rounded-xl px-4 py-2.5 transition-all text-xs font-bold shrink-0
-                    ${isActive ? "bg-white text-blue-700 border-2 border-blue-500 shadow-md scale-105" : isCompleted ? "bg-emerald-50 text-emerald-700 border-2 border-transparent hover:border-emerald-200 cursor-pointer" : "bg-transparent text-slate-400 border-2 border-transparent cursor-not-allowed opacity-60"}
+                  className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 transition-all text-[11px] font-bold shrink-0
+                    ${isActive ? "bg-white text-[#123B5D] border-2 border-blue-500 shadow-md scale-105" : isCompleted ? "bg-emerald-50 text-emerald-700 border-2 border-transparent hover:border-emerald-200 cursor-pointer" : "bg-transparent text-[#71839a] border-2 border-transparent cursor-not-allowed opacity-60"}
                   `}
                 >
                   <span
-                    className={`flex items-center justify-center rounded-full text-[10px] font-black w-6 h-6 ${isActive ? "bg-blue-100 text-blue-700" : isCompleted ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"}`}
+                    className={`flex items-center justify-center rounded-full text-[10px] font-black w-5 h-5 ${isActive ? "bg-blue-100 text-[#123B5D]" : isCompleted ? "bg-emerald-500 text-white" : "bg-slate-200 text-[#71839a]"}`}
                   >
                     {isCompleted ? (
                       <CheckCircle className="w-3.5 h-3.5" />
@@ -1466,13 +1466,13 @@ const NewPropertyWizard = ({ onComplete }) => {
                       step.id + 1
                     )}
                   </span>
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-3.5 h-3.5" />
                   {step.label}
                 </button>
 
                 {index < STEPS.length - 1 && (
                   <div
-                    className={`flex-1 mx-2 h-[3px] min-w-[15px] max-w-[40px] rounded-full transition-colors ${isCompleted ? "bg-emerald-400" : "bg-slate-200"}`}
+                    className={`flex-1 mx-1.5 h-[2px] min-w-[12px] max-w-[28px] rounded-full transition-colors ${isCompleted ? "bg-emerald-400" : "bg-slate-200"}`}
                   ></div>
                 )}
               </React.Fragment>
@@ -1481,23 +1481,23 @@ const NewPropertyWizard = ({ onComplete }) => {
         </div>
 
         {/* منطقة المحتوى */}
-        <div className="flex-1 overflow-y-auto p-8 relative">
+        <div className="flex-1 overflow-y-auto p-5 md:p-6 relative">
           {renderStepContent()}
         </div>
 
         {/* الفوتر وأزرار التحكم */}
-        <div className="shrink-0 flex items-center justify-between px-8 py-5 bg-white border-t border-slate-200 shadow-[0_-10px_20px_rgba(0,0,0,0.02)] z-10">
+        <div className="shrink-0 flex items-center justify-between px-5 py-2.5 bg-white border-t border-[#d8e6ee] shadow-[0_-6px_14px_rgba(0,0,0,0.02)] z-10 min-h-[58px]">
           <button
             onClick={handlePrev}
             disabled={currentStep === 0 || saveMutation.isPending}
-            className="flex items-center gap-2 text-sm font-bold rounded-xl px-6 py-3 transition-colors disabled:opacity-40 border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 shadow-sm hover:shadow"
+            className="flex items-center gap-1.5 text-xs font-bold rounded-xl px-4 py-2 transition-colors disabled:opacity-40 border border-slate-300 bg-white text-[#123B5D] hover:bg-[#f7fbfd] shadow-sm hover:shadow"
           >
             <ArrowRight className="w-4 h-4" /> السابق
           </button>
 
-          <div className="text-xs font-bold text-slate-500 bg-slate-100 px-5 py-2 rounded-full border border-slate-200">
+          <div className="text-[11px] font-bold text-[#71839a] bg-[#f7fbfd] px-4 py-1.5 rounded-full border border-[#d8e6ee]">
             الخطوة{" "}
-            <span className="text-blue-600 mx-1 text-sm">
+            <span className="text-[#0f6d7c] mx-1 text-xs">
               {currentStep + 1}
             </span>{" "}
             من {STEPS.length}
@@ -1506,7 +1506,7 @@ const NewPropertyWizard = ({ onComplete }) => {
           <button
             onClick={currentStep === STEPS.length - 1 ? handleSave : handleNext}
             disabled={saveMutation.isPending}
-            className={`flex items-center gap-2 text-sm font-bold rounded-xl px-8 py-3 text-white transition-all shadow-md ${currentStep === STEPS.length - 1 ? "bg-emerald-600 hover:bg-emerald-700 hover:shadow-lg hover:-translate-y-0.5" : "bg-blue-600 hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:translate-y-0 disabled:shadow-md"}`}
+            className={`flex items-center gap-1.5 text-xs font-bold rounded-xl px-5 py-2 text-white transition-all shadow-md ${currentStep === STEPS.length - 1 ? "bg-[#083646] hover:bg-[#0f6d7c] hover:shadow-lg hover:-translate-y-0.5" : "bg-[#083646] hover:bg-[#0f6d7c] hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:translate-y-0 disabled:shadow-md"}`}
           >
             {currentStep === STEPS.length - 1
               ? "اعتماد وإرسال"
@@ -1524,13 +1524,13 @@ const NewPropertyWizard = ({ onComplete }) => {
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => setIsAddDistrictModalOpen(false)}
           ></div>
-          <div className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-black text-slate-800 mb-2 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-blue-600" /> إضافة حي جديد للتقسيم
+          <div className="relative bg-white w-full max-w-md rounded-[24px] shadow-2xl p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-black text-[#123B5D] mb-2 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-[#0f6d7c]" /> إضافة حي جديد للتقسيم
             </h3>
-            <p className="text-xs text-slate-500 mb-5">
+            <p className="text-xs text-[#71839a] mb-5">
               سيتم إضافة حي{" "}
-              <span className="font-bold text-slate-800">
+              <span className="font-bold text-[#123B5D]">
                 "{formData.district}"
               </span>{" "}
               وتوفيره لجميع المعاملات القادمة.
@@ -1538,13 +1538,13 @@ const NewPropertyWizard = ({ onComplete }) => {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label className="block text-xs font-bold text-[#123B5D] mb-1.5">
                   اختر القطاع الذي يتبعه هذا الحي *
                 </label>
                 <select
                   value={newDistrictSectorId}
                   onChange={(e) => setNewDistrictSectorId(e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-blue-500 bg-slate-50 font-bold"
+                  className="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-blue-500 bg-[#f7fbfd] font-bold"
                 >
                   <option value="">-- اختر القطاع --</option>
                   {riyadhZones.map((sector) => (
@@ -1555,10 +1555,10 @@ const NewPropertyWizard = ({ onComplete }) => {
                 </select>
               </div>
 
-              <div className="flex gap-2 pt-2 border-t border-slate-100">
+              <div className="flex gap-2 pt-2 border-t border-[#e7eef2]">
                 <button
                   onClick={() => setIsAddDistrictModalOpen(false)}
-                  className="flex-1 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                  className="flex-1 py-2.5 bg-[#f7fbfd] text-[#123B5D] font-bold rounded-xl hover:bg-slate-200 transition-colors"
                 >
                   إلغاء
                 </button>
@@ -1572,7 +1572,7 @@ const NewPropertyWizard = ({ onComplete }) => {
                   disabled={
                     !newDistrictSectorId || addDistrictMutation.isPending
                   }
-                  className="flex-[2] py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-[2] py-2.5 bg-[#083646] text-white font-bold rounded-xl hover:bg-[#0f6d7c] transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {addDistrictMutation.isPending ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

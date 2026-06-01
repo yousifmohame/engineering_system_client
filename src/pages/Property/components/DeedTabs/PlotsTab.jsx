@@ -16,14 +16,14 @@ export const PlotsTab = ({
 
   return (
     <div className="animate-in fade-in max-w-7xl mx-auto">
-      <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-slate-200">
-        <span className="text-sm font-black text-slate-800 flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-[#d8e6ee]">
+        <span className="text-sm font-black text-[#123B5D] flex items-center gap-2">
           <MapIcon className="w-5 h-5 text-emerald-600" /> القطع المرتبطة (
           {plotsCount})
         </span>
         <button
           onClick={() => setShowPlotForm(!showPlotForm)}
-          className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-700"
+          className="bg-[#083646] text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-[#0f6d7c]"
         >
           <Plus className="w-4 h-4" /> إضافة قطعة
         </button>
@@ -35,7 +35,7 @@ export const PlotsTab = ({
             <label className="text-xs font-bold block mb-1">رقم القطعة</label>
             <input
               type="text"
-              className="w-full p-2.5 text-xs border rounded-lg outline-none"
+              className="w-full p-2.5 text-xs border rounded-xl outline-none"
               value={newPlot.plotNumber}
               onChange={(e) =>
                 setNewPlot({ ...newPlot, plotNumber: e.target.value })
@@ -46,7 +46,7 @@ export const PlotsTab = ({
             <label className="text-xs font-bold block mb-1">المخطط</label>
             <input
               type="text"
-              className="w-full p-2.5 text-xs border rounded-lg outline-none"
+              className="w-full p-2.5 text-xs border rounded-xl outline-none"
               value={newPlot.planNumber}
               onChange={(e) =>
                 setNewPlot({ ...newPlot, planNumber: e.target.value })
@@ -57,14 +57,14 @@ export const PlotsTab = ({
             <label className="text-xs font-bold block mb-1">المساحة</label>
             <input
               type="number"
-              className="w-full p-2.5 text-xs border rounded-lg outline-none"
+              className="w-full p-2.5 text-xs border rounded-xl outline-none"
               value={newPlot.area}
               onChange={(e) => setNewPlot({ ...newPlot, area: e.target.value })}
             />
           </div>
           <button
             onClick={handleAddPlot}
-            className="px-4 py-2.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700"
+            className="px-4 py-2.5 bg-[#083646] text-white text-xs font-bold rounded-xl hover:bg-[#0f6d7c]"
           >
             إضافة مؤقتة
           </button>
@@ -76,19 +76,19 @@ export const PlotsTab = ({
           {localData.plots.map((plot) => (
             <div
               key={plot.id}
-              className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:border-emerald-400 transition-all group"
+              className="bg-white border border-[#d8e6ee] rounded-xl p-4 shadow-sm hover:border-emerald-400 transition-all group"
             >
-              <div className="flex justify-between items-start mb-3 border-b border-slate-100 pb-3">
+              <div className="flex justify-between items-start mb-3 border-b border-[#e7eef2] pb-3">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
                     <MapIcon className="w-6 h-6" />
                   </div>
                   <div>
-                    <div className="text-xs text-slate-400 font-bold mb-0.5">
+                    <div className="text-xs text-[#71839a] font-bold mb-0.5">
                       رقم القطعة
                     </div>
                     <div
-                      className="text-lg font-black text-slate-800"
+                      className="text-lg font-black text-[#123B5D]"
                       dir="ltr"
                     >
                       {plot.plotNumber || "---"}
@@ -96,7 +96,7 @@ export const PlotsTab = ({
                   </div>
                 </div>
                 <div className="text-left">
-                  <div className="text-xs text-slate-400 font-bold mb-0.5">
+                  <div className="text-xs text-[#71839a] font-bold mb-0.5">
                     المساحة
                   </div>
                   <div
@@ -108,28 +108,28 @@ export const PlotsTab = ({
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
-                  <span className="text-slate-400 block text-[10px] mb-0.5">
+                <div className="bg-[#f7fbfd] p-2 rounded-xl border border-[#e7eef2]">
+                  <span className="text-[#71839a] block text-[10px] mb-0.5">
                     المخطط
                   </span>
-                  <span className="font-mono font-bold text-slate-700">
+                  <span className="font-mono font-bold text-[#123B5D]">
                     {plot.planNumber || localData.planNumber || "---"}
                   </span>
                 </div>
-                <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
-                  <span className="text-slate-400 block text-[10px] mb-0.5">
+                <div className="bg-[#f7fbfd] p-2 rounded-xl border border-[#e7eef2]">
+                  <span className="text-[#71839a] block text-[10px] mb-0.5">
                     نوع العقار
                   </span>
                   {/* 💡 استخدام المتغير بشكل صحيح هنا */}
-                  <span className="font-bold text-slate-700">
+                  <span className="font-bold text-[#123B5D]">
                     {plot.propertyType || propertyType}
                   </span>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-slate-100 flex justify-end gap-2">
+              <div className="mt-3 pt-3 border-t border-[#e7eef2] flex justify-end gap-2">
                 <button
                   onClick={() => handleDeleteItem("plots", plot.id)}
-                  className="text-red-500 bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-100 flex items-center gap-1"
+                  className="text-red-500 bg-red-50 px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-red-100 flex items-center gap-1"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> حذف
                 </button>
@@ -138,9 +138,9 @@ export const PlotsTab = ({
           ))}
         </div>
       ) : (
-        <div className="text-center py-16 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl">
+        <div className="text-center py-16 bg-[#f7fbfd] border-2 border-dashed border-slate-300 rounded-xl">
           <MapIcon className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500 font-bold">لا توجد قطع مضافة</p>
+          <p className="text-[#71839a] font-bold">لا توجد قطع مضافة</p>
         </div>
       )}
     </div>
