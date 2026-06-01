@@ -121,7 +121,13 @@ export default function HRDashboard({ onNavigate }) {
       },
       {
         id: "ROLES_PERMISSIONS",
-        title: "الأدوار والصلاحيات",
+        title: "باني الأدوار والصلاحيات",
+        icon: ShieldCheck,
+        gradient: "from-[#8b5cf6] to-[#7c3aed]",
+      },
+      {
+        id: "ROLES_PERMISSIONSـEMPLOYE",
+        title: "الأدوار والصلاحيات للموظف",
         icon: ShieldCheck,
         gradient: "from-[#8b5cf6] to-[#7c3aed]",
       },

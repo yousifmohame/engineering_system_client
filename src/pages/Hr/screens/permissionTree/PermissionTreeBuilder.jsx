@@ -1,130 +1,150 @@
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Folder,
-  FolderOpen,
   FileText,
-  ChevronRight,
   ChevronDown,
-  Plus,
+  ChevronUp,
   Trash2,
   Edit2,
-  GripVertical,
+  GripHorizontal,
   Search,
   Layers,
-  List,
-  CheckCircle,
-  AlertCircle,
   Settings2,
-  PanelLeft,
+  PanelRight,
   X,
-  Home,
-  BarChart3,
-  Filter,
-  MoreVertical,
-  Copy,
-  Move,
-  Info,
-  Zap,
-  Shield,
-  Users,
-  Activity,
   Maximize2,
   Minimize2,
-} from 'lucide-react';
+  Unlink,
+  Plus,
+} from "lucide-react";
 
-import usePermissionStore from '../../../../stores/usePermissionStore';
+import usePermissionStore from "../../../../stores/usePermissionStore";
+
+// ============================================================
+// 🚀 CSS المُهندس خصيصاً للغة العربية (RTL) - لا ينكسر أبداً
+// ============================================================
+const advancedOrgStyles = `
+  /* حاوية الهيكل الأساسية */
+  .org-wrapper {
+    display: flex;
+    justify-content: center;
+    direction: rtl;
+    padding: 40px;
+    min-width: max-content;
+  }
+  /* عقدة الشجرة (تحوي البطاقة وأبنائها) */
+  .org-node-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  /* حاوية الأبناء */
+  .org-children {
+    display: flex;
+    padding-top: 32px;
+    position: relative;
+    justify-content: center;
+  }
+  /* الخط العمودي النازل من الأب إلى حاوية الأبناء */
+  .org-children::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 50%;
+    width: 2px;
+    height: 32px;
+    background-color: #94a3b8;
+    margin-right: -1px; /* تمركز دقيق للخط */
+  }
+  /* الابن الفردي */
+  .org-child {
+    padding-top: 32px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  /* الخط الأفقي الرابط بين الأبناء */
+  .org-child::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 2px;
+    background-color: #94a3b8;
+  }
+  /* ضبط الخط الأفقي للابن الأول والأخير (RTL) */
+  .org-child:first-child::before {
+    right: 50%;
+  }
+  .org-child:last-child::before {
+    left: 50%;
+  }
+  /* إخفاء الخط الأفقي إذا كان ابناً وحيداً */
+  .org-child:only-child::before {
+    display: none;
+  }
+  /* الخط العمودي النازل من الخط الأفقي إلى البطاقة */
+  .org-child::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 50%;
+    width: 2px;
+    height: 32px;
+    background-color: #94a3b8;
+    margin-right: -1px;
+  }
+`;
 
 // ============================================================
 // UTILITY COMPONENTS
 // ============================================================
-
-const StatCard = ({ icon: Icon, label, value, color, delay = 0 }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3, delay }}
-    className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
-  >
-    <div className="flex items-center gap-3">
-      <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center`}>
-        <Icon size={18} className="text-white" />
-      </div>
-      <div>
-        <div className="text-2xl font-bold text-slate-800">{value}</div>
-        <div className="text-xs text-slate-500 font-medium">{label}</div>
-      </div>
-    </div>
-  </motion.div>
-);
-
-const Breadcrumb = ({ path, onNavigate }) => (
-  <div className="flex items-center gap-2 text-sm overflow-x-auto">
-    <button
-      onClick={() => onNavigate(null)}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors whitespace-nowrap"
-    >
-      <Home size={14} />
-      <span className="font-semibold">الرئيسية</span>
-    </button>
-    {path.map((node, index) => (
-      <React.Fragment key={node.id}>
-        <ChevronRight size={14} className="text-slate-400" />
-        <button
-          onClick={() => onNavigate(node.id)}
-          className="px-3 py-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors whitespace-nowrap font-medium"
-        >
-          {node.name}
-        </button>
-      </React.Fragment>
-    ))}
-  </div>
-);
-
-const ActionButton = ({ icon: Icon, onClick, color, tooltip, disabled = false }) => (
+const ActionButton = ({
+  icon: Icon,
+  onClick,
+  color,
+  tooltip,
+  disabled = false,
+}) => (
   <button
-    onClick={onClick}
+    onClick={(e) => {
+      e.stopPropagation();
+      onClick(e);
+    }}
     disabled={disabled}
     title={tooltip}
-    className={`p-1.5 rounded-md transition-all duration-200 ${
+    className={`p-[7px] rounded-full transition-all duration-300 bg-white shadow-md border border-slate-100 ${
       disabled
-        ? 'opacity-30 cursor-not-allowed bg-slate-100'
-        : `hover:bg-${color}-100 text-${color}-600 hover:text-${color}-700`
+        ? "opacity-30 cursor-not-allowed"
+        : `hover:bg-${color}-50 text-${color}-600 hover:scale-110 hover:shadow-lg`
     }`}
   >
-    <Icon size={14} />
+    <Icon size={14} strokeWidth={2.5} />
   </button>
 );
 
 // ============================================================
 // MAIN COMPONENT
 // ============================================================
-
 const PermissionTreeBuilder = () => {
-  // ==========================================
-  // STATES
-  // ==========================================
-  const [viewMode, setViewMode] = useState('tree');
+  const [viewMode, setViewMode] = useState("tree");
   const [editingNode, setEditingNode] = useState(null);
-  const [editName, setEditName] = useState('');
+  const [editName, setEditName] = useState("");
 
   const [showAddGroup, setShowAddGroup] = useState(false);
-  const [newGroupName, setNewGroupName] = useState('');
-  const [newGroupParent, setNewGroupParent] = useState(null);
+  const [newGroupName, setNewGroupName] = useState("");
 
   const [isDragging, setIsDragging] = useState(false);
   const [dropTarget, setDropTarget] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const [selectedNodeDetails, setSelectedNodeDetails] = useState(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [navigationPath, setNavigationPath] = useState([]);
-  const [showStats, setShowStats] = useState(true);
-
   const treeContainerRef = useRef(null);
 
-  // ==========================================
-  // STORE
-  // ==========================================
   const {
     permissionTree,
     flatPermissions,
@@ -138,8 +158,6 @@ const PermissionTreeBuilder = () => {
     toggleNodeExpansion,
     toggleNodeSelection,
     setDraggedNode,
-    expandAll,
-    collapseAll,
     moveNode,
     addGroup,
     renameNode,
@@ -149,75 +167,25 @@ const PermissionTreeBuilder = () => {
     setSearchQuery,
   } = usePermissionStore();
 
-  // ==========================================
-  // COMPUTED VALUES
-  // ==========================================
-  const stats = useMemo(() => {
-    const countNodes = (nodes) => {
-      let count = 0;
-      nodes.forEach(node => {
-        count++;
-        if (node.children) count += countNodes(node.children);
-      });
-      return count;
-    };
-
-    const totalNodes = countNodes(permissionTree);
-    const groupsCount = permissionTree.filter(n => n.children?.length > 0).length;
-    const permissionsCount = flatPermissions.length;
-    const selectedCount = selectedNodes.size;
-
-    return { totalNodes, groupsCount, permissionsCount, selectedCount };
-  }, [permissionTree, flatPermissions, selectedNodes]);
-
-  // ==========================================
-  // LOAD
-  // ==========================================
   useEffect(() => {
     loadPermissionTree();
     loadFlatPermissions();
   }, [loadPermissionTree, loadFlatPermissions]);
 
   // ==========================================
-  // AUTO SCROLL WHILE DRAGGING
-  // ==========================================
-  useEffect(() => {
-    const handleAutoScroll = (e) => {
-      if (!isDragging) return;
-
-      const scrollZone = 120;
-      const scrollSpeed = 25;
-
-      if (e.clientY < scrollZone) {
-        window.scrollBy({
-          top: -scrollSpeed,
-          behavior: 'auto',
-        });
-      }
-
-      if (window.innerHeight - e.clientY < scrollZone) {
-        window.scrollBy({
-          top: scrollSpeed,
-          behavior: 'auto',
-        });
-      }
-    };
-
-    window.addEventListener('dragover', handleAutoScroll);
-
-    return () => {
-      window.removeEventListener('dragover', handleAutoScroll);
-    };
-  }, [isDragging]);
-
-  // ==========================================
-  // DRAG
+  // ⚡ DRAG & DROP (PERFORMANCE OPTIMIZED)
   // ==========================================
   const handleDragStart = (e, node) => {
+    e.stopPropagation();
     setDraggedNode(node);
     setIsDragging(true);
+    e.dataTransfer.effectAllowed = "move";
 
-    e.dataTransfer.effectAllowed = 'move';
+    // صورة شفافة للماوس أثناء السحب لتجنب الظل المزعج للمتصفح
+    const img = new Image();
+    img.src =
+      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    e.dataTransfer.setDragImage(img, 0, 0);
   };
 
   const handleDragEnd = () => {
@@ -226,9 +194,22 @@ const PermissionTreeBuilder = () => {
     setDropTarget(null);
   };
 
-  const handleDragOver = (e) => {
+  // 🚀 تقليل الـ Renders: لا تقم بتحديث الـ State إلا إذا تغير الهدف الفعلي
+  const handleDragOver = useCallback(
+    (e, nodeId) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = "move";
+      if (dropTarget !== nodeId) {
+        setDropTarget(nodeId);
+      }
+    },
+    [dropTarget],
+  );
+
+  const handleDragLeave = (e) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.stopPropagation();
   };
 
   const handleDrop = async (e, targetNode) => {
@@ -237,7 +218,6 @@ const PermissionTreeBuilder = () => {
 
     if (draggedNode && draggedNode.id !== targetNode.id) {
       await moveNode(draggedNode.id, targetNode.id);
-
       if (!expandedNodes.has(targetNode.id)) {
         toggleNodeExpansion(targetNode.id);
       }
@@ -249,7 +229,7 @@ const PermissionTreeBuilder = () => {
   };
 
   // ==========================================
-  // EDIT
+  // EDIT & UNLINK & DELETE
   // ==========================================
   const startEditing = (node) => {
     setEditingNode(node.id);
@@ -259,168 +239,121 @@ const PermissionTreeBuilder = () => {
   const saveEdit = async () => {
     if (editingNode && editName.trim()) {
       await renameNode(editingNode, editName.trim());
-
       setEditingNode(null);
-      setEditName('');
+      setEditName("");
     }
   };
 
-  const cancelEdit = () => {
-    setEditingNode(null);
-    setEditName('');
+  const handleUnlink = async (node) => {
+    if (
+      window.confirm(
+        `هل أنت متأكد من فك ارتباط "${node.name}" وجعله عنصراً رئيسياً مستقلاً؟`,
+      )
+    ) {
+      await moveNode(node.id, null);
+    }
   };
 
-  // ==========================================
-  // ADD GROUP
-  // ==========================================
   const handleAddGroup = async () => {
     if (newGroupName.trim()) {
-      await addGroup(
-        newGroupName.trim(),
-        'sub_module',
-        newGroupParent
-      );
-
-      setNewGroupName('');
-      setNewGroupParent(null);
+      await addGroup(newGroupName.trim(), "sub_module", null);
+      setNewGroupName("");
       setShowAddGroup(false);
     }
   };
 
-  // ==========================================
-  // DELETE
-  // ==========================================
   const handleDelete = async (nodeId, nodeName) => {
-    if (
-      window.confirm(`هل أنت متأكد من حذف "${nodeName}" ؟`)
-    ) {
+    if (window.confirm(`هل أنت متأكد من حذف "${nodeName}" وكل ما يتفرع منه؟`)) {
       await deleteNode(nodeId);
+      if (selectedNodeDetails?.id === nodeId) setSelectedNodeDetails(null);
     }
   };
 
   // ==========================================
-  // SEARCH
+  // SEARCH FILTER
   // ==========================================
   const filterTree = useCallback((nodes, query) => {
     if (!query) return nodes;
-
     return nodes.reduce((acc, node) => {
       const matchesSearch = node.name
         .toLowerCase()
         .includes(query.toLowerCase());
-
       const filteredChildren = node.children
         ? filterTree(node.children, query)
         : [];
-
       if (matchesSearch || filteredChildren.length > 0) {
-        acc.push({
-          ...node,
-          children: filteredChildren,
-        });
+        acc.push({ ...node, children: filteredChildren });
       }
-
       return acc;
     }, []);
   }, []);
 
-  const filteredTree = filterTree(
-    permissionTree,
-    searchQuery
-  );
+  const filteredTree = filterTree(permissionTree, searchQuery);
 
   // ==========================================
-  // SMART EXPAND
+  // 🎨 NODE STYLING (Matching the Provided Image)
   // ==========================================
-  const handleExpand = (nodeId) => {
-    toggleNodeExpansion(nodeId);
+  const getNodeStyle = (depth) => {
+    switch (depth) {
+      case 0:
+        return "bg-slate-50 border-[3px] border-slate-300 text-slate-800 shadow-[0_8px_20px_rgba(0,0,0,0.06)] rounded-xl";
+      case 1:
+        return "bg-sky-50 border-[3px] border-sky-400 text-sky-900 shadow-[0_8px_20px_rgba(56,189,248,0.15)] rounded-xl";
+      case 2:
+        return "bg-emerald-50 border-[3px] border-emerald-500 text-emerald-900 shadow-[0_8px_20px_rgba(16,185,129,0.15)] rounded-xl";
+      default:
+        return "bg-[#3b82f6] border-[3px] border-[#2563eb] text-white shadow-lg rounded-full px-8 py-3";
+    }
   };
 
   // ==========================================
-  // TREE NODE RENDERER (WITH LINES)
+  // TREE NODE RENDERER (Robust Structural Layout)
   // ==========================================
-  const renderTreeNode = (node, depth = 0, isLast = false) => {
+  const renderOrgNode = (node, depth = 0) => {
     const isExpanded = expandedNodes.has(node.id);
     const isSelected = selectedNodes.has(node.id);
     const hasChildren = node.children && node.children.length > 0;
     const isDraggingCurrent = draggedNode?.id === node.id;
+    const isDropTarget = dropTarget === node.id;
+    const isDeepNode = depth >= 3;
 
     return (
-      <div key={node.id} className="relative">
-        {/* NODE ROW */}
-        <motion.div
-          layout
-          initial={{ opacity: 0, x: -5 }}
-          animate={{ opacity: 1, x: 0 }}
-          draggable
-          onDragStart={(e) => handleDragStart(e, node)}
-          onDragEnd={handleDragEnd}
-          onDragOver={handleDragOver}
+      <div className="org-node-container" key={node.id}>
+        {/* 🔥 منطقة الهيت بوكس (Hitbox) لتسهيل الإفلات */}
+        <div
+          className="relative pt-2"
+          onDragOver={(e) => handleDragOver(e, node.id)}
+          onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, node)}
-          onDragEnter={() => setDropTarget(node.id)}
-          onDragLeave={() => setDropTarget(null)}
-          onClick={() => {
-            toggleNodeSelection(node.id);
-            setSelectedNodeDetails(node);
-          }}
-          style={{ paddingLeft: `${depth * 24 + 12}px` }}
-          className={`
-            relative group flex items-center gap-3 h-11 mb-1 rounded-lg border
-            cursor-pointer transition-all duration-200 select-none
-            ${isSelected 
-              ? 'bg-cyan-50 border-cyan-200 shadow-sm ring-1 ring-cyan-100' 
-              : 'bg-white border-transparent hover:border-slate-200 hover:bg-slate-50'
-            }
-            ${isDraggingCurrent ? 'opacity-50 scale-[0.98] bg-slate-100' : ''}
-            ${dropTarget === node.id ? 'ring-2 ring-cyan-500 bg-cyan-50' : ''}
-          `}
         >
-          {/* VERTICAL LINE CONNECTOR */}
-          {depth > 0 && !isLast && (
-            <div 
-              className="absolute w-px bg-slate-200"
-              style={{ left: `${(depth * 24) + 30}px`, top: '100%', height: 'calc(100% - 4px)' }} 
-            />
-          )}
-          
-          {/* HORIZONTAL LINE CONNECTOR */}
-          {depth > 0 && (
-            <div 
-              className="absolute h-px bg-slate-200"
-              style={{ left: `${(depth * 24) + 6}px`, top: '50%', width: '18px' }}
-            />
-          )}
-
-          {/* DRAG HANDLE */}
-          <div className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-600 z-10">
-            <GripVertical size={14} />
-          </div>
-
-          {/* EXPAND/COLLAPSE BUTTON */}
-          <button
+          {/* THE CARD */}
+          <motion.div
+            layout="position"
+            draggable
+            onDragStart={(e) => handleDragStart(e, node)}
+            onDragEnd={handleDragEnd}
             onClick={(e) => {
               e.stopPropagation();
-              handleExpand(node.id);
+              toggleNodeSelection(node.id);
+              setSelectedNodeDetails(node);
             }}
             className={`
-              z-10 flex items-center justify-center w-5 h-5 rounded transition-colors
-              ${hasChildren ? 'text-slate-500 hover:bg-slate-200' : 'text-transparent'}
+              relative group flex flex-col items-center justify-center min-w-[160px] max-w-[220px] cursor-pointer transition-all duration-300
+              ${getNodeStyle(depth)}
+              ${isDraggingCurrent ? "opacity-30 scale-90" : "hover:-translate-y-1"}
+              ${isDropTarget ? "ring-4 ring-orange-500 ring-offset-4 scale-105 z-50 bg-orange-50" : ""}
+              ${isSelected && !isDeepNode ? "ring-2 ring-indigo-600 ring-offset-2" : ""}
             `}
+            style={{ padding: isDeepNode ? "10px 24px" : "18px" }}
           >
-            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </button>
-
-          {/* ICON */}
-          <div className={`z-10 ${isSelected ? 'text-cyan-600' : 'text-slate-400'}`}>
-            {hasChildren ? (
-              isExpanded ? <FolderOpen size={18} /> : <Folder size={18} />
-            ) : (
-              <FileText size={16} />
+            {/* مقبض السحب */}
+            {!isDeepNode && (
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 cursor-grab text-current/40 hover:text-current/80 transition-colors">
+                <GripHorizontal size={16} />
+              </div>
             )}
-          </div>
 
-          {/* CONTENT */}
-          <div className="flex-1 min-w-0 z-10">
+            {/* الاسم وحالة التعديل */}
             {editingNode === node.id ? (
               <input
                 value={editName}
@@ -430,50 +363,78 @@ const PermissionTreeBuilder = () => {
                   if (e.key === "Enter") saveEdit();
                   if (e.key === "Escape") cancelEdit();
                 }}
+                onClick={(e) => e.stopPropagation()}
                 autoFocus
-                className="w-full px-2 py-1 text-sm font-bold text-slate-700 bg-white border border-cyan-300 rounded focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="w-full text-center px-2 py-1 text-sm font-bold text-slate-800 bg-white border-2 border-indigo-400 rounded-md outline-none"
               />
             ) : (
-              <>
-                <div className={`text-sm font-bold truncate ${hasChildren ? 'text-slate-800' : 'text-slate-600'}`}>
+              <div className="text-center w-full">
+                <div
+                  className={`font-black break-words leading-snug ${isDeepNode ? "text-sm" : "text-[15px]"}`}
+                >
                   {node.name}
                 </div>
-                {node.code && (
-                  <div className="text-[10px] text-slate-400 font-mono truncate">
-                    {node.code}
-                  </div>
-                )}
-              </>
+              </div>
             )}
-          </div>
 
-          {/* ACTIONS (Hover only) */}
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 pr-2">
-            <ActionButton icon={Edit2} onClick={(e) => { e.stopPropagation(); startEditing(node); }} color="blue" tooltip="تعديل" />
-            <ActionButton icon={Plus} onClick={(e) => { e.stopPropagation(); setNewGroupParent(node.id); setShowAddGroup(true); }} color="green" tooltip="إضافة فرع" />
-            <ActionButton icon={Trash2} onClick={(e) => { e.stopPropagation(); handleDelete(node.id, node.name); }} color="red" tooltip="حذف" />
-          </div>
-        </motion.div>
+            {/* الأزرار العائمة (Quick Actions) */}
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-auto">
+              <ActionButton
+                icon={Edit2}
+                onClick={() => startEditing(node)}
+                color="blue"
+                tooltip="تعديل الاسم"
+              />
+              {depth > 0 && (
+                <ActionButton
+                  icon={Unlink}
+                  onClick={() => handleUnlink(node)}
+                  color="amber"
+                  tooltip="فك الارتباط"
+                />
+              )}
+              <ActionButton
+                icon={Trash2}
+                onClick={() => handleDelete(node.id, node.name)}
+                color="rose"
+                tooltip="حذف العنصر"
+              />
+            </div>
 
-        {/* CHILDREN RECURSION */}
+            {/* زر التوسيع والطي (Expand/Collapse) */}
+            {hasChildren && !isDeepNode && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleNodeExpansion(node.id);
+                }}
+                className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-7 h-7 bg-white border-2 border-slate-300 rounded-full flex items-center justify-center text-slate-700 hover:bg-slate-100 hover:scale-110 transition-transform shadow-sm z-10"
+              >
+                {isExpanded ? (
+                  <ChevronUp size={16} strokeWidth={3} />
+                ) : (
+                  <ChevronDown size={16} strokeWidth={3} />
+                )}
+              </button>
+            )}
+          </motion.div>
+        </div>
+
+        {/* RECURSIVE CHILDREN */}
         <AnimatePresence>
           {isExpanded && hasChildren && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="relative"
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="org-children overflow-hidden"
             >
-              {/* Vertical Guide Line for the whole branch */}
-              <div 
-                className="absolute w-px bg-slate-200"
-                style={{ left: `${depth * 24 + 24}px`, top: 0, bottom: '20px' }} 
-              />
-              
-              {node.children.map((child, index) => 
-                renderTreeNode(child, depth + 1, index === node.children.length - 1)
-              )}
+              {node.children.map((child) => (
+                <div className="org-child" key={child.id}>
+                  {renderOrgNode(child, depth + 1)}
+                </div>
+              ))}
             </motion.div>
           )}
         </AnimatePresence>
@@ -481,507 +442,296 @@ const PermissionTreeBuilder = () => {
     );
   };
 
-  // ==========================================
-  // FLAT VIEW
-  // ==========================================
   const renderFlatView = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 p-6">
       {flatPermissions
-        .filter((p) =>
-          p.name
-            .toLowerCase()
-            .includes(
-              searchQuery.toLowerCase()
-            )
-        )
+        .filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
         .map((permission) => (
-          <motion.div
+          <div
             key={permission.id}
-            initial={{
-              opacity: 0,
-              y: 10,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            className="
-              p-3
-              bg-white
-              border
-              border-[#e8ddc8]
-              rounded-2xl
-              hover:shadow-md
-              transition-all
-            "
+            className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow"
           >
-            <div className="flex gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#eef7f6] flex items-center justify-center">
-                <FileText
-                  size={16}
-                  className="text-[#0e7490]"
-                />
+            <div className="flex gap-3 items-center">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
+                <FileText size={18} className="text-indigo-600" />
               </div>
-
               <div className="flex-1 min-w-0">
-                <div className="text-[11px] font-black text-[#123f59] truncate">
+                <div className="text-sm font-black text-slate-800 truncate">
                   {permission.name}
-                </div>
-
-                <div className="mt-1 text-[9px] text-[#94a3b8] font-mono truncate">
-                  {permission.code}
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         ))}
     </div>
   );
 
-  // ==========================================
-  // JSX
-  // ==========================================
   return (
-    <div className="h-screen bg-[#f4f1ea] flex overflow-hidden">
-      {/* SIDEBAR */}
-      <div className="w-[420px] bg-white border-l border-[#e8ddc8] flex flex-col">
-        {/* HEADER */}
-        <div className="p-4 border-b border-[#e8ddc8]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <PanelLeft
-                size={20}
-                className="text-[#0e7490]"
-              />
+    <div
+      className={`bg-slate-50 flex overflow-hidden ${isFullscreen ? "fixed inset-0 z-[99999]" : "h-[calc(100vh-80px)] rounded-3xl border border-slate-200 m-4 shadow-xl"}`}
+      dir="rtl"
+    >
+      <style>{advancedOrgStyles}</style>
 
-              <div>
-                <h1 className="text-[15px] font-black text-[#123f59]">
-                  شجرة الصلاحيات
-                </h1>
-
-                <p className="text-[10px] text-[#64748b] mt-1">
-                  اسحب وافلت لبناء الهيكل
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* SEARCH */}
-          <div className="relative mt-4">
+      {/* MAIN ORG CHART AREA */}
+      <div className="flex-1 flex flex-col relative overflow-hidden bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiNjYmQ1ZTEiLz48L3N2Zz4=')]">
+        {/* HEADER TOOLBAR */}
+        <div className="absolute top-5 left-5 right-5 z-40 flex items-center justify-between pointer-events-none">
+          <div className="pointer-events-auto relative w-80 shadow-lg rounded-2xl overflow-hidden">
             <Search
-              size={15}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8]"
+              size={18}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
             />
-
             <input
               value={searchQuery}
-              onChange={(e) =>
-                setSearchQuery(e.target.value)
-              }
-              placeholder="بحث..."
-              className="
-                w-full
-                h-10
-                pr-9
-                pl-3
-                rounded-xl
-                border
-                border-[#e8ddc8]
-                bg-[#fbf8f1]
-                text-[11px]
-                font-black
-                outline-none
-              "
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="البحث في الهيكل..."
+              className="w-full h-12 pr-12 pl-4 bg-white/95 backdrop-blur border border-slate-200 text-sm font-bold outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
 
-          {/* TOOLBAR */}
-          <div className="flex items-center gap-2 mt-3">
+          <div className="pointer-events-auto flex items-center gap-2 bg-white/95 backdrop-blur p-2 rounded-2xl border border-slate-200 shadow-lg">
             <button
-              onClick={expandAll}
-              className="
-                flex-1
-                h-9
-                rounded-xl
-                bg-[#eef7f6]
-                text-[#0e7490]
-                text-[10px]
-                font-black
-              "
+              onClick={() => setViewMode(viewMode === "tree" ? "flat" : "tree")}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center gap-2 transition-colors"
             >
-              توسيع الكل
+              {viewMode === "tree" ? (
+                <Layers size={16} />
+              ) : (
+                <PanelRight size={16} />
+              )}
+              {viewMode === "tree" ? "عرض القائمة" : "عرض الهيكل"}
             </button>
-
+            <div className="w-px h-6 bg-slate-300 mx-1"></div>
             <button
-              onClick={collapseAll}
-              className="
-                flex-1
-                h-9
-                rounded-xl
-                bg-[#fbf8f1]
-                text-[#64748b]
-                text-[10px]
-                font-black
-              "
+              onClick={() => setShowAddGroup(true)}
+              className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 flex items-center gap-2 shadow-md transition-colors"
             >
-              طي الكل
+              <Plus size={16} strokeWidth={3} /> كيان إداري جديد
+            </button>
+            <button
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 ml-1 transition-colors"
+            >
+              {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
             </button>
           </div>
         </div>
 
-        {/* TREE */}
+        {/* TREE CANVAS */}
         <div
           ref={treeContainerRef}
-          className="flex-1 overflow-y-auto p-3"
+          className="flex-1 overflow-auto p-16 cursor-grab active:cursor-grabbing"
+          style={{ paddingTop: "100px" }}
+          onMouseDown={(e) => {
+            if (e.target.closest("button") || e.target.closest("input")) return;
+            const el = treeContainerRef.current;
+            let startX = e.pageX - el.offsetLeft;
+            let startY = e.pageY - el.offsetTop;
+            let scrollLeft = el.scrollLeft;
+            let scrollTop = el.scrollTop;
+
+            const onMouseMove = (e) => {
+              e.preventDefault();
+              const x = e.pageX - el.offsetLeft;
+              const y = e.pageY - el.offsetTop;
+              el.scrollLeft = scrollLeft - (x - startX);
+              el.scrollTop = scrollTop - (y - startY);
+            };
+
+            const onMouseUp = () => {
+              window.removeEventListener("mousemove", onMouseMove);
+              window.removeEventListener("mouseup", onMouseUp);
+            };
+
+            window.addEventListener("mousemove", onMouseMove);
+            window.addEventListener("mouseup", onMouseUp);
+          }}
         >
-          {viewMode === 'tree' ? (
-            filteredTree.length > 0 ? (
-              filteredTree.map((node, index) =>
-                renderTreeNode(node, 0, index === filteredTree.length - 1)
-              )
-            ) : (
-              <div className="h-full flex items-center justify-center text-slate-400 text-sm font-bold">
-                لا توجد نتائج
-              </div>
-            )
+          {viewMode === "tree" ? (
+            <div className="org-wrapper">
+              {filteredTree.length > 0 ? (
+                <div className="org-children" style={{ paddingTop: 0 }}>
+                  {/* Root level mapping */}
+                  {filteredTree.map((node) => (
+                    <div
+                      className="org-child"
+                      key={node.id}
+                      style={{ paddingTop: 0 }}
+                    >
+                      {renderOrgNode(node, 0)}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-32 flex flex-col items-center text-slate-400 bg-white/50 p-10 rounded-3xl border border-slate-200">
+                  <Layers
+                    size={64}
+                    className="mb-4 opacity-50 text-indigo-300"
+                  />
+                  <p className="font-black text-lg text-slate-600">
+                    الشجرة فارغة أو لا توجد نتائج
+                  </p>
+                  <p className="text-sm mt-2">
+                    قم بإنشاء كيان إداري جديد للبدء
+                  </p>
+                </div>
+              )}
+            </div>
           ) : (
             renderFlatView()
           )}
         </div>
-
-        {/* FOOTER */}
-        <div className="p-3 border-t border-[#e8ddc8] bg-[#fbf8f1]">
-          <button
-            onClick={() => {
-              setNewGroupParent(null);
-              setShowAddGroup(true);
-            }}
-            className="
-              w-full
-              h-11
-              rounded-xl
-              bg-[#0e7490]
-              text-white
-              text-[11px]
-              font-black
-              flex
-              items-center
-              justify-center
-              gap-2
-            "
-          >
-            <Plus size={16} />
-            إضافة عنصر جديد
-          </button>
-        </div>
       </div>
 
-      {/* DETAILS PANEL */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* TOP BAR */}
-        <div className="h-[72px] bg-white border-b border-[#e8ddc8] px-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-[16px] font-black text-[#123f59]">
-              تفاصيل الصلاحية
-            </h2>
-
-            <p className="text-[11px] text-[#64748b] mt-1">
-              اختر أي عنصر من الشجرة لعرض التفاصيل
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() =>
-                setViewMode('tree')
-              }
-              className={`
-                h-10
-                px-4
-                rounded-xl
-                text-[10px]
-                font-black
-                transition-all
-
-                ${
-                  viewMode === 'tree'
-                    ? 'bg-[#0e7490] text-white'
-                    : 'bg-[#fbf8f1] text-[#64748b]'
-                }
-              `}
-            >
-              هرمي
-            </button>
-
-            <button
-              onClick={() =>
-                setViewMode('flat')
-              }
-              className={`
-                h-10
-                px-4
-                rounded-xl
-                text-[10px]
-                font-black
-                transition-all
-
-                ${
-                  viewMode === 'flat'
-                    ? 'bg-[#0e7490] text-white'
-                    : 'bg-[#fbf8f1] text-[#64748b]'
-                }
-              `}
-            >
-              مسطح
-            </button>
-          </div>
+      {/* DETAILS SIDEBAR */}
+      <div className="w-[340px] bg-white border-r border-slate-200 flex flex-col z-30 shadow-[-10px_0_30px_rgba(0,0,0,0.03)] shrink-0">
+        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+          <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+            <Settings2 className="text-indigo-600" size={20} /> تفاصيل العنصر
+          </h2>
+          <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+            اضغط على أي بطاقة في الهيكل التنظيمي لعرض وتعديل خصائصها.
+          </p>
         </div>
 
-        {/* CONTENT */}
         <div className="flex-1 overflow-y-auto p-6">
           {selectedNodeDetails ? (
-            <div className="max-w-3xl">
-              <div className="bg-white border border-[#e8ddc8] rounded-3xl p-6 shadow-sm">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-[#eef7f6] flex items-center justify-center">
-                    <Settings2
-                      size={26}
-                      className="text-[#0e7490]"
-                    />
+            <div className="space-y-6">
+              <div className="text-center bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                <div className="w-20 h-20 mx-auto bg-white text-indigo-600 rounded-full flex items-center justify-center mb-4 shadow-sm border border-slate-200">
+                  <Folder size={36} strokeWidth={1.5} />
+                </div>
+                <h3 className="text-xl font-black text-slate-800 leading-tight">
+                  {selectedNodeDetails.name}
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-center">
+                  <div className="text-[11px] text-slate-500 font-bold mb-2">
+                    المستوى والتصنيف
                   </div>
-
-                  <div>
-                    <h3 className="text-[22px] font-black text-[#123f59]">
-                      {selectedNodeDetails.name}
-                    </h3>
-
-                    <p className="text-[11px] text-[#94a3b8] mt-1 font-mono">
-                      {selectedNodeDetails.code ||
-                        'NO_CODE'}
-                    </p>
+                  <div className="text-sm font-black text-indigo-700 bg-indigo-50 py-1 rounded-lg">
+                    {selectedNodeDetails.children?.length
+                      ? "مجموعة مُديرة"
+                      : "موظف / نهاية فرع"}
                   </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4 mt-8">
-                  <div className="p-4 rounded-2xl bg-[#fbf8f1] border border-[#e8ddc8]">
-                    <div className="text-[10px] text-[#94a3b8] font-bold">
-                      النوع
-                    </div>
-
-                    <div className="mt-2 text-[13px] font-black text-[#123f59]">
-                      {selectedNodeDetails.children
-                        ?.length
-                        ? 'مجموعة / شاشة'
-                        : 'صلاحية مفردة'}
-                    </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-center">
+                  <div className="text-[11px] text-slate-500 font-bold mb-2">
+                    الكيانات التابعة
                   </div>
-
-                  <div className="p-4 rounded-2xl bg-[#fbf8f1] border border-[#e8ddc8]">
-                    <div className="text-[10px] text-[#94a3b8] font-bold">
-                      الأبناء
-                    </div>
-
-                    <div className="mt-2 text-[13px] font-black text-[#123f59]">
-                      {selectedNodeDetails.children
-                        ?.length || 0}
-                    </div>
+                  <div className="text-2xl font-black text-emerald-600">
+                    {selectedNodeDetails.children?.length || 0}
                   </div>
                 </div>
               </div>
+
+              <div className="pt-6 border-t border-slate-100 space-y-3">
+                <button
+                  onClick={() => startEditing(selectedNodeDetails)}
+                  className="w-full py-3 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm font-black hover:bg-white hover:border-indigo-300 hover:text-indigo-700 transition-all flex justify-center items-center gap-2 shadow-sm"
+                >
+                  <Edit2 size={16} /> تغيير اسم الكيان
+                </button>
+                <button
+                  onClick={() =>
+                    handleDelete(
+                      selectedNodeDetails.id,
+                      selectedNodeDetails.name,
+                    )
+                  }
+                  className="w-full py-3 bg-rose-50 text-rose-700 rounded-xl text-sm font-black hover:bg-rose-100 hover:text-rose-800 transition-all flex justify-center items-center gap-2"
+                >
+                  <Trash2 size={16} /> حذف الكيان بالكامل
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center">
-              <Layers
-                size={60}
-                className="text-[#dbe4ea]"
+            <div className="h-full flex flex-col items-center justify-center text-center opacity-60">
+              <PanelRight
+                size={64}
+                className="text-slate-300 mb-6"
+                strokeWidth={1}
               />
-
-              <h3 className="mt-4 text-[15px] font-black text-[#64748b]">
-                اختر صلاحية
-              </h3>
-
-              <p className="text-[11px] text-[#94a3b8] mt-1">
-                اضغط على أي عنصر داخل الشجرة
+              <p className="text-base font-black text-slate-600">
+                اللوحة فارغة
+              </p>
+              <p className="text-xs text-slate-400 mt-2 max-w-[200px]">
+                قم بتحديد أي بطاقة من الهيكل التنظيمي لاستعراضها.
               </p>
             </div>
           )}
         </div>
       </div>
 
-      {/* DRAG OVERLAY */}
-      <AnimatePresence>
-        {draggedNode && (
-          <motion.div
-            initial={{
-              opacity: 0,
-              scale: 0.9,
-            }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-            }}
-            exit={{
-              opacity: 0,
-              scale: 0.9,
-            }}
-            className="
-              fixed
-              bottom-6
-              left-6
-              z-[9999]
-              pointer-events-none
-            "
-          >
-            <div className="bg-[#123f59] text-white px-5 py-3 rounded-2xl shadow-2xl">
-              <div className="text-[10px] text-white/70 font-bold">
-                جاري نقل
-              </div>
-
-              <div className="text-[12px] font-black mt-1">
-                {draggedNode.name}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* LOADING */}
       {isLoading && (
-        <div className="fixed inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-[99999]">
-          <div className="w-12 h-12 rounded-full border-4 border-[#e8ddc8] border-t-[#0e7490] animate-spin"></div>
+        <div className="fixed inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-[99999]">
+          <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
         </div>
       )}
 
-      {/* ERROR */}
       {error && (
-        <div className="fixed bottom-5 right-5 bg-red-500 text-white px-4 py-3 rounded-2xl shadow-2xl text-[11px] font-black z-[99999]">
-          {error}
+        <div className="fixed bottom-8 right-8 bg-rose-600 text-white px-5 py-4 rounded-2xl shadow-2xl text-sm font-bold z-[99999] flex items-center gap-3">
+          <X size={20} /> {error}
         </div>
       )}
 
-      {/* ADD MODAL */}
       <AnimatePresence>
         {showAddGroup && (
           <motion.div
-            initial={{
-              opacity: 0,
-            }}
-            animate={{
-              opacity: 1,
-            }}
-            exit={{
-              opacity: 0,
-            }}
-            className="
-              fixed
-              inset-0
-              bg-black/40
-              backdrop-blur-sm
-              z-[99999]
-              flex
-              items-center
-              justify-center
-              p-4
-            "
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[99999] flex items-center justify-center p-4"
           >
             <motion.div
-              initial={{
-                opacity: 0,
-                scale: 0.95,
-              }}
-              animate={{
-                opacity: 1,
-                scale: 1,
-              }}
-              exit={{
-                opacity: 0,
-                scale: 0.95,
-              }}
-              className="
-                w-full
-                max-w-md
-                bg-white
-                rounded-3xl
-                border
-                border-[#e8ddc8]
-                shadow-2xl
-                p-6
-              "
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="w-full max-w-md bg-white rounded-[2rem] shadow-2xl p-8 border border-slate-100"
             >
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h3 className="text-[16px] font-black text-[#123f59]">
-                    إضافة عنصر
-                  </h3>
+              <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6">
+                <Plus size={28} strokeWidth={2.5} />
+              </div>
+              <h3 className="text-xl font-black text-slate-800 mb-2">
+                إضافة كيان إداري جديد
+              </h3>
+              <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+                سيظهر هذا الكيان كمستوى رئيسي في أعلى الشجرة. يمكنك لاحقاً سحبه
+                وإفلاته ليكون تحت أي قسم آخر.
+              </p>
 
-                  <p className="text-[10px] text-[#94a3b8] mt-1">
-                    إنشاء مجموعة أو شاشة جديدة
-                  </p>
-                </div>
-
-                <button
-                  onClick={() =>
-                    setShowAddGroup(false)
-                  }
-                  className="w-9 h-9 rounded-xl hover:bg-gray-100 flex items-center justify-center"
-                >
-                  <X size={16} />
-                </button>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700">
+                  اسم الكيان / الإدارة
+                </label>
+                <input
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  placeholder="مثال: إدارة الإنتاج، موظف مبيعات..."
+                  autoFocus
+                  className="w-full h-14 px-4 rounded-2xl border-[2px] border-slate-200 bg-slate-50 text-sm font-bold outline-none focus:border-indigo-500 focus:bg-white transition-colors"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleAddGroup();
+                  }}
+                />
               </div>
 
-              <input
-                value={newGroupName}
-                onChange={(e) =>
-                  setNewGroupName(
-                    e.target.value
-                  )
-                }
-                placeholder="اسم العنصر..."
-                className="
-                  w-full
-                  h-12
-                  px-4
-                  rounded-2xl
-                  border
-                  border-[#e8ddc8]
-                  bg-[#fbf8f1]
-                  text-[12px]
-                  font-black
-                  outline-none
-                "
-              />
-
-              <div className="flex justify-end gap-2 mt-5">
+              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-slate-100">
                 <button
-                  onClick={() =>
-                    setShowAddGroup(false)
-                  }
-                  className="
-                    h-11
-                    px-5
-                    rounded-2xl
-                    bg-[#fbf8f1]
-                    text-[#64748b]
-                    text-[11px]
-                    font-black
-                  "
+                  onClick={() => setShowAddGroup(false)}
+                  className="px-6 py-3 rounded-xl bg-slate-100 text-slate-600 text-sm font-black hover:bg-slate-200 transition-colors"
                 >
                   إلغاء
                 </button>
-
                 <button
                   onClick={handleAddGroup}
-                  className="
-                    h-11
-                    px-5
-                    rounded-2xl
-                    bg-[#0e7490]
-                    text-white
-                    text-[11px]
-                    font-black
-                  "
+                  disabled={!newGroupName.trim()}
+                  className="px-8 py-3 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md hover:shadow-lg"
                 >
-                  حفظ
+                  إنشاء الكيان
                 </button>
               </div>
             </motion.div>
