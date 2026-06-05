@@ -1,10 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { useAppStore } from "../../stores/useAppStore";
 import ClientsDashboard from "./ClientsDashboard";
 import CreateClientPanel from "./screens/CreateClientPanel";
 import ClientsPanel from "./screens/ClientsPanel";
-import ClientFileView from "./components/clientDetails/ClientFileView";
-// 👇 1. استيراد اللوحات الجديدة التي قمنا بإنشائها
+import ClientFileViewModal from "./components/clientDetails/ClientFileView"; // 👈 المودال الجديد
 import ClientsRatingsPanel from "./screens/ClientsRatingsPanel";
 import ClientsDocsPanel from "./screens/ClientsDocsPanel";
 
@@ -155,7 +154,6 @@ const CLIENTS_NEW_DESIGN_STYLE = `
 }
 .clients-new-design .clients-log-table .client-row-actions svg{width:13px!important;height:13px!important}
 .clients-new-design .clients-log-table .client-name-cell{max-width:220px!important;min-width:170px!important}
-
 `;
 
 const ClientsScreenWrapper = () => {
@@ -164,7 +162,11 @@ const ClientsScreenWrapper = () => {
   const { activeTabPerScreen, setActiveTab, addTab, removeTab } = useAppStore();
   const activeTabId = activeTabPerScreen[screenId] || "DASHBOARD_CLIENTS";
 
-  // 👇 2. تحديث دالة التنقل لدعم التابات الجديدة
+  // 👈 حالات المودال الخاص بملف العميل
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [selectedClientIdForModal, setSelectedClientIdForModal] =
+    useState(null);
+
   const handleNavigate = (targetId) => {
     switch (targetId) {
       case "NEW_CLIENT_TAB":
@@ -209,7 +211,6 @@ const ClientsScreenWrapper = () => {
   };
 
   const renderContent = () => {
-    // حالة: إنشاء عميل جديد
     if (activeTabId === "NEW_CLIENT_TAB") {
       return (
         <CreateClientPanel
@@ -221,40 +222,18 @@ const ClientsScreenWrapper = () => {
       );
     }
 
-    // حالة: دليل العملاء
     if (activeTabId === "300-MAIN") {
       return (
         <ClientsPanel
-          onOpenDetails={(clientId, clientCode) => {
-            const tabId = `CLIENT-${clientId}`;
-            addTab(screenId, {
-              id: tabId,
-              title: `ملف: ${clientCode}`,
-              type: "details",
-              clientId: clientId,
-              closable: true,
-            });
-            setActiveTab(screenId, tabId);
+          onOpenDetails={(clientId) => {
+            // 👈 فتح المودال عند النقر على عرض العميل بدلاً من إضافة تاب
+            setSelectedClientIdForModal(clientId);
+            setIsClientModalOpen(true);
           }}
         />
       );
     }
 
-    // حالة: ملف العميل الفردي
-    if (activeTabId?.startsWith("CLIENT-")) {
-      const clientId = activeTabId.replace("CLIENT-", "");
-      return (
-        <ClientFileView
-          clientId={clientId}
-          onBack={() => {
-            removeTab(screenId, activeTabId);
-            setActiveTab(screenId, "300-MAIN");
-          }}
-        />
-      );
-    }
-
-    // 👇 3. إضافة الحالات الجديدة للوحات
     if (activeTabId === "CLIENTS_RATINGS") {
       return (
         <div className="p-6 h-full overflow-y-auto">
@@ -271,7 +250,6 @@ const ClientsScreenWrapper = () => {
       );
     }
 
-    // الحالة الافتراضية: لوحة التحكم (Dashboard)
     return <ClientsDashboard onNavigate={handleNavigate} />;
   };
 
@@ -286,6 +264,16 @@ const ClientsScreenWrapper = () => {
           {renderContent()}
         </div>
       </div>
+
+      {/* 👈 المودال الخاص بملف العميل تم استدعاؤه هنا ليعمل فوق الشاشة بالكامل */}
+      <ClientFileViewModal
+        clientId={selectedClientIdForModal}
+        isOpen={isClientModalOpen}
+        onClose={() => {
+          setIsClientModalOpen(false);
+          setSelectedClientIdForModal(null);
+        }}
+      />
     </div>
   );
 };
