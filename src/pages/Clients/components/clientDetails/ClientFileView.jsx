@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getClientById } from "../../api/clientApi"; // تأكد من مسار الـ API لديك
+import { getClientById } from "../../../../api/clientApi";
 import {
   User,
   FileText,
@@ -14,17 +14,19 @@ import {
   X,
   Download,
   Copy,
+  ArrowLeft,
   Loader2,
   Save,
   MapPin,
   MessageCircle,
   PhoneCall,
-  Eye,
+  Eye
 } from "lucide-react";
 import { toast } from "sonner";
-import api from "../../api/axios"; // تأكد من مسار Axios لديك
+import api from "../../../../api/axios";
+import { getFullUrl } from "../../../../utils/urlUtils";
 
-// استيراد التابات المنفصلة (نفس تابات الشاشة الأصلية)
+// استيراد التابات المنفصلة
 import SummaryTab from "./FileViewTabs/SummaryTab";
 import BasicInfoTab from "./FileViewTabs/BasicInfoTab";
 import ContactTab from "./FileViewTabs/ContactTab";
@@ -32,9 +34,7 @@ import DocsTab from "./FileViewTabs/DocsTab";
 import TransactionsTab from "./FileViewTabs/TransactionsTab";
 import PropertiesTab from "./FileViewTabs/PropertiesTab";
 
-// ==========================================
-// 🛠️ الدوال المساعدة
-// ==========================================
+// الدوال المساعدة
 const getFullName = (nameObj) => {
   if (!nameObj) return "غير محدد";
   if (typeof nameObj === "string") return nameObj;
@@ -104,36 +104,23 @@ const toEnglishNumbers = (str) => {
   return String(str).replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
 };
 
-const getFullUrl = (url) => {
-  if (!url) return null;
-  if (url.startsWith("http")) return url;
-  let fixedUrl = url;
-  if (url.startsWith("/uploads/")) {
-    fixedUrl = `/api${url}`;
-  }
-  const baseUrl = "https://details-worksystem1.com";
-  return `${baseUrl}${fixedUrl}`;
-};
-
-// ==========================================
-// 🚀 المكون الرئيسي: ClientFileDetails (Modal)
-// ==========================================
-const ClientFileDetails = ({ clientId, isOpen, onClose }) => {
+const ClientFileView = ({ clientId, onBack }) => {
   const queryClient = useQueryClient();
 
-  // حالات عامة للواجهة
+  // حالات عامة
   const [activeTab, setActiveTab] = useState("summary");
   const [isPhotoBlurred, setIsPhotoBlurred] = useState(false);
   const [isIdMasked, setIsIdMasked] = useState(true);
 
-  // حالات التعديل
+  // حالات التعديل للبيانات الأساسية
   const [isEditingBasicInfo, setIsEditingBasicInfo] = useState(false);
   const [editFormData, setEditFormData] = useState({});
+  const repIdRef = useRef(null);
   const repAuthRef = useRef(null);
   const [isAnalyzingRepId, setIsAnalyzingRepId] = useState(false);
   const [isAnalyzingRepAuth, setIsAnalyzingRepAuth] = useState(false);
 
-  // حالات رفع الملفات
+  // حالات الوثائق
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const fileInputRef = useRef(null);
   const [uploadForm, setUploadForm] = useState({
@@ -143,7 +130,6 @@ const ClientFileDetails = ({ clientId, isOpen, onClose }) => {
   });
   const [previewDoc, setPreviewDoc] = useState(null);
 
-  // جلب بيانات العميل
   const {
     data: client,
     isLoading,
@@ -151,15 +137,9 @@ const ClientFileDetails = ({ clientId, isOpen, onClose }) => {
   } = useQuery({
     queryKey: ["client", clientId],
     queryFn: () => getClientById(clientId),
-    enabled: !!clientId && isOpen, // 👈 الجلب يعمل فقط إذا كان المودال مفتوحاً ولديه آي دي
+    enabled: !!clientId,
   });
 
-  // إذا كان المودال مغلقاً، لا نعرض أي شيء
-  if (!isOpen) return null;
-
-  // --------------------------------------------------------
-  // دوال التعامل مع البيانات (مأخوذة من شاشتك الأصلية)
-  // --------------------------------------------------------
   const handleStartEdit = () => {
     const nameDetails = client.name?.details || client.name || {};
     let firstAr = nameDetails.firstAr || nameDetails.firstName || "";
@@ -347,6 +327,7 @@ const ClientFileDetails = ({ clientId, isOpen, onClose }) => {
     reader.readAsDataURL(file);
   };
 
+  // دوال المستندات
   const uploadDocMutation = useMutation({
     mutationFn: async (formData) => {
       const res = await api.post(`/clients/${clientId}/documents`, formData, {
@@ -403,12 +384,11 @@ const ClientFileDetails = ({ clientId, isOpen, onClose }) => {
     formData.append("notes", uploadForm.notes);
     uploadDocMutation.mutate(formData);
   };
-
   const handleDeleteDocument = (docId) => {
-    if (window.confirm("هل أنت متأكد من حذف هذه الوثيقة نهائياً؟"))
+    if (window.confirm("هل أنت متأكد من حذف هذه الوثيقة نهائياً؟")) {
       deleteDocMutation.mutate(docId);
+    }
   };
-
   const handleViewDocument = (doc) => {
     const fileUrl = getFullUrl(doc.filePath);
     if (!fileUrl) return toast.error("مسار الملف غير متوفر");
@@ -418,7 +398,6 @@ const ClientFileDetails = ({ clientId, isOpen, onClose }) => {
       type: doc.fileType || "application/pdf",
     });
   };
-
   const handleDownloadDocument = async (filePath, fileName) => {
     const fileUrl = getFullUrl(filePath);
     if (!fileUrl) return toast.error("مسار الملف غير متوفر");
@@ -451,14 +430,87 @@ const ClientFileDetails = ({ clientId, isOpen, onClose }) => {
     window.open(`https://wa.me/${cleanPhone}`, "_blank");
   };
 
-  // --------------------------------------------------------
-  // واجهات المودالز الداخلية (Upload & Preview)
-  // --------------------------------------------------------
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-slate-50">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600 mb-4" />
+        <h2 className="text-lg font-bold text-slate-700">
+          جاري تحميل ملف العميل...
+        </h2>
+      </div>
+    );
+  }
+
+  if (isError || !client) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-slate-50">
+        <h2 className="text-xl font-bold text-red-600 mb-4">
+          حدث خطأ أو لم يتم العثور على بيانات العميل
+        </h2>
+        <button
+          onClick={onBack}
+          className="px-4 py-2 bg-slate-200 rounded-lg font-bold hover:bg-slate-300"
+        >
+          العودة للسجل
+        </button>
+      </div>
+    );
+  }
+
+  const clientName = getFullName(client.name);
+  const englishName =
+    client.name?.en || client.name?.englishName || client.name?.firstEn || "";
+
+  const TABS = [
+    { id: "summary", label: "ملخص العميل", icon: User },
+    { id: "basic", label: "البيانات الأساسية", icon: FileText },
+    { id: "contact", label: "العنوان والتواصل", icon: MapPin },
+    {
+      id: "docs",
+      label: "وثائق ومستندات",
+      icon: FileCheck,
+      badge: client?._count?.attachments || "0",
+      badgeColor: "bg-slate-500",
+    },
+    { id: "tax", label: "الزكاة والضريبة", icon: Receipt },
+    {
+      id: "transactions",
+      label: "المعاملات",
+      icon: FileText,
+      badge: client?._count?.transactions || "0",
+      badgeColor: "bg-blue-600",
+    },
+    {
+      id: "financial",
+      label: "السجل المالي",
+      icon: BarChart3,
+      badge: "1",
+      badgeColor: "bg-cyan-600",
+    },
+    { id: "rating", label: "التقييم والملاحظات", icon: Star },
+    { id: "audit", label: "سجل التدقيق", icon: History },
+    { id: "reports", label: "التقارير", icon: BarChart3 },
+    {
+      id: "properties",
+      label: "الملكيات والصكوك",
+      icon: Landmark,
+      badge: client?.ownershipFiles?.length || "0",
+      badgeColor: "bg-violet-600",
+    },
+    {
+      id: "obligations",
+      label: "التزامات الأمانة",
+      icon: Receipt,
+      badge: "0",
+      badgeColor: "bg-red-500",
+    },
+  ];
+
   const renderUploadModal = () => {
     if (!isUploadModalOpen) return null;
     return (
       <div
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in"
+        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
         dir="rtl"
       >
         <div className="bg-white rounded-2xl p-6 w-full max-w-[480px] shadow-2xl">
@@ -559,7 +611,7 @@ const ClientFileDetails = ({ clientId, isOpen, onClose }) => {
       previewDoc.url.toLowerCase().endsWith(".pdf");
     return (
       <div
-        className="fixed inset-0 z-[250] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in"
+        className="fixed inset-0 z-[200] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in"
         dir="rtl"
       >
         <div className="bg-white w-full max-w-5xl h-[90vh] rounded-3xl flex flex-col overflow-hidden shadow-2xl">
@@ -619,108 +671,20 @@ const ClientFileDetails = ({ clientId, isOpen, onClose }) => {
     );
   };
 
-  // --------------------------------------------------------
-  // حالات تحميل المودال الرئيسي
-  // --------------------------------------------------------
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 z-[150] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl p-8 flex flex-col items-center shadow-2xl animate-in zoom-in-95">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mb-4" />
-          <h2 className="text-lg font-bold text-slate-700">
-            جاري تحميل ملف العميل...
-          </h2>
-        </div>
-      </div>
-    );
-  }
-
-  if (isError || !client) {
-    return (
-      <div className="fixed inset-0 z-[150] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl p-8 flex flex-col items-center shadow-2xl animate-in zoom-in-95">
-          <h2 className="text-xl font-bold text-red-600 mb-4">
-            حدث خطأ أو لم يتم العثور على بيانات العميل
-          </h2>
-          <button
-            onClick={onClose}
-            className="px-6 py-2.5 bg-slate-100 rounded-xl font-bold hover:bg-slate-200"
-          >
-            إغلاق النافذة
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // إعداد البيانات بعد التحميل
-  const clientName = getFullName(client.name);
-  const englishName =
-    client.name?.en || client.name?.englishName || client.name?.firstEn || "";
-
-  const TABS = [
-    { id: "summary", label: "ملخص العميل", icon: User },
-    { id: "basic", label: "البيانات الأساسية", icon: FileText },
-    { id: "contact", label: "العنوان والتواصل", icon: MapPin },
-    {
-      id: "docs",
-      label: "وثائق ومستندات",
-      icon: FileCheck,
-      badge: client?._count?.attachments || "0",
-      badgeColor: "bg-slate-500",
-    },
-    { id: "tax", label: "الزكاة والضريبة", icon: Receipt },
-    {
-      id: "transactions",
-      label: "المعاملات",
-      icon: FileText,
-      badge: client?._count?.transactions || "0",
-      badgeColor: "bg-blue-600",
-    },
-    {
-      id: "financial",
-      label: "السجل المالي",
-      icon: BarChart3,
-      badge: "1",
-      badgeColor: "bg-cyan-600",
-    },
-    { id: "rating", label: "التقييم والملاحظات", icon: Star },
-    { id: "audit", label: "سجل التدقيق", icon: History },
-    { id: "reports", label: "التقارير", icon: BarChart3 },
-    {
-      id: "properties",
-      label: "الملكيات والصكوك",
-      icon: Landmark,
-      badge: client?.ownershipFiles?.length || "0",
-      badgeColor: "bg-violet-600",
-    },
-    {
-      id: "obligations",
-      label: "التزامات الأمانة",
-      icon: Receipt,
-      badge: "0",
-      badgeColor: "bg-red-500",
-    },
-  ];
-
   return (
-    // الغلاف الخارجي (Overlay)
     <div
-      className="fixed inset-0 z-[150] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+      className="flex flex-col h-full bg-slate-100 p-4 md:p-6 overflow-hidden"
       dir="rtl"
     >
-      {/* النافذة المنبثقة نفسها */}
-      <div className="bg-slate-100 w-full max-w-[1400px] h-[95vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden ring-1 ring-white/20 animate-in fade-in zoom-in-95 duration-300">
-        {/* Header Modal */}
-        <div className="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between gap-3 shrink-0 overflow-x-auto custom-scrollbar-slim">
-          <div className="flex items-center gap-2.5 min-w-0 whitespace-nowrap">
+      {/* 💡 Top Header Area (Fixed at top) */}
+      <div className="bg-white border border-[#d8e6ee] rounded-2xl shadow-sm mb-3 shrink-0 px-4 py-2.5 overflow-x-auto custom-scrollbar-slim">
+        <div className="flex items-center justify-between gap-3 whitespace-nowrap">
+          <div className="flex items-center gap-2.5 min-w-0">
             <button
-              onClick={onClose}
-              className="h-9 px-3 bg-[#f7fbfd] hover:bg-red-50 text-[#71839a] hover:text-red-600 rounded-xl transition-colors flex items-center gap-2 font-black text-[12px] border border-[#d8e6ee] shadow-sm shrink-0"
-              title="إغلاق الملف"
+              onClick={onBack}
+              className="h-9 px-3 bg-[#f7fbfd] hover:bg-[#eef5f7] text-[#123B5D] rounded-xl transition-colors flex items-center gap-2 font-black text-[12px] border border-[#d8e6ee] shrink-0"
             >
-              <X className="w-4 h-4" />
-              <span>إغلاق</span>
+              <ArrowLeft className="w-4 h-4" /> العودة
             </button>
 
             <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
@@ -746,7 +710,7 @@ const ClientFileDetails = ({ clientId, isOpen, onClose }) => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => openWhatsApp(client.contact?.mobile)}
               className="h-9 px-3 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white rounded-xl transition-colors flex items-center gap-2 text-[12px] font-black"
@@ -763,110 +727,122 @@ const ClientFileDetails = ({ clientId, isOpen, onClose }) => {
             </a>
           </div>
         </div>
+      </div>
 
-        {/* Modal Body: Sidebar + Content */}
-        <div className="flex flex-col md:flex-row gap-4 p-4 md:p-6 flex-1 overflow-hidden bg-slate-50">
-          {/* Sidebar */}
-          <div className="w-full md:w-[240px] bg-white border border-[#d8e6ee] rounded-[20px] shadow-sm p-3 flex flex-col gap-2 overflow-y-auto custom-scrollbar-slim shrink-0 h-full">
-            {TABS.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-[14px] text-[12px] font-black transition-all text-right w-full relative border ${isActive ? "bg-[#fbf7ef] text-[#123B5D] border-[#ecd8a6] shadow-sm" : "text-[#71839a] bg-[#f7fbfd] hover:bg-white border-transparent hover:border-[#d8e6ee]"}`}
-                >
-                  {isActive && (
-                    <div className="absolute right-0 top-1/4 bottom-1/4 w-1 bg-[#d9b85b] rounded-l-full"></div>
-                  )}
-                  <tab.icon
-                    className={`w-4 h-4 shrink-0 ${isActive ? "text-[#d9b85b]" : "text-[#8aa0b4]"}`}
-                  />
-                  <span className="truncate">{tab.label}</span>
-                  {tab.badge && (
-                    <span
-                      className={`mr-auto px-2 py-0.5 rounded-full text-[10px] font-black shadow-sm ${isActive ? "bg-blue-200 text-blue-800" : tab.badgeColor + " text-white"}`}
-                    >
-                      {tab.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+      {/* 💡 Main Body Layout: Sidebar + Content */}
+      <div className="flex flex-col md:flex-row gap-4 flex-1 overflow-hidden">
+        {/* 👈 Sidebar (Vertical Tabs) */}
+        <div className="w-full md:w-[240px] bg-white border border-[#d8e6ee] rounded-[20px] shadow-sm p-3 flex flex-col gap-2 overflow-y-auto custom-scrollbar-slim shrink-0 h-full">
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-3 px-4 py-3.5 rounded-lg text-sm font-bold transition-all text-right w-full relative ${
+                  isActive
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                {/* Active Indicator Line */}
+                {isActive && (
+                  <div className="absolute right-0 top-1/4 bottom-1/4 w-1 bg-[#d9b85b] rounded-l-full"></div>
+                )}
 
-          {/* Content */}
-          <div className="flex-1 bg-white border border-slate-200 rounded-xl shadow-sm p-4 md:p-6 overflow-y-auto custom-scrollbar h-full relative">
-            {activeTab === "summary" && (
-              <SummaryTab
-                client={client}
-                clientName={clientName}
-                englishName={englishName}
-                isPhotoBlurred={isPhotoBlurred}
-                setIsPhotoBlurred={setIsPhotoBlurred}
-                isIdMasked={isIdMasked}
-                setIsIdMasked={setIsIdMasked}
-                maskId={maskId}
-                formatDate={formatDate}
-              />
-            )}
-            {activeTab === "basic" && (
-              <BasicInfoTab
-                client={client}
-                isEditingBasicInfo={isEditingBasicInfo}
-                setIsEditingBasicInfo={setIsEditingBasicInfo}
-                editFormData={editFormData}
-                handleEditChange={handleEditChange}
-                handleSaveBasicInfo={handleSaveBasicInfo}
-                updateClientMutation={updateClientMutation}
-                handleStartEdit={handleStartEdit}
-                repAuthRef={repAuthRef}
-                handleRepDocUpload={handleRepDocUpload}
-                isAnalyzingRepAuth={isAnalyzingRepAuth}
-                isAnalyzingRepId={isAnalyzingRepId}
-                toEnglishNumbers={toEnglishNumbers}
-                formatDate={formatDate}
-                getRemainingTime={getRemainingTime}
-              />
-            )}
-            {activeTab === "contact" && (
-              <ContactTab client={client} openWhatsApp={openWhatsApp} />
-            )}
-            {activeTab === "docs" && (
-              <DocsTab
-                client={client}
-                setIsUploadModalOpen={setIsUploadModalOpen}
-                handleViewDocument={handleViewDocument}
-                handleDownloadDocument={handleDownloadDocument}
-                handleDeleteDocument={handleDeleteDocument}
-                deleteDocMutation={deleteDocMutation}
-                formatDate={formatDate}
-              />
-            )}
-            {activeTab === "transactions" && (
-              <TransactionsTab client={client} formatDate={formatDate} />
-            )}
-            {activeTab === "properties" && <PropertiesTab client={client} />}
+                <tab.icon
+                  className={`w-4 h-4 shrink-0 ${isActive ? "text-[#d9b85b]" : "text-[#8aa0b4]"}`}
+                />
+                <span className="truncate">{tab.label}</span>
 
-            {[
-              "financial",
-              "tax",
-              "rating",
-              "audit",
-              "reports",
-              "obligations",
-            ].includes(activeTab) && (
-              <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-slate-400 py-20 bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
-                <BarChart3 className="w-16 h-16 mb-4 opacity-20" />
-                <h3 className="text-xl font-bold text-slate-600 mb-2">
-                  جاري استكمال التبويب
-                </h3>
-                <p className="text-sm font-semibold">
-                  سيتم عرض البيانات الخاصة بهذا التبويب هنا قريباً.
-                </p>
-              </div>
-            )}
-          </div>
+                {tab.badge && (
+                  <span
+                    className={`mr-auto px-2 py-0.5 rounded-full text-[10px] font-black shadow-sm ${
+                      isActive
+                        ? "bg-blue-200 text-blue-800"
+                        : tab.badgeColor + " text-white"
+                    }`}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 👈 Content Area */}
+        <div className="flex-1 bg-white border border-slate-200 rounded-xl shadow-sm p-4 md:p-6 overflow-y-auto custom-scrollbar h-full">
+          {activeTab === "summary" && (
+            <SummaryTab
+              client={client}
+              clientName={clientName}
+              englishName={englishName}
+              isPhotoBlurred={isPhotoBlurred}
+              setIsPhotoBlurred={setIsPhotoBlurred}
+              isIdMasked={isIdMasked}
+              setIsIdMasked={setIsIdMasked}
+              maskId={maskId}
+              formatDate={formatDate}
+            />
+          )}
+          {activeTab === "basic" && (
+            <BasicInfoTab
+              client={client}
+              isEditingBasicInfo={isEditingBasicInfo}
+              setIsEditingBasicInfo={setIsEditingBasicInfo}
+              editFormData={editFormData}
+              handleEditChange={handleEditChange}
+              handleSaveBasicInfo={handleSaveBasicInfo}
+              updateClientMutation={updateClientMutation}
+              handleStartEdit={handleStartEdit}
+              repAuthRef={repAuthRef}
+              handleRepDocUpload={handleRepDocUpload}
+              isAnalyzingRepAuth={isAnalyzingRepAuth}
+              isAnalyzingRepId={isAnalyzingRepId}
+              toEnglishNumbers={toEnglishNumbers}
+              formatDate={formatDate}
+              getRemainingTime={getRemainingTime}
+            />
+          )}
+          {activeTab === "contact" && (
+            <ContactTab client={client} openWhatsApp={openWhatsApp} />
+          )}
+          {activeTab === "docs" && (
+            <DocsTab
+              client={client}
+              setIsUploadModalOpen={setIsUploadModalOpen}
+              handleViewDocument={handleViewDocument}
+              handleDownloadDocument={handleDownloadDocument}
+              handleDeleteDocument={handleDeleteDocument}
+              deleteDocMutation={deleteDocMutation}
+              formatDate={formatDate}
+            />
+          )}
+          {activeTab === "transactions" && (
+            <TransactionsTab client={client} formatDate={formatDate} />
+          )}
+          {activeTab === "properties" && <PropertiesTab client={client} />}
+
+          {/* Placeholder for missing tabs */}
+          {[
+            "financial",
+            "tax",
+            "rating",
+            "audit",
+            "reports",
+            "obligations",
+          ].includes(activeTab) && (
+            <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-slate-400 py-20 bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
+              <BarChart3 className="w-16 h-16 mb-4 opacity-20" />
+              <h3 className="text-xl font-bold text-slate-600 mb-2">
+                جاري استكمال التبويب
+              </h3>
+              <p className="text-sm font-semibold">
+                سيتم عرض البيانات الخاصة بهذا التبويب هنا قريباً.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -876,4 +852,4 @@ const ClientFileDetails = ({ clientId, isOpen, onClose }) => {
   );
 };
 
-export default ClientFileDetails;
+export default ClientFileView;

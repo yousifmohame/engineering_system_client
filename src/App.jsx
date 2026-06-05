@@ -50,6 +50,7 @@ import HubScreen from "./pages/Archives_and_records/ArchivesHubWrapper";
 import AccountsScreenWrapper from "./pages/AccountsCenter/AccountsScreenWrapper";
 import OfficeServicesScreen from "./pages/ServicesOffices/EngineeringOfficeServices";
 import DocumentScreenWrapper from "./pages/DocsStation/DocsStationScreenWrapper";
+import OperationsSupervisorScreen from "./pages/OperationsSupervisor/OperationsSupervisorScreen";
 
 // --- Icons & Context ---
 import { Wrench } from "lucide-react"; // 👈 استيراد أيقونة شاشة الصيانة
@@ -156,7 +157,8 @@ const AppContent = () => {
     "12",
     "04",
     "13",
-    "17"
+    "17",
+    "18",
   ];
   // فحص هل الشاشة المطلوبة مبرمجة أم لا
   const isImplemented = implementedScreens.includes(activeScreenId);
@@ -361,6 +363,11 @@ const AppContent = () => {
               className={activeScreenId === "17" ? "block h-full" : "hidden"}
             >
               <DocumentScreenWrapper />
+            </div>
+            <div
+              className={activeScreenId === "18" ? "block h-full" : "hidden"}
+            >
+              <OperationsSupervisorScreen />
             </div>
 
 

@@ -3,20 +3,20 @@ import React from "react";
 import { Layout, Sparkles, Link as LinkIcon, Settings } from "lucide-react";
 
 export const Step7Formatting = ({ contract, setContract }) => (
-  <div className="space-y-6 animate-in slide-in-from-right-4">
-    <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-      <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-        <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
-          <Layout className="w-4 h-4 text-emerald-600" /> إعدادات الإطارات
+  <div className="space-y-4 animate-in slide-in-from-right-4">
+    <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+      <div className="flex justify-between items-center border-b border-[#e7eef2] pb-3">
+        <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2">
+          <Layout className="w-4 h-4 text-[#0f6d7c]" /> إعدادات الإطارات
           (Frames)
         </h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Page Frame */}
-        <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+        <div className="space-y-3 bg-[#f7fbfd] p-4 rounded-xl border border-[#e7eef2]">
           <div className="flex justify-between items-center">
-            <label className="text-xs font-black text-slate-700">
+            <label className="text-[11px] font-black text-[#123B5D]">
               إطار الصفحات الداخلية
             </label>
             <input
@@ -34,13 +34,13 @@ export const Step7Formatting = ({ contract, setContract }) => (
                   },
                 })
               }
-              className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+              className="w-4 h-4 text-[#0f6d7c] rounded border-slate-300 focus:ring-emerald-500"
             />
           </div>
           {contract.frameSettings?.pageFrame?.enabled && (
             <>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500">
+                <label className="text-[10px] font-bold text-[#71839a]">
                   النمط
                 </label>
                 <select
@@ -57,7 +57,7 @@ export const Step7Formatting = ({ contract, setContract }) => (
                       },
                     })
                   }
-                  className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none"
+                  className="w-full p-2 bg-white border border-[#d8e6ee] rounded-lg text-xs outline-none"
                 >
                   <option value="solid">متصل (Solid)</option>
                   <option value="double">مزدوج (Double)</option>
@@ -65,7 +65,7 @@ export const Step7Formatting = ({ contract, setContract }) => (
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500">
+                <label className="text-[10px] font-bold text-[#71839a]">
                   اللون
                 </label>
                 <input
@@ -83,15 +83,15 @@ export const Step7Formatting = ({ contract, setContract }) => (
                       },
                     })
                   }
-                  className="w-full h-8 p-0.5 bg-white border border-slate-200 rounded-lg cursor-pointer"
+                  className="w-full h-8 p-0.5 bg-white border border-[#d8e6ee] rounded-lg cursor-pointer"
                 />
               </div>
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-bold text-slate-500">
+                  <label className="text-[10px] font-bold text-[#71839a]">
                     الهامش (Margin)
                   </label>
-                  <span className="text-[10px] font-mono text-emerald-600">
+                  <span className="text-[10px] font-mono text-[#0f6d7c]">
                     {contract.frameSettings.pageFrame.margin}
                   </span>
                 </div>
@@ -124,9 +124,9 @@ export const Step7Formatting = ({ contract, setContract }) => (
         </div>
 
         {/* Front Cover Frame */}
-        <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+        <div className="space-y-3 bg-[#f7fbfd] p-4 rounded-xl border border-[#e7eef2]">
           <div className="flex justify-between items-center">
-            <label className="text-xs font-black text-slate-700">
+            <label className="text-[11px] font-black text-[#123B5D]">
               إطار الغلاف الأمامي
             </label>
             <input
@@ -144,13 +144,13 @@ export const Step7Formatting = ({ contract, setContract }) => (
                   },
                 })
               }
-              className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+              className="w-4 h-4 text-[#0f6d7c] rounded border-slate-300 focus:ring-emerald-500"
             />
           </div>
           {contract.frameSettings?.frontCoverFrame?.enabled && (
             <>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500">
+                <label className="text-[10px] font-bold text-[#71839a]">
                   النمط
                 </label>
                 <select
@@ -167,7 +167,7 @@ export const Step7Formatting = ({ contract, setContract }) => (
                       },
                     })
                   }
-                  className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none"
+                  className="w-full p-2 bg-white border border-[#d8e6ee] rounded-lg text-xs outline-none"
                 >
                   <option value="solid">متصل (Solid)</option>
                   <option value="double">مزدوج (Double)</option>
@@ -175,7 +175,7 @@ export const Step7Formatting = ({ contract, setContract }) => (
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500">
+                <label className="text-[10px] font-bold text-[#71839a]">
                   اللون
                 </label>
                 <input
@@ -193,15 +193,15 @@ export const Step7Formatting = ({ contract, setContract }) => (
                       },
                     })
                   }
-                  className="w-full h-8 p-0.5 bg-white border border-slate-200 rounded-lg cursor-pointer"
+                  className="w-full h-8 p-0.5 bg-white border border-[#d8e6ee] rounded-lg cursor-pointer"
                 />
               </div>
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-bold text-slate-500">
+                  <label className="text-[10px] font-bold text-[#71839a]">
                     الهامش (Margin)
                   </label>
-                  <span className="text-[10px] font-mono text-emerald-600">
+                  <span className="text-[10px] font-mono text-[#0f6d7c]">
                     {contract.frameSettings.frontCoverFrame.margin}
                   </span>
                 </div>
@@ -234,9 +234,9 @@ export const Step7Formatting = ({ contract, setContract }) => (
         </div>
 
         {/* Back Cover Frame */}
-        <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+        <div className="space-y-3 bg-[#f7fbfd] p-4 rounded-xl border border-[#e7eef2]">
           <div className="flex justify-between items-center">
-            <label className="text-xs font-black text-slate-700">
+            <label className="text-[11px] font-black text-[#123B5D]">
               إطار الغلاف الخلفي
             </label>
             <input
@@ -254,13 +254,13 @@ export const Step7Formatting = ({ contract, setContract }) => (
                   },
                 })
               }
-              className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+              className="w-4 h-4 text-[#0f6d7c] rounded border-slate-300 focus:ring-emerald-500"
             />
           </div>
           {contract.frameSettings?.backCoverFrame?.enabled && (
             <>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500">
+                <label className="text-[10px] font-bold text-[#71839a]">
                   النمط
                 </label>
                 <select
@@ -277,7 +277,7 @@ export const Step7Formatting = ({ contract, setContract }) => (
                       },
                     })
                   }
-                  className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none"
+                  className="w-full p-2 bg-white border border-[#d8e6ee] rounded-lg text-xs outline-none"
                 >
                   <option value="solid">متصل (Solid)</option>
                   <option value="double">مزدوج (Double)</option>
@@ -285,7 +285,7 @@ export const Step7Formatting = ({ contract, setContract }) => (
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500">
+                <label className="text-[10px] font-bold text-[#71839a]">
                   اللون
                 </label>
                 <input
@@ -303,15 +303,15 @@ export const Step7Formatting = ({ contract, setContract }) => (
                       },
                     })
                   }
-                  className="w-full h-8 p-0.5 bg-white border border-slate-200 rounded-lg cursor-pointer"
+                  className="w-full h-8 p-0.5 bg-white border border-[#d8e6ee] rounded-lg cursor-pointer"
                 />
               </div>
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-bold text-slate-500">
+                  <label className="text-[10px] font-bold text-[#71839a]">
                     الهامش (Margin)
                   </label>
-                  <span className="text-[10px] font-mono text-emerald-600">
+                  <span className="text-[10px] font-mono text-[#0f6d7c]">
                     {contract.frameSettings.backCoverFrame.margin}
                   </span>
                 </div>
@@ -345,16 +345,16 @@ export const Step7Formatting = ({ contract, setContract }) => (
       </div>
     </div>
 
-    <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-      <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-        <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
-          <Settings className="w-4 h-4 text-emerald-600" /> إعدادات المسافات
+    <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+      <div className="flex justify-between items-center border-b border-[#e7eef2] pb-3">
+        <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2">
+          <Settings className="w-4 h-4 text-[#0f6d7c]" /> إعدادات المسافات
           والخطوط
         </h3>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold text-slate-500">
+          <label className="text-[10px] font-bold text-[#71839a]">
             نوع الخط
           </label>
           <select
@@ -368,7 +368,7 @@ export const Step7Formatting = ({ contract, setContract }) => (
                 },
               })
             }
-            className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none"
+            className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-lg text-xs outline-none"
           >
             <option value="Tajawal">Tajawal</option>
             <option value="Cairo">Cairo</option>
@@ -377,7 +377,7 @@ export const Step7Formatting = ({ contract, setContract }) => (
           </select>
         </div>
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold text-slate-500">
+          <label className="text-[10px] font-bold text-[#71839a]">
             حجم الخط الأساسي
           </label>
           <input
@@ -392,12 +392,12 @@ export const Step7Formatting = ({ contract, setContract }) => (
                 },
               })
             }
-            className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none"
+            className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-lg text-xs outline-none"
             dir="ltr"
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold text-slate-500">
+          <label className="text-[10px] font-bold text-[#71839a]">
             ارتفاع السطر
           </label>
           <input
@@ -412,12 +412,12 @@ export const Step7Formatting = ({ contract, setContract }) => (
                 },
               })
             }
-            className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none"
+            className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-lg text-xs outline-none"
             dir="ltr"
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold text-slate-500">
+          <label className="text-[10px] font-bold text-[#71839a]">
             المسافة بين الفقرات
           </label>
           <input
@@ -432,16 +432,16 @@ export const Step7Formatting = ({ contract, setContract }) => (
                 },
               })
             }
-            className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none"
+            className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-lg text-xs outline-none"
             dir="ltr"
           />
         </div>
       </div>
     </div>
 
-    <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-      <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-        <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+    <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+      <div className="flex justify-between items-center border-b border-[#e7eef2] pb-3">
+        <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-violet-600" /> اختصار العقد (AI)
         </h3>
         <label className="relative inline-flex items-center cursor-pointer">
@@ -456,7 +456,7 @@ export const Step7Formatting = ({ contract, setContract }) => (
           <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-500"></div>
         </label>
       </div>
-      <p className="text-xs text-slate-500 font-bold">
+      <p className="text-xs text-[#71839a] font-bold">
         عند تفعيل هذا الخيار، سيقوم الذكاء الاصطناعي باختصار جميع بنود العقد
         (نطاق العمل، الالتزامات، الشروط) في صفحة واحدة فقط، مع الاحتفاظ بصفحات
         الغلاف.

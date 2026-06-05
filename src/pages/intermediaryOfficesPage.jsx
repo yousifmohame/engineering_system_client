@@ -128,21 +128,6 @@ const assetTypeLabels = {
   template: "كليشة",
 };
 
-const FileTypeIcon = ({ fileType, className = "w-4 h-4" }) => {
-  switch (fileType) {
-    case "image":
-      return <Image className={`${className} text-green-500`} />;
-    case "pdf":
-      return <File className={`${className} text-red-500`} />;
-    case "dwg":
-      return <FileType className={`${className} text-purple-500`} />;
-    case "text":
-      return <Type className={`${className} text-slate-500`} />;
-    default:
-      return <FileText className={`${className} text-slate-400`} />;
-  }
-};
-
 const TransactionStatusBadge = ({ status }) => {
   const config = {
     جديدة: { bg: "bg-sky-50", text: "text-sky-700", border: "border-sky-200" },

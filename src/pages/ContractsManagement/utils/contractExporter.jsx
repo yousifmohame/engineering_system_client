@@ -5,10 +5,13 @@ export const generateContractPdf = (contract) => {
   const html = generateContractHtml(contract);
   const printWindow = window.open("", "_blank");
   if (printWindow) {
+    printWindow.document.open();
     printWindow.document.write(html);
     printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => printWindow.print(), 500);
+    printWindow.onload = () => {
+      printWindow.focus();
+      setTimeout(() => printWindow.print(), 700);
+    };
   }
 };
 
@@ -67,12 +70,14 @@ export const generateContractLink = (contract) => {
 
 export const generateContractHtml = (contract) => {
   const qrData = generateZatcaQr(
-    contract.partyA || "شركة الحلول الهندسية",
-    contract.partyADetails?.cr || "310123456700003",
+    contract.partyA || "DETAILS Consulting Engineers",
+    contract.partyADetails?.cr || "7052303828",
     contract.date || new Date().toISOString(),
     (contract.financials?.grandTotal || 0).toString(),
     (contract.financials?.taxAmount || 0).toString(),
   );
+
+  const companyLogoSrc = contract.companyLogo || contract.logoUrl || contract.coverSettings?.logoUrl || '/logo.jpeg';
 
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}`;
   const projectQrUrl =
@@ -81,7 +86,7 @@ export const generateContractHtml = (contract) => {
       ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent("https://maps.google.com")}`
       : null;
   const verificationQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://example.com/verify/${contract.code}`)}`;
-  const companyQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://example.com/company`)}`;
+  const companyQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`DETAILS Consulting Engineers | King Fahd Dist - RIYADH | POSTAL CODE: 12274 | Mobile: 0590722827 | N.N: 7052303828 | info@details-consults.sa`)}`;
 
   const watermarkText =
     contract.status === "مسودة"
@@ -122,11 +127,11 @@ export const generateContractHtml = (contract) => {
       <title>${contract.name}</title>
       <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
       <style>
-        @page { size: A4; margin: 0; }
+        @page { size: A4 portrait; margin: 0; }
         body { 
           font-family: 'Tajawal', sans-serif; 
-          background: #f8fafc; 
-          color: #0f172a; 
+          background: #f7fbfd; 
+          color: #123B5D; 
           margin: 0; 
           padding: 0; 
           -webkit-print-color-adjust: exact; 
@@ -142,10 +147,10 @@ export const generateContractHtml = (contract) => {
           padding: 25mm 20mm 30mm 20mm; 
           page-break-after: always;
           box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-          border: 1px solid #cbd5e1;
+          border: 1px solid #d8e6ee;
         }
         @media screen {
-          body { background: #f1f5f9; padding: 20px 0; }
+          body { background: #eef5f7; padding: 20px 0; }
           .page::after {
             content: '';
             display: block;
@@ -155,14 +160,30 @@ export const generateContractHtml = (contract) => {
             transform: translateX(-50%);
             width: 50px;
             height: 4px;
-            background: #cbd5e1;
+            background: #d8e6ee;
             border-radius: 2px;
           }
           .page:last-child::after { display: none; }
         }
         @media print {
-          body { background: white; padding: 0; }
-          .page { box-shadow: none; margin: 0; border: none; page-break-after: always; }
+          html, body {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            margin: 0;
+            padding: 0;
+            overflow: visible;
+          }
+          .page {
+            width: 210mm;
+            min-height: 297mm;
+            box-shadow: none;
+            margin: 0 auto;
+            border: none;
+            page-break-after: always;
+            break-after: page;
+          }
+          .page:last-child { page-break-after: auto; break-after: auto; }
           .page::after { display: none; }
         }
         
@@ -170,7 +191,7 @@ export const generateContractHtml = (contract) => {
         body {
           font-family: '${contract.typographySettings?.fontFamily || "Tajawal"}', sans-serif;
           font-size: ${contract.typographySettings?.fontSize || "14px"};
-          color: ${contract.typographySettings?.color || "#0f172a"};
+          color: ${contract.typographySettings?.color || "#123B5D"};
         }
         p, li {
           line-height: ${contract.spacingSettings?.lineHeight || "1.8"};
@@ -238,13 +259,14 @@ export const generateContractHtml = (contract) => {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          border-bottom: 2px solid #065f46;
+          border-bottom: 2px solid #083646;
           background: transparent;
           z-index: 10;
         }
-        .header-logo { width: 60px; height: 60px; background: #065f46; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 24px; }
-        .header-info { text-align: left; font-size: 10px; color: #64748b; line-height: 1.6; }
-        .header-info strong { color: #0f172a; }
+        .header-logo { width: 62px; height: 44px; background: #fff; border: 1.5px solid #ead9b8; border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 6px; box-sizing: border-box; }
+        .header-logo img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+        .header-info { text-align: left; font-size: 10px; color: #71839a; line-height: 1.6; }
+        .header-info strong { color: #123B5D; }
         
         .footer {
           position: absolute;
@@ -256,11 +278,11 @@ export const generateContractHtml = (contract) => {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          border-top: 2px solid #065f46;
+          border-top: 2px solid #083646;
           font-size: 9px;
-          color: #475569;
+          color: #52677e;
           z-index: 10;
-          background: #f8fafc;
+          background: #f7fbfd;
         }
         .footer-col {
           display: flex;
@@ -268,7 +290,7 @@ export const generateContractHtml = (contract) => {
           gap: 4px;
         }
         .footer-col strong {
-          color: #0f172a;
+          color: #123B5D;
           font-size: 10px;
           margin-bottom: 2px;
         }
@@ -286,23 +308,29 @@ export const generateContractHtml = (contract) => {
           z-index: 1;
         }
         .cover-logo {
-          width: 100px;
-          height: 100px;
-          background: #065f46;
-          border-radius: 20px;
+          width: 118px;
+          height: 82px;
+          background: white;
+          border: 1.5px solid #ead9b8;
+          border-radius: 18px;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: white;
-          font-weight: 900;
-          font-size: 40px;
-          margin-bottom: 20px;
-          box-shadow: 0 10px 25px rgba(6, 95, 70, 0.2);
+          margin-bottom: 18px;
+          box-shadow: 0 10px 24px rgba(8, 54, 70, 0.10);
+          padding: 10px 14px;
+          box-sizing: border-box;
+        }
+        .cover-logo img {
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
+          display: block;
         }
         .cover-title {
-          font-size: 42pt;
+          font-size: 34pt;
           font-weight: 900;
-          color: #065f46;
+          color: #083646;
           margin-bottom: 5px;
           line-height: 1.2;
         }
@@ -313,17 +341,17 @@ export const generateContractHtml = (contract) => {
           margin-bottom: 10px;
         }
         .cover-base-info {
-          font-size: 12pt;
-          color: #64748b;
+          font-size: 11pt;
+          color: #71839a;
           margin-bottom: 20px;
         }
         .cover-type {
-          font-size: 24pt;
+          font-size: 20pt;
           font-weight: 800;
-          color: #0f172a;
+          color: #123B5D;
           margin-bottom: 30px;
           padding-bottom: 10px;
-          border-bottom: 2px solid #cbd5e1;
+          border-bottom: 2px solid #d8e6ee;
           display: inline-block;
         }
         
@@ -337,20 +365,20 @@ export const generateContractHtml = (contract) => {
           box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
         .cover-table th, .cover-table td {
-          border: 1px solid #e2e8f0;
-          padding: 12px;
+          border: 1px solid #e7eef2;
+          padding: 9px;
           text-align: right;
-          font-size: 11pt;
+          font-size: 10pt;
         }
         .cover-table th {
-          background: #f8fafc;
+          background: #f7fbfd;
           font-weight: 800;
-          color: #334155;
+          color: #123B5D;
           width: 30%;
         }
         .cover-table td {
           font-weight: 600;
-          color: #0f172a;
+          color: #123B5D;
         }
 
         .qr-container {
@@ -369,7 +397,7 @@ export const generateContractHtml = (contract) => {
         .qr-box img {
           width: 80px;
           height: 80px;
-          border: 2px solid #e2e8f0;
+          border: 2px solid #e7eef2;
           border-radius: 8px;
           padding: 4px;
           background: white;
@@ -377,7 +405,7 @@ export const generateContractHtml = (contract) => {
         .qr-label {
           font-size: 9pt;
           font-weight: 700;
-          color: #64748b;
+          color: #71839a;
         }
 
         .dates-container {
@@ -386,22 +414,22 @@ export const generateContractHtml = (contract) => {
           width: 100%;
           margin-top: 20px;
           padding: 15px;
-          background: #f8fafc;
+          background: #f7fbfd;
           border-radius: 8px;
-          border: 1px solid #e2e8f0;
+          border: 1px solid #e7eef2;
         }
         .date-box {
           text-align: center;
         }
         .date-label {
           font-size: 10pt;
-          color: #64748b;
+          color: #71839a;
           font-weight: 700;
           margin-bottom: 5px;
         }
         .date-value {
-          font-size: 14pt;
-          color: #065f46;
+          font-size: 13pt;
+          color: #083646;
           font-weight: 900;
         }
 
@@ -411,49 +439,49 @@ export const generateContractHtml = (contract) => {
         .preamble {
           text-align: justify;
           text-align-last: center;
-          font-size: 12pt;
+          font-size: 11pt;
           line-height: 2;
           margin-bottom: 10mm;
           font-weight: 500;
         }
 
         .parties-section {
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
+          background: #f7fbfd;
+          border: 1px solid #e7eef2;
           border-radius: 12px;
           padding: 20px;
           margin-bottom: 10mm;
         }
         .party-block { margin-bottom: 15px; }
-        .party-block:last-child { margin-bottom: 0; padding-top: 15px; border-top: 1px dashed #cbd5e1; }
-        .party-title { font-size: 14pt; font-weight: 800; color: #065f46; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-        .party-title::before { content: ''; display: inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%; }
-        .party-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 11pt; line-height: 1.6; }
-        .party-details div strong { color: #334155; display: inline-block; width: 120px; }
+        .party-block:last-child { margin-bottom: 0; padding-top: 15px; border-top: 1px dashed #d8e6ee; }
+        .party-title { font-size: 13pt; font-weight: 800; color: #083646; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .party-title::before { content: ''; display: inline-block; width: 8px; height: 8px; background: #d9b85b; border-radius: 50%; }
+        .party-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 10pt; line-height: 1.6; }
+        .party-details div strong { color: #123B5D; display: inline-block; width: 120px; }
 
         .clause { margin-bottom: 8mm; page-break-inside: avoid; }
         .clause-header {
-          font-size: 14pt;
+          font-size: 13pt;
           font-weight: 800;
-          color: #0f172a;
+          color: #123B5D;
           margin-bottom: 10px;
           padding-bottom: 5px;
-          border-bottom: 2px solid #e2e8f0;
+          border-bottom: 2px solid #e7eef2;
           display: flex;
           align-items: center;
           gap: 10px;
         }
         .clause-number {
-          background: #065f46;
+          background: #083646;
           color: white;
           padding: 2px 10px;
           border-radius: 4px;
-          font-size: 12pt;
+          font-size: 11pt;
         }
         .clause-body {
-          font-size: 12pt;
+          font-size: 11pt;
           line-height: 1.8;
-          color: #334155;
+          color: #123B5D;
           text-align: justify;
           white-space: pre-wrap;
         }
@@ -466,13 +494,13 @@ export const generateContractHtml = (contract) => {
           margin-bottom: 15px;
         }
         .financial-table th, .financial-table td {
-          border: 1px solid #cbd5e1;
-          padding: 12px;
+          border: 1px solid #d8e6ee;
+          padding: 9px;
           text-align: right;
-          font-size: 11pt;
+          font-size: 10pt;
         }
-        .financial-table th { background: #f1f5f9; font-weight: 800; color: #0f172a; }
-        .financial-table tr.total-row { background: #ecfdf5; font-weight: 900; color: #065f46; }
+        .financial-table th { background: #eef5f7; font-weight: 800; color: #123B5D; }
+        .financial-table tr.total-row { background: #fbf7ef; font-weight: 900; color: #083646; }
 
         /* Signatures */
         .signatures-grid {
@@ -483,14 +511,14 @@ export const generateContractHtml = (contract) => {
           page-break-inside: avoid;
         }
         .signature-box {
-          border: 1px solid #cbd5e1;
+          border: 1px solid #d8e6ee;
           border-radius: 12px;
           padding: 20px;
           text-align: center;
-          background: #f8fafc;
+          background: #f7fbfd;
         }
-        .signature-title { font-size: 13pt; font-weight: 800; color: #065f46; margin-bottom: 15px; }
-        .signature-line { margin-top: 40px; border-top: 1px dashed #94a3b8; padding-top: 10px; font-size: 10pt; color: #64748b; }
+        .signature-title { font-size: 13pt; font-weight: 800; color: #083646; margin-bottom: 15px; }
+        .signature-line { margin-top: 40px; border-top: 1px dashed #8aa0b4; padding-top: 10px; font-size: 10pt; color: #71839a; }
         
         .witnesses-grid {
           display: grid;
@@ -509,27 +537,47 @@ export const generateContractHtml = (contract) => {
           page-break-inside: avoid;
         }
         .qr-box { text-align: center; }
-        .qr-box img { width: 100px; height: 100px; border: 1px solid #e2e8f0; padding: 5px; border-radius: 8px; background: white; }
-        .qr-label { font-size: 9pt; font-weight: 700; color: #64748b; margin-top: 8px; }
+        .qr-box img { width: 100px; height: 100px; border: 1px solid #e7eef2; padding: 5px; border-radius: 8px; background: white; }
+        .qr-label { font-size: 9pt; font-weight: 700; color: #71839a; margin-top: 8px; }
 
         /* Back Cover Specific */
         .back-cover-page {
           display: flex;
           flex-direction: column;
-          justify-content: space-between;
-          padding: 30mm 20mm;
-          background: #f8fafc;
-        }
-        .contact-info-box {
-          background: white;
-          border: 1px solid #e2e8f0;
-          border-radius: 16px;
-          padding: 30px;
-          margin-top: auto;
+          justify-content: center;
+          align-items: center;
+          padding: 22mm 18mm;
+          background: linear-gradient(180deg, #ffffff 0%, #f7fbfd 100%);
           text-align: center;
         }
-        .contact-info-box h3 { color: #065f46; margin-bottom: 15px; }
-        .contact-details { display: flex; justify-content: center; gap: 30px; font-size: 11pt; color: #475569; }
+        .back-cover-brand {
+          width: 130px;
+          height: 86px;
+          background: #fff;
+          border: 1.5px solid #ead9b8;
+          border-radius: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 12px 16px;
+          box-sizing: border-box;
+          box-shadow: 0 10px 24px rgba(8,54,70,.10);
+          margin-bottom: 18mm;
+        }
+        .back-cover-brand img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .contact-info-box {
+          width: 100%;
+          max-width: 150mm;
+          background: white;
+          border: 1px solid #d8e6ee;
+          border-radius: 18px;
+          padding: 18mm 14mm;
+          text-align: center;
+          box-shadow: 0 8px 22px rgba(8,54,70,.08);
+          box-sizing: border-box;
+        }
+        .contact-info-box h3 { color: #083646; margin: 0 0 10mm; font-size: 18pt; }
+        .contact-details { display: flex; flex-direction: column; align-items: center; gap: 7px; font-size: 11pt; color: #52677e; line-height: 1.7; }
       </style>
     </head>
     <body>
@@ -538,7 +586,7 @@ export const generateContractHtml = (contract) => {
       <div class="page cover-page">
         <div class="front-cover-frame"></div>
         ${bgImageFront}
-        ${contract.coverSettings?.showLogo !== false ? `<div class="cover-logo">ES</div>` : ""}
+        ${contract.coverSettings?.showLogo !== false ? `<div class="cover-logo"><img src="${companyLogoSrc}" alt="Details Logo" onerror="this.style.display='none'" /></div>` : ""}
         <div class="cover-title">عقد</div>
         ${
           contract.isAddendum
@@ -586,11 +634,11 @@ export const generateContractHtml = (contract) => {
           <tbody>
             <tr>
               <th>الطرف الأول</th>
-              <td>${contract.partyA} <br><span style="font-size:9pt; color:#64748b;">(${contract.partyADetails?.capacity || "مقدم الخدمة"}) - يمثله: ${contract.partyADetails?.representant || "---"}</span></td>
+              <td>${contract.partyA} <br><span style="font-size:9pt; color:#71839a;">(${contract.partyADetails?.capacity || "مقدم الخدمة"}) - يمثله: ${contract.partyADetails?.representant || "---"}</span></td>
             </tr>
             <tr>
               <th>الطرف الثاني</th>
-              <td>${contract.partyB || "---"} <br><span style="font-size:9pt; color:#64748b;">(${contract.partyBDetails?.capacity || "العميل"}) - يمثله: ${contract.partyBDetails?.representant || "---"}</span></td>
+              <td>${contract.partyB || "---"} <br><span style="font-size:9pt; color:#71839a;">(${contract.partyBDetails?.capacity || "العميل"}) - يمثله: ${contract.partyBDetails?.representant || "---"}</span></td>
             </tr>
           </tbody>
         </table>
@@ -633,9 +681,9 @@ export const generateContractHtml = (contract) => {
           contract.coverSettings?.showSummary !== false &&
           (contract.coverSummary || contract.aiSummary)
             ? `
-          <div class="ai-summary-box" style="margin-top: auto; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: right; width: 100%; box-sizing: border-box;">
-            <div class="ai-badge" style="font-size: 10pt; font-weight: 800; color: #065f46; margin-bottom: 5px;">✨ ملخص العقد</div>
-            <div class="ai-summary-text" style="font-size: 10pt; color: #475569; line-height: 1.6;">${(contract.aiSummary || contract.coverSummary || "").replace(/\n/g, "<br>")}</div>
+          <div class="ai-summary-box" style="margin-top: auto; padding: 15px; background: #f7fbfd; border: 1px solid #e7eef2; border-radius: 8px; text-align: right; width: 100%; box-sizing: border-box;">
+            <div class="ai-badge" style="font-size: 10pt; font-weight: 800; color: #083646; margin-bottom: 5px;">✨ ملخص العقد</div>
+            <div class="ai-summary-text" style="font-size: 10pt; color: #52677e; line-height: 1.6;">${(contract.aiSummary || contract.coverSummary || "").replace(/\n/g, "<br>")}</div>
           </div>
         `
             : ""
@@ -649,7 +697,7 @@ export const generateContractHtml = (contract) => {
         <div class="watermark">${watermarkText}</div>
         
         <div class="header">
-          <div class="header-logo">ES</div>
+          <div class="header-logo"><img src="${companyLogoSrc}" alt="Details Logo" onerror="this.style.display='none'" /></div>
           <div class="header-info">
             <div><strong>رقم العقد:</strong> ${contract.code}</div>
             <div><strong>التاريخ:</strong> ${contract.date}</div>
@@ -727,10 +775,11 @@ export const generateContractHtml = (contract) => {
             <div>تاريخ الإصدار: ${contract.date}</div>
             <div>نسخة معتمدة وموثقة</div>
           </div>
-          <div class="footer-col" style="width: 40%; text-align: center;">
-            <strong>المكتب الهندسي للاستشارات</strong>
-            <div>الرياض، طريق الأمير محمد بن سعد بن عبدالعزيز</div>
-            <div>هاتف: 0110000000 | البريد: info@eng-office.com</div>
+          <div class="footer-col company-footer-info" style="width: 40%; text-align: center;">
+            <strong>DETAILS Consulting Engineers</strong>
+            <div>King Fahd Dist - RIYADH - Kingdom of Saudi Arabia</div>
+            <div>POSTAL CODE: 12274 | Mobile: 0590722827</div>
+            <div>N.N: 7052303828 | info@details-consults.sa</div>
           </div>
           <div class="footer-col" style="width: 30%; text-align: left;">
             <strong>التوقيعات</strong>
@@ -746,7 +795,7 @@ export const generateContractHtml = (contract) => {
         <div class="watermark">${watermarkText}</div>
         
         <div class="header">
-          <div class="header-logo">ES</div>
+          <div class="header-logo"><img src="${companyLogoSrc}" alt="Details Logo" onerror="this.style.display='none'" /></div>
           <div class="header-info">
             <div><strong>رقم العقد:</strong> ${contract.code}</div>
             <div><strong>التاريخ:</strong> ${contract.date}</div>
@@ -870,10 +919,11 @@ export const generateContractHtml = (contract) => {
             <div>تاريخ الإصدار: ${contract.date}</div>
             <div>نسخة معتمدة وموثقة</div>
           </div>
-          <div class="footer-col" style="width: 40%; text-align: center;">
-            <strong>المكتب الهندسي للاستشارات</strong>
-            <div>الرياض، طريق الأمير محمد بن سعد بن عبدالعزيز</div>
-            <div>هاتف: 0110000000 | البريد: info@eng-office.com</div>
+          <div class="footer-col company-footer-info" style="width: 40%; text-align: center;">
+            <strong>DETAILS Consulting Engineers</strong>
+            <div>King Fahd Dist - RIYADH - Kingdom of Saudi Arabia</div>
+            <div>POSTAL CODE: 12274 | Mobile: 0590722827</div>
+            <div>N.N: 7052303828 | info@details-consults.sa</div>
           </div>
           <div class="footer-col" style="width: 30%; text-align: left;">
             <strong>التوقيعات</strong>
@@ -903,13 +953,13 @@ export const generateContractHtml = (contract) => {
             <div class="signature-box">
               <div class="signature-title">الطرف الأول</div>
               <div style="font-weight: bold; margin-bottom: 5px;">${contract.partyA}</div>
-              <div style="font-size: 11pt; color: #475569;">الاسم: ${contract.partyADetails?.representant || ""}</div>
+              <div style="font-size: 10pt; color: #52677e;">الاسم: ${contract.partyADetails?.representant || ""}</div>
               <div class="signature-line">التوقيع / الختم</div>
             </div>
             <div class="signature-box">
               <div class="signature-title">الطرف الثاني</div>
               <div style="font-weight: bold; margin-bottom: 5px;">${contract.partyB || ".............................."}</div>
-              <div style="font-size: 11pt; color: #475569;">الاسم: ${contract.partyBDetails?.representant || ""}</div>
+              <div style="font-size: 10pt; color: #52677e;">الاسم: ${contract.partyBDetails?.representant || ""}</div>
               <div class="signature-line">التوقيع / الختم</div>
             </div>
           </div>
@@ -919,16 +969,16 @@ export const generateContractHtml = (contract) => {
             contract.witnesses.length > 0 &&
             contract.witnesses[0].name
               ? `
-            <div style="margin-top: 30px; font-weight: bold; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">الشهود:</div>
+            <div style="margin-top: 30px; font-weight: bold; color: #123B5D; border-bottom: 1px solid #e7eef2; padding-bottom: 5px;">الشهود:</div>
             <div class="witnesses-grid">
               ${contract.witnesses
                 .map((w, i) =>
                   w.name
                     ? `
                 <div class="signature-box" style="padding: 15px;">
-                  <div class="signature-title" style="font-size: 11pt;">الشاهد ${i + 1}</div>
+                  <div class="signature-title" style="font-size: 10pt;">الشاهد ${i + 1}</div>
                   <div style="font-weight: bold; font-size: 10pt;">الاسم: ${w.name}</div>
-                  <div style="font-size: 10pt; color: #475569;">الهوية: ${w.id}</div>
+                  <div style="font-size: 10pt; color: #52677e;">الهوية: ${w.id}</div>
                   <div class="signature-line" style="margin-top: 20px;">التوقيع</div>
                 </div>
               `
@@ -963,7 +1013,7 @@ export const generateContractHtml = (contract) => {
             }
           </div>
 
-          <div style="margin-top: 40px; text-align: center; font-size: 10pt; color: #64748b; padding: 15px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <div style="margin-top: 40px; text-align: center; font-size: 10pt; color: #71839a; padding: 15px; background: #fff; border: 1px solid #e7eef2; border-radius: 8px;">
             <strong>طريقة الاعتماد:</strong> 
             ${
               contract.approvalMethod === "platform"
@@ -975,24 +1025,25 @@ export const generateContractHtml = (contract) => {
                     : "توقيع ورقي مباشر"
             }
             <br/>
-            حالة العقد الحالية: <strong style="color: #065f46;">${contract.status}</strong>
+            حالة العقد الحالية: <strong style="color: #083646;">${contract.status}</strong>
           </div>
         </div>
+      </div>
 
       <!-- BACK COVER PAGE -->
       <div class="page back-cover-page">
         <div class="back-cover-frame"></div>
         ${bgImageBack}
-        <div style="flex: 1;"></div>
+        <div class="back-cover-brand"><img src="${companyLogoSrc}" alt="Details Logo" onerror="this.style.display='none'" /></div>
         
         <div class="contact-info-box">
           <h3>معلومات التواصل والدعم</h3>
           <div class="contact-details">
-            <div>📧 ${contract.backCoverSettings?.contactEmail || "info@engineering-solutions.com"}</div>
-            <div dir="ltr">📱 ${contract.backCoverSettings?.contactPhone || "+966 50 000 0000"}</div>
-            <div>📍 ${contract.backCoverSettings?.address || "المملكة العربية السعودية"}</div>
+            <div>📧 ${contract.backCoverSettings?.contactEmail || "info@details-consults.sa"}</div>
+            <div dir="ltr">📱 ${contract.backCoverSettings?.contactPhone || "0590722827"}</div>
+            <div>📍 ${contract.backCoverSettings?.address || "King Fahd Dist - RIYADH - Kingdom of Saudi Arabia - POSTAL CODE: 12274"}</div>
           </div>
-          ${contract.backCoverSettings?.additionalNotes ? `<div style="margin-top: 15px; font-size: 10pt; color: #64748b;">${contract.backCoverSettings.additionalNotes}</div>` : ""}
+          ${contract.backCoverSettings?.additionalNotes ? `<div style="margin-top: 15px; font-size: 10pt; color: #71839a;">${contract.backCoverSettings.additionalNotes}</div>` : ""}
         </div>
       </div>
 

@@ -13,7 +13,6 @@ import {
   X,
   FileText,
   ScrollText,
-  Sparkles,
   ArrowLeft,
 } from "lucide-react";
 

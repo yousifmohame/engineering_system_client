@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAllClients, updateClient } from "../../api/clientApi"; // 👈 تأكد من الاستيراد
+import { getAllClients, updateClient } from "../../../api/clientApi"; // 👈 تأكد من الاستيراد
 import { Star, Edit, Loader2, X, Save } from "lucide-react";
 import { toast } from "sonner";
 

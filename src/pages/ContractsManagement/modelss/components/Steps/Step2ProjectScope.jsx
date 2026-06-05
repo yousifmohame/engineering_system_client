@@ -14,15 +14,15 @@ export const Step2ProjectScope = ({
   openAiModal,
   isGeneratingAI,
 }) => (
-  <div className="space-y-6 animate-in slide-in-from-right-4">
+  <div className="space-y-4 animate-in slide-in-from-right-4">
     {/* Project Details */}
-    <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-      <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
-        <MapPin className="w-4 h-4 text-emerald-600" /> بيانات المشروع
+    <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+      <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2 border-b border-[#e7eef2] pb-3">
+        <MapPin className="w-4 h-4 text-[#0f6d7c]" /> بيانات المشروع
       </h3>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5 col-span-2">
-          <label className="text-xs font-black text-slate-700">
+          <label className="text-[11px] font-black text-[#123B5D]">
             وصف المشروع
           </label>
           <input
@@ -37,12 +37,12 @@ export const Step2ProjectScope = ({
                 },
               })
             }
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+            className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
             placeholder="مثال: إنشاء فيلا سكنية دورين وملحق"
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-black text-slate-700">المدينة</label>
+          <label className="text-[11px] font-black text-[#123B5D]">المدينة</label>
           <input
             type="text"
             value={contract.projectDetails?.city}
@@ -55,11 +55,11 @@ export const Step2ProjectScope = ({
                 },
               })
             }
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+            className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-black text-slate-700">
+          <label className="text-[11px] font-black text-[#123B5D]">
             الحي / الموقع
           </label>
           <input
@@ -74,11 +74,11 @@ export const Step2ProjectScope = ({
                 },
               })
             }
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+            className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-black text-slate-700">رقم الصك</label>
+          <label className="text-[11px] font-black text-[#123B5D]">رقم الصك</label>
           <input
             type="text"
             value={contract.projectDetails?.deedNumber}
@@ -91,11 +91,11 @@ export const Step2ProjectScope = ({
                 },
               })
             }
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+            className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-black text-slate-700">
+          <label className="text-[11px] font-black text-[#123B5D]">
             رقم القطعة
           </label>
           <input
@@ -110,17 +110,17 @@ export const Step2ProjectScope = ({
                 },
               })
             }
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+            className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
           />
         </div>
       </div>
     </div>
 
     {/* Scope of Work */}
-    <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-      <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-        <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
-          <Layout className="w-4 h-4 text-emerald-600" /> نطاق العمل التفصيلي
+    <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+      <div className="flex justify-between items-center border-b border-[#e7eef2] pb-3">
+        <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2">
+          <Layout className="w-4 h-4 text-[#0f6d7c]" /> نطاق العمل التفصيلي
         </h3>
         <button
           onClick={() => openAiModal("terms", contract.terms || "")}
@@ -139,7 +139,7 @@ export const Step2ProjectScope = ({
         <textarea
           value={contract.terms}
           onChange={(e) => setContract({ ...contract, terms: e.target.value })}
-          className="w-full h-48 p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none leading-relaxed"
+          className="w-full h-48 p-4 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none resize-none leading-relaxed"
           placeholder="اكتب تفاصيل نطاق العمل هنا بشكل دقيق ومفصل..."
         />
       </div>

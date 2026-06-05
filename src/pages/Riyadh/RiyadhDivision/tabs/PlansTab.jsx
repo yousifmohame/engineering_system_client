@@ -30,7 +30,7 @@ import FilesTab from "./plan_components/FilesTab";
 import SpecialRegTab from "./plan_components/SpecialRegTab";
 import NotesTab from "./plan_components/NotesTab";
 import ReferenceDetailsModal from "../../../Archives_and_records/ProjectsArchive/ReferenceDetails/ReferenceDetailsModal";
-import ClientFileDetails from "../../../Clients/ClientFileDetails";
+import ClientFileView from "../../../Clients/components/clientDetails/ClientFileView";
 
 
 const IconWithText = ({
@@ -561,7 +561,7 @@ const PlansTab = () => {
         />
       )}
       {clientModal.isOpen && clientModal.clientId && (
-        <ClientFileDetails
+        <ClientFileView
           clientId={clientModal.clientId}
           isOpen={clientModal.isOpen}
           onClose={() => setClientModal({ isOpen: false, clientId: null })}

@@ -5,9 +5,7 @@ import {
   Settings2,
   ShieldCheck,
   Fingerprint,
-  Stamp,
   Database,
-  UserCheck,
 } from "lucide-react";
 
 // استيراد المودالات (النوافذ المنبثقة)
@@ -15,7 +13,7 @@ import RegistryModal from "./Screens/RegistryModal";
 import VerificationModal from "./Screens/VerificationModal";
 
 import LogsModal from "./Screens/LogsModal";
-import SupervisorModal from "./Screens/SupervisorModal";
+// import SupervisorModal from "./Screens/SupervisorModal";
 
 export default function DocumentationDashboard({ onNavigate }) {
   // حالة فتح النوافذ المنبثقة
@@ -48,16 +46,16 @@ export default function DocumentationDashboard({ onNavigate }) {
         gradient: "from-emerald-500 to-teal-700",
         icon: SearchCheck,
       },
-      {
-        id: 3,
-        type: "modal",
-        target: "supervisor",
-        title: "مشرف العمليات",
-        desc: "إدارة واعتماد المستندات المعلقة من قبل الموظفين",
-        stat: "الاعتماد النهائي",
-        gradient: "from-purple-600 to-pink-600",
-        icon: UserCheck, // 👈 أيقونة تعبر عن المشرف
-      },
+      // {
+      //   id: 3,
+      //   type: "modal",
+      //   target: "supervisor",
+      //   title: "مشرف العمليات",
+      //   desc: "إدارة واعتماد المستندات المعلقة من قبل الموظفين",
+      //   stat: "الاعتماد النهائي",
+      //   gradient: "from-purple-600 to-pink-600",
+      //   icon: UserCheck, // 👈 أيقونة تعبر عن المشرف
+      // },
       // داخل مصفوفة DOC_MODULES
       {
         id: 4,
@@ -169,10 +167,10 @@ export default function DocumentationDashboard({ onNavigate }) {
         onClose={() => setModalOpen((prev) => ({ ...prev, logs: false }))}
         onSuccess={() => console.log("تم تحديث السجلات")}
       />
-      <SupervisorModal
+      {/* <SupervisorModal
         isOpen={modalOpen.supervisor}
         onClose={() => setModalOpen((prev) => ({ ...prev, supervisor: false }))}
-      />
+      /> */}
     </div>
   );
 }

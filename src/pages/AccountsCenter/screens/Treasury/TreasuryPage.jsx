@@ -11,8 +11,6 @@ import {
   X,
   Vault,
   ShieldCheck,
-  Info,
-  CodeXml,
   Loader2,
   Save,
   Printer,

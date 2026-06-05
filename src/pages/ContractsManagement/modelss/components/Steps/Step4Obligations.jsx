@@ -15,11 +15,11 @@ export const Step4Obligations = ({
   openAiModal,
   isGeneratingAI,
 }) => (
-  <div className="space-y-6 animate-in slide-in-from-right-4">
-    <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-      <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-        <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
-          <Scale className="w-4 h-4 text-emerald-600" /> الالتزامات (الطرفين)
+  <div className="space-y-4 animate-in slide-in-from-right-4">
+    <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+      <div className="flex justify-between items-center border-b border-[#e7eef2] pb-3">
+        <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2">
+          <Scale className="w-4 h-4 text-[#0f6d7c]" /> الالتزامات (الطرفين)
         </h3>
         <div className="flex gap-2">
           <button
@@ -57,7 +57,7 @@ export const Step4Obligations = ({
         {contract.obligationsList?.map((obs, index) => (
           <div
             key={obs.id}
-            className="flex gap-3 items-start bg-slate-50 p-3 rounded-xl border border-slate-100 group"
+            className="flex gap-3 items-start bg-[#f7fbfd] p-3 rounded-xl border border-[#e7eef2] group"
           >
             <div className="w-16 shrink-0">
               <input
@@ -68,7 +68,7 @@ export const Step4Obligations = ({
                   newList[index].code = e.target.value;
                   setContract({ ...contract, obligationsList: newList });
                 }}
-                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-mono text-center focus:ring-2 focus:ring-emerald-500/20 outline-none"
+                className="w-full p-2 bg-white border border-[#d8e6ee] rounded-lg text-xs font-mono text-center focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
                 placeholder="الكود"
               />
             </div>
@@ -80,7 +80,7 @@ export const Step4Obligations = ({
                   newList[index].party = e.target.value;
                   setContract({ ...contract, obligationsList: newList });
                 }}
-                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+                className="w-full p-2 bg-white border border-[#d8e6ee] rounded-lg text-[11px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
               >
                 <option value="A">الطرف الأول</option>
                 <option value="B">الطرف الثاني</option>
@@ -95,7 +95,7 @@ export const Step4Obligations = ({
                   newList[index].content = e.target.value;
                   setContract({ ...contract, obligationsList: newList });
                 }}
-                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none min-h-[40px]"
+                className="w-full p-2 bg-white border border-[#d8e6ee] rounded-lg text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none resize-none min-h-[40px]"
                 placeholder="نص الالتزام..."
                 rows={2}
               />
@@ -114,11 +114,11 @@ export const Step4Obligations = ({
                   if (btn) {
                     btn.innerHTML =
                       '<svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
-                    btn.classList.add("text-emerald-600", "bg-emerald-50");
+                    btn.classList.add("text-[#0f6d7c]", "bg-emerald-50");
                     setTimeout(() => {
                       btn.innerHTML =
                         '<svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>';
-                      btn.classList.remove("text-emerald-600", "bg-emerald-50");
+                      btn.classList.remove("text-[#0f6d7c]", "bg-emerald-50");
                     }, 2000);
                   }
                 }}
@@ -146,9 +146,9 @@ export const Step4Obligations = ({
       </div>
     </div>
 
-    <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-      <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-        <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+    <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+      <div className="flex justify-between items-center border-b border-[#e7eef2] pb-3">
+        <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2">
           <Scale className="w-4 h-4 text-rose-600" /> الشروط العامة والجزاءات
         </h3>
         <button
@@ -171,15 +171,15 @@ export const Step4Obligations = ({
         onChange={(e) =>
           setContract({ ...contract, generalConditions: e.target.value })
         }
-        className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none leading-relaxed"
+        className="w-full h-32 p-4 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none resize-none leading-relaxed"
         placeholder="الشروط العامة، فسخ العقد، غرامات التأخير..."
       />
     </div>
 
-    <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-      <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-        <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
-          <Scale className="w-4 h-4 text-slate-600" /> القانون الحاكم
+    <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+      <div className="flex justify-between items-center border-b border-[#e7eef2] pb-3">
+        <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2">
+          <Scale className="w-4 h-4 text-[#52677e]" /> القانون الحاكم
         </h3>
         <button
           onClick={() =>
@@ -201,7 +201,7 @@ export const Step4Obligations = ({
         onChange={(e) =>
           setContract({ ...contract, governingLaw: e.target.value })
         }
-        className="w-full h-24 p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none leading-relaxed"
+        className="w-full h-24 p-4 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none resize-none leading-relaxed"
         placeholder="يخضع هذا العقد للأنظمة والقوانين المعمول بها في..."
       />
     </div>

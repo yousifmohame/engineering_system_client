@@ -3,15 +3,15 @@ import React from "react";
 import { Link as LinkIcon, LayoutTemplate } from "lucide-react";
 
 export const Step6Templates = ({ contract, setContract }) => (
-  <div className="space-y-6 animate-in slide-in-from-right-4">
-    <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-      <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-        <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
-          <LayoutTemplate className="w-4 h-4 text-emerald-600" /> قوالب نطاق
+  <div className="space-y-4 animate-in slide-in-from-right-4">
+    <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+      <div className="flex justify-between items-center border-b border-[#e7eef2] pb-3">
+        <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2">
+          <LayoutTemplate className="w-4 h-4 text-[#0f6d7c]" /> قوالب نطاق
           العمل
         </h3>
       </div>
-      <p className="text-xs text-slate-500 font-bold mb-4">
+      <p className="text-xs text-[#71839a] font-bold mb-4">
         اختر القوالب الجاهزة التي ترغب بتطبيقها على هذا العقد. سيتم دمج بنود
         القوالب المحددة مع نطاق العمل الحالي.
       </p>
@@ -51,7 +51,7 @@ export const Step6Templates = ({ contract, setContract }) => (
         ].map((preset) => (
           <label
             key={preset.id}
-            className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${contract.activePresets?.includes(preset.id) ? "bg-emerald-50 border-emerald-500 shadow-sm" : "bg-white border-slate-200 hover:bg-slate-50"}`}
+            className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${contract.activePresets?.includes(preset.id) ? "bg-emerald-50 border-emerald-500 shadow-sm" : "bg-white border-[#d8e6ee] hover:bg-[#f7fbfd]"}`}
           >
             <div className="mt-0.5">
               <input
@@ -79,22 +79,22 @@ export const Step6Templates = ({ contract, setContract }) => (
                     terms: newTerms,
                   });
                 }}
-                className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+                className="w-4 h-4 text-[#0f6d7c] rounded border-slate-300 focus:ring-emerald-500"
               />
             </div>
             <div className="flex-1">
               <div className="flex justify-between items-start">
                 <h4
-                  className={`text-sm font-black ${contract.activePresets?.includes(preset.id) ? "text-emerald-900" : "text-slate-800"}`}
+                  className={`text-[13px] font-black ${contract.activePresets?.includes(preset.id) ? "text-emerald-900" : "text-[#123B5D]"}`}
                 >
                   {preset.name}
                 </h4>
-                <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-bold bg-slate-100 text-[#52677e] px-2 py-0.5 rounded-full">
                   {preset.conditions}
                 </span>
               </div>
               <p
-                className={`text-xs mt-1 ${contract.activePresets?.includes(preset.id) ? "text-emerald-700" : "text-slate-500"}`}
+                className={`text-xs mt-1 ${contract.activePresets?.includes(preset.id) ? "text-emerald-700" : "text-[#71839a]"}`}
               >
                 {preset.description}
               </p>

@@ -5,34 +5,6 @@ import {
   ClipboardList,
 } from "lucide-react";
 
-const IconWithText = ({
-  icon: Icon,
-  text,
-  className = "",
-  iconClassName = "",
-  textClassName = "",
-  vertical = false,
-}) => {
-  return (
-    <span
-      className={`inline-flex min-w-0 items-center justify-center ${
-        vertical ? "flex-col gap-0.5" : "gap-1.5"
-      } ${className}`}
-    >
-      {Icon && <Icon className={iconClassName || "h-3.5 w-3.5 shrink-0"} />}
-      {text && (
-        <span
-          className={
-            textClassName ||
-            "min-w-0 whitespace-nowrap text-[10px] font-black leading-none"
-          }
-        >
-          {text}
-        </span>
-      )}
-    </span>
-  );
-};
 
 export default function DocumentsDashboard({ onNavigate }) {
   const MODULES = [

@@ -1,13 +1,12 @@
 import React from "react";
 import { useAppStore } from "../../stores/useAppStore";
 import ClientsDashboard from "./ClientsDashboard";
-import CreateClientWizard from "./CreateClientWizard";
-import ClientsLog from "./ClientsLog";
-import ClientFileView from "./ClientFileView";
+import CreateClientPanel from "./screens/CreateClientPanel";
+import ClientsPanel from "./screens/ClientsPanel";
+import ClientFileView from "./components/clientDetails/ClientFileView";
 // 👇 1. استيراد اللوحات الجديدة التي قمنا بإنشائها
-import ClientsRatingsPanel from "./ClientsRatingsPanel";
-import ClientsDocsPanel from "./ClientsDocsPanel";
-
+import ClientsRatingsPanel from "./screens/ClientsRatingsPanel";
+import ClientsDocsPanel from "./screens/ClientsDocsPanel";
 
 const CLIENTS_NEW_DESIGN_STYLE = `
 .clients-new-design{
@@ -213,7 +212,7 @@ const ClientsScreenWrapper = () => {
     // حالة: إنشاء عميل جديد
     if (activeTabId === "NEW_CLIENT_TAB") {
       return (
-        <CreateClientWizard
+        <CreateClientPanel
           onComplete={() => {
             removeTab(screenId, "NEW_CLIENT_TAB");
             handleNavigate("300-MAIN");
@@ -225,83 +224,9 @@ const ClientsScreenWrapper = () => {
     // حالة: دليل العملاء
     if (activeTabId === "300-MAIN") {
       return (
-        <ClientsLog
+        <ClientsPanel
           onOpenDetails={(clientId, clientCode) => {
-            const tabId = `CLIENT-${clientId}
-
-/* Compact clients log filters and table redesign */
-.clients-new-design .clients-log-filters{
-  padding:10px 14px!important;
-  border-radius:22px!important;
-  background:rgba(255,255,255,.92)!important;
-  border:1px solid var(--c-border)!important;
-  box-shadow:0 10px 24px rgba(8,54,70,.06)!important;
-}
-.clients-new-design .clients-log-filters input,
-.clients-new-design .clients-log-filters select{
-  height:42px!important;
-  min-height:42px!important;
-  font-size:12px!important;
-  border-radius:16px!important;
-}
-.clients-new-design .clients-log-filters button{
-  height:42px!important;
-  min-height:42px!important;
-  padding:0 14px!important;
-  font-size:12px!important;
-  display:inline-flex!important;
-  align-items:center!important;
-  gap:7px!important;
-}
-.clients-new-design .clients-log-table{
-  border-radius:22px!important;
-  border:1px solid var(--c-border)!important;
-  background:white!important;
-  box-shadow:0 12px 28px rgba(8,54,70,.06)!important;
-}
-.clients-new-design .clients-log-table table{border-collapse:separate!important;border-spacing:0!important;min-width:1180px!important}
-.clients-new-design .clients-log-table thead tr{background:var(--c-navy)!important}
-.clients-new-design .clients-log-table thead th{
-  background:var(--c-navy)!important;
-  color:#fff!important;
-  font-size:12px!important;
-  font-weight:900!important;
-  padding:11px 10px!important;
-  line-height:1.25!important;
-  border-color:rgba(255,255,255,.16)!important;
-  white-space:nowrap!important;
-}
-.clients-new-design .clients-log-table tbody td{
-  padding:8px 10px!important;
-  font-size:11.5px!important;
-  line-height:1.25!important;
-  border-color:#e6eef3!important;
-  vertical-align:middle!important;
-}
-.clients-new-design .clients-log-table tbody tr{height:48px!important}
-.clients-new-design .clients-log-table tbody tr:nth-child(odd){background:#fff!important}
-.clients-new-design .clients-log-table tbody tr:nth-child(even){background:#f9fcfd!important}
-.clients-new-design .clients-log-table tbody tr:hover{background:#eef7fb!important}
-.clients-new-design .clients-log-table .client-row-actions{
-  opacity:1!important;
-  display:flex!important;
-  justify-content:center!important;
-  align-items:center!important;
-  gap:6px!important;
-  flex-wrap:nowrap!important;
-}
-.clients-new-design .clients-log-table .client-row-actions button{
-  height:30px!important;
-  min-height:30px!important;
-  padding:0 8px!important;
-  font-size:10px!important;
-  border-radius:10px!important;
-  white-space:nowrap!important;
-}
-.clients-new-design .clients-log-table .client-row-actions svg{width:13px!important;height:13px!important}
-.clients-new-design .clients-log-table .client-name-cell{max-width:220px!important;min-width:170px!important}
-
-`;
+            const tabId = `CLIENT-${clientId}`;
             addTab(screenId, {
               id: tabId,
               title: `ملف: ${clientCode}`,
@@ -351,7 +276,10 @@ const ClientsScreenWrapper = () => {
   };
 
   return (
-    <div className="clients-new-design flex h-full w-full bg-[#eef5f7] overflow-hidden" dir="rtl">
+    <div
+      className="clients-new-design flex h-full w-full bg-[#eef5f7] overflow-hidden"
+      dir="rtl"
+    >
       <div className="flex-1 flex flex-col min-w-0 bg-white shadow-xl m-3 rounded-[28px] border border-[#d8e6ee] overflow-hidden relative">
         <style>{CLIENTS_NEW_DESIGN_STYLE}</style>
         <div className="flex-1 relative h-full overflow-y-auto custom-scrollbar">

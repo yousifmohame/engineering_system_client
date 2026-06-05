@@ -25,14 +25,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 
-const getFullUrl = (url) => {
-  if (!url) return null;
-  if (url.startsWith("http")) return url;
-  let fixedUrl = url;
-  if (url.startsWith("/uploads/")) fixedUrl = `/api${url}`;
-  const baseUrl = "https://details-worksystem1.com";
-  return `${baseUrl}${fixedUrl}`;
-};
+import { getFullUrl } from "../../../../utils/urlUtils"; // دالة مساعدة لتصحيح روابط الملفات
 
 export default function ReferenceDetailsModal({ isOpen, onClose, document }) {
   const queryClient = useQueryClient();

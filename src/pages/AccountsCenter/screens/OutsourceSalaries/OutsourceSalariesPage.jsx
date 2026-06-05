@@ -29,23 +29,13 @@ import {
   Printer,
   Undo2,
 } from "lucide-react";
+import { COUNTRY_CODES } from "../../../../utils/countryCodes";
 
 const OUTSOURCE_UI = {
   DISCLAIMER:
     "تنبيه: هذه الشاشة مخصصة لإدارة رواتب ومستحقات المتعاونين الخارجيين. يرجى التأكد من حساب الأيام والخصومات بدقة قبل تسجيل الدفعة.",
   REPORT_TITLE: "تقرير رواتب المتعاونين",
 };
-
-const COUNTRY_CODES = [
-  { code: "+966", label: "السعودية 🇸🇦" },
-  { code: "+20", label: "مصر 🇪🇬" },
-  { code: "+971", label: "الإمارات 🇦🇪" },
-  { code: "+965", label: "الكويت 🇰🇼" },
-  { code: "+973", label: "قطر 🇶🇦" },
-  { code: "+974", label: "البحرين 🇧🇭" },
-  { code: "+968", label: "عمان 🇴🇲" },
-  { code: "+962", label: "الأردن 🇯🇴" },
-];
 
 const MONTHS_OPTIONS = [
   { value: "2026-03", label: "مارس 2026" },

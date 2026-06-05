@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAllClients, deleteClient } from "../../api/clientApi";
-import api from "../../api/axios";
+import { getAllClients, deleteClient } from "../../../api/clientApi";
+import api from "../../../api/axios";
 import {
   Search,
   RefreshCw,
@@ -28,7 +28,7 @@ import {
   Globe,
 } from "lucide-react";
 import { toast } from "sonner";
-import AccessControl from "../../components/AccessControl";
+import AccessControl from "../../../components/AccessControl";
 
 // دالة مساعدة لاسم العميل
 const getFullName = (nameObj) => {
@@ -74,7 +74,7 @@ const isProfileIncomplete = (client) => {
   );
 };
 
-const ClientsLog = ({ onOpenDetails, onEditClient }) => {
+const ClientsPanel = ({ onOpenDetails, onEditClient }) => {
   const queryClient = useQueryClient();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -945,7 +945,7 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
                             >
                               <button
                                 onClick={(e) => handleToggleStatus(e, client)}
-                                className={`px-2 py-1 rounded-lg transition-colors inline-flex items-center gap-1 text-[10px] font-black ${isFrozen ? "bg-amber-100 text-amber-600 hover:bg-amber-600 hover:text-white" : "bg-slate-200 text-slate-600 hover:bg-amber-500 hover:text-white"}` }
+                                className={`px-2 py-1 rounded-lg transition-colors inline-flex items-center gap-1 text-[10px] font-black ${isFrozen ? "bg-amber-100 text-amber-600 hover:bg-amber-600 hover:text-white" : "bg-slate-200 text-slate-600 hover:bg-amber-500 hover:text-white"}`}
                                 title={isFrozen ? "تنشيط" : "تجميد"}
                               >
                                 {isFrozen ? (
@@ -1044,4 +1044,4 @@ const ClientsLog = ({ onOpenDetails, onEditClient }) => {
   );
 };
 
-export default ClientsLog;
+export default ClientsPanel;

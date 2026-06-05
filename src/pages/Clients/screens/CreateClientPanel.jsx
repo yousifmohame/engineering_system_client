@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createClient } from "../../api/clientApi";
-import axios from "../../api/axios";
+import axios from "../../../api/axios";
 import { toast } from "sonner";
 import {
   Upload,
@@ -231,7 +230,9 @@ const HeirCard = ({
         <div className="w-6 h-6 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center text-xs font-bold">
           {index + 1}
         </div>
-        <span className="text-[12px] font-black text-[#123B5D]">بيانات الوريث</span>
+        <span className="text-[12px] font-black text-[#123B5D]">
+          بيانات الوريث
+        </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -299,7 +300,7 @@ const WIZARD_STEPS = [
 // ==========================================
 // المكون الرئيسي
 // ==========================================
-const CreateClientWizard = ({ onComplete }) => {
+const CreateClientPanel = ({ onComplete }) => {
   const queryClient = useQueryClient();
 
   const identityInputRef = useRef(null);
@@ -830,8 +831,13 @@ const CreateClientWizard = ({ onComplete }) => {
               <>
                 <div className="flex items-center justify-between gap-3 mb-4 border-b border-[#e8dcc8] pb-3">
                   <div>
-                    <h3 className="text-[17px] font-black text-[#123B5D]">طريقة إنشاء ملف العميل</h3>
-                    <p className="text-[11px] text-[#71839a] font-bold mt-1">رفع وثيقة الهوية بالذكاء الاصطناعي أو إدخال البيانات يدوياً</p>
+                    <h3 className="text-[17px] font-black text-[#123B5D]">
+                      طريقة إنشاء ملف العميل
+                    </h3>
+                    <p className="text-[11px] text-[#71839a] font-bold mt-1">
+                      رفع وثيقة الهوية بالذكاء الاصطناعي أو إدخال البيانات
+                      يدوياً
+                    </p>
                   </div>
                   <UserPlus className="w-6 h-6 text-[#0f6d7c]" />
                 </div>
@@ -2594,7 +2600,9 @@ const CreateClientWizard = ({ onComplete }) => {
                   onClick={() => setCurrentStep(step.id)}
                   className={`h-9 px-3 rounded-xl flex items-center gap-2 border transition-all whitespace-nowrap ${isActive ? "bg-[#083646] text-white border-[#d9b85b] shadow-sm" : isCompleted ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-[#f7fbfd] text-[#71839a] border-[#d8e6ee]"}`}
                 >
-                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black ${isActive ? "bg-white/15 text-white" : isCompleted ? "bg-emerald-100 text-emerald-700" : "bg-white text-[#71839a]"}`}>
+                  <span
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black ${isActive ? "bg-white/15 text-white" : isCompleted ? "bg-emerald-100 text-emerald-700" : "bg-white text-[#71839a]"}`}
+                  >
                     {isCompleted ? <Check className="w-3 h-3" /> : step.id}
                   </span>
                   <span className="text-[11px] font-black">{step.label}</span>
@@ -2643,4 +2651,4 @@ const CreateClientWizard = ({ onComplete }) => {
   );
 };
 
-export default CreateClientWizard;
+export default CreateClientPanel;

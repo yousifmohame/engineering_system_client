@@ -54,21 +54,21 @@ const SearchableSelect = ({
     <div className="relative w-full" ref={wrapperRef}>
       <div
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`w-full border rounded-xl px-3 py-2.5 text-sm font-bold flex items-center justify-between cursor-pointer transition-colors ${
+        className={`w-full border rounded-xl px-3 py-2 text-[13px] font-bold flex items-center justify-between cursor-pointer transition-colors ${
           disabled
-            ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
-            : "bg-slate-50 border-slate-200 focus-within:border-emerald-500 focus-within:bg-white"
+            ? "bg-slate-100 border-[#d8e6ee] text-slate-400 cursor-not-allowed"
+            : "bg-[#f7fbfd] border-[#d8e6ee] focus-within:border-emerald-500 focus-within:bg-white"
         }`}
       >
-        <span className={selectedLabel ? "text-slate-800" : "text-slate-400"}>
+        <span className={selectedLabel ? "text-[#123B5D]" : "text-slate-400"}>
           {selectedLabel || placeholder}
         </span>
         <ChevronDown className="w-4 h-4 text-slate-400" />
       </div>
 
       {isOpen && !disabled && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-hidden flex flex-col">
-          <div className="p-2 border-b border-slate-100 bg-slate-50 sticky top-0">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-[#d8e6ee] rounded-xl shadow-xl max-h-60 overflow-hidden flex flex-col">
+          <div className="p-2 border-b border-[#e7eef2] bg-[#f7fbfd] sticky top-0">
             <div className="relative">
               <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <input
@@ -77,7 +77,7 @@ const SearchableSelect = ({
                 placeholder="اكتب للبحث..."
                 value={search}
                 onChange={(e) => setSearch(toEnglishNumbers(e.target.value))}
-                className="w-full pl-2 pr-7 py-1.5 text-xs font-bold border border-slate-200 rounded-lg outline-none focus:border-emerald-500"
+                className="w-full pl-2 pr-7 py-1.5 text-[11px] font-bold border border-[#d8e6ee] rounded-lg outline-none focus:border-[#d9b85b]"
               />
             </div>
           </div>
@@ -91,7 +91,7 @@ const SearchableSelect = ({
                     setIsOpen(false);
                     setSearch("");
                   }}
-                  className="px-3 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer border-b border-slate-50 last:border-0 font-bold"
+                  className="px-3 py-2 text-sm text-[#123B5D] hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer border-b border-slate-50 last:border-0 font-bold"
                 >
                   {opt.label}
                   {opt.subLabel && (
@@ -177,15 +177,15 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
   }, [clients]);
 
   return (
-    <div className="space-y-6 animate-in slide-in-from-right-4">
+    <div className="space-y-4 animate-in slide-in-from-right-4">
       {/* 1. Basic Info */}
-      <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-        <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
-          <FileText className="w-4 h-4 text-emerald-600" /> البيانات الأساسية
+      <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+        <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2 border-b border-[#e7eef2] pb-3">
+          <FileText className="w-4 h-4 text-[#0f6d7c]" /> البيانات الأساسية
         </h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700">
+            <label className="text-[11px] font-black text-[#123B5D]">
               عنوان العقد
             </label>
             <input
@@ -194,12 +194,12 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
               onChange={(e) =>
                 setContract({ ...contract, name: e.target.value })
               }
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+              className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
               placeholder="مثال: عقد تصميم فيلا سكنية"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700">
+            <label className="text-[11px] font-black text-[#123B5D]">
               تاريخ العقد (ميلادي)
             </label>
             <input
@@ -223,13 +223,13 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
                   }).format(gDate),
                 });
               }}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+              className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
             />
           </div>
         </div>
         <div className="space-y-1.5 pt-2">
           <div className="flex justify-between items-center">
-            <label className="text-xs font-black text-slate-700">
+            <label className="text-[11px] font-black text-[#123B5D]">
               مقدمة وتمهيد العقد
             </label>
             <button
@@ -246,29 +246,29 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
             onChange={(e) =>
               setContract({ ...contract, introduction: e.target.value })
             }
-            className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none leading-relaxed"
+            className="w-full h-24 p-3 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none resize-none leading-relaxed"
             placeholder="اكتب التمهيد هنا..."
           />
         </div>
       </div>
 
       {/* 2. الطرف الأول (مقدم الخدمة) */}
-      <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-emerald-600" /> الطرف الأول (مقدم
+      <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-[#e7eef2] pb-3">
+          <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-[#0f6d7c]" /> الطرف الأول (مقدم
             الخدمة)
           </h3>
           <div className="flex gap-2">
             <button
               onClick={() => setPartyAMode("db")}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${partyAMode === "db" ? "bg-emerald-600 text-white border-emerald-600" : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"}`}
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${partyAMode === "db" ? "bg-[#083646] text-white border-emerald-600" : "bg-[#f7fbfd] text-[#71839a] border-[#d8e6ee] hover:bg-slate-100"}`}
             >
               اختيار من النظام
             </button>
             <button
               onClick={() => setPartyAMode("manual")}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${partyAMode === "manual" ? "bg-blue-600 text-white border-blue-600" : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"}`}
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${partyAMode === "manual" ? "bg-blue-600 text-white border-blue-600" : "bg-[#f7fbfd] text-[#71839a] border-[#d8e6ee] hover:bg-slate-100"}`}
             >
               إدخال يدوي
             </button>
@@ -277,7 +277,7 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
 
         {partyAMode === "db" && (
           <div className="mb-4 bg-emerald-50/30 p-4 rounded-xl border border-emerald-100">
-            <label className="block text-xs font-bold text-emerald-800 mb-1.5 text-right">
+            <label className="block text-[11px] font-bold text-emerald-800 mb-1.5 text-right">
               ابحث عن (مكتب أو موظف) في النظام *
             </label>
             <SearchableSelect
@@ -308,7 +308,7 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700">
+            <label className="text-[11px] font-black text-[#123B5D]">
               اسم الجهة / مقدم الخدمة
             </label>
             <input
@@ -317,11 +317,11 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
               onChange={(e) =>
                 setContract({ ...contract, partyA: e.target.value })
               }
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none"
+              className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold outline-none"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700">
+            <label className="text-[11px] font-black text-[#123B5D]">
               يمثلها (المفوض بالتوقيع)
             </label>
             <input
@@ -336,11 +336,11 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
                   },
                 })
               }
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none"
+              className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold outline-none"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700">
+            <label className="text-[11px] font-black text-[#123B5D]">
               السجل التجاري / الهوية
             </label>
             <input
@@ -355,11 +355,11 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
                   },
                 })
               }
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none"
+              className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold outline-none"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700">
+            <label className="text-[11px] font-black text-[#123B5D]">
               العنوان الوطني
             </label>
             <input
@@ -374,21 +374,21 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
                   },
                 })
               }
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none"
+              className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold outline-none"
             />
           </div>
         </div>
       </div>
 
       {/* 3. Party B */}
-      <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+      <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-[#e7eef2] pb-3">
+          <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2">
             <User className="w-4 h-4 text-blue-600" /> الطرف الثاني (العميل)
           </h3>
           <div className="flex gap-2">
             <label
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${partyBMode === "db" ? "border-blue-600 bg-blue-50" : "border-slate-200 bg-white hover:bg-slate-50"}`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${partyBMode === "db" ? "border-blue-600 bg-blue-50" : "border-[#d8e6ee] bg-white hover:bg-[#f7fbfd]"}`}
             >
               <input
                 type="radio"
@@ -397,13 +397,13 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
                 className="hidden"
               />
               <span
-                className={`text-[10px] font-bold ${partyBMode === "db" ? "text-blue-800" : "text-slate-600"}`}
+                className={`text-[10px] font-bold ${partyBMode === "db" ? "text-blue-800" : "text-[#52677e]"}`}
               >
                 عميل مسجل مسبقاً
               </span>
             </label>
             <label
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${partyBMode === "manual" ? "border-emerald-600 bg-emerald-50" : "border-slate-200 bg-white hover:bg-slate-50"}`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${partyBMode === "manual" ? "border-emerald-600 bg-emerald-50" : "border-[#d8e6ee] bg-white hover:bg-[#f7fbfd]"}`}
             >
               <input
                 type="radio"
@@ -427,7 +427,7 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
                 className="hidden"
               />
               <span
-                className={`text-[10px] font-bold ${partyBMode === "manual" ? "text-emerald-800" : "text-slate-600"}`}
+                className={`text-[10px] font-bold ${partyBMode === "manual" ? "text-emerald-800" : "text-[#52677e]"}`}
               >
                 عميل جديد / يدوي
               </span>
@@ -437,7 +437,7 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
 
         {partyBMode === "db" && (
           <div className="mb-4 bg-blue-50/30 p-4 rounded-xl border border-blue-100">
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+            <label className="block text-[11px] font-bold text-[#123B5D] mb-1.5">
               ابحث عن العميل في النظام *
             </label>
             <SearchableSelect
@@ -469,7 +469,7 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700">
+            <label className="text-[11px] font-black text-[#123B5D]">
               اسم العميل / الجهة
             </label>
             <input
@@ -478,11 +478,11 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
               onChange={(e) =>
                 setContract({ ...contract, partyB: e.target.value })
               }
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
+              className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700">
+            <label className="text-[11px] font-black text-[#123B5D]">
               يمثلها (إن وجد)
             </label>
             <input
@@ -497,11 +497,11 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
                   },
                 })
               }
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
+              className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700">
+            <label className="text-[11px] font-black text-[#123B5D]">
               رقم الهوية / السجل التجاري
             </label>
             <input
@@ -516,11 +516,11 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
                   },
                 })
               }
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
+              className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-mono font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700">
+            <label className="text-[11px] font-black text-[#123B5D]">
               رقم الجوال
             </label>
             <input
@@ -535,12 +535,12 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
                   },
                 })
               }
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
+              className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-sm font-mono font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
               dir="ltr"
             />
           </div>
           <div className="space-y-1.5 col-span-2">
-            <label className="text-xs font-black text-slate-700">
+            <label className="text-[11px] font-black text-[#123B5D]">
               العنوان الوطني
             </label>
             <input
@@ -555,7 +555,7 @@ export const Step1BasicInfo = ({ contract, setContract, openAiModal }) => {
                   },
                 })
               }
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
+              className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
             />
           </div>
         </div>

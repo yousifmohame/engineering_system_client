@@ -16,12 +16,12 @@ export const Step5Settings = ({
   handleGenerateAiSummary,
   isGeneratingAI,
 }) => (
-  <div className="space-y-6 animate-in slide-in-from-right-4">
+  <div className="space-y-4 animate-in slide-in-from-right-4">
     {/* Cover Settings */}
-    <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-      <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-        <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
-          <FileText className="w-4 h-4 text-emerald-600" /> إعدادات الغلاف
+    <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+      <div className="flex justify-between items-center border-b border-[#e7eef2] pb-3">
+        <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2">
+          <FileText className="w-4 h-4 text-[#0f6d7c]" /> إعدادات الغلاف
           الأمامي
         </h3>
         <button
@@ -40,7 +40,7 @@ export const Step5Settings = ({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className="text-xs font-black text-slate-700">
+          <label className="text-[11px] font-black text-[#123B5D]">
             العنوان الفرعي
           </label>
           <input
@@ -55,12 +55,12 @@ export const Step5Settings = ({
                 },
               })
             }
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+            className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
             placeholder="وثيقة تعاقدية ملزمة"
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-black text-slate-700">
+          <label className="text-[11px] font-black text-[#123B5D]">
             رقم الإصدار
           </label>
           <input
@@ -75,12 +75,12 @@ export const Step5Settings = ({
                 },
               })
             }
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+            className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
             placeholder="1.0"
           />
         </div>
         <div className="col-span-2 space-y-1.5">
-          <label className="text-xs font-black text-slate-700">
+          <label className="text-[11px] font-black text-[#123B5D]">
             ملخص العقد (يظهر في الغلاف)
           </label>
           <textarea
@@ -88,7 +88,7 @@ export const Step5Settings = ({
             onChange={(e) =>
               setContract({ ...contract, coverSummary: e.target.value })
             }
-            className="w-full h-24 p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none leading-relaxed"
+            className="w-full h-24 p-4 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none resize-none leading-relaxed"
             placeholder="ملخص مختصر لأهم بنود العقد..."
           />
         </div>
@@ -106,9 +106,9 @@ export const Step5Settings = ({
                   },
                 })
               }
-              className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+              className="w-4 h-4 text-[#0f6d7c] rounded border-slate-300 focus:ring-emerald-500"
             />
-            <span className="text-xs font-bold text-slate-700">
+            <span className="text-[11px] font-bold text-[#123B5D]">
               إظهار الشعار
             </span>
           </label>
@@ -125,9 +125,9 @@ export const Step5Settings = ({
                   },
                 })
               }
-              className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+              className="w-4 h-4 text-[#0f6d7c] rounded border-slate-300 focus:ring-emerald-500"
             />
-            <span className="text-xs font-bold text-slate-700">
+            <span className="text-[11px] font-bold text-[#123B5D]">
               إظهار الملخص
             </span>
           </label>
@@ -135,13 +135,13 @@ export const Step5Settings = ({
       </div>
 
       {/* Background Settings */}
-      <div className="mt-4 pt-4 border-t border-slate-100">
-        <h4 className="text-xs font-black text-slate-800 mb-3">
+      <div className="mt-4 pt-4 border-t border-[#e7eef2]">
+        <h4 className="text-[11px] font-black text-[#123B5D] mb-3">
           إعدادات الخلفية (صورة الغلاف)
         </h4>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5 col-span-2">
-            <label className="text-xs font-bold text-slate-700">
+            <label className="text-[11px] font-bold text-[#123B5D]">
               رابط الصورة (URL)
             </label>
             <input
@@ -159,12 +159,12 @@ export const Step5Settings = ({
                   },
                 })
               }
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+              className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
               placeholder="https://example.com/image.jpg"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700">
+            <label className="text-[11px] font-bold text-[#123B5D]">
               الشفافية ({contract.coverSettings?.background?.opacity || 0.1})
             </label>
             <input
@@ -189,7 +189,7 @@ export const Step5Settings = ({
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700">
+            <label className="text-[11px] font-bold text-[#123B5D]">
               تطبيق على
             </label>
             <select
@@ -206,7 +206,7 @@ export const Step5Settings = ({
                   },
                 })
               }
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+              className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
             >
               <option value="front">الغلاف الأمامي فقط</option>
               <option value="back">الغلاف الخلفي فقط</option>
@@ -218,13 +218,13 @@ export const Step5Settings = ({
     </div>
 
     {/* References */}
-    <div className="p-5 bg-blue-50 rounded-2xl border border-blue-100 shadow-sm space-y-4">
-      <h3 className="text-sm font-black text-blue-800 flex items-center gap-2 border-b border-blue-200 pb-3">
+    <div className="p-4 bg-blue-50 rounded-[22px] border border-blue-100 shadow-sm space-y-4">
+      <h3 className="text-[13px] font-black text-blue-800 flex items-center gap-2 border-b border-blue-200 pb-3">
         <LinkIcon className="w-4 h-4" /> الارتباطات المرجعية
       </h3>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className="text-xs font-black text-blue-700">
+          <label className="text-[11px] font-black text-blue-700">
             العقد الأساسي (إن وجد)
           </label>
           <input
@@ -237,12 +237,12 @@ export const Step5Settings = ({
                 isAddendum: !!e.target.value,
               })
             }
-            className="w-full p-2.5 bg-white border border-blue-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
+            className="w-full p-2 bg-white border border-blue-200 rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
             placeholder="رقم العقد الأساسي"
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-black text-blue-700">
+          <label className="text-[11px] font-black text-blue-700">
             عرض السعر المرجعي
           </label>
           <input
@@ -251,7 +251,7 @@ export const Step5Settings = ({
             onChange={(e) =>
               setContract({ ...contract, linkedQuoteId: e.target.value })
             }
-            className="w-full p-2.5 bg-white border border-blue-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
+            className="w-full p-2 bg-white border border-blue-200 rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
             placeholder="رقم عرض السعر"
           />
         </div>
@@ -259,9 +259,9 @@ export const Step5Settings = ({
     </div>
 
     {/* Approval Method */}
-    <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-      <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
-        <Shield className="w-4 h-4 text-emerald-600" /> طريقة الاعتماد
+    <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+      <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2 border-b border-[#e7eef2] pb-3">
+        <Shield className="w-4 h-4 text-[#0f6d7c]" /> طريقة الاعتماد
       </h3>
       <div className="grid grid-cols-2 gap-3">
         {[
@@ -272,7 +272,7 @@ export const Step5Settings = ({
         ].map((m) => (
           <label
             key={m.id}
-            className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${contract.approvalMethod === m.id ? "bg-emerald-50 border-emerald-500 text-emerald-800 shadow-sm" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+            className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${contract.approvalMethod === m.id ? "bg-emerald-50 border-emerald-500 text-emerald-800 shadow-sm" : "bg-white border-[#d8e6ee] text-[#52677e] hover:bg-[#f7fbfd]"}`}
           >
             <input
               type="radio"
@@ -290,16 +290,16 @@ export const Step5Settings = ({
                 <div className="w-2 h-2 bg-emerald-500 rounded-full" />
               )}
             </div>
-            <span className="text-xs font-black">{m.label}</span>
+            <span className="text-[11px] font-black">{m.label}</span>
           </label>
         ))}
       </div>
     </div>
 
     {/* Verification Settings */}
-    <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-      <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
-        <QrCode className="w-4 h-4 text-emerald-600" /> إعدادات التحقق من العقد
+    <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+      <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2 border-b border-[#e7eef2] pb-3">
+        <QrCode className="w-4 h-4 text-[#0f6d7c]" /> إعدادات التحقق من العقد
       </h3>
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 flex items-center gap-4">
@@ -318,9 +318,9 @@ export const Step5Settings = ({
                   },
                 })
               }
-              className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+              className="w-4 h-4 text-[#0f6d7c] rounded border-slate-300 focus:ring-emerald-500"
             />
-            <span className="text-xs font-bold text-slate-700">
+            <span className="text-[11px] font-bold text-[#123B5D]">
               السماح بالتحقق العام (لأي شخص يمسح الكود)
             </span>
           </label>
@@ -341,9 +341,9 @@ export const Step5Settings = ({
                       },
                     })
                   }
-                  className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+                  className="w-4 h-4 text-[#0f6d7c] rounded border-slate-300 focus:ring-emerald-500"
                 />
-                <span className="text-xs font-bold text-slate-700">
+                <span className="text-[11px] font-bold text-[#123B5D]">
                   إظهار بيانات الأطراف
                 </span>
               </label>
@@ -360,9 +360,9 @@ export const Step5Settings = ({
                       },
                     })
                   }
-                  className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+                  className="w-4 h-4 text-[#0f6d7c] rounded border-slate-300 focus:ring-emerald-500"
                 />
-                <span className="text-xs font-bold text-slate-700">
+                <span className="text-[11px] font-bold text-[#123B5D]">
                   إظهار البيانات المالية
                 </span>
               </label>
@@ -379,9 +379,9 @@ export const Step5Settings = ({
                       },
                     })
                   }
-                  className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+                  className="w-4 h-4 text-[#0f6d7c] rounded border-slate-300 focus:ring-emerald-500"
                 />
-                <span className="text-xs font-bold text-slate-700">
+                <span className="text-[11px] font-bold text-[#123B5D]">
                   السماح بتحميل نسخة PDF
                 </span>
               </label>
@@ -389,7 +389,7 @@ export const Step5Settings = ({
           </>
         )}
         <div className="col-span-2 space-y-1.5">
-          <label className="text-xs font-black text-slate-700">
+          <label className="text-[11px] font-black text-[#123B5D]">
             رسالة الخطأ (عند عدم وجود صلاحية)
           </label>
           <input
@@ -407,20 +407,20 @@ export const Step5Settings = ({
                 },
               })
             }
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+            className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
           />
         </div>
       </div>
     </div>
 
     {/* Witnesses */}
-    <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-      <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
-        <FileSignature className="w-4 h-4 text-emerald-600" /> الشهود (اختياري)
+    <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+      <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2 border-b border-[#e7eef2] pb-3">
+        <FileSignature className="w-4 h-4 text-[#0f6d7c]" /> الشهود (اختياري)
       </h3>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className="text-xs font-black text-slate-700">
+          <label className="text-[11px] font-black text-[#123B5D]">
             اسم الشاهد الأول
           </label>
           <input
@@ -432,11 +432,11 @@ export const Step5Settings = ({
               w[0].name = e.target.value;
               setContract({ ...contract, witnesses: w });
             }}
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+            className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-black text-slate-700">
+          <label className="text-[11px] font-black text-[#123B5D]">
             رقم هوية الشاهد الأول
           </label>
           <input
@@ -448,17 +448,17 @@ export const Step5Settings = ({
               w[0].id = e.target.value;
               setContract({ ...contract, witnesses: w });
             }}
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+            className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
           />
         </div>
       </div>
     </div>
 
     {/* QR Settings */}
-    <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-      <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-        <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
-          <QrCode className="w-4 h-4 text-emerald-600" /> إعدادات الرموز (QR
+    <div className="p-4 bg-white rounded-[22px] border border-[#d8e6ee] shadow-sm space-y-4">
+      <div className="flex justify-between items-center border-b border-[#e7eef2] pb-3">
+        <h3 className="text-[13px] font-black text-[#123B5D] flex items-center gap-2">
+          <QrCode className="w-4 h-4 text-[#0f6d7c]" /> إعدادات الرموز (QR
           Codes)
         </h3>
         <label className="relative inline-flex items-center cursor-pointer">
@@ -482,7 +482,7 @@ export const Step5Settings = ({
       {contract.qrSettings?.enabled && (
         <div className="space-y-3 pt-2">
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700">
+            <label className="text-[11px] font-black text-[#123B5D]">
               رابط موقع المشروع (خرائط جوجل)
             </label>
             <input
@@ -497,7 +497,7 @@ export const Step5Settings = ({
                   },
                 })
               }
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/20 outline-none"
+              className="w-full p-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-xl text-xs focus:ring-2 focus:ring-[#d9b85b]/20 outline-none"
               dir="ltr"
               placeholder="https://maps.google.com/..."
             />

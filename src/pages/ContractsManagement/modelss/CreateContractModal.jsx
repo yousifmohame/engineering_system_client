@@ -17,6 +17,7 @@ import {
   Shield,
   Loader2, // أضف هذا
   Sparkles, // أضف هذا
+  FileText,
 } from "lucide-react";
 import { generateContractHtml } from "../utils/contractExporter";
 import { emptyContractState } from "./components/initialState";
@@ -219,51 +220,53 @@ export default function ContractGenerator({ initialData, onSave, onCancel }) {
       className="fixed inset-0 z-[100] flex bg-slate-900/60 backdrop-blur-sm"
       dir="rtl"
     >
-      <div className="w-full h-full bg-slate-50 flex flex-col md:flex-row overflow-hidden animate-in fade-in duration-300">
+      <div className="w-full h-full bg-[#eef5f7] flex flex-col md:flex-row overflow-hidden animate-in fade-in duration-300 font-cairo">
         {/* Left Panel: Inputs */}
-        <div className="w-full md:w-1/2 flex flex-col bg-white border-l border-slate-200 shadow-xl z-10 h-full">
+        <div className="w-full md:w-1/2 flex flex-col bg-white border-l border-[#d8e6ee] shadow-xl z-10 h-full">
           {/* Header */}
-          <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
-            <div>
-              <h2 className="text-lg font-black text-slate-900">
-                {contract.isAddendum
-                  ? "إنشاء عقد إلحاقي"
-                  : "إنشاء عقد متقدم (V2)"}
-              </h2>
+          <div className="m-3 mb-2 rounded-[20px] bg-gradient-to-l from-[#071927] via-[#0b2f3f] to-[#147785] border border-[#d9b85b]/25 px-4 py-3 flex justify-between items-center shrink-0 shadow-sm">
+            <div className="flex items-center gap-3 min-w-0" style={{ fontFamily: "Tajawal, sans-serif" }}>
+              <div className="w-10 h-10 rounded-[14px] bg-[#d9b85b] text-[#083646] flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-[15px] font-bold text-white leading-tight whitespace-nowrap">
+                  {contract.isAddendum ? "إنشاء عقد إلحاقي" : "إنشاء عقد متقدم"}
+                </h2>
+                <p className="text-[10px] font-semibold text-white/75 mt-0.5">إعداد البيانات، البنود، والمعاينة الحية</p>
+              </div>
             </div>
             <button
               onClick={onCancel}
-              className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
+              className="h-9 px-3 hover:bg-white/10 rounded-xl text-white/80 hover:text-white transition-colors flex items-center gap-2 text-[12px] font-bold"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" /> إغلاق
             </button>
           </div>
 
           {/* Steps Indicator */}
-          <div className="flex border-b border-slate-100 bg-slate-50/50 shrink-0 overflow-x-auto scrollbar-hide">
-            {steps.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setStep(s.id)}
-                className={`flex-1 min-w-[100px] py-3 flex flex-col items-center gap-1 relative transition-colors ${
-                  step === s.id
-                    ? "text-emerald-700 bg-emerald-50/50"
-                    : "text-slate-400 hover:bg-slate-100/50"
-                }`}
-              >
-                <s.icon
-                  className={`w-4 h-4 ${step === s.id ? "text-emerald-600" : ""}`}
-                />
-                <span className="text-[10px] font-black">{s.title}</span>
-                {step === s.id && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600" />
-                )}
-              </button>
-            ))}
+          <div className="mx-3 mb-2 bg-[#f7fbfd] border border-[#d8e6ee] rounded-[18px] p-1.5 shrink-0 overflow-x-auto custom-scrollbar-slim">
+            <div className="flex items-center gap-1.5 min-w-max">
+              {steps.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setStep(s.id)}
+                  className={`h-9 px-3 rounded-[13px] flex items-center gap-2 transition-colors text-[11px] font-black whitespace-nowrap ${
+                    step === s.id
+                      ? "bg-[#083646] text-white shadow-sm"
+                      : "bg-white text-[#52677e] border border-[#d8e6ee] hover:bg-[#eef5f7]"
+                  }`}
+                >
+                  <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] ${step === s.id ? "bg-white/15 text-white" : "bg-[#eef5f7] text-[#123B5D]"}`}>{s.id}</span>
+                  <s.icon className="w-3.5 h-3.5" />
+                  <span>{s.title}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Form Content Area - استدعاء المكونات الفرعية */}
-          <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-slate-200 bg-slate-50/30">
+          <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-slate-200 bg-[#f7fbfd]">
             {step === 1 && (
               <Step1BasicInfo
                 contract={contract}
@@ -314,11 +317,11 @@ export default function ContractGenerator({ initialData, onSave, onCancel }) {
           </div>
 
           {/* Footer Actions */}
-          <div className="p-4 border-t border-slate-200 bg-white flex justify-between items-center shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
+          <div className="p-3 border-t border-[#d8e6ee] bg-white flex justify-between items-center shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
             <button
               onClick={() => setStep(Math.max(1, step - 1))}
               disabled={step === 1}
-              className="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-50 flex items-center gap-1"
+              className="px-4 py-2 text-[#52677e] font-bold hover:bg-[#eef5f7] rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 text-[12px]"
             >
               <ChevronRight className="w-4 h-4" /> السابق
             </button>
@@ -326,7 +329,7 @@ export default function ContractGenerator({ initialData, onSave, onCancel }) {
             {step < 8 ? (
               <button
                 onClick={() => setStep(Math.min(8, step + 1))}
-                className="px-8 py-2.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors flex items-center gap-2 shadow-lg shadow-slate-900/20"
+                className="px-6 py-2 bg-[#083646] text-white font-bold rounded-xl hover:bg-[#0f6d7c] transition-colors flex items-center gap-2 shadow-lg shadow-slate-900/20 text-[12px]"
               >
                 التالي <ChevronLeft className="w-4 h-4" />
               </button>
@@ -334,7 +337,7 @@ export default function ContractGenerator({ initialData, onSave, onCancel }) {
               <button
                 onClick={handleFinalSave}
                 disabled={isSaving}
-                className="px-8 py-2.5 bg-emerald-600 text-white font-black rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-2 shadow-lg shadow-emerald-600/30 disabled:opacity-70 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-[#083646] text-white font-black rounded-xl hover:bg-[#0f6d7c] transition-colors flex items-center gap-2 shadow-lg disabled:opacity-70 disabled:cursor-not-allowed text-[12px]"
               >
                 {isSaving ? (
                   <>
@@ -352,16 +355,16 @@ export default function ContractGenerator({ initialData, onSave, onCancel }) {
 
         {/* Right Panel: Live Preview */}
         <div
-          className="hidden md:flex w-1/2 bg-slate-200 p-8 flex-col items-center overflow-y-auto relative"
+          className="hidden md:flex w-1/2 bg-[#e5eef2] p-5 flex-col items-center overflow-y-auto relative"
           ref={previewContainerRef}
         >
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none"></div>
 
-          <div className="w-full flex justify-between items-center mb-4 z-10 max-w-[794px]">
-            <h3 className="text-sm font-black text-slate-700 flex items-center gap-2 bg-white/80 backdrop-blur px-4 py-2 rounded-xl shadow-sm border border-white">
+          <div className="w-full flex justify-between items-center mb-3 z-10 max-w-[794px]">
+            <h3 className="text-[12px] font-black text-[#123B5D] flex items-center gap-2 bg-white/90 backdrop-blur px-3 py-2 rounded-xl shadow-sm border border-[#d8e6ee]">
               <Eye className="w-4 h-4 text-emerald-600" /> معاينة حية (A4)
             </h3>
-            <div className="text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1">
+            <div className="text-[10px] font-bold text-[#0f6d7c] bg-white border border-[#d8e6ee] px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1">
               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
               يتم التحديث تلقائياً
             </div>

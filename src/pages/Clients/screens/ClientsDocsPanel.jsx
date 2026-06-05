@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getAllClients } from "../../api/clientApi"; // استخراج المرفقات من العملاء مؤقتاً
+import { getAllClients } from "../../../api/clientApi"; // استخراج المرفقات من العملاء مؤقتاً
 import { FileCheck, ExternalLink, Zap, Search, Loader2 } from "lucide-react";
 
 const ClientsDocsPanel = () => {
