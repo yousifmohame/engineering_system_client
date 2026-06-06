@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "../../../../../api/axios";
+import api from "../../../../api/axios";
 import { toast } from "sonner";
 import {
   Search,
@@ -19,20 +19,7 @@ import {
 } from "lucide-react";
 import { AIActionButton } from "../ai/AIActionButton";
 
-export const getFullUrl = (url) => {
-  if (!url) return null;
-  if (url.startsWith("http")) return url;
-
-  let fixedUrl = url;
-
-  if (url.startsWith("/uploads/")) {
-    fixedUrl = `/api${url}`;
-  }
-
-  const baseUrl = "https://details-worksystem1.com";
-
-  return `${baseUrl}${fixedUrl}`;
-};
+import { getFullUrl } from "../../../../utils/urlUtils";
 
 export default function InboxTab({ inboxFiles = [], setAnalyzingFile }) {
   const queryClient = useQueryClient();

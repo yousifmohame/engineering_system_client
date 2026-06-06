@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import api from "../../../../api/axios";
+import api from "../../../api/axios";
 import { toast } from "sonner";
 import {
   X,
@@ -22,7 +22,7 @@ import {
   Contact,
 } from "lucide-react";
 import ContactPicker from "./ContactPicker";
-import { useAuth } from "../../../../context/AuthContext";
+import { useAuth } from "../../../context/AuthContext";
 
 const FALLBACK_TEMPLATES = [
   {

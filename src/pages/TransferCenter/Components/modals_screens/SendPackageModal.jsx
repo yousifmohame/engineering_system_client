@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import api from "../../../../../api/axios";
+import api from "../../../../api/axios";
 import { toast } from "sonner";
 import {
   FileBox,
@@ -34,7 +34,7 @@ import {
 import ExternalDownloadPage from "../ExternalDownloadPage";
 import TemplateSenderModal from "../TemplateSenderModal";
 import ContactPicker from "../ContactPicker";
-import { useAuth } from "../../../../../context/AuthContext";
+import { useAuth } from "../../../../context/AuthContext";
 
 export default function SendPackageModal({ onClose }) {
   const queryClient = useQueryClient();

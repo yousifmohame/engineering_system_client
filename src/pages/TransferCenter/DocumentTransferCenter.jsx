@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import api from "../../../api/axios";
+import api from "../../api/axios";
 import {
   Share2,
   Send,
@@ -14,9 +14,6 @@ import {
   Loader2,
   ShieldCheck,
   RefreshCw,
-  FileText,
-  BarChart3,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 

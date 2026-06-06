@@ -33,11 +33,11 @@ import HRScreenWrapper from "./pages/Hr/HRScreenWrapper";
 import SystemFilesExplorer from "./pages/FilesExplorer/SystemFilesExplorer";
 import EmailNotificationsCenter from "./pages/Emails/NotificationsCenter";
 import InboxCenter from "./pages/Emails/InboxCenter";
-import FileRequest from "./pages/Emails/FileManagement/DocumentTransferCenter";
-import ClientRequestWrapper from "./pages/Emails/FileManagement/Components/ClientRequestWrapper";
-import ClientDownloadWrapper from "./pages/Emails/FileManagement/Components/ClientDownloadWrapper";
+import FileRequest from "./pages/TransferCenter/DocumentTransferCenter";
+import ClientRequestWrapper from "./pages/TransferCenter/Components/ClientRequestWrapper";
+import ClientDownloadWrapper from "./pages/TransferCenter/Components/ClientDownloadWrapper";
 import EmailSettingsScreen from "./pages/Emails/EmailSettingsScreen";
-import QuickLinksScreen from "./pages/QuickLinksScreen";
+import QuickLinksScreen from "./pages/QuickLinks/index";
 import ContractsManagementScreen from "./pages/ContractsManagement/ContractsManagementScreen";
 import OfficeNotepadScreen from "./pages/OfficeNotepad/OfficeNotepadScreen";
 import DetailsOfficeDashboard from "./pages/DetailsOffice/DetailsOfficeDashboard";
@@ -369,8 +369,6 @@ const AppContent = () => {
             >
               <OperationsSupervisorScreen />
             </div>
-
-
 
             {/* --- 👈 السحر هنا: شاشة Fallback لأي كود غير مبرمج --- */}
             {!isImplemented && (

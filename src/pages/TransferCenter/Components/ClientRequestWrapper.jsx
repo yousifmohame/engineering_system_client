@@ -1,7 +1,7 @@
 import React from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import api from "../../../../api/axios";
+import api from "../../../api/axios"; // تأكد من مسار الـ api لديك
 import ExternalUploadPage from "./ExternalUploadPage";
 import {
   Loader2,
@@ -45,16 +45,18 @@ export default function ClientRequestWrapper() {
           tone="rose"
           icon={AlertTriangle}
           title="رابط غير صالح"
-          message="عذراً، هذا الرابط غير صحيح أو انتهت صلاحيته."
+          message={data?.message || "عذراً، هذا الرابط غير صحيح أو انتهت صلاحيته."}
           badge="غير متاح"
         />
       </PageShell>
     );
   }
 
+  // 🛡️ تجميع الإعدادات بأمان تام
   const combinedConfig = {
-    ...data.config,
-    ...data.data,
+    ...(data?.config || {}),
+    ...(data?.data || {}),
+    shortLink: shortLink, // تمرير الرابط القصير يفيد في عمليات الرفع اللاحقة
     isPreview: false,
   };
 
