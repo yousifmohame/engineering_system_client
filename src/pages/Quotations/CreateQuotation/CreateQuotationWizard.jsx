@@ -8,6 +8,7 @@ import {
   CircleCheckBig,
   Save,
   Loader2,
+  Check,
 } from "lucide-react";
 
 import {
@@ -29,6 +30,7 @@ import { Step5Payments } from "./components/Wizart_steps/Payments";
 import { Step6Attachments } from "./components/Wizart_steps/Attachments";
 import { Step7Terms } from "./components/Wizart_steps/Terms";
 import { Step8Review } from "./components/Wizart_steps/Review";
+
 const IconWithText = ({
   icon: Icon,
   text,
@@ -60,7 +62,6 @@ const IconWithText = ({
   );
 };
 
-// 🔥 التصحيح الأول: استخراج البيانات بذكاء ليتوافق مع نظام التابات
 const CreateQuotationWizard = (incomingProps) => {
   const quotationId =
     incomingProps.quotationId || incomingProps.props?.quotationId;
@@ -69,7 +70,6 @@ const CreateQuotationWizard = (incomingProps) => {
 
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(0);
-  const tabsContainerRef = useRef(null);
 
   const isEditMode = !!quotationId;
 
@@ -168,9 +168,6 @@ const CreateQuotationWizard = (incomingProps) => {
     },
   });
 
-  // ==========================================
-  // جلب بيانات العرض في حالة التعديل
-  // ==========================================
   const { data: existingQuote, isLoading: isQuoteLoading } = useQuery({
     queryKey: ["quotation", quotationId],
     queryFn: async () =>
@@ -178,7 +175,6 @@ const CreateQuotationWizard = (incomingProps) => {
     enabled: isEditMode,
   });
 
-  // 👈 إضافة استعلام جلب خدمات المكتب
   const { data: officeServices = [], isLoading: servicesLoading } = useQuery({
     queryKey: ["office-services"],
     queryFn: async () =>
@@ -258,34 +254,17 @@ const CreateQuotationWizard = (incomingProps) => {
     }
   }, [serverTemplates, isEditMode]);
 
-  useEffect(() => {
-    if (tabsContainerRef.current) {
-      const activeTab = tabsContainerRef.current.children[currentStep];
-      if (activeTab) {
-        activeTab.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-          inline: "center",
-        });
-      }
-    }
-  }, [currentStep]);
-
-  // 1. حساب الإجمالي قبل الضريبة
   const subtotal = items.reduce(
     (sum, item) => sum + (item.qty * item.price - item.discount),
     0,
   );
 
-  // 2. حساب إجمالي الضريبة (بجمع ضريبة كل بند على حدة)
   const taxAmount = items.reduce((sum, item) => {
     const lineSubtotal = item.qty * item.price - item.discount;
-    // إذا لم يحدد الموظف ضريبة للبند، نفترض أنها 15%
     const itemTaxRate = item.taxRate !== undefined ? item.taxRate : 15;
     return sum + lineSubtotal * (itemTaxRate / 100);
   }, 0);
 
-  // 3. الإجمالي الشامل
   const grandTotal = subtotal + taxAmount;
 
   useEffect(() => {
@@ -411,7 +390,7 @@ const CreateQuotationWizard = (incomingProps) => {
         price: i.price,
         discount: i.discount,
         discountType: i.discountType || "PERCENTAGE",
-        taxRate: i.taxRate !== undefined ? i.taxRate : 15, // 👈 أضفنا هذا السطر لنرسل نسبة الضريبة للسيرفر
+        taxRate: i.taxRate !== undefined ? i.taxRate : 15,
       })),
 
       taxRate,
@@ -540,7 +519,7 @@ const CreateQuotationWizard = (incomingProps) => {
     saveMutation,
     stampType,
     setStampType,
-    officeServices, // 👈 تمرير قائمة الخدمات
+    officeServices,
     servicesLoading,
   };
 
@@ -598,15 +577,20 @@ const CreateQuotationWizard = (incomingProps) => {
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 gap-3 overflow-hidden">
+      {/* Main Container */}
+      <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">
+        {/* ========================================== */}
+        {/* Wizard Section (Sidebar + Content + Footer) */}
+        {/* ========================================== */}
         <section
           className="
-            flex min-h-0 min-w-0 flex-[1.05] flex-col overflow-hidden
+            flex min-h-0 min-w-0 flex-[1.1] flex-col overflow-hidden
             rounded-[24px] border border-[#d8b46a]/25 bg-white/95
             shadow-[0_10px_26px_rgba(18,63,89,0.08)]
             backdrop-blur-xl
           "
         >
+          {/* Header */}
           <div
             className="
               shrink-0 border-b border-[#e8ddc8]
@@ -638,141 +622,182 @@ const CreateQuotationWizard = (incomingProps) => {
                     {isEditMode ? "تعديل عرض سعر" : "إنشاء عرض سعر"}
                   </h2>
                   <p className="mt-0.5 truncate text-[11px] font-bold text-white/60">
-                    بناء العرض، اختيار النموذج، البنود، الضريبة، الدفعات
-                    والمراجعة.
+                    بناء العرض، البنود، الضريبة، والمراجعة بكل سهولة.
                   </p>
                 </div>
               </div>
 
               <span className="shrink-0 rounded-xl border border-[#e2bf74]/35 bg-white/10 px-3 py-1.5 text-[10px] font-black text-[#e2bf74]">
-                الخطوة {currentStep + 1} / {STEPS.length}
+                المرحلة {currentStep + 1} / {STEPS.length}
               </span>
             </div>
           </div>
 
-          <div
-            ref={tabsContainerRef}
-            className="
-              shrink-0 overflow-x-auto border-b border-[#e8ddc8]
-              bg-gradient-to-l from-[#fbf8f1] via-white to-[#eef7f6]
-              p-2 custom-scrollbar-slim
-            "
-          >
-            <div className="flex min-w-max items-center gap-1.5">
-              {STEPS.map((step) => {
-                const isActive = currentStep === step.id;
-                const isCompleted = step.id < currentStep;
-                const Icon = isCompleted ? CircleCheckBig : step.icon;
+          {/* Content Area with Vertical Sidebar */}
+          <div className="flex flex-1 overflow-hidden bg-[#fbf8f1]/30">
+            {/* Timeline Sidebar (Right Side in RTL) */}
+            <aside className="w-[180px] shrink-0 border-l border-[#e8ddc8] bg-white/50 p-4 overflow-y-auto custom-scrollbar-slim">
+              <div className="relative">
+                {/* Vertical Line Connector */}
+                <div className="absolute right-[19px] top-4 bottom-8 w-[2px] bg-slate-200/80 rounded-full" />
 
-                return (
-                  <button
-                    key={step.id}
-                    onClick={() => setCurrentStep(step.id)}
-                    className={`
-                      group inline-flex h-10 shrink-0 items-center justify-center gap-1.5
-                      rounded-2xl border px-3 text-[10px] font-black
-                      transition-all duration-200
-                      ${
-                        isActive
-                          ? "border-[#e2bf74]/55 bg-[#123f59] text-white shadow-[0_10px_22px_rgba(18,63,89,0.18)]"
-                          : isCompleted
-                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                            : "border-[#d8b46a]/25 bg-white text-[#64748b] hover:bg-[#fbf8f1] hover:text-[#123f59]"
-                      }
-                    `}
-                    type="button"
-                    title={step.label}
-                  >
-                    <Icon
-                      className={`
-                        h-4 w-4 shrink-0
-                        ${isActive ? "text-[#e2bf74]" : ""}
-                      `}
-                    />
-                    <span className="whitespace-nowrap">{step.label}</span>
-                  </button>
-                );
-              })}
+                <div className="flex flex-col gap-5 relative z-10">
+                  {STEPS.map((step, index) => {
+                    const isActive = currentStep === step.id;
+                    const isCompleted = step.id < currentStep;
+                    const Icon = isCompleted ? Check : step.icon;
+
+                    return (
+                      <button
+                        key={step.id}
+                        onClick={() => setCurrentStep(step.id)}
+                        className={`
+                          group relative flex items-start gap-3 text-right
+                          transition-all duration-300
+                          ${isActive ? "opacity-100" : isCompleted ? "opacity-80 hover:opacity-100" : "opacity-50 hover:opacity-80"}
+                        `}
+                        type="button"
+                      >
+                        {/* Step Circle */}
+                        <div
+                          className={`
+                            grid h-10 w-10 shrink-0 place-items-center rounded-full
+                            border-2 transition-all duration-300
+                            ${
+                              isActive
+                                ? "border-[#e2bf74] bg-[#123f59] text-[#e2bf74] shadow-[0_4px_12px_rgba(18,63,89,0.2)] scale-110"
+                                : isCompleted
+                                  ? "border-emerald-500 bg-emerald-50 text-emerald-600"
+                                  : "border-slate-300 bg-slate-50 text-slate-400"
+                            }
+                          `}
+                        >
+                          <Icon
+                            className={`h-4 w-4 ${isCompleted && !isActive ? "text-emerald-500 stroke-[3]" : ""}`}
+                          />
+                        </div>
+
+                        {/* Step Text */}
+                        <div className="flex flex-col pt-1">
+                          <span
+                            className={`text-[11px] font-black transition-colors ${isActive ? "text-[#123f59]" : "text-slate-600"}`}
+                          >
+                            {step.label}
+                          </span>
+                          {isActive && (
+                            <span className="text-[9px] font-bold text-[#e2bf74] mt-0.5">
+                              قيد الإجراء
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </aside>
+
+            {/* Dynamic Step Content Area */}
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 custom-scrollbar-slim relative">
+              <div className="mx-auto max-w-3xl">
+                {currentStep === 0 && <Step2Template props={stepProps} />}
+                {currentStep === 1 && <Step0ClientProperty props={stepProps} />}
+                {currentStep === 2 && <Step1BasicInfo props={stepProps} />}
+                {currentStep === 3 && <Step3Items props={stepProps} />}
+                {currentStep === 4 && <Step4Tax props={stepProps} />}
+                {currentStep === 5 && <Step5Payments props={stepProps} />}
+                {currentStep === 6 && <Step6Attachments props={stepProps} />}
+                {currentStep === 7 && <Step7Terms props={stepProps} />}
+                {currentStep === 8 && <Step8Review props={stepProps} />}
+              </div>
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[#fbf8f1]/40 p-3 custom-scrollbar-slim">
-            <div className="mx-auto max-w-4xl">
-              {currentStep === 0 && <Step2Template props={stepProps} />}
-              {currentStep === 1 && <Step0ClientProperty props={stepProps} />}
-              {currentStep === 2 && <Step1BasicInfo props={stepProps} />}
-              {currentStep === 3 && <Step3Items props={stepProps} />}
-              {currentStep === 4 && <Step4Tax props={stepProps} />}
-              {currentStep === 5 && <Step5Payments props={stepProps} />}
-              {currentStep === 6 && <Step6Attachments props={stepProps} />}
-              {currentStep === 7 && <Step7Terms props={stepProps} />}
-              {currentStep === 8 && <Step8Review props={stepProps} />}
-            </div>
-          </div>
-
-          <div className="shrink-0 border-t border-[#e8ddc8] bg-white/95 p-3">
-            <div className="flex items-center justify-between gap-3">
+          {/* Smart Footer Navigation */}
+          <div className="shrink-0 border-t border-[#e8ddc8] bg-white/95 p-4 shadow-[0_-4px_15px_rgba(0,0,0,0.02)] z-10">
+            <div className="flex items-center justify-between gap-4">
+              {/* Previous Button */}
               <button
                 disabled={currentStep === 0}
                 onClick={() => setCurrentStep((p) => p - 1)}
                 className="
-                  inline-flex h-10 items-center justify-center gap-1.5
-                  rounded-xl border border-[#d8b46a]/25 bg-[#fbf8f1]
-                  px-4 text-xs font-black text-[#64748b]
-                  transition hover:bg-[#f8efe0]
+                  inline-flex h-11 items-center justify-center gap-2
+                  rounded-xl border-2 border-slate-200 bg-white
+                  px-6 text-xs font-black text-slate-500
+                  transition hover:border-[#d8b46a]/50 hover:bg-[#fbf8f1] hover:text-[#123f59]
                   disabled:cursor-not-allowed disabled:opacity-40
                 "
                 type="button"
               >
-                <ChevronRight className="h-4 w-4" />
-                السابق
+                <ChevronRight className="h-5 w-5" />
+                رجوع
               </button>
 
-              <div className="rounded-xl border border-[#d8b46a]/25 bg-[#fbf8f1] px-4 py-2 text-[10px] font-black text-[#64748b]">
-                {STEPS[currentStep]?.label || "خطوة"}
+              {/* Progress Indicator (Mobile hidden, visible on md+) */}
+              <div className="hidden md:flex flex-col items-center">
+                <div className="text-[10px] font-bold text-slate-400">
+                  إكمال الإعدادات
+                </div>
+                <div className="text-xs font-black text-[#123f59]">
+                  {Math.round(((currentStep + 1) / STEPS.length) * 100)}%
+                </div>
               </div>
 
+              {/* Next / Save Button */}
               {currentStep === STEPS.length - 1 ? (
-                <div className="h-10 w-[110px]" />
+                <div className="h-11 w-[120px]" /> // Placeholder to keep alignment
               ) : currentStep === STEPS.length - 2 ? (
                 <button
                   onClick={handleNextOrSave}
                   className="
-                    inline-flex h-10 items-center justify-center gap-1.5
+                    inline-flex h-11 min-w-[180px] items-center justify-center gap-2
                     rounded-xl bg-gradient-to-l from-[#123f59] via-[#15536f] to-[#0e7490]
-                    px-4 text-xs font-black text-white
-                    shadow-[0_10px_24px_rgba(18,63,89,0.18)]
-                    transition hover:-translate-y-[1px]
+                    px-6 text-xs font-black text-white
+                    shadow-[0_8px_20px_rgba(18,63,89,0.2)]
+                    transition-transform hover:-translate-y-[2px] active:scale-[0.98]
                   "
                   type="button"
                 >
                   <IconWithText
                     icon={Save}
-                    text="مراجعة وحفظ"
-                    iconClassName="h-4 w-4 text-[#e2bf74]"
+                    text="مراجعة واعتماد"
+                    iconClassName="h-5 w-5 text-[#e2bf74]"
+                    textClassName="text-[13px] font-black"
                   />
                 </button>
               ) : (
                 <button
                   onClick={handleNextOrSave}
                   className="
-                    inline-flex h-10 items-center justify-center gap-1.5
-                    rounded-xl bg-gradient-to-l from-[#123f59] via-[#15536f] to-[#0e7490]
-                    px-4 text-xs font-black text-white
-                    shadow-[0_10px_24px_rgba(18,63,89,0.18)]
-                    transition hover:-translate-y-[1px]
+                    group inline-flex h-11 min-w-[180px] items-center justify-between
+                    rounded-xl bg-[#123f59]
+                    px-6 text-xs font-black text-white
+                    shadow-[0_8px_20px_rgba(18,63,89,0.15)]
+                    transition-all hover:bg-[#0e7490] hover:-translate-y-[2px] active:scale-[0.98]
                   "
                   type="button"
                 >
-                  التالي
-                  <ChevronLeft className="h-4 w-4 text-[#e2bf74]" />
+                  <div className="flex flex-col items-start text-right leading-tight">
+                    <span className="text-[9px] text-[#e2bf74] font-bold opacity-80">
+                      الخطوة التالية
+                    </span>
+                    <span className="text-[11px]">
+                      {STEPS[currentStep + 1]?.label}
+                    </span>
+                  </div>
+                  <div className="p-1 rounded-lg bg-white/10 group-hover:bg-white/20 transition-colors">
+                    <ChevronLeft className="h-5 w-5 text-white" />
+                  </div>
                 </button>
               )}
             </div>
           </div>
         </section>
 
-        <aside className="min-h-0 min-w-0 flex-[0.95] overflow-hidden">
+        {/* ========================================== */}
+        {/* Live Preview Section */}
+        {/* ========================================== */}
+        <aside className="hidden lg:flex min-h-0 min-w-0 flex-[0.9] overflow-hidden rounded-[24px] border border-[#d8b46a]/25 shadow-sm">
           <LivePreview data={previewData} />
         </aside>
       </div>
