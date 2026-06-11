@@ -23,7 +23,7 @@ export const Step4Tax = ({ props }) => {
         {/* قسم تحمل المكتب للضريبة */}
         <div className="mb-5">
           <label className="block text-[12px] font-bold text-[#475569] mb-2.5">
-            هل سيتحمل المكتب جزءاً من الضريبة كخصم للعميل؟
+            هل سيتحمل مقدم الخدمة جزءاً من الضريبة كخصم للعميل؟
           </label>
           <div className="flex gap-2">
             {[0, 50, 100].map((val) => (
@@ -36,7 +36,7 @@ export const Step4Tax = ({ props }) => {
                     : "bg-slate-50 text-[#64748b] border-[#d8b46a]/25 hover:bg-[#fbf8f1]"
                 }`}
               >
-                {val === 0 ? "العميل يتحمل بالكامل (0%)" : `المكتب يتحمل ${val}%`}
+                {val === 0 ? "العميل يتحمل بالكامل (0%)" : `مقدم الخدمة يتحمل ${val}%`}
               </button>
             ))}
           </div>
@@ -63,7 +63,7 @@ export const Step4Tax = ({ props }) => {
 
           {officeTaxBearing > 0 && (
             <div className="flex min-w-0 justify-between items-center text-xs mb-2 text-emerald-600 font-bold bg-emerald-50 p-1.5 rounded">
-              <span>خصم (تحمل المكتب للضريبة):</span>
+              <span>خصم (تحمل مقدم الخدمة للضريبة):</span>
               <strong className="font-mono">
                 - {officeDiscount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س
               </strong>

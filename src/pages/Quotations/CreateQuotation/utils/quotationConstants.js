@@ -1,33 +1,24 @@
 import {
-  LayoutTemplate,
   Building,
-  Users,
-  CalendarDays,
-  Clock,
-  Briefcase,
-  Percent,
-  Banknote,
+  FileText,
+  Eye,
+  Receipt,
   CreditCard,
   Paperclip,
   ScrollText,
-  Landmark,
-  Settings,
+  QrCode,
 } from "lucide-react";
 
 export const STEPS = [
-  { id: 0, label: "القالب (النموذج)", icon: LayoutTemplate },
-  { id: 1, label: "الملكية", icon: Building },
-  { id: 2, label: "العميل", icon: Users },
-  { id: 3, label: "تاريخ بداية العرض", icon: CalendarDays },
-  { id: 4, label: "صلاحية العرض", icon: Clock },
-  { id: 5, label: "الخدمات (نطاق العمل)", icon: Briefcase },
-  { id: 6, label: "الضريبة", icon: Percent },
-  { id: 7, label: "الأتـعـاب", icon: Banknote },
-  { id: 8, label: "الدفعات", icon: CreditCard },
-  { id: 9, label: "المرفقات المطلوبة من المستفيد", icon: Paperclip },
-  { id: 10, label: "الشروط", icon: ScrollText },
-  { id: 11, label: "الحسابات البنكية", icon: Landmark },
-  { id: 12, label: "إعدادات المعاينة", icon: Settings },
+  { id: 0, label: "النموذج", icon: Eye },
+  { id: 1, label: "الملكية والعميل", icon: Building },
+  { id: 2, label: "البيانات", icon: FileText },
+  { id: 3, label: "البنود", icon: Receipt },
+  { id: 4, label: "الضريبة", icon: CreditCard },
+  { id: 5, label: "الدفعات", icon: CreditCard },
+  { id: 6, label: "المرفقات", icon: Paperclip },
+  { id: 7, label: "الشروط", icon: ScrollText },
+  { id: 8, label: "المعاينة", icon: QrCode },
 ];
 
 export const PRESET_TERMS = [
@@ -42,42 +33,25 @@ export const PRESET_TERMS = [
 ];
 
 export const CLIENT_TITLES = [
-  "المواطن",
-  "المواطنة",
-  "السادة / شركة",
-  "السادة / كيان",
-  "السادة / وقف",
-  "صاحب السمو الأمير",
-  "صاحبة السمو الأميرة",
-  "صاحب السمو الملكي الأمير",
-  "صاحبة السمو الملكي الأميرة",
-  "لقب مخصص",
+  "المواطن", "المواطنة", "السادة / شركة", "السادة / كيان", 
+  "السادة / وقف", "صاحب السمو الأمير", "صاحبة السمو الأميرة", 
+  "صاحب السمو الملكي الأمير", "صاحبة السمو الملكي الأميرة", "لقب مخصص"
 ];
 
-export const HANDLING_METHODS = [
-  "المالك مباشرة",
-  "عن طريق مفوض",
-  "عن طريق وكيل",
-];
+export const HANDLING_METHODS = ["المالك مباشرة", "عن طريق مفوض", "عن طريق وكيل"];
 
 export const getClientName = (client) => {
   if (!client || !client.name) return "عميل غير محدد";
-  if (typeof client.name === "object")
-    return client.name.ar || client.name.en || "عميل غير محدد";
+  if (typeof client.name === "object") return client.name.ar || client.name.en || "عميل غير محدد";
   return client.fullNameRaw || client.name;
 };
 
 export const mapTitleToEnum = (arTitle) => {
   const map = {
-    المواطن: "MR",
-    المواطنة: "MRS",
-    "السادة / شركة": "SIR_COMPANY",
-    "السادة / كيان": "SIR_ENTITY",
-    "السادة / وقف": "SIR_WAQF",
-    "صاحب السمو الأمير": "PRINCE",
-    "صاحبة السمو الأميرة": "PRINCESS",
-    "صاحب السمو الملكي الأمير": "ROYAL_PRINCE",
-    "صاحبة السمو الملكي الأميرة": "ROYAL_PRINCESS",
+    "المواطن": "MR", "المواطنة": "MRS", "السادة / شركة": "SIR_COMPANY",
+    "السادة / كيان": "SIR_ENTITY", "السادة / وقف": "SIR_WAQF",
+    "صاحب السمو الأمير": "PRINCE", "صاحبة السمو الأميرة": "PRINCESS",
+    "صاحب السمو الملكي الأمير": "ROYAL_PRINCE", "صاحبة السمو الملكي الأميرة": "ROYAL_PRINCESS",
     "لقب مخصص": "CUSTOM",
   };
   return map[arTitle] || "MR";
@@ -85,9 +59,7 @@ export const mapTitleToEnum = (arTitle) => {
 
 export const mapHandlingToEnum = (arMethod) => {
   const map = {
-    "المالك مباشرة": "DIRECT",
-    "عن طريق مفوض": "AUTHORIZED",
-    "عن طريق وكيل": "AGENT",
+    "المالك مباشرة": "DIRECT", "عن طريق مفوض": "AUTHORIZED", "عن طريق وكيل": "AGENT",
   };
   return map[arMethod] || "DIRECT";
 };

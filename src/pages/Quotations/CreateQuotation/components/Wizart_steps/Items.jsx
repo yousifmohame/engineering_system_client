@@ -36,7 +36,7 @@ const IconWithText = ({
 };
 
 // ==========================================
-// الخطوة 3: البنود (النسخة المطورة مع المجموعات والضريبة)
+// الخطوة 3: البنود (النسخة المطورة للخدمات - الكمية اختيارية)
 // ==========================================
 export const Step3Items = ({ props }) => {
   const {
@@ -48,6 +48,9 @@ export const Step3Items = ({ props }) => {
     libItemsLoading,
     subtotal,
   } = props;
+
+  // 🚀 حالة جديدة: التحكم في ظهور الكمية والوحدة (الافتراضي: مخفي للخدمات)
+  const [showQuantity, setShowQuantity] = useState(false);
 
   // حالات النافذة المنبثقة (Modal)
   const [showModal, setShowModal] = useState(false);
@@ -92,7 +95,7 @@ export const Step3Items = ({ props }) => {
     );
   };
 
-  // 🚀 دالة إضافة كافة البنود والمجموعات المحددة للجدول
+  // دالة إضافة كافة البنود والمجموعات المحددة للجدول
   const handleAddSelected = () => {
     let newItems = [...items];
 
@@ -107,11 +110,11 @@ export const Step3Items = ({ props }) => {
               id: Date.now() + Math.random(), // ID فريد للجدول
               title: sItem.title,
               category: sItem.category || "عام",
-              qty: 1,
+              qty: 1, // الكمية الافتراضية 1 (حتى لو كانت مخفية)
               unit: sItem.unit || "وحدة",
               price: sItem.price || 0,
               discount: 0,
-              taxRate: 15, // ضريبة افتراضية
+              taxRate: 15,
             });
           }
         });
@@ -130,7 +133,7 @@ export const Step3Items = ({ props }) => {
           unit: sItem.unit || "وحدة",
           price: sItem.price || 0,
           discount: 0,
-          taxRate: 15, // ضريبة افتراضية
+          taxRate: 15,
         });
       }
     });
@@ -154,14 +157,14 @@ export const Step3Items = ({ props }) => {
         unit: "وحدة",
         price: 0,
         discount: 0,
-        taxRate: 15, // 👈 تم إضافة الضريبة للبند الحر هنا
+        taxRate: 15,
       },
     ]);
   };
 
   return (
     <div className="animate-in fade-in duration-300 flex flex-col h-full text-[#123f59]">
-      {/* رأس القسم وأزرار الإضافة */}
+      {/* رأس القسم وأزرار الإضافة مع خيار إظهار الكمية */}
       <div className="flex min-w-0 justify-between items-center mb-3">
         <div className="flex gap-2">
           <button
@@ -177,21 +180,36 @@ export const Step3Items = ({ props }) => {
             <Plus className="w-3 h-3" /> بند حر
           </button>
         </div>
+
+        {/* 👈 زر التحكم في ظهور الكمية والوحدة */}
+        <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 rounded-xl border border-[#d8b46a]/35 shadow-sm hover:bg-slate-50 transition-colors">
+          <input
+            type="checkbox"
+            checked={showQuantity}
+            onChange={(e) => setShowQuantity(e.target.checked)}
+            className="w-3.5 h-3.5 text-[#0e7490] rounded border-gray-300 focus:ring-[#0e7490] cursor-pointer"
+          />
+          <span className="text-[11px] font-bold text-[#64748b]">
+            عرض الكمية والوحدة
+          </span>
+        </label>
       </div>
 
       {/* جدول البنود المختارة */}
       <div className="bg-white rounded-xl border border-[#d8b46a]/25 p-3 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex-1 flex flex-col min-h-0">
         <div className="overflow-x-auto custom-scrollbar-slim flex-1">
-          <table className="w-full text-right border-collapse min-w-[700px]">
+          <table className="w-full text-right border-collapse min-w-[600px]">
             <thead className="sticky top-0 z-10">
               <tr className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-b border-[#d8b46a]/25">
                 <th className="p-2 text-[10px] text-[#64748b] font-bold w-6">#</th>
-                <th className="p-2 text-[10px] text-[#64748b] font-bold">البند</th>
-                <th className="p-2 text-[10px] text-[#64748b] font-bold w-14">الكمية</th>
-                <th className="p-2 text-[10px] text-[#64748b] font-bold w-16">الوحدة</th>
+                <th className="p-2 text-[10px] text-[#64748b] font-bold">البند (الخدمة)</th>
+                
+                {/* 👈 إظهار/إخفاء الأعمدة بناءً على الاختيار */}
+                {showQuantity && <th className="p-2 text-[10px] text-[#64748b] font-bold w-14">الكمية</th>}
+                {showQuantity && <th className="p-2 text-[10px] text-[#64748b] font-bold w-16">الوحدة</th>}
+                
                 <th className="p-2 text-[10px] text-[#64748b] font-bold w-20">السعر</th>
                 <th className="p-2 text-[10px] text-[#64748b] font-bold w-16">خصم</th>
-                {/* 👈 عمود الضريبة الجديد */}
                 <th className="p-2 text-[10px] text-[#64748b] font-bold w-16">الضريبة %</th> 
                 <th className="p-2 text-[10px] text-[#64748b] font-bold w-24">الإجمالي (شامل)</th>
                 <th className="p-2 w-6"></th>
@@ -199,8 +217,9 @@ export const Step3Items = ({ props }) => {
             </thead>
             <tbody>
               {items.map((item, index) => {
-                // الحسابات المباشرة للصف
-                const baseSubtotal = item.qty * item.price - item.discount;
+                // الحسابات المباشرة للصف (حتى لو كانت الكمية مخفية ستكون قيمتها 1)
+                const qtyToUse = item.qty || 1; 
+                const baseSubtotal = qtyToUse * item.price - item.discount;
                 const currentTaxRate = item.taxRate !== undefined ? item.taxRate : 15;
                 const rowTotalWithTax = baseSubtotal + (baseSubtotal * currentTaxRate / 100);
 
@@ -211,34 +230,42 @@ export const Step3Items = ({ props }) => {
                       <input
                         type="text"
                         value={item.title}
+                        placeholder="وصف الخدمة..."
                         onChange={(e) => handleItemChange(item.id, "title", e.target.value)}
-                        className="w-full p-1.5 border border-[#d8b46a]/25 rounded text-[11px] font-bold text-[#475569] outline-none focus:border-[#c5983c]/70"
+                        className="w-full p-1.5 border border-[#d8b46a]/25 rounded text-[11px] font-bold text-[#475569] outline-none focus:border-[#c5983c]/70 bg-white"
                       />
                     </td>
-                    <td className="p-2">
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.qty}
-                        onChange={(e) => handleItemChange(item.id, "qty", e.target.value)}
-                        className="w-full p-1.5 border border-[#d8b46a]/25 rounded text-[11px] outline-none text-center"
-                      />
-                    </td>
-                    <td className="p-2">
-                      <input
-                        type="text"
-                        value={item.unit}
-                        onChange={(e) => handleItemChange(item.id, "unit", e.target.value)}
-                        className="w-full p-1.5 border border-[#d8b46a]/25 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded text-[10px] outline-none text-center text-[#64748b]"
-                      />
-                    </td>
+                    
+                    {/* 👈 إظهار/إخفاء خلايا الكمية والوحدة */}
+                    {showQuantity && (
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.qty}
+                          onChange={(e) => handleItemChange(item.id, "qty", e.target.value)}
+                          className="w-full p-1.5 border border-[#d8b46a]/25 rounded text-[11px] outline-none text-center bg-white"
+                        />
+                      </td>
+                    )}
+                    {showQuantity && (
+                      <td className="p-2">
+                        <input
+                          type="text"
+                          value={item.unit}
+                          onChange={(e) => handleItemChange(item.id, "unit", e.target.value)}
+                          className="w-full p-1.5 border border-[#d8b46a]/25 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded text-[10px] outline-none text-center text-[#64748b]"
+                        />
+                      </td>
+                    )}
+
                     <td className="p-2">
                       <input
                         type="number"
                         min="0"
                         value={item.price}
                         onChange={(e) => handleItemChange(item.id, "price", e.target.value)}
-                        className="w-full p-1.5 border border-[#d8b46a]/25 rounded text-[11px] font-mono outline-none text-center"
+                        className="w-full p-1.5 border border-[#d8b46a]/25 rounded text-[11px] font-mono outline-none text-center bg-white"
                       />
                     </td>
                     <td className="p-2">
@@ -247,16 +274,15 @@ export const Step3Items = ({ props }) => {
                         min="0"
                         value={item.discount}
                         onChange={(e) => handleItemChange(item.id, "discount", e.target.value)}
-                        className="w-full p-1.5 border border-[#d8b46a]/25 rounded text-[11px] font-mono outline-none text-center text-red-500"
+                        className="w-full p-1.5 border border-[#d8b46a]/25 rounded text-[11px] font-mono outline-none text-center text-red-500 bg-white"
                       />
                     </td>
-                    {/* 👈 حقل تحديد الضريبة (إدخال يدوي) */}
                     <td className="p-2 relative">
                       <input
                         type="number"
                         min="0"
                         max="100"
-                        step="0.1" // يسمح بكسور مثل 15.5
+                        step="0.1"
                         value={currentTaxRate}
                         onChange={(e) => {
                           const val = e.target.value === "" ? 0 : Number(e.target.value);
@@ -264,7 +290,6 @@ export const Step3Items = ({ props }) => {
                         }}
                         className="w-full p-1.5 border border-[#d8b46a]/25 rounded text-[11px] font-mono outline-none text-center focus:border-[#c5983c]/70 bg-white"
                       />
-                      {/* إضافة علامة % كشكل جمالي داخل الحقل */}
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[9px] text-[#94a3b8] font-bold pointer-events-none">
                         %
                       </span>
@@ -282,8 +307,9 @@ export const Step3Items = ({ props }) => {
               })}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="p-6 text-center text-[11px] text-[#94a3b8] font-bold">
-                    لا يوجد بنود، انقر على "إضافة من المكتبة" لاختيار مجموعات أو بنود، أو "بند حر".
+                  {/* تعديل الـ colSpan ديناميكياً بناءً على الحقول الظاهرة */}
+                  <td colSpan={showQuantity ? 9 : 7} className="p-6 text-center text-[11px] text-[#94a3b8] font-bold">
+                    لا يوجد خدمات مسجلة، انقر على "إضافة من المكتبة" أو "بند حر".
                   </td>
                 </tr>
               )}
@@ -296,7 +322,7 @@ export const Step3Items = ({ props }) => {
       </div>
 
       {/* ============================================================== */}
-      {/* 🚀 نافذة المكتبة (Modal) للتحديد المتعدد والمجموعات */}
+      {/* نافذة المكتبة (Modal) للتحديد المتعدد والمجموعات */}
       {/* ============================================================== */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in" dir="rtl">
@@ -305,7 +331,7 @@ export const Step3Items = ({ props }) => {
             {/* Modal Header */}
             <div className="flex justify-between items-center p-4 border-b border-[#d8b46a]/25">
               <h3 className="text-[#123f59] font-bold text-sm flex items-center gap-2">
-                <Package className="w-5 h-5 text-[#0e7490]" /> إضافة بنود أو مجموعات
+                <Package className="w-5 h-5 text-[#0e7490]" /> إضافة خدمات أو مجموعات
               </h3>
               <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
                 <X className="w-4 h-4" />
@@ -320,7 +346,7 @@ export const Step3Items = ({ props }) => {
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
                 <input
                   type="text"
-                  placeholder="ابحث عن اسم البند أو المجموعة..."
+                  placeholder="ابحث عن اسم الخدمة أو المجموعة..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full py-2.5 pr-9 pl-3 border border-[#d8b46a]/25 rounded-xl text-xs font-bold outline-none focus:border-[#0e7490] bg-white shadow-sm"
@@ -333,7 +359,7 @@ export const Step3Items = ({ props }) => {
                   onClick={() => setActiveTab("items")}
                   className={`px-4 py-2 text-xs font-bold transition-all border-x-2 border-t-2 rounded-t-lg -mb-[2px] ${activeTab === "items" ? "bg-white text-[#0e7490] border-[#d8b46a]/25 border-b-white" : "bg-transparent text-[#94a3b8] border-transparent hover:text-[#64748b]"}`}
                 >
-                  البنود المفردة ({filteredItems.length})
+                  الخدمات المفردة ({filteredItems.length})
                 </button>
                 <button
                   onClick={() => setActiveTab("bundles")}
@@ -371,7 +397,7 @@ export const Step3Items = ({ props }) => {
                         )
                       })
                     ) : (
-                      <div className="text-center py-8 text-slate-400 text-xs font-bold">لا يوجد بنود مطابقة للبحث</div>
+                      <div className="text-center py-8 text-slate-400 text-xs font-bold">لا يوجد خدمات مطابقة للبحث</div>
                     )}
                   </>
                 )}
@@ -420,7 +446,7 @@ export const Step3Items = ({ props }) => {
             {/* Modal Footer */}
             <div className="p-4 border-t border-[#d8b46a]/25 bg-white rounded-b-2xl flex justify-between items-center">
               <div className="text-[11px] font-bold text-slate-500">
-                المحدد: <span className="text-[#0e7490] mx-1">{selectedItemIds.length} بند</span> | <span className="text-violet-600 mx-1">{selectedBundleIds.length} مجموعة</span>
+                المحدد: <span className="text-[#0e7490] mx-1">{selectedItemIds.length} خدمة</span> | <span className="text-violet-600 mx-1">{selectedBundleIds.length} مجموعة</span>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => setShowModal(false)} className="px-4 py-2 bg-[#fbf8f1] text-[#64748b] rounded-xl text-xs font-bold hover:bg-[#eef7f6] transition-colors">

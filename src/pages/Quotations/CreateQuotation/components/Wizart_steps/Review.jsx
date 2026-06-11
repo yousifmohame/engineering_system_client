@@ -1,204 +1,217 @@
 import React, { useState } from "react";
-import { 
-  Loader2, 
-  Save, 
-  Send, 
-  Stamp, 
-  ShieldCheck, 
-  QrCode, 
-  ScanBarcode, 
-  Fingerprint,
-  CheckCircle2,
-  FileLock2,
-  RotateCcw
+import {
+  Loader2,
+  Save,
+  FileSignature,
+  ShieldCheck,
+  FileText,
+  ArrowLeft,
 } from "lucide-react";
-import {OfficialStamp} from "../../../../../components/OfficialStamp/OfficialStamp";
-const IconWithText = ({
-  icon: Icon,
-  text,
-  className = "",
-  iconClassName = "",
-  textClassName = "",
-  vertical = false,
-}) => {
-  return (
-    <span
-      className={`
-        inline-flex min-w-0 items-center justify-center
-        ${vertical ? "flex-col gap-0.5" : "gap-1.5"}
-        ${className}
-      `}
-    >
-      {Icon && <Icon className={iconClassName || "h-4 w-4 shrink-0"} />}
-      {text && (
-        <span
-          className={
-            textClassName ||
-            "min-w-0 break-words text-[10px] font-black leading-tight"
-          }
-        >
-          {text}
-        </span>
-      )}
-    </span>
-  );
-};
+import { toast } from "sonner";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 
-// ==========================================
-// ثانياً: الخطوة 8: الاعتماد، الختم المشفر، والإرسال
-// ==========================================
+// 🚨 تأكد من صحة مسار المودال حسب هيكلة مجلداتك
+import NewDocumentationModal from "../../../../../pages/ElectronicDocumentation/tabs/NewDocumentationModal";
+
 export const Step8Review = ({ props }) => {
-  const { 
-    handleSave, 
-    saveMutation,
-    stampType = "SECURE_QR", 
-    setStampType 
-  } = props;
+  const { handleSave, saveMutation, quotationData } = props;
+
+  // حالات فتح منصة التوثيق وحالة التحميل
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pdfFileToStamp, setPdfFileToStamp] = useState(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  // 🚀 دالة توليد الـ PDF الداخلي (بنفس طريقة التقارير)
+  // 🚀 دالة توليد الـ PDF الداخلي (النسخة الاحترافية الخالية من التشوهات)
+  const createPdfDocument = async () => {
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    let pageElements = document.querySelectorAll(".pdf-page-capture");
+
+    if (pageElements.length === 0) {
+      const singleContainer = document.getElementById(
+        "quotation-preview-container",
+      );
+      if (singleContainer) pageElements = [singleContainer];
+    }
+
+    if (!pageElements || pageElements.length === 0) {
+      throw new Error("لم يتم العثور على محتوى العرض.");
+    }
+
+    for (let i = 0; i < pageElements.length; i++) {
+      // 🚀 السر هنا: نستخدم onclone لتنظيف الشوائب وإصلاح الـ CSS قبل الالتقاط
+      const canvas = await html2canvas(pageElements[i], {
+        scale: 3, // 👈 دقة Retina (3x) لضمان عدم ضبابية الخط عند التكبير
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        onclone: (clonedDoc) => {
+          // 1. إزالة تصغير المتصفح (Zoom) في النسخة المخفية لكي لا تنضغط الكلمات
+          const container = clonedDoc.getElementById(
+            "quotation-preview-container",
+          );
+          if (container && container.parentElement) {
+            container.parentElement.style.transform = "none";
+          }
+
+          // 2. إزالة خواص التحرير التي تسبب تداخل الحروف العربية في html2canvas
+          const editables = clonedDoc.querySelectorAll("[contenteditable]");
+          editables.forEach((el) => {
+            el.removeAttribute("contenteditable");
+            el.style.border = "none";
+            el.style.backgroundColor = "transparent";
+            el.style.letterSpacing = "normal";
+            el.style.wordSpacing = "normal";
+          });
+        },
+      });
+
+      const imgData = canvas.toDataURL("image/jpeg", 1.0);
+
+      if (i > 0) pdf.addPage();
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+    }
+
+    return pdf;
+  };
+
+  // 🛡️ دالة تحويل الـ HTML إلى PDF وتمريره لشاشة الختم
+  const handleOpenStampingEngine = async () => {
+    setIsGeneratingPdf(true);
+    const toastId = toast.loading(
+      "جاري معالجة العرض وتحويله إلى وثيقة PDF رقمية...",
+    );
+
+    try {
+      // 1. توليد الـ PDF
+      const pdf = await createPdfDocument();
+
+      // 2. استخراج الـ Blob من הـ PDF
+      const pdfBlob = pdf.output("blob");
+
+      // 3. تحويل الـ Blob إلى File ليتوافق مع المودال
+      const fileName = `عرض_سعر_${quotationData?.clientName || "جديد"}_${Date.now()}.pdf`;
+      const generatedFile = new File([pdfBlob], fileName, {
+        type: "application/pdf",
+      });
+
+      // 4. حفظ الملف في الـ State وفتح المودال
+      setPdfFileToStamp(generatedFile);
+      toast.success("تم تجهيز الوثيقة! جاري تحويلك لشاشة الاعتماد والختم 🛡️", {
+        id: toastId,
+      });
+
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error("PDF Generation Error:", error);
+      toast.error(
+        error.message ||
+          "حدث خطأ أثناء تحويل العرض إلى PDF. تأكد من اكتمال البيانات.",
+        { id: toastId },
+      );
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
+  // دالة يتم استدعاؤها عند نجاح عملية الختم داخل NewDocumentationModal
+  const handleStampingSuccess = () => {
+    toast.success("تم توثيق عرض السعر بنجاح!");
+    if (props.onSuccess) props.onSuccess();
+  };
 
   return (
-    <div className="animate-in fade-in duration-300 h-full flex flex-col max-w-2xl mx-auto gap-3 overflow-y-auto overflow-x-hidden custom-scrollbar-slim pr-2 pb-8">
-      
-      {/* 1️⃣ رسالة توجيهية */}
-      <div className="text-center mb-2 flex-shrink-0">
-        <div className="inline-flex p-3 bg-[#eef7f6] rounded-full mb-3">
-          <IconWithText icon={ShieldCheck} iconClassName="w-8 h-8 text-[#123f59]" />
-        </div>
-        <h3 className="text-base font-black text-[#123f59] mb-1">المراجعة النهائية والمصادقة</h3>
-        <p className="text-[12px] text-[#64748b] font-medium max-w-sm mx-auto leading-relaxed">
-          اختر وسيلة الختم الرسمية. سيتم دمج الختم المختار آلياً مع الوثيقة لضمان الموثوقية.
-        </p>
-      </div>
-
-      {/* 2️⃣ خيارات الختم والأمان */}
-      <div className="bg-white rounded-[20px] border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] overflow-hidden flex flex-col flex-shrink-0">
-        <div className="px-3.5 py-3 bg-[#fbf8f1]/80 border-b border-[#d8b46a]/25 flex min-w-0 items-center justify-between">
-          <div className="flex min-w-0 items-center gap-2">
-            <Stamp className="w-4 h-4 text-[#64748b]" />
-            <span className="text-sm font-bold text-[#123f59]">طريقة المصادقة والختم</span>
+    <>
+      <div className="animate-in fade-in duration-300 h-full flex flex-col items-center justify-center max-w-2xl mx-auto gap-6 p-4">
+        {/* أيقونة ورسالة التوجيه المركزية */}
+        <div className="text-center flex flex-col items-center">
+          <div className="relative mb-6">
+            <div className="absolute inset-0 bg-blue-500 blur-[40px] opacity-20 rounded-full animate-pulse"></div>
+            <div className="w-24 h-24 bg-gradient-to-br from-[#123f59] to-blue-800 rounded-3xl flex items-center justify-center shadow-2xl relative z-10 border-4 border-white">
+              <ShieldCheck className="w-12 h-12 text-white" />
+            </div>
+            <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-white z-20 shadow-lg">
+              <FileSignature className="w-4 h-4 text-white" />
+            </div>
           </div>
-          {stampType !== "NONE" && (
-             <span className="text-[10px] font-black text-[#0f766e] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                حماية نشطة
-             </span>
-          )}
+
+          <h2 className="text-2xl font-black text-[#123f59] mb-2">
+            جاهز للتوثيق والاعتماد
+          </h2>
+          <p className="text-sm text-[#64748b] font-medium max-w-md mx-auto leading-relaxed">
+            تم تجهيز كافة بيانات العرض. خطوتك الأخيرة هي تحويل العرض إلى ملف PDF
+            نهائي والدخول لمنصة التوثيق لإضافة الأختام الأمنية وإعدادات الحماية
+            المتقدمة.
+          </p>
         </div>
 
-        <div className="p-3 grid grid-cols-1 gap-3">
-          
-          {/* الخيار الأول: بدون ختم (مسودة) */}
-          <div 
-            onClick={() => setStampType && setStampType("NONE")}
-            className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex min-w-0 items-center gap-3 ${
-              stampType === "NONE" 
-                ? "border-[#d8b46a]/35 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white shadow-[0_8px_22px_rgba(18,63,89,0.06)]" 
-                : "border-[#e8ddc8] bg-white hover:border-[#d8b46a]/25"
-            }`}
+        {/* أزرار الإجراءات */}
+        <div className="w-full max-w-md flex flex-col gap-3 mt-4">
+          {/* الزر الرئيسي: توليد وفتح المودال */}
+          <button
+            onClick={handleOpenStampingEngine}
+            disabled={isGeneratingPdf || saveMutation?.isPending}
+            className="w-full py-4 px-6 bg-gradient-to-r from-[#123f59] to-blue-800 text-white rounded-2xl text-sm font-black cursor-pointer flex justify-between items-center gap-2 hover:shadow-[0_15px_30px_rgba(18,63,89,0.2)] transition-all hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0 group relative overflow-hidden"
           >
-            <div className="flex-shrink-0">
-               {stampType === "NONE" ? <CheckCircle2 className="w-6 h-6 text-[#64748b]" /> : <div className="w-6 h-6 rounded-full border-2 border-[#d8b46a]/25" />}
-            </div>
-            <div>
-              <div className={`text-sm font-bold ${stampType === "NONE" ? "text-[#123f59]" : "text-[#64748b]"}`}>بدون ختم إلكتروني</div>
-              <div className="text-[11px] text-[#64748b] mt-0.5 font-medium">عرض سعر "مسودة" للاستخدام الداخلي فقط ولا يحمل صفة رسمية.</div>
-            </div>
-          </div>
+            <div className="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-20 group-hover:animate-shine" />
 
-          {/* الخيار الثاني: الختم المشفر (الاحترافي) */}
-          <div 
-            onClick={() => setStampType && setStampType("SECURE_QR")}
-            className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex flex-col relative overflow-hidden ${
-              stampType === "SECURE_QR" 
-                ? "border-[#15536f] bg-[#eef7f6]/20 shadow-[0_8px_18px_rgba(18,63,89,0.08)]" 
-                : "border-[#e8ddc8] bg-white hover:border-[#d8b46a]/25"
-            }`}
-          >
-            {/* الخلفية الجمالية */}
-            {stampType === "SECURE_QR" && <ShieldCheck className="absolute -left-6 -top-6 w-32 h-24 text-[#123f59]/5 pointer-events-none" />}
-            
-            <div className="flex items-start gap-3 mb-3">
-              <div className="flex-shrink-0 mt-1">
-                 {stampType === "SECURE_QR" ? <CheckCircle2 className="w-6 h-6 text-[#123f59]" /> : <div className="w-6 h-6 rounded-full border-2 border-[#d8b46a]/25" />}
-              </div>
-              <div className="flex-1">
-                <div className={`text-sm font-bold flex min-w-0 items-center gap-2 ${stampType === "SECURE_QR" ? "text-[#123f59]" : "text-[#475569]"}`}>
-                  <FileLock2 className="w-4 h-4" /> ختم المكتب المشفّر (نظام التحقق الذكي)
-                  <span className="px-2 py-0.5 bg-[#123f59] text-white text-[9px] font-black rounded uppercase tracking-wider">رسمي</span>
-                </div>
-                <p className="text-[11px] text-[#64748b] mt-1 font-medium leading-relaxed">
-                  سيتم توليد بصمة رقمية فريدة لكل وثيقة مرتبطة بـ QR Code لا يمكن تكراره أو التلاعب به.
-                </p>
-              </div>
-            </div>
-            
-            {/* معاينة الختم البرمجي - تظهر فقط عند الاختيار */}
-            {stampType === "SECURE_QR" && (
-              <div className="mt-2 p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-inner animate-in slide-in-from-top-2 duration-300">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                  {/* استدعاء مكون الختم SVG */}
-                  <div className="flex flex-col items-center gap-2">
-                    <OfficialStamp size={110} rotation={-10} />
-                    <span className="text-[9px] font-bold text-[#94a3b8]">معاينة الختم الحي</span>
-                  </div>
+            <span className="flex items-center gap-3 relative z-10">
+              {isGeneratingPdf ? (
+                <Loader2 className="w-5 h-5 animate-spin text-blue-200" />
+              ) : (
+                <FileText className="w-5 h-5 text-blue-200" />
+              )}
+              {isGeneratingPdf
+                ? "جاري التجهيز والتحويل..."
+                : "تحويل لوثيقة واعتماد أمني"}
+            </span>
+            <ArrowLeft className="w-5 h-5 relative z-10 group-hover:-translate-x-1 transition-transform" />
+          </button>
 
-                  {/* تفاصيل التشفير */}
-                  <div className="flex-1 space-y-2 w-full">
-                    <div className="flex min-w-0 items-center gap-3 p-2 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-xl border border-[#e8ddc8] group">
-                      <QrCode className="w-8 h-8 text-[#123f59]" />
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-[#123f59]">QR-Verification Code</span>
-                        <span className="text-[8px] font-mono text-[#64748b]">HTTPS://VERIFY.BLACKCUBE.SA/QT-8492</span>
-                      </div>
-                    </div>
-                    <div className="flex min-w-0 items-center gap-3 p-2 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-xl border border-[#e8ddc8]">
-                      <ScanBarcode className="w-8 h-8 text-[#123f59]" />
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-[#123f59]">Digital Barcode</span>
-                        <span className="text-[8px] font-mono text-[#64748b]">815-QT-2024-00192-X9</span>
-                      </div>
-                    </div>
-                    <div className="flex min-w-0 items-center gap-2 px-1">
-                      <Fingerprint className="w-3 h-3 text-emerald-500" />
-                      <span className="text-[9px] font-bold text-[#0f766e] uppercase">Document integrity encrypted</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-        </div>
-      </div>
-
-      {/* 3️⃣ أزرار الإجراءات */}
-      <div className="mt-4 pt-6 border-t border-[#d8b46a]/25 flex-shrink-0">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* الزر الثانوي: حفظ كمسودة */}
           <button
             onClick={() => handleSave(true)}
-            disabled={saveMutation?.isPending}
-            className="w-full py-3 px-4 bg-white border-2 border-[#d8b46a]/25 text-[#475569] hover:bg-[#fbf8f1] hover:border-[#d8b46a]/25 rounded-[20px] text-xs font-black cursor-pointer flex justify-center items-center gap-2 transition-all disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" /> حفظ كمسودة
-          </button>
-          
-          <button
-            onClick={() => handleSave(false)}
-            disabled={saveMutation?.isPending}
-            className="w-full py-3 px-4 bg-[#123f59] text-white hover:bg-[#0f3448] shadow-[0_10px_24px_rgba(18,63,89,0.10)]  border-none rounded-[20px] text-xs font-black cursor-pointer flex justify-center items-center gap-2 transition-all hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
+            disabled={isGeneratingPdf || saveMutation?.isPending}
+            className="w-full py-3.5 px-6 bg-white border-2 border-[#d8b46a]/30 text-[#475569] hover:bg-[#fbf8f1] hover:border-[#d8b46a] rounded-2xl text-sm font-bold cursor-pointer flex justify-center items-center gap-2 transition-all disabled:opacity-50"
           >
             {saveMutation?.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <Send className="w-4 h-4" />
+              <Save className="w-4 h-4 text-[#d8b46a]" />
             )}
-            {stampType === "SECURE_QR" ? "ختم وإصدار الوثيقة الرسمية" : "إعتماد وإرسال العرض"}
+            حفظ العرض كمسودة والعودة لاحقاً
           </button>
         </div>
-        <p className="text-center text-[10px] text-[#94a3b8] mt-4 font-medium italic">
-          بمجرد الضغط على إصدار، سيتم تسجيل هذا العرض في سجلات المكتب الرسمية.
-        </p>
+
+        <div className="mt-8 px-4 py-3 bg-[#eef7f6] rounded-xl border border-[#0f766e]/20 flex items-center gap-3 max-w-md w-full">
+          <ShieldCheck className="w-5 h-5 text-[#0f766e] flex-shrink-0" />
+          <p className="text-[10px] font-bold text-[#0f766e]">
+            سيقوم النظام بالتقاط المعاينة الحية للعرض وتحويلها لوثيقة جاهزة
+            للختم.
+          </p>
+        </div>
       </div>
 
-    </div>
+      {/* استدعاء مودال التوثيق */}
+      {isModalOpen && pdfFileToStamp && (
+        <NewDocumentationModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={handleStampingSuccess}
+          initialFile={pdfFileToStamp}
+          initialMetadata={{
+            employeeName: quotationData?.clientName || "عميل النظام",
+            documentName: `عرض سعر هندسي (${quotationData?.projectName || "مشروع جديد"})`,
+          }}
+        />
+      )}
+    </>
   );
 };
 

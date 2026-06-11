@@ -8,7 +8,6 @@ import {
   ZoomOut,
   RotateCcw,
   FileText,
-  Building2,
 } from "lucide-react";
 
 const A4_WIDTH_PX = 794;
@@ -78,8 +77,6 @@ const formatCurrency = (value) => {
   });
 };
 
-
-
 const toArabicDigits = (value) =>
   String(value ?? "").replace(/\d/g, (digit) => "٠١٢٣٤٥٦٧٨٩"[Number(digit)]);
 
@@ -88,7 +85,6 @@ const getDatePart = (formatter, date, type) =>
 
 const formatDateParts = (value) => {
   const date = value ? new Date(value) : new Date();
-
   if (Number.isNaN(date.getTime())) {
     const fallback = String(value || "");
     return {
@@ -97,28 +93,26 @@ const formatDateParts = (value) => {
       combined: `ميلادي: ${fallback} / هجري: ${fallback}`,
     };
   }
-
   const gregorianFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-gregory", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   });
-
-  const hijriFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
+  const hijriFormatter = new Intl.DateTimeFormat(
+    "ar-SA-u-ca-islamic-umalqura",
+    { year: "numeric", month: "2-digit", day: "2-digit" },
+  );
 
   const gregorianDay = getDatePart(gregorianFormatter, date, "day");
   const gregorianMonth = getDatePart(gregorianFormatter, date, "month");
   const gregorianYear = getDatePart(gregorianFormatter, date, "year");
-
   const hijriDay = getDatePart(hijriFormatter, date, "day");
   const hijriMonth = getDatePart(hijriFormatter, date, "month");
   const hijriYear = getDatePart(hijriFormatter, date, "year");
 
-  const gregorian = toArabicDigits(`${gregorianDay}/${gregorianMonth}/${gregorianYear}`);
+  const gregorian = toArabicDigits(
+    `${gregorianDay}/${gregorianMonth}/${gregorianYear}`,
+  );
   const hijri = toArabicDigits(`${hijriDay}/${hijriMonth}/${hijriYear}`);
 
   return {
@@ -131,55 +125,34 @@ const formatDateParts = (value) => {
 const DetailsFooter = ({ accent = "#0f5570" }) => {
   return (
     <footer
-      className="
-        absolute bottom-[7mm] left-[10mm] right-[10mm]
-        bg-white font-[Tajawal]
-      "
+      className="absolute bottom-[7mm] left-[10mm] right-[10mm] bg-white font-[Tajawal]"
       dir="ltr"
     >
       <div className="border-t-[2.5px] pt-1.5" style={{ borderColor: accent }}>
         <div className="flex items-start gap-2" style={{ color: accent }}>
-          <img
-            src="/qrcode.png"
-            alt="QR Code"
-            className="h-[16mm] w-[16mm] shrink-0 object-contain"
-          />
-
           <div className="min-w-0 flex-1">
             <div
-              className="
-                flex items-center justify-end gap-1 whitespace-nowrap
-                text-[10.5px] font-black leading-[1.35]
-              "
+              className="flex items-center justify-end gap-1 whitespace-nowrap text-[10.5px] font-black leading-[1.35]"
               dir="rtl"
             >
-              <span>📍</span>
               <span>
-                حي الملك فهد - الرياض - المملكة العربية السعودية - الرمز البريدي : ١٢٢٧٤
+                📍 حي الملك فهد - الرياض - المملكة العربية السعودية - الرمز
+                البريدي : ١٢٢٧٤
               </span>
-              <span>·</span>
-              <span>جوال : ٠٥٩٠٧٢٢٨٢٧</span>
-              <span>·</span>
-              <span>الرقم الوطني الموحد : ٧٠٥٢٣٠٣٨٢٨</span>
+              <span>· جوال : ٠٥٩٠٧٢٢٨٢٧</span>
+              <span>· الرقم الوطني الموحد : ٧٠٥٢٣٠٣٨٢٨</span>
             </div>
-
             <div
-              className="
-                mt-0.5 flex items-center gap-1 whitespace-nowrap
-                text-[10.5px] font-black leading-[1.35]
-              "
+              className="mt-0.5 flex items-center gap-1 whitespace-nowrap text-[10.5px] font-black leading-[1.35]"
               dir="ltr"
             >
-              <span>📍</span>
               <span>
-                King Fahd Dist - RIYADH - Kingdom of Saudi Arabia -POSTAL CODE :12274
+                📍 King Fahd Dist - RIYADH - Kingdom of Saudi Arabia -POSTAL
+                CODE :12274
               </span>
-              <span>☎</span>
-              <span>0590722827</span>
-              <span>- N.N:</span>
-              <span>7052303828</span>
-              <span>✉</span>
-              <span>info@details-consults.sa</span>
+              <span>☎ 0590722827</span>
+              <span>- N.N: 7052303828</span>
+              <span>✉ info@details-consults.sa</span>
             </div>
           </div>
         </div>
@@ -192,27 +165,22 @@ export const LivePreview = ({ data }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [zoomScale, setZoomScale] = useState(0.68);
   const componentRef = useRef(null);
-  const scrollRef = useRef(null);
 
   const selectedStyle = previewStyles.classic;
-
   const issueDateParts = formatDateParts(data?.issueDate);
 
   const {
-    templateType,
-    issueDate,
-    validityDays,
+    transactionType,
+    licenseNumber,
+    licenseYear,
+    serviceNumber,
+    serviceYear,
     clientTitle,
     clientNameForPreview,
     clientCodeForPreview,
     showClientCode,
     showPropertyCode,
     propertyCodeForPreview,
-    transactionType,
-    licenseNumber,
-    licenseYear,
-    serviceNumber,
-    serviceYear,
     termsText,
     items = [],
     subtotal,
@@ -221,34 +189,64 @@ export const LivePreview = ({ data }) => {
     grandTotal,
     officeTaxBearing,
     paymentsList = [],
-    acceptedMethods = [],
     showMissingDocs,
     missingDocs,
+    showQuantity = false,
+    plots = [],
+    boundaries = [],
+    clientType = "فرد", // من بيانات العميل لتحديد إذا كان شركة أو فرد
+    employeeName = "", // لتوقيع ممثل الخدمة
+    employeeId = "SYS-109", // للظهور في الهامش
   } = data || {};
 
+  // هل العميل فرد أم جهة اعتبارية؟
+  const isIndividual = clientType.includes("فرد") || clientType === "ورثة";
   const referenceNumber = `QT-${Date.now().toString().slice(-5)}`;
-  const validityText =
-    validityDays === "unlimited" || validityDays === "custom"
-      ? "غير محدد"
-      : `${validityDays || 30} يوم`;
 
+  // 🚀 صياغة النص الافتتاحي ودمج بيانات القطع والمخطط فيه
   const introText = (() => {
     let intro = `إشارة إلى طلبكم بخصوص تقديم عرض سعر خدمات (${transactionType || "الخدمات الهندسية والاستشارية"})`;
+
     if (showPropertyCode && propertyCodeForPreview) {
       intro += ` لقطعة الأرض أو الملف رقم (${propertyCodeForPreview})`;
     }
     if (licenseNumber) {
-      intro += `، وفقاً لرخصة البناء رقم (${licenseNumber})${
-        licenseYear ? ` لسنة (${licenseYear} هـ)` : ""
-      }`;
+      intro += `، وفقاً لرخصة البناء رقم (${licenseNumber})${licenseYear ? ` لسنة (${licenseYear} هـ)` : ""}`;
     }
     if (serviceNumber) {
-      intro += ` وموجب الطلب رقم (${serviceNumber})${
-        serviceYear ? ` لسنة (${serviceYear} هـ)` : ""
-      }`;
+      intro += ` وموجب الطلب رقم (${serviceNumber})${serviceYear ? ` لسنة (${serviceYear} هـ)` : ""}`;
     }
+
+    // دمج القطع والحدود كنص
+    if (plots && plots.length > 0) {
+      intro += `، وتفاصيل المخطط التنظيمي كالتالي: `;
+      const plotTexts = plots.map((plot) => {
+        let pt = `القطعة رقم (${plot.plotNumber || "---"}) بمساحة إجمالية قدرها (${plot.area || "---"} م²)`;
+
+        // جلب الحدود
+        const n =
+          boundaries.find((b) => b.direction === "شمال" && b.plotId === plot.id)
+            ?.length || 0;
+        const s =
+          boundaries.find((b) => b.direction === "جنوب" && b.plotId === plot.id)
+            ?.length || 0;
+        const e =
+          boundaries.find((b) => b.direction === "شرق" && b.plotId === plot.id)
+            ?.length || 0;
+        const w =
+          boundaries.find((b) => b.direction === "غرب" && b.plotId === plot.id)
+            ?.length || 0;
+
+        if (n || s || e || w) {
+          pt += `، ويحدها (شمالاً: ${n}م، جنوباً: ${s}م، شرقاً: ${e}م، غرباً: ${w}م)`;
+        }
+        return pt;
+      });
+      intro += plotTexts.join(" | ") + `،`;
+    }
+
     intro +=
-      "، فإنه يسرنا تقديم العرض المالي والفني لإنهاء الأعمال المطلوبة على النحو التالي:";
+      " فإنه يسرنا تقديم العرض المالي والفني لإنهاء الأعمال المطلوبة على النحو التالي:";
     return intro;
   })();
 
@@ -260,7 +258,8 @@ export const LivePreview = ({ data }) => {
   };
 
   const handleZoomIn = () => setZoomScale((prev) => Math.min(prev + 0.1, 1.5));
-  const handleZoomOut = () => setZoomScale((prev) => Math.max(prev - 0.1, 0.38));
+  const handleZoomOut = () =>
+    setZoomScale((prev) => Math.max(prev - 0.1, 0.38));
   const handleZoomReset = () => setZoomScale(0.68);
 
   const handlePrint = () => {
@@ -296,9 +295,7 @@ export const LivePreview = ({ data }) => {
           ${appStyles}
           <style>
             @page { size: A4; margin: 0; }
-
-            html,
-            body {
+            html, body {
               width: 210mm;
               min-height: 297mm;
               margin: 0;
@@ -308,22 +305,8 @@ export const LivePreview = ({ data }) => {
               print-color-adjust: exact !important;
               font-family: Tajawal, Arial, sans-serif;
             }
-
-            .print-shell {
-              width: 210mm;
-              min-height: 297mm;
-              margin: 0 auto;
-              background: #ffffff;
-            }
-
-            .print-area {
-              width: 210mm !important;
-              min-height: 297mm !important;
-              margin: 0 !important;
-              box-shadow: none !important;
-              transform: none !important;
-              overflow: visible !important;
-            }
+            .print-shell { width: 210mm; min-height: 297mm; margin: 0 auto; background: #ffffff; }
+            .print-area { width: 210mm !important; min-height: 297mm !important; margin: 0 !important; box-shadow: none !important; transform: none !important; overflow: visible !important; }
           </style>
         </head>
         <body>
@@ -356,48 +339,26 @@ export const LivePreview = ({ data }) => {
 
   return (
     <section
-      className="
-        flex h-full min-h-0 w-full flex-col overflow-hidden
-        rounded-[24px] border border-[#d8b46a]/25
-        bg-white/90 shadow-[0_10px_26px_rgba(18,63,89,0.08)]
-        backdrop-blur-xl
-      "
+      className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[24px] border border-[#d8b46a]/25 bg-white/90 shadow-[0_10px_26px_rgba(18,63,89,0.08)] backdrop-blur-xl"
       dir="rtl"
     >
-      {/* Toolbar comme la preview des modèles */}
-      <div
-        className="
-          shrink-0 border-b border-[#e8ddc8]
-          bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
-          px-3 py-2
-        "
-      >
+      {/* شريط الأدوات العلوي */}
+      <div className="shrink-0 border-b border-[#e8ddc8] bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white px-3 py-2">
         <div className="mx-auto max-w-[980px] rounded-[18px] border border-[#d8b46a]/25 bg-white/95 p-2 shadow-[0_8px_18px_rgba(18,63,89,0.08)] backdrop-blur-xl">
           <div className="flex min-w-0 items-center justify-end gap-2">
-            
-
             <div className="flex min-w-0 flex-1 items-center justify-end gap-1 overflow-x-auto custom-scrollbar-slim">
               <button
                 onClick={() => setIsEditMode(!isEditMode)}
-                className={`
-                  inline-flex h-8 shrink-0 items-center justify-center rounded-xl border px-2
-                  text-[9px] font-black transition
-                  ${
-                    isEditMode
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : "border-[#d8b46a]/25 bg-[#fbf8f1] text-[#64748b] hover:bg-white hover:text-[#123f59]"
-                  }
-                `}
+                className={`inline-flex h-8 shrink-0 items-center justify-center rounded-xl border px-2 text-[9px] font-black transition ${isEditMode ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-[#d8b46a]/25 bg-[#fbf8f1] text-[#64748b] hover:bg-white hover:text-[#123f59]"}`}
                 type="button"
               >
                 <IconWithText
                   icon={isEditMode ? Check : Edit3}
-                  text={isEditMode ? "حفظ النص" : "تحرير النص"}
+                  text={isEditMode ? "حفظ التعديلات" : "تحرير العرض"}
                   iconClassName="h-3.5 w-3.5"
                   textClassName="text-[9px] font-black leading-none"
                 />
               </button>
-
               <button
                 onClick={handlePrint}
                 className="inline-flex h-8 shrink-0 items-center justify-center rounded-xl bg-[#123f59] px-2.5 text-[9px] font-black text-white transition hover:bg-[#0f3448]"
@@ -410,7 +371,6 @@ export const LivePreview = ({ data }) => {
                   textClassName="text-[9px] font-black leading-none"
                 />
               </button>
-
               <button
                 onClick={handleZoomOut}
                 className="inline-flex h-8 shrink-0 items-center justify-center rounded-xl border border-[#d8b46a]/25 bg-[#fbf8f1] px-2 text-[9px] font-black text-[#64748b] transition hover:bg-white hover:text-[#123f59]"
@@ -423,11 +383,9 @@ export const LivePreview = ({ data }) => {
                   textClassName="text-[9px] font-black leading-none"
                 />
               </button>
-
               <span className="inline-flex h-8 min-w-[46px] shrink-0 items-center justify-center rounded-xl border border-[#d8b46a]/25 bg-white px-2 text-[9px] font-black text-[#123f59]">
                 {Math.round(zoomScale * 100)}%
               </span>
-
               <button
                 onClick={handleZoomIn}
                 className="inline-flex h-8 shrink-0 items-center justify-center rounded-xl border border-[#d8b46a]/25 bg-[#fbf8f1] px-2 text-[9px] font-black text-[#64748b] transition hover:bg-white hover:text-[#123f59]"
@@ -440,7 +398,6 @@ export const LivePreview = ({ data }) => {
                   textClassName="text-[9px] font-black leading-none"
                 />
               </button>
-
               <button
                 onClick={handleZoomReset}
                 className="inline-flex h-8 shrink-0 items-center justify-center rounded-xl border border-[#d8b46a]/25 bg-[#fbf8f1] px-2 text-[9px] font-black text-[#c5983c] transition hover:bg-white hover:text-[#123f59]"
@@ -458,13 +415,7 @@ export const LivePreview = ({ data }) => {
         </div>
       </div>
 
-      <div
-        ref={scrollRef}
-        className="
-          min-h-0 flex-1 overflow-auto
-          bg-[#e8edf0] p-4 pb-12 custom-scrollbar-slim
-        "
-      >
+      <div className="min-h-0 flex-1 overflow-auto bg-[#e8edf0] p-4 pb-12 custom-scrollbar-slim">
         <div className="mx-auto flex justify-center">
           <div
             className="relative"
@@ -481,102 +432,154 @@ export const LivePreview = ({ data }) => {
               }}
             >
               <div
+                id="quotation-preview-container"
                 ref={componentRef}
-                className="print-area relative overflow-hidden bg-white shadow-[0_20px_55px_rgba(18,63,89,0.18)]"
+                className="pdf-page-capture print-area relative overflow-hidden bg-white shadow-[0_20px_55px_rgba(18,63,89,0.18)]"
                 style={{
-                  width: "210mm",
-                  minHeight: "297mm",
-                  padding: "14mm 14mm 28mm 14mm",
+                  width: `${A4_WIDTH_PX}px`,
+                  minHeight: `${A4_HEIGHT_PX}px`,
+                  padding: "60px 60px 100px 60px", // الهوامش
                   backgroundColor: selectedStyle.paper,
                   color: "#123f59",
+                  boxSizing: "border-box",
+                  textRendering: "geometricPrecision",
                 }}
                 dir="rtl"
               >
+                {/* 🚀 الهوامش الجانبية (Watermarks) */}
+                <div className="absolute top-0 bottom-0 right-3 w-6 flex items-center justify-center pointer-events-none">
+                  <span
+                    className="text-[8px] text-slate-300 font-mono tracking-widest whitespace-nowrap"
+                    style={{ transform: "rotate(90deg)" }}
+                  >
+                    تاريخ ووقت الاستخراج: {new Date().toLocaleString("ar-SA")}
+                  </span>
+                </div>
+                <div className="absolute top-0 bottom-0 left-3 w-6 flex items-center justify-center pointer-events-none">
+                  <span
+                    className="text-[8px] text-slate-300 font-mono tracking-widest whitespace-nowrap uppercase"
+                    style={{ transform: "rotate(-90deg)" }}
+                  >
+                    رقم مُصدر العرض: {employeeId} | ENGINE: DETAILS CONSULTANTS
+                    SYSTEM
+                  </span>
+                </div>
+
+                {/* 🚀 الترويسة المعدلة (الجدول) */}
                 <header
-                  className="mb-4 border-b-[3px] pb-4"
+                  className="mb-8 flex justify-between items-start border-b-[3px] pb-6"
                   style={{ borderColor: selectedStyle.accent }}
                 >
-                  <div className="flex items-start justify-between gap-6">
-                    <div className="flex items-start">
-                      <div className="flex h-20 w-64 items-center justify-center">
-                        <img
-                          src="/logo.jpeg"
-                          alt="Details Consulting Engineers"
-                          className="max-h-full max-w-full object-contain"
-                        />
-                      </div>
-                    </div>
+                  {/* الشعار */}
+                  <div className="flex h-20 w-64 items-center justify-center">
+                    <img
+                      src="/logo.jpeg"
+                      alt="Details Consulting Engineers"
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
 
-                    <div className="text-left">
-                      <h3
-                        className="mb-2 text-lg font-black"
-                        style={{ color: selectedStyle.accent }}
-                      >
-                        عرض سعر خدمات
-                      </h3>
-
-                      <div className="space-y-1 text-[10px] font-bold text-[#475569]">
-                        <p className="inline-flex items-center rounded-xl border border-[#d8b46a]/25 bg-[#fbf8f1] px-2 py-1">
-                          التاريخ: {issueDateParts.combined}
-                        </p>
-                        <p className="font-mono text-[#123f59]">
-                          {referenceNumber}
-                        </p>
-                      </div>
-                    </div>
+                  {/* جدول معلومات العرض */}
+                  <div className="w-[280px]">
+                    <table
+                      className="w-full text-right border-collapse text-[10px] font-bold border"
+                      style={{ borderColor: `${selectedStyle.accent}44` }}
+                    >
+                      <tbody>
+                        <tr>
+                          <td
+                            className="p-2 border bg-[#fbf8f1] w-[35%] text-[#475569]"
+                            style={{ borderColor: `${selectedStyle.accent}44` }}
+                          >
+                            نوع المستند
+                          </td>
+                          <td
+                            className="p-2 border text-[13px] font-black bg-[#fbf8f1]/30"
+                            style={{
+                              borderColor: `${selectedStyle.accent}44`,
+                              color: selectedStyle.accent,
+                            }}
+                          >
+                            عرض سعر خدمات
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            className="p-2 border bg-[#fbf8f1] text-[#475569]"
+                            style={{ borderColor: `${selectedStyle.accent}44` }}
+                          >
+                            التاريخ
+                          </td>
+                          <td
+                            className="p-2 border text-[9.5px] font-bold text-[#123f59]"
+                            style={{ borderColor: `${selectedStyle.accent}44` }}
+                          >
+                            {issueDateParts.combined}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            className="p-2 border bg-[#fbf8f1] text-[#475569]"
+                            style={{ borderColor: `${selectedStyle.accent}44` }}
+                          >
+                            رقم المرجع
+                          </td>
+                          <td
+                            className="p-2 border font-mono text-[12px] font-black text-[#123f59]"
+                            style={{ borderColor: `${selectedStyle.accent}44` }}
+                          >
+                            {referenceNumber}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </header>
 
                 <main>
-                  <section className="mb-4">
+                  <section className="mb-6">
                     <h4
-                      className="mb-1 text-[13px] font-black"
+                      className="mb-2 text-[14px] font-black"
                       style={{ color: selectedStyle.accent }}
                     >
                       السادة / {clientTitle || "المواطن"}{" "}
                       {clientNameForPreview || "عميل غير محدد"}
                     </h4>
-
                     {showClientCode && clientCodeForPreview && (
-                      <p className="mb-2 text-[10px] font-bold text-[#94a3b8]">
+                      <p className="mb-3 text-[11px] font-bold text-[#94a3b8]">
                         رقم العميل: {clientCodeForPreview}
                       </p>
                     )}
-
                     <p
-                      className="mb-2 text-[12px] font-black"
+                      className="mb-3 text-[13px] font-black"
                       style={{ color: selectedStyle.accent }}
                     >
                       السلام عليكم ورحمة الله وبركاته ،،،
                     </p>
 
+                    {/* 🚀 النص الافتتاحي المدمج فيه تفاصيل القطع */}
                     <div
                       contentEditable={isEditMode}
                       suppressContentEditableWarning
-                      className={`
-                        text-justify text-[11px] font-bold leading-7 text-[#475569]
-                        ${
-                          isEditMode
-                            ? "rounded-xl border border-dashed border-amber-300 bg-amber-50/70 p-2 outline-none"
-                            : ""
-                        }
-                      `}
+                      style={{ letterSpacing: "normal", wordSpacing: "normal" }}
+                      className={`text-right text-[12px] font-bold leading-[1.8] text-[#475569] ${isEditMode ? "rounded-xl border border-dashed border-amber-300 bg-amber-50/70 p-2 outline-none" : ""}`}
                     >
                       {introText}
                     </div>
                   </section>
 
-                  <section className="mb-4">
+                  {/* نطاق العمل والتكاليف */}
+                  <section className="mb-6">
                     <div
-                      className="mb-2 flex items-center gap-1.5 text-[12px] font-black"
+                      className="mb-3 flex items-center gap-2 text-[14px] font-black"
                       style={{ color: selectedStyle.accent }}
                     >
-                      <FileText className="h-4 w-4 text-[#c5983c]" />
+                      <FileText className="h-5 w-5 text-[#c5983c]" />
                       نطاق العمل والتكاليف
                     </div>
 
                     <table
-                      className="w-full border-collapse text-center text-[10px]"
+                      className="w-full border-collapse text-center text-[11px]"
                       style={{ border: `1px solid ${selectedStyle.accent}` }}
                     >
                       <thead>
@@ -584,112 +587,174 @@ export const LivePreview = ({ data }) => {
                           className="font-black text-white"
                           style={{ backgroundColor: selectedStyle.accent }}
                         >
-                          <th className="w-8 p-2" style={{ border: `1px solid ${selectedStyle.accent}` }}>
+                          <th
+                            className="w-8 p-3"
+                            style={{
+                              border: `1px solid ${selectedStyle.accent}`,
+                            }}
+                          >
                             م
                           </th>
-                          <th className="p-2 text-right" style={{ border: `1px solid ${selectedStyle.accent}` }}>
+                          <th
+                            className="p-3 text-right"
+                            style={{
+                              border: `1px solid ${selectedStyle.accent}`,
+                            }}
+                          >
                             الوصف
                           </th>
-                          <th className="w-16 p-2" style={{ border: `1px solid ${selectedStyle.accent}` }}>
-                            الكمية
-                          </th>
-                          <th className="w-20 p-2" style={{ border: `1px solid ${selectedStyle.accent}` }}>
+                          {showQuantity && (
+                            <th
+                              className="w-16 p-3"
+                              style={{
+                                border: `1px solid ${selectedStyle.accent}`,
+                              }}
+                            >
+                              الكمية
+                            </th>
+                          )}
+                          <th
+                            className="w-24 p-3"
+                            style={{
+                              border: `1px solid ${selectedStyle.accent}`,
+                            }}
+                          >
                             السعر
                           </th>
-                          <th className="w-24 p-2" style={{ border: `1px solid ${selectedStyle.accent}` }}>
+                          <th
+                            className="w-28 p-3"
+                            style={{
+                              border: `1px solid ${selectedStyle.accent}`,
+                            }}
+                          >
                             الإجمالي
                           </th>
                         </tr>
                       </thead>
-
                       <tbody className="font-bold text-[#123f59]">
                         {items.length === 0 ? (
                           <tr>
                             <td
-                              colSpan="5"
-                              className="p-5 text-center text-[#94a3b8]"
-                              style={{ border: `1px solid ${selectedStyle.accent}` }}
+                              colSpan={showQuantity ? "5" : "4"}
+                              className="p-6 text-center text-[#94a3b8]"
                             >
                               لا توجد بنود مسجلة
                             </td>
                           </tr>
                         ) : (
-                          items.map((item, index) => {
-                            const qty = Number(item.qty ?? item.quantity ?? 1);
-                            const price = Number(item.price ?? item.unitPrice ?? 0);
-
-                            return (
-                              <tr
-                                key={item.id || index}
-                                className={index % 2 === 0 ? "bg-white" : "bg-[#fbf8f1]"}
+                          items.map((item, index) => (
+                            <tr
+                              key={item.id || index}
+                              className={
+                                index % 2 === 0 ? "bg-white" : "bg-[#fbf8f1]"
+                              }
+                            >
+                              <td
+                                className="p-2.5 font-mono"
+                                style={{
+                                  border: `1px solid ${selectedStyle.accent}33`,
+                                }}
                               >
-                                <td className="p-2 font-mono" style={{ border: `1px solid ${selectedStyle.accent}33` }}>
-                                  {index + 1}
+                                {index + 1}
+                              </td>
+                              <td
+                                className="p-2.5 text-right leading-[1.6]"
+                                style={{
+                                  border: `1px solid ${selectedStyle.accent}33`,
+                                }}
+                              >
+                                {item.title}
+                              </td>
+                              {showQuantity && (
+                                <td
+                                  className="p-2.5 font-mono"
+                                  style={{
+                                    border: `1px solid ${selectedStyle.accent}33`,
+                                  }}
+                                >
+                                  {item.qty || item.quantity || 1} {item.unit}
                                 </td>
-                                <td className="p-2 text-right" style={{ border: `1px solid ${selectedStyle.accent}33` }}>
-                                  {item.title || "بند غير مسمى"}
-                                </td>
-                                <td className="p-2 font-mono" style={{ border: `1px solid ${selectedStyle.accent}33` }}>
-                                  {qty} {item.unit || ""}
-                                </td>
-                                <td className="p-2 font-mono" style={{ border: `1px solid ${selectedStyle.accent}33` }}>
-                                  {formatCurrency(price)}
-                                </td>
-                                <td className="p-2 font-mono font-black" style={{ border: `1px solid ${selectedStyle.accent}33`, color: selectedStyle.accent }}>
-                                  {formatCurrency(getItemTotal(item))}
-                                </td>
-                              </tr>
-                            );
-                          })
+                              )}
+                              <td
+                                className="p-2.5 font-mono"
+                                style={{
+                                  border: `1px solid ${selectedStyle.accent}33`,
+                                }}
+                              >
+                                {formatCurrency(item.price || item.unitPrice)}
+                              </td>
+                              <td
+                                className="p-2.5 font-mono font-black"
+                                style={{
+                                  border: `1px solid ${selectedStyle.accent}33`,
+                                  color: selectedStyle.accent,
+                                }}
+                              >
+                                {formatCurrency(getItemTotal(item))}
+                              </td>
+                            </tr>
+                          ))
                         )}
-
+                        {/* مجاميع */}
                         <tr className="bg-[#fbf8f1]">
                           <td
-                            colSpan="4"
-                            className="p-2 text-left font-black"
-                            style={{ border: `1px solid ${selectedStyle.accent}` }}
+                            colSpan={showQuantity ? "4" : "3"}
+                            className="p-3 text-left font-black"
+                            style={{
+                              border: `1px solid ${selectedStyle.accent}`,
+                            }}
                           >
                             الإجمالي قبل الضريبة
                           </td>
                           <td
-                            className="p-2 font-mono font-black"
-                            style={{ border: `1px solid ${selectedStyle.accent}` }}
+                            className="p-3 font-mono font-black text-[12px]"
+                            style={{
+                              border: `1px solid ${selectedStyle.accent}`,
+                            }}
                           >
                             {formatCurrency(subtotal)}
                           </td>
                         </tr>
-
                         <tr>
                           <td
-                            colSpan="4"
-                            className="p-2 text-left font-bold text-[#64748b]"
-                            style={{ border: `1px solid ${selectedStyle.accent}` }}
+                            colSpan={showQuantity ? "4" : "3"}
+                            className="p-3 text-left font-bold text-[#64748b]"
+                            style={{
+                              border: `1px solid ${selectedStyle.accent}`,
+                            }}
                           >
-                            ضريبة القيمة المضافة {taxRate || 0}%
-                            {officeTaxBearing > 0 ? ` - يتحمل المكتب ${officeTaxBearing}%` : ""}
+                            ضريبة القيمة المضافة {taxRate || 0}%{" "}
+                            {officeTaxBearing > 0
+                              ? ` - يتحمل المكتب ${officeTaxBearing}%`
+                              : ""}
                           </td>
                           <td
-                            className="p-2 font-mono font-bold"
-                            style={{ border: `1px solid ${selectedStyle.accent}` }}
+                            className="p-3 font-mono font-bold text-[12px]"
+                            style={{
+                              border: `1px solid ${selectedStyle.accent}`,
+                            }}
                           >
                             {formatCurrency(taxAmount)}
                           </td>
                         </tr>
-
                         <tr
                           className="font-black text-white"
                           style={{ backgroundColor: selectedStyle.accent }}
                         >
                           <td
-                            colSpan="4"
-                            className="p-2.5 text-left text-[12px]"
-                            style={{ border: `1px solid ${selectedStyle.accent}` }}
+                            colSpan={showQuantity ? "4" : "3"}
+                            className="p-3 text-left text-[14px]"
+                            style={{
+                              border: `1px solid ${selectedStyle.accent}`,
+                            }}
                           >
                             الإجمالي شامل ضريبة القيمة المضافة
                           </td>
                           <td
-                            className="p-2.5 font-mono text-[12px]"
-                            style={{ border: `1px solid ${selectedStyle.accent}` }}
+                            className="p-3 font-mono text-[14px]"
+                            style={{
+                              border: `1px solid ${selectedStyle.accent}`,
+                            }}
                           >
                             {formatCurrency(grandTotal)} ر.س
                           </td>
@@ -698,27 +763,30 @@ export const LivePreview = ({ data }) => {
                     </table>
                   </section>
 
+                  {/* الدفعات */}
                   {paymentsList.length > 0 && (
-                    <section className="mb-4">
+                    <section className="mb-6">
                       <h4
-                        className="mb-2 text-[12px] font-black"
+                        className="mb-3 text-[14px] font-black"
                         style={{ color: selectedStyle.accent }}
                       >
                         الدفعات:
                       </h4>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-3">
                         {paymentsList.map((payment, index) => (
                           <div
                             key={payment.id || index}
-                            className="rounded-xl border border-[#d8b46a]/25 bg-[#fbf8f1] p-2 text-[10px] font-bold text-[#475569]"
+                            className="rounded-xl border border-[#d8b46a]/25 bg-[#fbf8f1] p-3 text-[11px] font-bold text-[#475569]"
                           >
                             <div className="flex justify-between gap-2">
-                              <span>{payment.label || `الدفعة ${index + 1}`}</span>
-                              <span className="font-mono text-[#123f59]">
+                              <span className="font-black text-[#123f59]">
+                                {payment.label || `الدفعة ${index + 1}`}
+                              </span>
+                              <span className="font-mono text-[#c5983c] font-black">
                                 {formatCurrency(payment.amount)} ر.س
                               </span>
                             </div>
-                            <div className="mt-1 text-[#94a3b8]">
+                            <div className="mt-1.5 text-[#64748b]">
                               {payment.condition || "حسب الاتفاق"}
                             </div>
                           </div>
@@ -727,62 +795,116 @@ export const LivePreview = ({ data }) => {
                     </section>
                   )}
 
-                  <section className="mb-10">
+                  <section className="mb-12">
                     <h4
-                      className="mb-2 text-[12px] font-black"
+                      className="mb-3 text-[14px] font-black"
                       style={{ color: selectedStyle.accent }}
                     >
                       الشروط والأحكام:
                     </h4>
-
                     <div
                       contentEditable={isEditMode}
                       suppressContentEditableWarning
-                      className={`
-                        whitespace-pre-line text-justify text-[10.5px] font-bold leading-7 text-[#475569]
-                        ${
-                          isEditMode
-                            ? "rounded-xl border border-dashed border-amber-300 bg-amber-50/70 p-2 outline-none"
-                            : ""
-                        }
-                      `}
+                      style={{ letterSpacing: "normal", wordSpacing: "normal" }}
+                      className={`whitespace-pre-line text-right text-[11px] font-bold leading-[1.8] text-[#475569] ${isEditMode ? "rounded-xl border border-dashed border-amber-300 bg-amber-50/70 p-2 outline-none" : ""}`}
                     >
                       {termsText || "لم يتم إدراج شروط وأحكام."}
                     </div>
-
-                    {showMissingDocs && missingDocs && (
-                      <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-[10px] font-bold text-red-800">
-                        <span className="mb-1 block text-[11px] font-black">
-                          مستندات مطلوبة للبدء:
-                        </span>
-                        {missingDocs}
-                      </div>
-                    )}
                   </section>
 
-                  <section className="mt-10 grid grid-cols-2 gap-8 text-center">
-                    <div>
-                      <p
-                        className="mb-10 text-[11px] font-black"
-                        style={{ color: selectedStyle.accent }}
-                      >
-                        توقيع العميل / الممثل
-                      </p>
-                      <div className="mx-auto w-2/3 border-b-2 border-dashed border-[#d8b46a]/60" />
+                  {/* 🚀 قسم التواقيع المتطور */}
+                  <section
+                    className="mt-12"
+                    style={{ pageBreakInside: "avoid" }}
+                  >
+                    <div className="grid grid-cols-2 gap-8 text-center mb-10">
+                      {/* توقيع العميل / المفوض */}
+                      <div>
+                        <p
+                          className="mb-6 text-[12px] font-black"
+                          style={{ color: selectedStyle.accent }}
+                        >
+                          {isIndividual
+                            ? "توقيع العميل / المالك"
+                            : "توقيع المفوض عن العميل"}
+                        </p>
+
+                        {!isIndividual && (
+                          <div className="mb-6 text-[10px] text-[#475569] flex flex-col gap-2 items-center">
+                            <div className="flex gap-1.5 items-center">
+                              الصفة:{" "}
+                              <span
+                                contentEditable={isEditMode}
+                                suppressContentEditableWarning
+                                className={`inline-block min-w-[100px] border-b border-dashed border-slate-300 ${isEditMode ? "bg-amber-50 outline-none" : ""}`}
+                              ></span>
+                            </div>
+                            <div className="flex gap-1.5 items-center">
+                              نوع التفويض:{" "}
+                              <span
+                                contentEditable={isEditMode}
+                                suppressContentEditableWarning
+                                className={`inline-block min-w-[100px] border-b border-dashed border-slate-300 ${isEditMode ? "bg-amber-50 outline-none" : ""}`}
+                              ></span>
+                            </div>
+                          </div>
+                        )}
+                        {isIndividual && <div className="mb-12"></div>}
+
+                        <div className="mx-auto w-3/4 border-b-2 border-dashed border-[#d8b46a]/60" />
+                      </div>
+
+                      {/* توقيع مقدم الخدمة */}
+                      <div>
+                        <p
+                          className="mb-2 text-[12px] font-black"
+                          style={{ color: selectedStyle.accent }}
+                        >
+                          توقيع وختم مقدم الخدمة
+                        </p>
+                        <p className="mb-8 text-[10px] font-bold text-[#475569]">
+                          المكتب الهندسي شركة ديتيلز كونسولتس للاستشارات
+                          الهندسية
+                        </p>
+                        <div className="mb-2"></div>
+                        <div className="mx-auto w-3/4 border-b-2 border-dashed border-[#d8b46a]/60" />
+                      </div>
                     </div>
 
-                    <div>
+                    {/* ممثل الخدمة (الموظف) */}
+                    <div className="text-center mt-6 pt-6 border-t border-slate-100">
                       <p
-                        className="mb-10 text-[11px] font-black"
+                        className="mb-6 text-[12px] font-black"
                         style={{ color: selectedStyle.accent }}
                       >
-                        توقيع وختم المكتب
+                        ممثل الخدمة
                       </p>
-                      <div className="mx-auto w-2/3 border-b-2 border-dashed border-[#d8b46a]/60" />
+                      <div className="mb-6 text-[10px] text-[#475569] flex gap-6 justify-center">
+                        <div className="flex gap-1.5 items-center">
+                          الاسم:{" "}
+                          <span
+                            contentEditable={isEditMode}
+                            suppressContentEditableWarning
+                            className={`inline-block min-w-[140px] border-b border-dashed border-slate-300 font-bold ${isEditMode ? "bg-amber-50 outline-none" : ""}`}
+                          >
+                            {employeeName}
+                          </span>
+                        </div>
+                        <div className="flex gap-1.5 items-center">
+                          الصفة:{" "}
+                          <span
+                            contentEditable={isEditMode}
+                            suppressContentEditableWarning
+                            className={`inline-block min-w-[120px] border-b border-dashed border-slate-300 font-bold ${isEditMode ? "bg-amber-50 outline-none" : ""}`}
+                          >
+                            مُعد العرض
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mx-auto w-1/3 border-b-2 border-dashed border-[#d8b46a]/60" />
                     </div>
                   </section>
                 </main>
-
                 <DetailsFooter accent={selectedStyle.accent} />
               </div>
             </div>

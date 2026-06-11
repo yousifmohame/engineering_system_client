@@ -1,15 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "../../../api/axios";
 import { toast } from "sonner";
-import {
-  ChevronRight,
-  ChevronLeft,
-  CircleCheckBig,
-  Save,
-  Loader2,
-  Check,
-} from "lucide-react";
+import { ChevronRight, ChevronLeft, Save, Loader2, Check } from "lucide-react";
 
 import {
   STEPS,
@@ -521,7 +514,19 @@ const CreateQuotationWizard = (incomingProps) => {
     setStampType,
     officeServices,
     servicesLoading,
+    quotationData: {
+      clientName:
+        getClientName(clientsData?.find((c) => c.id === selectedClient)) ||
+        getClientName(existingQuote?.client),
+      projectName:
+        propertiesData?.find((p) => p.id === selectedProperty)?.code ||
+        existingQuote?.ownership?.code,
+    },
   };
+
+  const selectedPropertyDetails = propertiesData?.find(
+    (p) => p.id === selectedProperty,
+  );
 
   const previewData = {
     templateType,
@@ -555,6 +560,12 @@ const CreateQuotationWizard = (incomingProps) => {
     showPropertyCode,
     showClientCode,
     officeTaxBearing,
+    plots:
+      selectedPropertyDetails?.plots || existingQuote?.ownership?.plots || [],
+    boundaries:
+      selectedPropertyDetails?.boundaries ||
+      existingQuote?.ownership?.boundaries ||
+      [],
   };
 
   return (
@@ -562,7 +573,7 @@ const CreateQuotationWizard = (incomingProps) => {
       className="
         flex h-full min-h-0 flex-col overflow-hidden
         bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
-        p-3 font-[Tajawal] text-[#123f59]
+        p-2 sm:p-3 font-[Tajawal] text-[#123f59]
       "
       dir="rtl"
     >
@@ -582,12 +593,12 @@ const CreateQuotationWizard = (incomingProps) => {
         {/* ========================================== */}
         {/* Wizard Section (Sidebar + Content + Footer) */}
         {/* ========================================== */}
+        {/* 🚀 إزالة الكلاسات التي تعيق المودال (backdrop-blur-xl) لكي يفتح فوق كل شيء */}
         <section
           className="
-            flex min-h-0 min-w-0 flex-[1.1] flex-col overflow-hidden
-            rounded-[24px] border border-[#d8b46a]/25 bg-white/95
+            flex min-h-0 min-w-0 flex-1 lg:flex-[1.1] flex-col overflow-hidden
+            rounded-[20px] sm:rounded-[24px] border border-[#d8b46a]/25 bg-white
             shadow-[0_10px_26px_rgba(18,63,89,0.08)]
-            backdrop-blur-xl
           "
         >
           {/* Header */}
@@ -602,32 +613,32 @@ const CreateQuotationWizard = (incomingProps) => {
               <div className="flex min-w-0 items-center gap-3">
                 <span
                   className="
-                    grid h-11 w-11 shrink-0 place-items-center
+                    grid h-10 w-10 sm:h-11 sm:w-11 shrink-0 place-items-center
                     rounded-2xl border border-[#e2bf74]/35
                     bg-white/10 text-[#e2bf74]
-                    shadow-md backdrop-blur-xl
+                    shadow-md
                   "
                 >
                   <IconWithText
                     icon={Save}
                     text="عرض"
                     vertical
-                    iconClassName="h-5 w-5"
-                    textClassName="text-[7px] font-black leading-none"
+                    iconClassName="h-4 w-4 sm:h-5 sm:w-5"
+                    textClassName="text-[7px] font-black leading-none hidden sm:block"
                   />
                 </span>
 
                 <div className="min-w-0">
-                  <h2 className="truncate text-lg font-black">
+                  <h2 className="truncate text-base sm:text-lg font-black">
                     {isEditMode ? "تعديل عرض سعر" : "إنشاء عرض سعر"}
                   </h2>
-                  <p className="mt-0.5 truncate text-[11px] font-bold text-white/60">
+                  <p className="mt-0.5 truncate text-[10px] sm:text-[11px] font-bold text-white/60">
                     بناء العرض، البنود، الضريبة، والمراجعة بكل سهولة.
                   </p>
                 </div>
               </div>
 
-              <span className="shrink-0 rounded-xl border border-[#e2bf74]/35 bg-white/10 px-3 py-1.5 text-[10px] font-black text-[#e2bf74]">
+              <span className="shrink-0 rounded-xl border border-[#e2bf74]/35 bg-white/10 px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[10px] font-black text-[#e2bf74]">
                 المرحلة {currentStep + 1} / {STEPS.length}
               </span>
             </div>
@@ -635,8 +646,8 @@ const CreateQuotationWizard = (incomingProps) => {
 
           {/* Content Area with Vertical Sidebar */}
           <div className="flex flex-1 overflow-hidden bg-[#fbf8f1]/30">
-            {/* Timeline Sidebar (Right Side in RTL) */}
-            <aside className="w-[180px] shrink-0 border-l border-[#e8ddc8] bg-white/50 p-4 overflow-y-auto custom-scrollbar-slim">
+            {/* Timeline Sidebar (Hidden on Mobile, Visible on Tablet/Desktop) */}
+            <aside className="hidden md:block w-[180px] shrink-0 border-l border-[#e8ddc8] bg-white/50 p-4 overflow-y-auto custom-scrollbar-slim">
               <div className="relative">
                 {/* Vertical Line Connector */}
                 <div className="absolute right-[19px] top-4 bottom-8 w-[2px] bg-slate-200/80 rounded-full" />
@@ -698,8 +709,18 @@ const CreateQuotationWizard = (incomingProps) => {
             </aside>
 
             {/* Dynamic Step Content Area */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 custom-scrollbar-slim relative">
-              <div className="mx-auto max-w-3xl">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-5 custom-scrollbar-slim relative">
+              <div className="mx-auto max-w-3xl h-full">
+                {/* 🚀 إضافة مؤشر الخطوات للشاشات الصغيرة فقط */}
+                <div className="md:hidden flex items-center justify-between mb-4 pb-2 border-b border-[#e8ddc8]">
+                  <span className="text-xs font-black text-[#123f59]">
+                    {STEPS[currentStep]?.label}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-500">
+                    خطوة {currentStep + 1} من {STEPS.length}
+                  </span>
+                </div>
+
                 {currentStep === 0 && <Step2Template props={stepProps} />}
                 {currentStep === 1 && <Step0ClientProperty props={stepProps} />}
                 {currentStep === 2 && <Step1BasicInfo props={stepProps} />}
@@ -714,14 +735,14 @@ const CreateQuotationWizard = (incomingProps) => {
           </div>
 
           {/* Smart Footer Navigation */}
-          <div className="shrink-0 border-t border-[#e8ddc8] bg-white/95 p-4 shadow-[0_-4px_15px_rgba(0,0,0,0.02)] z-10">
-            <div className="flex items-center justify-between gap-4">
+          <div className="shrink-0 border-t border-[#e8ddc8] bg-white p-3 sm:p-4 shadow-[0_-4px_15px_rgba(0,0,0,0.02)] z-10">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
               {/* Previous Button */}
               <button
                 disabled={currentStep === 0}
                 onClick={() => setCurrentStep((p) => p - 1)}
                 className="
-                  inline-flex h-11 items-center justify-center gap-2
+                  inline-flex h-11 w-full sm:w-auto items-center justify-center gap-2
                   rounded-xl border-2 border-slate-200 bg-white
                   px-6 text-xs font-black text-slate-500
                   transition hover:border-[#d8b46a]/50 hover:bg-[#fbf8f1] hover:text-[#123f59]
@@ -730,11 +751,11 @@ const CreateQuotationWizard = (incomingProps) => {
                 type="button"
               >
                 <ChevronRight className="h-5 w-5" />
-                رجوع
+                رجوع للخلف
               </button>
 
-              {/* Progress Indicator (Mobile hidden, visible on md+) */}
-              <div className="hidden md:flex flex-col items-center">
+              {/* Progress Indicator (Visible on Tablet/Desktop) */}
+              <div className="hidden sm:flex flex-col items-center">
                 <div className="text-[10px] font-bold text-slate-400">
                   إكمال الإعدادات
                 </div>
@@ -745,12 +766,13 @@ const CreateQuotationWizard = (incomingProps) => {
 
               {/* Next / Save Button */}
               {currentStep === STEPS.length - 1 ? (
-                <div className="h-11 w-[120px]" /> // Placeholder to keep alignment
+                // في الخطوة الأخيرة (المراجعة) لا نحتاج لزر التالي، الأزرار موجودة داخل Step8Review
+                <div className="hidden sm:block h-11 w-[180px]" />
               ) : currentStep === STEPS.length - 2 ? (
                 <button
                   onClick={handleNextOrSave}
                   className="
-                    inline-flex h-11 min-w-[180px] items-center justify-center gap-2
+                    inline-flex h-11 w-full sm:w-auto min-w-0 sm:min-w-[180px] items-center justify-center gap-2
                     rounded-xl bg-gradient-to-l from-[#123f59] via-[#15536f] to-[#0e7490]
                     px-6 text-xs font-black text-white
                     shadow-[0_8px_20px_rgba(18,63,89,0.2)]
@@ -769,9 +791,9 @@ const CreateQuotationWizard = (incomingProps) => {
                 <button
                   onClick={handleNextOrSave}
                   className="
-                    group inline-flex h-11 min-w-[180px] items-center justify-between
+                    group inline-flex h-11 w-full sm:w-auto min-w-0 sm:min-w-[180px] items-center justify-between
                     rounded-xl bg-[#123f59]
-                    px-6 text-xs font-black text-white
+                    px-4 sm:px-6 text-xs font-black text-white
                     shadow-[0_8px_20px_rgba(18,63,89,0.15)]
                     transition-all hover:bg-[#0e7490] hover:-translate-y-[2px] active:scale-[0.98]
                   "
@@ -781,11 +803,11 @@ const CreateQuotationWizard = (incomingProps) => {
                     <span className="text-[9px] text-[#e2bf74] font-bold opacity-80">
                       الخطوة التالية
                     </span>
-                    <span className="text-[11px]">
+                    <span className="text-[11px] truncate max-w-[120px]">
                       {STEPS[currentStep + 1]?.label}
                     </span>
                   </div>
-                  <div className="p-1 rounded-lg bg-white/10 group-hover:bg-white/20 transition-colors">
+                  <div className="p-1 rounded-lg bg-white/10 group-hover:bg-white/20 transition-colors mr-2">
                     <ChevronLeft className="h-5 w-5 text-white" />
                   </div>
                 </button>
@@ -795,9 +817,9 @@ const CreateQuotationWizard = (incomingProps) => {
         </section>
 
         {/* ========================================== */}
-        {/* Live Preview Section */}
+        {/* Live Preview Section (Hidden on Mobile/Tablet) */}
         {/* ========================================== */}
-        <aside className="hidden lg:flex min-h-0 min-w-0 flex-[0.9] overflow-hidden rounded-[24px] border border-[#d8b46a]/25 shadow-sm">
+        <aside className="hidden lg:flex min-h-0 min-w-0 flex-[0.9] overflow-hidden rounded-[24px] border border-[#d8b46a]/25 shadow-sm bg-white">
           <LivePreview data={previewData} />
         </aside>
       </div>
