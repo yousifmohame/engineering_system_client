@@ -8,10 +8,36 @@ import {
   ZoomOut,
   RotateCcw,
   FileText,
+  ShieldCheck,
 } from "lucide-react";
 
 const A4_WIDTH_PX = 794;
 const A4_HEIGHT_PX = 1123;
+
+// ==========================================
+// 🚀 إعدادات الخلفيات الرسمية (من مجلد public)
+// ==========================================
+const SECURITY_BACKGROUNDS = {
+  none: {
+    label: "بدون (سادة)",
+    value: "none",
+  },
+  official1: {
+    label: "خلفية رسمية 1 (الذهبية)",
+    // 👈 استبدل bg1.png باسم صورتك الحقيقية الموجودة في مجلد public
+    value: "url('/safe_background/1.png')",
+  },
+  official2: {
+    label: "خلفية رسمية 2",
+    // 👈 استبدل bg2.png باسم صورتك الحقيقية
+    value: "url('/safe_background/2.png')",
+  },
+  official3: {
+    label: "خلفية رسمية 3",
+    // 👈 استبدل bg3.png باسم صورتك الحقيقية
+    value: "url('/safe_background/3.png')",
+  },
+};
 
 const IconWithText = ({
   icon: Icon,
@@ -125,36 +151,23 @@ const formatDateParts = (value) => {
 const DetailsFooter = ({ accent = "#0f5570" }) => {
   return (
     <footer
-      className="absolute bottom-[7mm] left-[10mm] right-[10mm] bg-white font-[Tajawal]"
+      className="absolute bottom-[25px] left-[60px] right-[60px] bg-transparent font-[Tajawal]"
       dir="ltr"
     >
-      <div className="border-t-[2.5px] pt-1.5" style={{ borderColor: accent }}>
-        <div className="flex items-start gap-2" style={{ color: accent }}>
-          <div className="min-w-0 flex-1">
-            <div
-              className="flex items-center justify-end gap-1 whitespace-nowrap text-[10.5px] font-black leading-[1.35]"
-              dir="rtl"
-            >
-              <span>
-                📍 حي الملك فهد - الرياض - المملكة العربية السعودية - الرمز
-                البريدي : ١٢٢٧٤
-              </span>
-              <span>· جوال : ٠٥٩٠٧٢٢٨٢٧</span>
-              <span>· الرقم الوطني الموحد : ٧٠٥٢٣٠٣٨٢٨</span>
-            </div>
-            <div
-              className="mt-0.5 flex items-center gap-1 whitespace-nowrap text-[10.5px] font-black leading-[1.35]"
-              dir="ltr"
-            >
-              <span>
-                📍 King Fahd Dist - RIYADH - Kingdom of Saudi Arabia -POSTAL
-                CODE :12274
-              </span>
-              <span>☎ 0590722827</span>
-              <span>- N.N: 7052303828</span>
-              <span>✉ info@details-consults.sa</span>
-            </div>
-          </div>
+      {/* تم إزالة الخط العلوي للفوتر حتى لا يتعارض مع تصميم الصورة الخاصة بك */}
+      <div className="pt-1.5 text-center">
+        <div
+          className="flex flex-col items-center gap-1 whitespace-nowrap text-[9px] font-black leading-[1.35] opacity-80"
+          dir="ltr"
+          style={{ color: accent }}
+        >
+          <span>
+            📍 King Fahd Dist - RIYADH - Kingdom of Saudi Arabia - POSTAL CODE :
+            12274
+          </span>
+          <span>
+            ☎ 0590722827 | N.N: 7052303828 | ✉ info@details-consults.sa
+          </span>
         </div>
       </div>
     </footer>
@@ -164,6 +177,7 @@ const DetailsFooter = ({ accent = "#0f5570" }) => {
 export const LivePreview = ({ data }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [zoomScale, setZoomScale] = useState(0.68);
+  const [bgType, setBgType] = useState("official1"); // 👈 جعلنا الصورة الأولى هي الافتراضية
   const componentRef = useRef(null);
 
   const selectedStyle = previewStyles.classic;
@@ -194,16 +208,14 @@ export const LivePreview = ({ data }) => {
     showQuantity = false,
     plots = [],
     boundaries = [],
-    clientType = "فرد", // من بيانات العميل لتحديد إذا كان شركة أو فرد
-    employeeName = "", // لتوقيع ممثل الخدمة
-    employeeId = "SYS-109", // للظهور في الهامش
+    clientType = "فرد",
+    employeeName = "",
+    employeeId = "SYS-109",
   } = data || {};
 
-  // هل العميل فرد أم جهة اعتبارية؟
   const isIndividual = clientType.includes("فرد") || clientType === "ورثة";
   const referenceNumber = `QT-${Date.now().toString().slice(-5)}`;
 
-  // 🚀 صياغة النص الافتتاحي ودمج بيانات القطع والمخطط فيه
   const introText = (() => {
     let intro = `إشارة إلى طلبكم بخصوص تقديم عرض سعر خدمات (${transactionType || "الخدمات الهندسية والاستشارية"})`;
 
@@ -217,13 +229,11 @@ export const LivePreview = ({ data }) => {
       intro += ` وموجب الطلب رقم (${serviceNumber})${serviceYear ? ` لسنة (${serviceYear} هـ)` : ""}`;
     }
 
-    // دمج القطع والحدود كنص
     if (plots && plots.length > 0) {
       intro += `، وتفاصيل المخطط التنظيمي كالتالي: `;
       const plotTexts = plots.map((plot) => {
         let pt = `القطعة رقم (${plot.plotNumber || "---"}) بمساحة إجمالية قدرها (${plot.area || "---"} م²)`;
 
-        // جلب الحدود
         const n =
           boundaries.find((b) => b.direction === "شمال" && b.plotId === plot.id)
             ?.length || 0;
@@ -342,10 +352,25 @@ export const LivePreview = ({ data }) => {
       className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[24px] border border-[#d8b46a]/25 bg-white/90 shadow-[0_10px_26px_rgba(18,63,89,0.08)] backdrop-blur-xl"
       dir="rtl"
     >
-      {/* شريط الأدوات العلوي */}
       <div className="shrink-0 border-b border-[#e8ddc8] bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white px-3 py-2">
         <div className="mx-auto max-w-[980px] rounded-[18px] border border-[#d8b46a]/25 bg-white/95 p-2 shadow-[0_8px_18px_rgba(18,63,89,0.08)] backdrop-blur-xl">
-          <div className="flex min-w-0 items-center justify-end gap-2">
+          <div className="flex min-w-0 items-center justify-between gap-2">
+            {/* 👈 أداة التحكم بالخلفية */}
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-[#fbf8f1] border border-[#d8b46a]/25 rounded-xl">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#c5983c]" />
+              <select
+                value={bgType}
+                onChange={(e) => setBgType(e.target.value)}
+                className="bg-transparent text-[10px] font-black text-[#123f59] outline-none cursor-pointer"
+              >
+                {Object.entries(SECURITY_BACKGROUNDS).map(([key, bg]) => (
+                  <option key={key} value={key}>
+                    {bg.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="flex min-w-0 flex-1 items-center justify-end gap-1 overflow-x-auto custom-scrollbar-slim">
               <button
                 onClick={() => setIsEditMode(!isEditMode)}
@@ -431,33 +456,42 @@ export const LivePreview = ({ data }) => {
                 width: `${A4_WIDTH_PX}px`,
               }}
             >
+              {/* 🚀 إعدادات الحاوية الرئيسية والصورة */}
               <div
                 id="quotation-preview-container"
                 ref={componentRef}
-                className="pdf-page-capture print-area relative overflow-hidden bg-white shadow-[0_20px_55px_rgba(18,63,89,0.18)]"
+                className="pdf-page-capture print-area relative overflow-hidden shadow-[0_20px_55px_rgba(18,63,89,0.18)]"
                 style={{
                   width: `${A4_WIDTH_PX}px`,
                   minHeight: `${A4_HEIGHT_PX}px`,
-                  padding: "60px 60px 100px 60px", // الهوامش
+                  // 👈 زدت الهوامش (padding) لتتفادى الإطار الذهبي الخاص بالصورة المرفوعة
+                  padding: "100px 70px 100px 70px",
                   backgroundColor: selectedStyle.paper,
+                  backgroundImage:
+                    SECURITY_BACKGROUNDS[bgType].value !== "none"
+                      ? SECURITY_BACKGROUNDS[bgType].value
+                      : "none",
+                  backgroundSize: "100% 100%", // 👈 لضمان تمدد الصورة لتغطي الصفحة كاملة من الحافة للحافة
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "center",
                   color: "#123f59",
                   boxSizing: "border-box",
                   textRendering: "geometricPrecision",
                 }}
                 dir="rtl"
               >
-                {/* 🚀 الهوامش الجانبية (Watermarks) */}
-                <div className="absolute top-0 bottom-0 right-3 w-6 flex items-center justify-center pointer-events-none">
+                {/* الهوامش الجانبية (Watermarks) */}
+                <div className="absolute top-0 bottom-0 right-[25px] w-6 flex items-center justify-center pointer-events-none">
                   <span
-                    className="text-[8px] text-slate-300 font-mono tracking-widest whitespace-nowrap"
+                    className="text-[8px] text-slate-400/80 font-mono tracking-widest whitespace-nowrap"
                     style={{ transform: "rotate(90deg)" }}
                   >
                     تاريخ ووقت الاستخراج: {new Date().toLocaleString("ar-SA")}
                   </span>
                 </div>
-                <div className="absolute top-0 bottom-0 left-3 w-6 flex items-center justify-center pointer-events-none">
+                <div className="absolute top-0 bottom-0 left-[25px] w-6 flex items-center justify-center pointer-events-none">
                   <span
-                    className="text-[8px] text-slate-300 font-mono tracking-widest whitespace-nowrap uppercase"
+                    className="text-[8px] text-slate-400/80 font-mono tracking-widest whitespace-nowrap uppercase"
                     style={{ transform: "rotate(-90deg)" }}
                   >
                     رقم مُصدر العرض: {employeeId} | ENGINE: DETAILS CONSULTANTS
@@ -465,13 +499,8 @@ export const LivePreview = ({ data }) => {
                   </span>
                 </div>
 
-                {/* 🚀 الترويسة المعدلة (الجدول) */}
-                <header
-                  className="mb-8 flex justify-between items-start border-b-[3px] pb-6"
-                  style={{ borderColor: selectedStyle.accent }}
-                >
-                  {/* الشعار */}
-                  <div className="flex h-20 w-64 items-center justify-center">
+                <header className="mb-6 flex justify-between items-start pb-4 relative z-10">
+                  <div className="flex h-16 w-48 items-center justify-center bg-white/70 backdrop-blur-sm rounded-xl p-2 border border-[#d8b46a]/20">
                     <img
                       src="/logo.jpeg"
                       alt="Details Consulting Engineers"
@@ -479,22 +508,21 @@ export const LivePreview = ({ data }) => {
                     />
                   </div>
 
-                  {/* جدول معلومات العرض */}
                   <div className="w-[280px]">
                     <table
-                      className="w-full text-right border-collapse text-[10px] font-bold border"
+                      className="w-full text-right border-collapse text-[10px] font-bold border bg-white/70 backdrop-blur-sm"
                       style={{ borderColor: `${selectedStyle.accent}44` }}
                     >
                       <tbody>
                         <tr>
                           <td
-                            className="p-2 border bg-[#fbf8f1] w-[35%] text-[#475569]"
+                            className="p-2 border w-[35%] text-[#475569]"
                             style={{ borderColor: `${selectedStyle.accent}44` }}
                           >
                             نوع المستند
                           </td>
                           <td
-                            className="p-2 border text-[13px] font-black bg-[#fbf8f1]/30"
+                            className="p-2 border text-[13px] font-black"
                             style={{
                               borderColor: `${selectedStyle.accent}44`,
                               color: selectedStyle.accent,
@@ -505,7 +533,7 @@ export const LivePreview = ({ data }) => {
                         </tr>
                         <tr>
                           <td
-                            className="p-2 border bg-[#fbf8f1] text-[#475569]"
+                            className="p-2 border text-[#475569]"
                             style={{ borderColor: `${selectedStyle.accent}44` }}
                           >
                             التاريخ
@@ -519,7 +547,7 @@ export const LivePreview = ({ data }) => {
                         </tr>
                         <tr>
                           <td
-                            className="p-2 border bg-[#fbf8f1] text-[#475569]"
+                            className="p-2 border text-[#475569]"
                             style={{ borderColor: `${selectedStyle.accent}44` }}
                           >
                             رقم المرجع
@@ -536,7 +564,7 @@ export const LivePreview = ({ data }) => {
                   </div>
                 </header>
 
-                <main>
+                <main className="relative z-10 bg-white/40 backdrop-blur-sm p-4 rounded-xl border border-white/50">
                   <section className="mb-6">
                     <h4
                       className="mb-2 text-[14px] font-black"
@@ -557,18 +585,16 @@ export const LivePreview = ({ data }) => {
                       السلام عليكم ورحمة الله وبركاته ،،،
                     </p>
 
-                    {/* 🚀 النص الافتتاحي المدمج فيه تفاصيل القطع */}
                     <div
                       contentEditable={isEditMode}
                       suppressContentEditableWarning
                       style={{ letterSpacing: "normal", wordSpacing: "normal" }}
-                      className={`text-right text-[12px] font-bold leading-[1.8] text-[#475569] ${isEditMode ? "rounded-xl border border-dashed border-amber-300 bg-amber-50/70 p-2 outline-none" : ""}`}
+                      className={`text-right text-[12px] font-bold leading-[1.8] text-[#475569] ${isEditMode ? "rounded-xl border border-dashed border-amber-300 bg-amber-50/90 p-2 outline-none" : ""}`}
                     >
                       {introText}
                     </div>
                   </section>
 
-                  {/* نطاق العمل والتكاليف */}
                   <section className="mb-6">
                     <div
                       className="mb-3 flex items-center gap-2 text-[14px] font-black"
@@ -579,7 +605,7 @@ export const LivePreview = ({ data }) => {
                     </div>
 
                     <table
-                      className="w-full border-collapse text-center text-[11px]"
+                      className="w-full border-collapse text-center text-[11px] bg-white/70 backdrop-blur-sm"
                       style={{ border: `1px solid ${selectedStyle.accent}` }}
                     >
                       <thead>
@@ -643,12 +669,7 @@ export const LivePreview = ({ data }) => {
                           </tr>
                         ) : (
                           items.map((item, index) => (
-                            <tr
-                              key={item.id || index}
-                              className={
-                                index % 2 === 0 ? "bg-white" : "bg-[#fbf8f1]"
-                              }
-                            >
+                            <tr key={item.id || index}>
                               <td
                                 className="p-2.5 font-mono"
                                 style={{
@@ -695,8 +716,7 @@ export const LivePreview = ({ data }) => {
                             </tr>
                           ))
                         )}
-                        {/* مجاميع */}
-                        <tr className="bg-[#fbf8f1]">
+                        <tr>
                           <td
                             colSpan={showQuantity ? "4" : "3"}
                             className="p-3 text-left font-black"
@@ -763,7 +783,6 @@ export const LivePreview = ({ data }) => {
                     </table>
                   </section>
 
-                  {/* الدفعات */}
                   {paymentsList.length > 0 && (
                     <section className="mb-6">
                       <h4
@@ -776,7 +795,7 @@ export const LivePreview = ({ data }) => {
                         {paymentsList.map((payment, index) => (
                           <div
                             key={payment.id || index}
-                            className="rounded-xl border border-[#d8b46a]/25 bg-[#fbf8f1] p-3 text-[11px] font-bold text-[#475569]"
+                            className="rounded-xl border border-[#d8b46a]/25 bg-white/70 backdrop-blur-sm p-3 text-[11px] font-bold text-[#475569]"
                           >
                             <div className="flex justify-between gap-2">
                               <span className="font-black text-[#123f59]">
@@ -806,19 +825,17 @@ export const LivePreview = ({ data }) => {
                       contentEditable={isEditMode}
                       suppressContentEditableWarning
                       style={{ letterSpacing: "normal", wordSpacing: "normal" }}
-                      className={`whitespace-pre-line text-right text-[11px] font-bold leading-[1.8] text-[#475569] ${isEditMode ? "rounded-xl border border-dashed border-amber-300 bg-amber-50/70 p-2 outline-none" : ""}`}
+                      className={`whitespace-pre-line text-right text-[11px] font-bold leading-[1.8] text-[#475569] ${isEditMode ? "rounded-xl border border-dashed border-amber-300 bg-amber-50/90 p-2 outline-none" : ""}`}
                     >
                       {termsText || "لم يتم إدراج شروط وأحكام."}
                     </div>
                   </section>
 
-                  {/* 🚀 قسم التواقيع المتطور */}
                   <section
                     className="mt-12"
                     style={{ pageBreakInside: "avoid" }}
                   >
                     <div className="grid grid-cols-2 gap-8 text-center mb-10">
-                      {/* توقيع العميل / المفوض */}
                       <div>
                         <p
                           className="mb-6 text-[12px] font-black"
@@ -828,7 +845,6 @@ export const LivePreview = ({ data }) => {
                             ? "توقيع العميل / المالك"
                             : "توقيع المفوض عن العميل"}
                         </p>
-
                         {!isIndividual && (
                           <div className="mb-6 text-[10px] text-[#475569] flex flex-col gap-2 items-center">
                             <div className="flex gap-1.5 items-center">
@@ -850,11 +866,8 @@ export const LivePreview = ({ data }) => {
                           </div>
                         )}
                         {isIndividual && <div className="mb-12"></div>}
-
                         <div className="mx-auto w-3/4 border-b-2 border-dashed border-[#d8b46a]/60" />
                       </div>
-
-                      {/* توقيع مقدم الخدمة */}
                       <div>
                         <p
                           className="mb-2 text-[12px] font-black"
@@ -870,9 +883,7 @@ export const LivePreview = ({ data }) => {
                         <div className="mx-auto w-3/4 border-b-2 border-dashed border-[#d8b46a]/60" />
                       </div>
                     </div>
-
-                    {/* ممثل الخدمة (الموظف) */}
-                    <div className="text-center mt-6 pt-6 border-t border-slate-100">
+                    <div className="text-center mt-6 pt-6 border-t border-slate-200">
                       <p
                         className="mb-6 text-[12px] font-black"
                         style={{ color: selectedStyle.accent }}
@@ -885,7 +896,7 @@ export const LivePreview = ({ data }) => {
                           <span
                             contentEditable={isEditMode}
                             suppressContentEditableWarning
-                            className={`inline-block min-w-[140px] border-b border-dashed border-slate-300 font-bold ${isEditMode ? "bg-amber-50 outline-none" : ""}`}
+                            className={`inline-block min-w-[140px] border-b border-dashed border-slate-400 font-bold ${isEditMode ? "bg-amber-50 outline-none" : ""}`}
                           >
                             {employeeName}
                           </span>
@@ -895,7 +906,7 @@ export const LivePreview = ({ data }) => {
                           <span
                             contentEditable={isEditMode}
                             suppressContentEditableWarning
-                            className={`inline-block min-w-[120px] border-b border-dashed border-slate-300 font-bold ${isEditMode ? "bg-amber-50 outline-none" : ""}`}
+                            className={`inline-block min-w-[120px] border-b border-dashed border-slate-400 font-bold ${isEditMode ? "bg-amber-50 outline-none" : ""}`}
                           >
                             مُعد العرض
                           </span>
