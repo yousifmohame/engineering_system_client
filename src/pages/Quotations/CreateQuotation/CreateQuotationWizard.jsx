@@ -103,7 +103,7 @@ const CreateQuotationWizard = (incomingProps) => {
   const [acceptedMethods, setAcceptedMethods] = useState(["bank"]);
 
   const [missingDocs, setMissingDocs] = useState("");
-  const [showMissingDocs, setShowMissingDocs] = useState(false);
+  const [showMissingDocs, setShowMissingDocs] = useState(true);
 
   const [ownerAttachments, setOwnerAttachments] = useState([]);
 
@@ -626,6 +626,8 @@ const CreateQuotationWizard = (incomingProps) => {
       propertiesData?.find((p) => p.id === selectedProperty)?.code ||
       existingQuote?.ownership?.code ||
       "الملكية...",
+
+    deedNumber: selectedPropertyDetails?.deedNumber || existingQuote?.ownership?.deedNumber || "",
     transactionType,
     licenseNumber,
     licenseYear,
