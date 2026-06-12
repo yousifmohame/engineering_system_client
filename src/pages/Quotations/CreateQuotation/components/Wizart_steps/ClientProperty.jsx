@@ -8,51 +8,24 @@ import {
   MapPin,
   FolderOpen,
   ClipboardList,
-  CalendarDays,
   CheckCircle2,
   PlusCircle,
   List,
   X,
+  Scale,
+  ShieldAlert,
+  FileSignature,
+  FileText,
 } from "lucide-react";
 import { getClientName } from "../../utils/quotationConstants";
 
-// 🚨 التأكد من مسارات الاستيراد
+// 🚨 التأكد من مسارات الاستيراد لديك
 import NewPropertyWizard from "../../../../Property/components/NewPropertyWizard";
 import CreateClientPanel from "../../../../Clients/screens/CreateClientPanel";
 
-const IconWithText = ({
-  icon: Icon,
-  text,
-  className = "",
-  iconClassName = "",
-  textClassName = "",
-  vertical = false,
-}) => {
-  return (
-    <span
-      className={`
-        inline-flex min-w-0 items-center justify-center
-        ${vertical ? "flex-col gap-0.5" : "gap-1.5"}
-        ${className}
-      `}
-    >
-      {Icon && <Icon className={iconClassName || "h-4 w-4 shrink-0"} />}
-      {text && (
-        <span
-          className={
-            textClassName ||
-            "min-w-0 break-words text-[10px] font-black leading-tight"
-          }
-        >
-          {text}
-        </span>
-      )}
-    </span>
-  );
-};
-
 export const Step0ClientProperty = ({ props }) => {
   const {
+    // 📦 الـ Props الأساسية
     selectedClient,
     setSelectedClient,
     selectedProperty,
@@ -77,461 +50,534 @@ export const Step0ClientProperty = ({ props }) => {
     setMeetingSearch,
     meetingsData,
     meetingsLoading,
+
+    // 🆕 الـ Props الجديدة للتمثيل النظامي (أضفها في المكون الأب)
+    clientType = "فرد",
+    setClientType,
+    signatureMethod = "SELF",
+    setSignatureMethod,
+    repName,
+    setRepName,
+    repIdNumber,
+    setRepIdNumber,
+    repPhone,
+    setRepPhone,
+    repCapacity,
+    setRepCapacity,
+    authDocType,
+    setAuthDocType,
+    authDocNumber,
+    setAuthDocNumber,
+    authDocDate,
+    setAuthDocDate,
   } = props;
 
-  // 🚀 حالات فتح النوافذ المنبثقة
   const [isDeedModalOpen, setIsDeedModalOpen] = useState(false);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
 
+  // تنسيق سكرول بار مخصص
+  const scrollbarClasses = `
+    [&::-webkit-scrollbar]:w-1.5
+    [&::-webkit-scrollbar-track]:bg-slate-50
+    [&::-webkit-scrollbar-track]:rounded-full
+    [&::-webkit-scrollbar-thumb]:bg-slate-200
+    [&::-webkit-scrollbar-thumb]:rounded-full
+    hover:[&::-webkit-scrollbar-thumb]:bg-slate-300
+    transition-all
+  `;
+
+  // 🧠 دالة ذكية لإرجاع المستندات المطلوبة حسب نوع العميل
+  const getRequiredDocumentsTip = (type) => {
+    switch (type) {
+      case "ورثة":
+        return "المستندات المطلوبة: صك حصر الورثة، وكالة شرعية من جميع الورثة، وهوية الوكيل/الممثل.";
+      case "شركة_مؤسسة":
+        return "المستندات المطلوبة: السجل التجاري ساري المفعول، هوية المفوض، خطاب تفويض أو قرار مديرين يثبت صلاحية التوقيع.";
+      case "وقف":
+        return "المستندات المطلوبة: صك الوقف، صك نظارة ساري، وهوية ناظر الوقف.";
+      case "جهة_حكومية":
+        return "المستندات المطلوبة: خطاب تفويض رسمي أو تعميد من الإدارة المختصة يوضح صفة وصلاحية المفوض.";
+      case "فرد":
+      default:
+        return "المستندات المطلوبة: هوية المالك، أو وكالة شرعية سارية في حال كان الموقّع وكيلًا.";
+    }
+  };
+
   return (
     <>
-      <div className="animate-in fade-in duration-300 flex flex-col h-full text-[#123f59]">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {/* ========================================== */}
-          {/* 1️⃣ اختيار/إضافة الملكية (المشروع) */}
-          {/* ========================================== */}
-          <div className="bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] relative overflow-hidden flex flex-col min-h-[230px]">
-            <div className="absolute top-0 bottom-0 right-0 w-1 bg-cyan-500"></div>
-
-            <div className="flex min-w-0 justify-between items-center mb-2.5 pl-1">
-              <div className="text-xs font-bold text-[#475569] flex min-w-0 items-center gap-1.5">
-                <IconWithText
-                  icon={Building}
-                  iconClassName="w-3.5 h-3.5 text-cyan-500"
+      <div className="animate-in fade-in duration-300 flex flex-col h-full text-[#123f59] overflow-y-auto pr-1 pb-4 custom-scrollbar-slim">
+        {/* ========================================== */}
+        {/* 🌟 الصف الأول: اختيار الملكية والعميل */}
+        {/* ========================================== */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          {/* 1️⃣ كارت بيانات المشروع / الملكية (نفس الكود السابق) */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative flex flex-col h-[280px] overflow-hidden group">
+            <div className="absolute right-0 top-0 bottom-0 w-1 bg-cyan-500 transition-all group-hover:w-1.5"></div>
+            <div className="p-3.5 flex flex-col h-full">
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-cyan-50 rounded-lg">
+                    <Building className="w-4 h-4 text-cyan-600" />
+                  </div>
+                  <h3 className="text-xs font-bold text-slate-700">
+                    بيانات المشروع / الملكية{" "}
+                    <span className="text-red-500">*</span>
+                  </h3>
+                </div>
+                <div className="flex bg-slate-100 rounded-lg p-0.5">
+                  <button
+                    onClick={() => setIsDeedModalOpen(true)}
+                    className="px-2.5 py-1 text-[10px] font-bold rounded-md flex items-center gap-1 text-slate-500 hover:text-cyan-700 hover:bg-cyan-50 transition-colors"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" /> جديد
+                  </button>
+                </div>
+              </div>
+              <div className="relative mb-3 shrink-0">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={propertySearch}
+                  onChange={(e) => setPropertySearch(e.target.value)}
+                  placeholder="ابحث برقم الصك، أو كود المشروع..."
+                  className="w-full py-2 pr-9 pl-3 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 bg-slate-50/50"
                 />
-                بيانات المشروع / الملكية <span className="text-red-500">*</span>
               </div>
-
-              {/* أزرار الإجراءات */}
-              <div className="flex bg-slate-100 rounded-lg p-0.5">
-                <button className="px-2 py-1 text-[9px] font-bold rounded-md flex items-center gap-1 transition-all bg-white shadow-sm text-cyan-700 cursor-default">
-                  <List className="w-3 h-3" /> بحث
-                </button>
-                <button
-                  onClick={() => setIsDeedModalOpen(true)}
-                  className="px-2 py-1 text-[9px] font-bold rounded-md flex items-center gap-1 transition-all text-slate-500 hover:text-cyan-700 hover:bg-slate-200"
-                >
-                  <PlusCircle className="w-3 h-3" /> جديد
-                </button>
-              </div>
-            </div>
-
-            {/* مربع البحث وعرض النتائج */}
-            <div className="relative mb-2">
-              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#94a3b8]" />
-              <input
-                type="text"
-                value={propertySearch}
-                onChange={(e) => setPropertySearch(e.target.value)}
-                placeholder="بحث برقم الصك، الكود..."
-                className="w-full py-1.5 pr-8 pl-2 border border-[#d8b46a]/25 rounded-xl text-[11px] focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
-              />
-            </div>
-
-            <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim pr-1 flex flex-col gap-1.5 h-[150px]">
-              {propertiesLoading ? (
-                <div className="m-auto">
-                  <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
-                </div>
-              ) : propertiesData?.length > 0 ? (
-                propertiesData.map((prop) => {
-                  const isSelected = selectedProperty === prop.id;
-                  return (
-                    <div
-                      key={prop.id}
-                      onClick={() => {
-                        setSelectedProperty(prop.id);
-                        const relatedClientId =
-                          prop.clientId || prop.client?.id;
-                        if (relatedClientId) setSelectedClient(relatedClientId);
-                      }}
-                      className={`flex flex-col p-2 rounded-xl cursor-pointer border transition-all ${
-                        isSelected
-                          ? "border-cyan-400 bg-cyan-50/50 shadow-[0_8px_22px_rgba(18,63,89,0.06)]"
-                          : "border-[#e8ddc8] bg-white hover:border-cyan-200"
-                      }`}
-                    >
-                      <div className="flex min-w-0 justify-between items-center mb-1">
-                        <div className="flex min-w-0 items-center gap-1.5">
-                          {isSelected ? (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-cyan-600" />
-                          ) : (
-                            <div className="w-3.5 h-3.5 rounded-full border border-[#d8b46a]/25" />
-                          )}
-                          <span
-                            className={`font-bold text-[11px] ${isSelected ? "text-cyan-800" : "text-[#475569]"}`}
-                          >
-                            {prop.code}
-                          </span>
-                        </div>
-                        <span className="font-mono text-[9px] text-[#64748b] px-1.5 py-0.5 rounded border border-[#e8ddc8] bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white">
-                          صك: {prop.deedNumber || "—"}
-                        </span>
-                      </div>
-                      {prop.district && (
-                        <div className="text-[9.5px] text-[#64748b] flex min-w-0 items-center gap-1 mr-5">
-                          <MapPin className="w-2.5 h-2.5" /> {prop.city} -{" "}
-                          {prop.district}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="text-[10px] text-[#94a3b8] text-center mt-4">
-                  لا توجد ملكيات مطابقة
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ========================================== */}
-          {/* 2️⃣ اختيار/إضافة العميل (صاحب العلاقة) */}
-          {/* ========================================== */}
-          <div className="bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] relative overflow-hidden flex flex-col min-h-[230px]">
-            <div className="absolute top-0 bottom-0 right-0 w-1 bg-[#0e7490]"></div>
-
-            <div className="flex min-w-0 justify-between items-center mb-2.5 pl-1">
-              <div className="text-xs font-bold text-[#475569] flex min-w-0 items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-[#0e7490]" />
-                بيانات المالك (صاحب العلاقة){" "}
-                <span className="text-red-500">*</span>
-              </div>
-
-              <div className="flex bg-slate-100 rounded-lg p-0.5">
-                <button className="px-2 py-1 text-[9px] font-bold rounded-md flex items-center gap-1 transition-all bg-white shadow-sm text-[#0e7490] cursor-default">
-                  <List className="w-3 h-3" /> بحث
-                </button>
-                <button
-                  onClick={() => setIsClientModalOpen(true)}
-                  className="px-2 py-1 text-[9px] font-bold rounded-md flex items-center gap-1 transition-all text-slate-500 hover:text-[#0e7490] hover:bg-slate-200"
-                >
-                  <PlusCircle className="w-3 h-3" /> جديد
-                </button>
-              </div>
-            </div>
-
-            {/* مربع البحث وعرض النتائج */}
-            <div className="relative mb-2">
-              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#94a3b8]" />
-              <input
-                type="text"
-                value={clientSearch}
-                onChange={(e) => setClientSearch(e.target.value)}
-                placeholder="بحث بالاسم، الهوية، الجوال..."
-                className="w-full py-1.5 pr-8 pl-2 border border-[#d8b46a]/25 rounded-xl text-[11px] focus:outline-none focus:border-[#c5983c]/70 focus:ring-1 focus:ring-[#d8b46a]/25 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
-              />
-            </div>
-
-            <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim pr-1 flex flex-col gap-1.5 h-[150px]">
-              {clientsLoading ? (
-                <div className="m-auto">
-                  <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-                </div>
-              ) : clientsData?.length > 0 ? (
-                clientsData.map((client) => {
-                  const isSelected = selectedClient === client.id;
-                  return (
-                    <div
-                      key={client.id}
-                      onClick={() => setSelectedClient(client.id)}
-                      className={`flex flex-col p-2 rounded-xl cursor-pointer border transition-all ${
-                        isSelected
-                          ? "border-blue-400 bg-[#eef7f6]/50 shadow-[0_8px_22px_rgba(18,63,89,0.06)]"
-                          : "border-[#e8ddc8] bg-white hover:border-[#d8b46a]/35"
-                      }`}
-                    >
-                      <div className="flex min-w-0 justify-between items-center mb-1">
-                        <div className="flex min-w-0 items-center gap-1.5">
-                          {isSelected ? (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-[#123f59]" />
-                          ) : (
-                            <div className="w-3.5 h-3.5 rounded-full border border-[#d8b46a]/25" />
-                          )}
-                          <span
-                            className={`font-bold text-[11px] ${isSelected ? "text-[#123f59]" : "text-[#475569]"}`}
-                          >
-                            {getClientName(client)}
-                          </span>
-                        </div>
-                        <span className="font-mono text-[9px] text-[#64748b] px-1.5 py-0.5 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded border border-[#e8ddc8]">
-                          {client.clientCode}
-                        </span>
-                      </div>
-                      {(client.idNumber || client.mobile) && (
-                        <div className="text-[9.5px] text-[#64748b] flex gap-2 mr-5">
-                          {client.idNumber && (
-                            <span>هوية: {client.idNumber}</span>
-                          )}
-                          {client.mobile && (
-                            <span className="dir-ltr text-left">
-                              {client.mobile}
+              <div
+                className={`flex-1 overflow-y-auto pr-1 flex flex-col gap-2 ${scrollbarClasses}`}
+              >
+                {propertiesLoading ? (
+                  <div className="flex-1 flex items-center justify-center text-slate-400">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  </div>
+                ) : (
+                  propertiesData?.map((prop) => {
+                    const isSelected = selectedProperty === prop.id;
+                    return (
+                      <div
+                        key={prop.id}
+                        onClick={() => {
+                          setSelectedProperty(prop.id);
+                          if (prop.clientId) setSelectedClient(prop.clientId);
+                        }}
+                        className={`flex flex-col p-2.5 rounded-lg cursor-pointer border transition-all ${isSelected ? "border-cyan-500 bg-cyan-50/50 shadow-sm" : "border-slate-100 hover:border-cyan-200"}`}
+                      >
+                        <div className="flex justify-between items-center mb-1.5">
+                          <div className="flex items-center gap-2">
+                            {isSelected ? (
+                              <CheckCircle2 className="w-4 h-4 text-cyan-600" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border-2 border-slate-200" />
+                            )}
+                            <span className="font-bold text-xs">
+                              {prop.code}
                             </span>
-                          )}
+                          </div>
+                          <span className="text-[10px] text-slate-500 bg-white border px-1.5 rounded">
+                            صك: {prop.deedNumber || "—"}
+                          </span>
                         </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="text-[10px] text-[#94a3b8] text-center mt-4">
-                  لا يوجد عملاء مطابقين
-                </div>
-              )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
 
-          {/* ========================================== */}
-          {/* 3️⃣ اختيار المعاملة (اختياري) */}
-          {/* ========================================== */}
-          <div className="bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] relative overflow-hidden flex flex-col h-[180px]">
-            <div className="absolute top-0 bottom-0 right-0 w-1 bg-purple-500"></div>
-
-            <div className="flex min-w-0 justify-between items-center mb-2.5 pl-1">
-              <div className="text-[11px] font-bold text-[#475569] flex min-w-0 items-center gap-1.5">
-                <FolderOpen className="w-3.5 h-3.5 text-purple-500" /> ربط
-                بمعاملة قائمة
+          {/* 2️⃣ كارت بيانات المالك (العميل) */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative flex flex-col h-[280px] overflow-hidden group">
+            <div className="absolute right-0 top-0 bottom-0 w-1 bg-blue-600 transition-all group-hover:w-1.5"></div>
+            <div className="p-3.5 flex flex-col h-full">
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-blue-50 rounded-lg">
+                    <Users className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <h3 className="text-xs font-bold text-slate-700">
+                    بيانات المالك (العميل){" "}
+                    <span className="text-red-500">*</span>
+                  </h3>
+                </div>
+                <div className="flex bg-slate-100 rounded-lg p-0.5">
+                  <button
+                    onClick={() => setIsClientModalOpen(true)}
+                    className="px-2.5 py-1 text-[10px] font-bold rounded-md flex items-center gap-1 text-slate-500 hover:text-blue-700 hover:bg-blue-50 transition-colors"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" /> جديد
+                  </button>
+                </div>
               </div>
-              <span className="text-[8px] font-bold px-1.5 py-0.5 bg-[#fbf8f1] text-[#64748b] rounded">
-                اختياري
-              </span>
-            </div>
-
-            <div className="relative mb-2">
-              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#94a3b8]" />
-              <input
-                type="text"
-                value={transactionSearch || ""}
-                onChange={(e) =>
-                  setTransactionSearch && setTransactionSearch(e.target.value)
-                }
-                placeholder="بحث برقم المعاملة، الوصف..."
-                className="w-full py-1.5 pr-8 pl-2 border border-[#d8b46a]/25 rounded-xl text-[10px] focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
-              />
-            </div>
-
-            <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim pr-1 flex flex-col gap-1">
-              {transactionsLoading ? (
-                <div className="m-auto">
-                  <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
-                </div>
-              ) : transactionsData?.length > 0 ? (
-                transactionsData.map((txn) => {
-                  const isSelected = selectedTransaction === txn.id;
-                  return (
-                    <div
-                      key={txn.id}
-                      onClick={() =>
-                        setSelectedTransaction && setSelectedTransaction(txn.id)
-                      }
-                      className={`flex min-w-0 justify-between items-center p-2 rounded-xl cursor-pointer border transition-all ${
-                        isSelected
-                          ? "border-purple-400 bg-purple-50/50 shadow-[0_8px_22px_rgba(18,63,89,0.06)]"
-                          : "border-[#e8ddc8] bg-white hover:border-purple-200"
-                      }`}
-                    >
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        {isSelected ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />
-                        ) : (
-                          <div className="w-3.5 h-3.5 rounded-full border border-[#d8b46a]/25" />
-                        )}
-                        <span
-                          className={`font-bold text-[10px] truncate max-w-[140px] ${isSelected ? "text-purple-800" : "text-[#475569]"}`}
-                        >
-                          {txn.client || txn.description || "معاملة بدون وصف"}
-                        </span>
-                      </div>
-                      <span className="font-mono text-[8px] text-[#64748b] px-1 py-0.5 rounded border border-[#e8ddc8] bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white">
-                        {txn.referenceNumber || txn.ref}
-                      </span>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="text-[9px] text-[#94a3b8] text-center mt-4">
-                  لا توجد معاملات مطابقة
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ========================================== */}
-          {/* 4️⃣ اختيار محضر الاجتماع (اختياري) */}
-          {/* ========================================== */}
-          <div className="bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] relative overflow-hidden flex flex-col h-[180px]">
-            <div className="absolute top-0 bottom-0 right-0 w-1 bg-amber-500"></div>
-
-            <div className="flex min-w-0 justify-between items-center mb-2.5 pl-1">
-              <div className="text-[11px] font-bold text-[#475569] flex min-w-0 items-center gap-1.5">
-                <ClipboardList className="w-3.5 h-3.5 text-amber-500" />{" "}
-                الاستناد لمحضر اجتماع
+              <div className="relative mb-3 shrink-0">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={clientSearch}
+                  onChange={(e) => setClientSearch(e.target.value)}
+                  placeholder="ابحث بالاسم، الهوية، الجوال..."
+                  className="w-full py-2 pr-9 pl-3 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 bg-slate-50/50"
+                />
               </div>
-              <span className="text-[8px] font-bold px-1.5 py-0.5 bg-[#fbf8f1] text-[#64748b] rounded">
-                اختياري
-              </span>
-            </div>
-
-            <div className="relative mb-2">
-              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#94a3b8]" />
-              <input
-                type="text"
-                value={meetingSearch || ""}
-                onChange={(e) =>
-                  setMeetingSearch && setMeetingSearch(e.target.value)
-                }
-                placeholder="بحث بعنوان المحضر، التاريخ..."
-                className="w-full py-1.5 pr-8 pl-2 border border-[#d8b46a]/25 rounded-xl text-[10px] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-200 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
-              />
-            </div>
-
-            <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim pr-1 flex flex-col gap-1">
-              {meetingsLoading ? (
-                <div className="m-auto">
-                  <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
-                </div>
-              ) : meetingsData?.length > 0 ? (
-                meetingsData.map((meeting) => {
-                  const isSelected = selectedMeeting === meeting.id;
-                  return (
-                    <div
-                      key={meeting.id}
-                      onClick={() =>
-                        setSelectedMeeting && setSelectedMeeting(meeting.id)
-                      }
-                      className={`flex min-w-0 justify-between items-center p-2 rounded-xl cursor-pointer border transition-all ${
-                        isSelected
-                          ? "border-amber-400 bg-amber-50/50 shadow-[0_8px_22px_rgba(18,63,89,0.06)]"
-                          : "border-[#e8ddc8] bg-white hover:border-amber-200"
-                      }`}
-                    >
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        {isSelected ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
-                        ) : (
-                          <div className="w-3.5 h-3.5 rounded-full border border-[#d8b46a]/25" />
-                        )}
-                        <span
-                          className={`font-bold text-[10px] truncate max-w-[140px] ${isSelected ? "text-amber-800" : "text-[#475569]"}`}
-                        >
-                          {meeting.title || "محضر اجتماع"}
-                        </span>
+              <div
+                className={`flex-1 overflow-y-auto pr-1 flex flex-col gap-2 ${scrollbarClasses}`}
+              >
+                {clientsLoading ? (
+                  <div className="flex-1 flex items-center justify-center text-slate-400">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  </div>
+                ) : (
+                  clientsData?.map((client) => {
+                    const isSelected = selectedClient === client.id;
+                    return (
+                      <div
+                        key={client.id}
+                        onClick={() => setSelectedClient(client.id)}
+                        className={`flex flex-col p-2.5 rounded-lg cursor-pointer border transition-all ${isSelected ? "border-blue-500 bg-blue-50/50 shadow-sm" : "border-slate-100 hover:border-blue-200"}`}
+                      >
+                        <div className="flex justify-between items-center mb-1.5">
+                          <div className="flex items-center gap-2">
+                            {isSelected ? (
+                              <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border-2 border-slate-200" />
+                            )}
+                            <span className="font-bold text-xs">
+                              {getClientName(client)}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 bg-white border px-1.5 rounded">
+                            {client.clientCode}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex min-w-0 items-center gap-1 text-[8px] text-[#64748b] font-mono bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white px-1 py-0.5 border border-[#e8ddc8] rounded">
-                        <CalendarDays className="w-2.5 h-2.5" />
-                        {meeting.meetingDate
-                          ? new Date(meeting.meetingDate).toLocaleDateString(
-                              "ar-SA",
-                            )
-                          : "---"}
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="text-[9px] text-[#94a3b8] text-center mt-4">
-                  {selectedClient
-                    ? "لا توجد محاضر لهذا العميل"
-                    : "حدد العميل أولاً"}
-                </div>
-              )}
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* 💡 نصيحة السفلية */}
-        <div className="mt-3 p-2.5 bg-gradient-to-r from-slate-50 to-indigo-50/50 border border-indigo-100/50 rounded-xl flex min-w-0 items-center gap-2.5 text-[10.5px] text-indigo-800">
-          <Sparkles className="w-4 h-4 text-indigo-500 shrink-0" />
-          <div>
-            <strong className="font-bold mr-1">تلميح ذكي:</strong>
-            يمكنك الآن{" "}
-            <span className="text-cyan-600 font-bold">
-              إضافة عميل أو مشروع جديد
-            </span>{" "}
-            مباشرة عبر النقر على زر "جديد" ليتم حفظه واستخدامه في عروض الأسعار
-            والمعاملات الأخرى.
+        {/* ========================================== */}
+        {/* 🌟 الصف الثاني: الصفة النظامية والتمثيل القانوني (الجزء الجديد بالكامل) */}
+        {/* ========================================== */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm relative overflow-hidden mb-4 group">
+          <div className="absolute right-0 top-0 bottom-0 w-1 bg-emerald-500 transition-all group-hover:w-1.5"></div>
+
+          <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-emerald-50 rounded-lg">
+                <Scale className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-slate-700">
+                  الصفة النظامية والتمثيل بالتوقيع
+                </h3>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  تحديد نوع العميل ومن يحق له التوقيع على هذا العرض/العقد
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 flex flex-col gap-4">
+            {/* نوع العميل وطريقة التوقيع */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                  نوع العميل <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={clientType}
+                  onChange={(e) => {
+                    if (setClientType) setClientType(e.target.value);
+                    // تصفير بيانات التفويض إذا تغير النوع للفرد
+                    if (e.target.value === "فرد" && setSignatureMethod)
+                      setSignatureMethod("SELF");
+                  }}
+                  className="w-full p-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                >
+                  <option value="فرد">فرد</option>
+                  <option value="شركة_مؤسسة">شركة / مؤسسة</option>
+                  <option value="ورثة">ورثة</option>
+                  <option value="وقف">وقف</option>
+                  <option value="جهة_حكومية">جهة حكومية</option>
+                  <option value="جمعية">جمعية / كيان غير ربحي</option>
+                  <option value="اخرى">كيان آخر</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                  طريقة التوقيع والاعتماد{" "}
+                  <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <FileSignature className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <select
+                    value={signatureMethod}
+                    onChange={(e) =>
+                      setSignatureMethod && setSignatureMethod(e.target.value)
+                    }
+                    className="w-full py-2 pr-9 pl-3 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                  >
+                    <option value="SELF">المالك سيوقع بنفسه</option>
+                    <option value="AGENT">وكيل عن المالك بموجب وكالة</option>
+                    <option value="MANAGER">المدير العام / مفوض إداري</option>
+                    <option value="HEIRS_REP">ممثل ومفوض عن الورثة</option>
+                    <option value="WAQF_NAZER">ناظر الوقف</option>
+                    <option value="GOV_REP">مفوض عن جهة حكومية</option>
+                    <option value="OTHER">شخص آخر له صفة نظامية</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* 🚨 عرض صندوق المستندات الإرشادية */}
+            <div className="bg-emerald-50/50 border border-emerald-100 rounded-lg p-3 flex gap-3 items-start">
+              <ShieldAlert className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-[11px] font-bold text-emerald-800 mb-0.5">
+                  المستندات المؤيدة للتمثيل النظامي ({clientType})
+                </p>
+                <p className="text-[10px] text-emerald-700 leading-relaxed">
+                  {getRequiredDocumentsTip(clientType)}
+                </p>
+              </div>
+            </div>
+
+            {/* 📄 حقول المفوض (تظهر فقط إذا كان التوقيع لغير المالك) */}
+            {signatureMethod !== "SELF" && (
+              <div className="mt-2 pt-4 border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
+                <h4 className="text-[11px] font-bold text-slate-800 mb-3 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-slate-500" /> بيانات
+                  الممثل النظامي / المفوض بالتوقيع
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                      الاسم الرباعي للمفوض
+                    </label>
+                    <input
+                      type="text"
+                      value={repName}
+                      onChange={(e) => setRepName && setRepName(e.target.value)}
+                      placeholder="اسم الموقّع..."
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                      رقم الهوية / الإقامة
+                    </label>
+                    <input
+                      type="text"
+                      value={repIdNumber}
+                      onChange={(e) =>
+                        setRepIdNumber && setRepIdNumber(e.target.value)
+                      }
+                      placeholder="رقم الهوية الوطنية..."
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                      الصفة بالتحديد
+                    </label>
+                    <input
+                      type="text"
+                      value={repCapacity}
+                      onChange={(e) =>
+                        setRepCapacity && setRepCapacity(e.target.value)
+                      }
+                      placeholder="مثال: وكيل شرعي، مدير عام..."
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                      نوع مستند التفويض
+                    </label>
+                    <input
+                      type="text"
+                      value={authDocType}
+                      onChange={(e) =>
+                        setAuthDocType && setAuthDocType(e.target.value)
+                      }
+                      placeholder="مثال: وكالة، قرار، صك نظارة..."
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                      رقم المستند
+                    </label>
+                    <input
+                      type="text"
+                      value={authDocNumber}
+                      onChange={(e) =>
+                        setAuthDocNumber && setAuthDocNumber(e.target.value)
+                      }
+                      placeholder="رقم الوكالة أو القرار..."
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                      تاريخ إصدار المستند
+                    </label>
+                    <input
+                      type="date"
+                      value={authDocDate}
+                      onChange={(e) =>
+                        setAuthDocDate && setAuthDocDate(e.target.value)
+                      }
+                      className="w-full p-2 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white transition-colors"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ========================================== */}
+        {/* 🌟 الصف الثالث: المعاملات ومحاضر الاجتماعات (اختياري) */}
+        {/* ========================================== */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* كارت المعاملات */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm relative flex flex-col h-[200px] overflow-hidden group">
+            <div className="absolute right-0 top-0 bottom-0 w-1 bg-purple-500 transition-all group-hover:w-1.5"></div>
+            <div className="p-3.5 flex flex-col h-full">
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-purple-50 rounded-lg">
+                    <FolderOpen className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <h3 className="text-xs font-bold text-slate-700">
+                    ربط بمعاملة قائمة
+                  </h3>
+                </div>
+                <span className="text-[9px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded">
+                  اختياري
+                </span>
+              </div>
+              <div className="relative mb-2 shrink-0">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={transactionSearch || ""}
+                  onChange={(e) =>
+                    setTransactionSearch && setTransactionSearch(e.target.value)
+                  }
+                  placeholder="بحث برقم المعاملة..."
+                  className="w-full py-1.5 pr-9 pl-3 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-purple-500 bg-slate-50/50"
+                />
+              </div>
+              <div
+                className={`flex-1 overflow-y-auto pr-1 flex flex-col gap-1.5 ${scrollbarClasses}`}
+              >
+                {/* كود عرض المعاملات كما هو في نسختك */}
+                {transactionsData?.map((txn) => (
+                  <div
+                    key={txn.id}
+                    onClick={() =>
+                      setSelectedTransaction && setSelectedTransaction(txn.id)
+                    }
+                    className={`flex justify-between items-center p-2 rounded-lg cursor-pointer border ${selectedTransaction === txn.id ? "border-purple-500 bg-purple-50/50" : "border-slate-100 hover:border-purple-200"}`}
+                  >
+                    <span className="font-bold text-[10px] truncate">
+                      {txn.client || txn.description || "معاملة بدون وصف"}
+                    </span>
+                    <span className="font-mono text-[9px] text-slate-500">
+                      {txn.referenceNumber || txn.ref}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* كارت محاضر الاجتماع */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm relative flex flex-col h-[200px] overflow-hidden group">
+            <div className="absolute right-0 top-0 bottom-0 w-1 bg-amber-500 transition-all group-hover:w-1.5"></div>
+            <div className="p-3.5 flex flex-col h-full">
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-amber-50 rounded-lg">
+                    <ClipboardList className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <h3 className="text-xs font-bold text-slate-700">
+                    الاستناد لمحضر اجتماع
+                  </h3>
+                </div>
+                <span className="text-[9px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded">
+                  اختياري
+                </span>
+              </div>
+              <div className="relative mb-2 shrink-0">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={meetingSearch || ""}
+                  onChange={(e) =>
+                    setMeetingSearch && setMeetingSearch(e.target.value)
+                  }
+                  placeholder="ابحث بعنوان المحضر..."
+                  className="w-full py-1.5 pr-9 pl-3 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-amber-500 bg-slate-50/50"
+                />
+              </div>
+              <div
+                className={`flex-1 overflow-y-auto pr-1 flex flex-col gap-1.5 ${scrollbarClasses}`}
+              >
+                {/* كود عرض المحاضر */}
+                {meetingsData?.map((meeting) => (
+                  <div
+                    key={meeting.id}
+                    onClick={() =>
+                      setSelectedMeeting && setSelectedMeeting(meeting.id)
+                    }
+                    className={`flex justify-between items-center p-2 rounded-lg cursor-pointer border ${selectedMeeting === meeting.id ? "border-amber-500 bg-amber-50/50" : "border-slate-100 hover:border-amber-200"}`}
+                  >
+                    <span className="font-bold text-[10px] truncate">
+                      {meeting.title || "محضر اجتماع"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* ============================================================== */}
-      {/* 🌟 النوافذ المنبثقة (Modals) للإضافة المباشرة للقاعدة */}
+      {/* 🌟 النوافذ المنبثقة للملكية والعميل الجديد */}
       {/* ============================================================== */}
-
-      {/* 🚀 تغليف NewPropertyWizard داخل مودال ليظهر كـ Popup */}
       {isDeedModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#eef5f7] rounded-[24px] w-full max-w-6xl shadow-2xl overflow-hidden flex flex-col h-[95vh] animate-in zoom-in-95 duration-200">
-            {/* رأس المودال للملكية */}
-            <div className="bg-white flex justify-between items-center p-4 border-b border-slate-200 shadow-sm z-10 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-cyan-50 text-cyan-600 rounded-xl flex items-center justify-center">
-                  <Building className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-black text-lg text-[#123B5D]">
-                    إضافة ملف ملكية جديد (معالج الصكوك)
-                  </h3>
-                  <p className="text-[10px] font-bold text-slate-500">
-                    سيتم حفظ الملكية واستخدامها فوراً في النظام
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsDeedModalOpen(false)}
-                className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* محتوى المودال (معالج الملكية) */}
-            <div className="flex-1 overflow-hidden relative">
-              <NewPropertyWizard
-                onComplete={() => {
-                  setIsDeedModalOpen(false);
-                }}
-              />
-            </div>
+        <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+          {/* محتوى المودال كما في الكود السابق */}
+          <div className="bg-white p-4 w-full max-w-6xl h-[95vh] rounded-2xl flex flex-col relative">
+            <button
+              onClick={() => setIsDeedModalOpen(false)}
+              className="absolute top-4 left-4 p-2 bg-red-50 text-red-500 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <NewPropertyWizard onComplete={() => setIsDeedModalOpen(false)} />
           </div>
         </div>
       )}
-
-      {/* مودال إضافة العميل (يغلف مكون CreateClientPanel) */}
       {isClientModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#eef5f7] rounded-[24px] w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col h-[95vh] animate-in zoom-in-95 duration-200">
-            {/* رأس المودال للعميل */}
-            <div className="bg-white flex justify-between items-center p-4 border-b border-slate-200 shadow-sm z-10 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
-                  <Users className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-black text-lg text-[#123B5D]">
-                    إضافة عميل جديد
-                  </h3>
-                  <p className="text-[10px] font-bold text-slate-500">
-                    سيتم حفظ العميل في قاعدة البيانات واستخدامه فوراً
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsClientModalOpen(false)}
-                className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* محتوى المودال (إنشاء العميل) */}
-            <div className="flex-1 overflow-hidden relative">
-              <CreateClientPanel
-                onComplete={() => {
-                  setIsClientModalOpen(false);
-                }}
-              />
-            </div>
+        <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white p-4 w-full max-w-5xl h-[95vh] rounded-2xl flex flex-col relative">
+            <button
+              onClick={() => setIsClientModalOpen(false)}
+              className="absolute top-4 left-4 p-2 bg-red-50 text-red-500 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <CreateClientPanel onComplete={() => setIsClientModalOpen(false)} />
           </div>
         </div>
       )}

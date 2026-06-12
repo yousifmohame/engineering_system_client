@@ -67,7 +67,7 @@ const CreateQuotationWizard = (incomingProps) => {
   const isEditMode = !!quotationId;
 
   // ==========================================
-  // States - الحالات المشتركة
+  // States - الحالات المشتركة الأصلية
   // ==========================================
   const [selectedClient, setSelectedClient] = useState("");
   const [selectedProperty, setSelectedProperty] = useState("");
@@ -114,6 +114,19 @@ const CreateQuotationWizard = (incomingProps) => {
   const [handlingMethod, setHandlingMethod] = useState("المالك مباشرة");
   const [selectedPresetTerm, setSelectedPresetTerm] = useState("manual");
   const [stampType, setStampType] = useState("NONE");
+
+  // ==========================================
+  // 🚀 States - الحالات الجديدة (التمثيل النظامي)
+  // ==========================================
+  const [clientType, setClientType] = useState("فرد");
+  const [signatureMethod, setSignatureMethod] = useState("SELF");
+  const [repName, setRepName] = useState("");
+  const [repIdNumber, setRepIdNumber] = useState("");
+  const [repPhone, setRepPhone] = useState("");
+  const [repCapacity, setRepCapacity] = useState("");
+  const [authDocType, setAuthDocType] = useState("");
+  const [authDocNumber, setAuthDocNumber] = useState("");
+  const [authDocDate, setAuthDocDate] = useState("");
 
   // ==========================================
   // API Queries
@@ -178,6 +191,9 @@ const CreateQuotationWizard = (incomingProps) => {
       [],
   });
 
+  // ==========================================
+  // Effect - تعبئة البيانات عند التعديل (Edit Mode)
+  // ==========================================
   useEffect(() => {
     if (existingQuote) {
       setSelectedClient(existingQuote.clientId || "");
@@ -203,6 +219,21 @@ const CreateQuotationWizard = (incomingProps) => {
       setLicenseYear(existingQuote.licenseYear || "");
       setServiceNumber(existingQuote.serviceNumber || "");
       setServiceYear(existingQuote.serviceYear || "");
+
+      // 🚀 تعبئة بيانات التمثيل النظامي من الداتابيز
+      setClientType(existingQuote.clientType || "فرد");
+      setSignatureMethod(existingQuote.signatureMethod || "SELF");
+      setRepName(existingQuote.repName || "");
+      setRepIdNumber(existingQuote.repIdNumber || "");
+      setRepPhone(existingQuote.repPhone || "");
+      setRepCapacity(existingQuote.repCapacity || "");
+      setAuthDocType(existingQuote.authDocType || "");
+      setAuthDocNumber(existingQuote.authDocNumber || "");
+      setAuthDocDate(
+        existingQuote.authDocDate
+          ? existingQuote.authDocDate.split("T")[0]
+          : "",
+      );
 
       setTaxRate(existingQuote.taxRate * 100);
       setOfficeTaxBearing(existingQuote.officeTaxBearing);
@@ -250,7 +281,9 @@ const CreateQuotationWizard = (incomingProps) => {
     }
   }, [serverTemplates, isEditMode]);
 
-  // 1. الحسابات الأساسية
+  // ==========================================
+  // الحسابات المالية (Calculations)
+  // ==========================================
   const subtotal = items.reduce(
     (sum, item) => sum + (item.qty * item.price - item.discount),
     0,
@@ -263,16 +296,12 @@ const CreateQuotationWizard = (incomingProps) => {
   }, 0);
 
   const grandTotal = subtotal + taxAmount;
-
-  // 🚀 الإضافة الجديدة: حساب الإجمالي الفعلي بعد تحمل المكتب للضريبة
   const calculatedOfficeDiscount = (taxAmount * (officeTaxBearing || 0)) / 100;
   const finalPayable = grandTotal - calculatedOfficeDiscount;
 
-  // 2. تحديث دالة توزيع الدفعات
   useEffect(() => {
     if (!isEditMode || (isEditMode && paymentsList.length === 0)) {
       let payments = [];
-      // 🚀 استخدمنا finalPayable بدلاً من grandTotal
       if (paymentCount > 0 && finalPayable > 0) {
         const amountPerPayment = finalPayable / paymentCount;
         const percentagePerPayment = 100 / paymentCount;
@@ -293,7 +322,7 @@ const CreateQuotationWizard = (incomingProps) => {
       }
       setPaymentsList(payments);
     }
-  }, [paymentCount, finalPayable, isEditMode]); // 👈 تحديث المصفوفة لتعتمد على finalPayable
+  }, [paymentCount, finalPayable, isEditMode]);
 
   const handleItemChange = (id, field, value) => {
     setItems(
@@ -384,6 +413,17 @@ const CreateQuotationWizard = (incomingProps) => {
       licenseNumber,
       licenseYear,
 
+      // 🚀 إضافة بيانات التمثيل النظامي إلى حمولة الإرسال (Payload)
+      clientType,
+      signatureMethod,
+      repName: signatureMethod !== "SELF" ? repName : null,
+      repIdNumber: signatureMethod !== "SELF" ? repIdNumber : null,
+      repPhone: signatureMethod !== "SELF" ? repPhone : null,
+      repCapacity: signatureMethod !== "SELF" ? repCapacity : null,
+      authDocType: signatureMethod !== "SELF" ? authDocType : null,
+      authDocNumber: signatureMethod !== "SELF" ? authDocNumber : null,
+      authDocDate: signatureMethod !== "SELF" ? authDocDate || null : null,
+
       items: items.map((i, idx) => ({
         order: idx + 1,
         title: i.title,
@@ -437,6 +477,9 @@ const CreateQuotationWizard = (incomingProps) => {
     setCurrentStep((p) => Math.min(STEPS.length - 1, p + 1));
   };
 
+  // ==========================================
+  // Props Passed to Steps
+  // ==========================================
   const stepProps = {
     selectedClient,
     setSelectedClient,
@@ -491,6 +534,26 @@ const CreateQuotationWizard = (incomingProps) => {
     setShowClientCode,
     showPropertyCode,
     setShowPropertyCode,
+
+    // 🚀 تمرير حالات التمثيل النظامي الجديدة
+    clientType,
+    setClientType,
+    signatureMethod,
+    setSignatureMethod,
+    repName,
+    setRepName,
+    repIdNumber,
+    setRepIdNumber,
+    repPhone,
+    setRepPhone,
+    repCapacity,
+    setRepCapacity,
+    authDocType,
+    setAuthDocType,
+    authDocNumber,
+    setAuthDocNumber,
+    authDocDate,
+    setAuthDocDate,
 
     items,
     setItems,
@@ -568,6 +631,17 @@ const CreateQuotationWizard = (incomingProps) => {
     licenseYear,
     serviceNumber,
     serviceYear,
+
+    // 🚀 إضافة البيانات الجديدة للمعاينة (Live Preview)
+    clientType,
+    signatureMethod,
+    repName,
+    repIdNumber,
+    repCapacity,
+    authDocType,
+    authDocNumber,
+    authDocDate,
+
     items,
     subtotal,
     taxRate,
@@ -615,7 +689,6 @@ const CreateQuotationWizard = (incomingProps) => {
         {/* ========================================== */}
         {/* Wizard Section (Sidebar + Content + Footer) */}
         {/* ========================================== */}
-        {/* 🚀 إزالة الكلاسات التي تعيق المودال (backdrop-blur-xl) لكي يفتح فوق كل شيء */}
         <section
           className="
             flex min-h-0 min-w-0 flex-1 lg:flex-[1.1] flex-col overflow-hidden
@@ -668,10 +741,9 @@ const CreateQuotationWizard = (incomingProps) => {
 
           {/* Content Area with Vertical Sidebar */}
           <div className="flex flex-1 overflow-hidden bg-[#fbf8f1]/30">
-            {/* Timeline Sidebar (Hidden on Mobile, Visible on Tablet/Desktop) */}
+            {/* Timeline Sidebar */}
             <aside className="hidden md:block w-[180px] shrink-0 border-l border-[#e8ddc8] bg-white/50 p-4 overflow-y-auto custom-scrollbar-slim">
               <div className="relative">
-                {/* Vertical Line Connector */}
                 <div className="absolute right-[19px] top-4 bottom-8 w-[2px] bg-slate-200/80 rounded-full" />
 
                 <div className="flex flex-col gap-5 relative z-10">
@@ -691,7 +763,6 @@ const CreateQuotationWizard = (incomingProps) => {
                         `}
                         type="button"
                       >
-                        {/* Step Circle */}
                         <div
                           className={`
                             grid h-10 w-10 shrink-0 place-items-center rounded-full
@@ -710,7 +781,6 @@ const CreateQuotationWizard = (incomingProps) => {
                           />
                         </div>
 
-                        {/* Step Text */}
                         <div className="flex flex-col pt-1">
                           <span
                             className={`text-[11px] font-black transition-colors ${isActive ? "text-[#123f59]" : "text-slate-600"}`}
@@ -733,7 +803,6 @@ const CreateQuotationWizard = (incomingProps) => {
             {/* Dynamic Step Content Area */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-5 custom-scrollbar-slim relative">
               <div className="mx-auto max-w-3xl h-full">
-                {/* 🚀 إضافة مؤشر الخطوات للشاشات الصغيرة فقط */}
                 <div className="md:hidden flex items-center justify-between mb-4 pb-2 border-b border-[#e8ddc8]">
                   <span className="text-xs font-black text-[#123f59]">
                     {STEPS[currentStep]?.label}
@@ -759,7 +828,6 @@ const CreateQuotationWizard = (incomingProps) => {
           {/* Smart Footer Navigation */}
           <div className="shrink-0 border-t border-[#e8ddc8] bg-white p-3 sm:p-4 shadow-[0_-4px_15px_rgba(0,0,0,0.02)] z-10">
             <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
-              {/* Previous Button */}
               <button
                 disabled={currentStep === 0}
                 onClick={() => setCurrentStep((p) => p - 1)}
@@ -776,7 +844,6 @@ const CreateQuotationWizard = (incomingProps) => {
                 رجوع للخلف
               </button>
 
-              {/* Progress Indicator (Visible on Tablet/Desktop) */}
               <div className="hidden sm:flex flex-col items-center">
                 <div className="text-[10px] font-bold text-slate-400">
                   إكمال الإعدادات
@@ -786,9 +853,7 @@ const CreateQuotationWizard = (incomingProps) => {
                 </div>
               </div>
 
-              {/* Next / Save Button */}
               {currentStep === STEPS.length - 1 ? (
-                // في الخطوة الأخيرة (المراجعة) لا نحتاج لزر التالي، الأزرار موجودة داخل Step8Review
                 <div className="hidden sm:block h-11 w-[180px]" />
               ) : currentStep === STEPS.length - 2 ? (
                 <button
@@ -839,7 +904,7 @@ const CreateQuotationWizard = (incomingProps) => {
         </section>
 
         {/* ========================================== */}
-        {/* Live Preview Section (Hidden on Mobile/Tablet) */}
+        {/* Live Preview Section */}
         {/* ========================================== */}
         <aside className="hidden lg:flex min-h-0 min-w-0 flex-[0.9] overflow-hidden rounded-[24px] border border-[#d8b46a]/25 shadow-sm bg-white">
           <LivePreview data={previewData} />
