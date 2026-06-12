@@ -55,6 +55,14 @@ const IconWithText = ({
   );
 };
 
+const generateReferenceNumber = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const randomStr = Math.floor(1000 + Math.random() * 9000);
+  return `QT-${year}${month}-${randomStr}`;
+};
+
 const CreateQuotationWizard = (incomingProps) => {
   const quotationId =
     incomingProps.quotationId || incomingProps.props?.quotationId;
@@ -63,12 +71,11 @@ const CreateQuotationWizard = (incomingProps) => {
 
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(0);
-
   const isEditMode = !!quotationId;
 
-  // ==========================================
-  // States - الحالات المشتركة الأصلية
-  // ==========================================
+  const [referenceNumber, setReferenceNumber] = useState(
+    generateReferenceNumber(),
+  );
   const [selectedClient, setSelectedClient] = useState("");
   const [selectedProperty, setSelectedProperty] = useState("");
   const [clientSearch, setClientSearch] = useState("");
@@ -102,6 +109,18 @@ const CreateQuotationWizard = (incomingProps) => {
   const [paymentsList, setPaymentsList] = useState([]);
   const [acceptedMethods, setAcceptedMethods] = useState(["bank"]);
 
+  // 🚀 حالة الحسابات البنكية تم رفعها للويزارد
+  const [selectedBankAccounts, setSelectedBankAccounts] = useState([]);
+  const [bankAccountsData, setBankAccountsData] = useState([
+    { id: "bank_1", name: "مصرف الراجحي", account: "SA0000000000000000000000" },
+    {
+      id: "bank_2",
+      name: "البنك الأهلي السعودي",
+      account: "SA1111111111111111111111",
+    },
+    { id: "bank_3", name: "بنك الإنماء", account: "SA2222222222222222222222" },
+  ]);
+
   const [missingDocs, setMissingDocs] = useState("");
   const [showMissingDocs, setShowMissingDocs] = useState(true);
 
@@ -115,9 +134,6 @@ const CreateQuotationWizard = (incomingProps) => {
   const [selectedPresetTerm, setSelectedPresetTerm] = useState("manual");
   const [stampType, setStampType] = useState("NONE");
 
-  // ==========================================
-  // 🚀 States - الحالات الجديدة (التمثيل النظامي)
-  // ==========================================
   const [clientType, setClientType] = useState("فرد");
   const [signatureMethod, setSignatureMethod] = useState("SELF");
   const [repName, setRepName] = useState("");
@@ -128,9 +144,11 @@ const CreateQuotationWizard = (incomingProps) => {
   const [authDocNumber, setAuthDocNumber] = useState("");
   const [authDocDate, setAuthDocDate] = useState("");
 
-  // ==========================================
-  // API Queries
-  // ==========================================
+  const [firstPartyName, setFirstPartyName] = useState("");
+  const [firstPartyRep, setFirstPartyRep] = useState("");
+  const [secondPartyName, setSecondPartyName] = useState("");
+  const [secondPartyRep, setSecondPartyRep] = useState("");
+
   const { data: clientsData, isLoading: clientsLoading } = useQuery({
     queryKey: ["clients", clientSearch],
     queryFn: async () =>
@@ -191,16 +209,15 @@ const CreateQuotationWizard = (incomingProps) => {
       [],
   });
 
-  // ==========================================
-  // Effect - تعبئة البيانات عند التعديل (Edit Mode)
-  // ==========================================
   useEffect(() => {
     if (existingQuote) {
+      setReferenceNumber(
+        existingQuote.referenceNumber || generateReferenceNumber(),
+      );
       setSelectedClient(existingQuote.clientId || "");
       setSelectedProperty(existingQuote.ownershipId || "");
       setSelectedTransaction(existingQuote.transactionId || "");
       setSelectedMeeting(existingQuote.meetingMinuteId || "");
-
       setIssueDate(
         existingQuote.issueDate
           ? existingQuote.issueDate.split("T")[0]
@@ -208,19 +225,16 @@ const CreateQuotationWizard = (incomingProps) => {
       );
       setValidityDays(existingQuote.validityDays);
       setIsRenewable(existingQuote.isRenewable);
-
       setTemplateType(existingQuote.templateType);
       setSelectedTemplate(existingQuote.templateId || "");
       setShowClientCode(existingQuote.showClientCode);
       setShowPropertyCode(existingQuote.showPropertyCode);
-
       setTransactionType(existingQuote.transactionTypeId || "");
       setLicenseNumber(existingQuote.licenseNumber || "");
       setLicenseYear(existingQuote.licenseYear || "");
       setServiceNumber(existingQuote.serviceNumber || "");
       setServiceYear(existingQuote.serviceYear || "");
 
-      // 🚀 تعبئة بيانات التمثيل النظامي من الداتابيز
       setClientType(existingQuote.clientType || "فرد");
       setSignatureMethod(existingQuote.signatureMethod || "SELF");
       setRepName(existingQuote.repName || "");
@@ -234,6 +248,11 @@ const CreateQuotationWizard = (incomingProps) => {
           ? existingQuote.authDocDate.split("T")[0]
           : "",
       );
+
+      setFirstPartyName(existingQuote.firstPartyName || "");
+      setFirstPartyRep(existingQuote.firstPartyRep || "");
+      setSecondPartyName(existingQuote.secondPartyName || "");
+      setSecondPartyRep(existingQuote.secondPartyRep || "");
 
       setTaxRate(existingQuote.taxRate * 100);
       setOfficeTaxBearing(existingQuote.officeTaxBearing);
@@ -264,6 +283,7 @@ const CreateQuotationWizard = (incomingProps) => {
       setPaymentCount(existingQuote.payments?.length || 1);
 
       setAcceptedMethods(existingQuote.acceptedMethods || ["bank"]);
+      setSelectedBankAccounts(existingQuote.selectedBankAccounts || []);
       setMissingDocs(existingQuote.missingDocs || "");
       setShowMissingDocs(existingQuote.showMissingDocs);
       setTermsText(existingQuote.terms || "");
@@ -281,20 +301,17 @@ const CreateQuotationWizard = (incomingProps) => {
     }
   }, [serverTemplates, isEditMode]);
 
-  // ==========================================
-  // الحسابات المالية (Calculations)
-  // ==========================================
   const subtotal = items.reduce(
     (sum, item) => sum + (item.qty * item.price - item.discount),
     0,
   );
-
-  const taxAmount = items.reduce((sum, item) => {
-    const lineSubtotal = item.qty * item.price - item.discount;
-    const itemTaxRate = item.taxRate !== undefined ? item.taxRate : 15;
-    return sum + lineSubtotal * (itemTaxRate / 100);
-  }, 0);
-
+  const taxAmount = items.reduce(
+    (sum, item) =>
+      sum +
+      (item.qty * item.price - item.discount) *
+        ((item.taxRate !== undefined ? item.taxRate : 15) / 100),
+    0,
+  );
   const grandTotal = subtotal + taxAmount;
   const calculatedOfficeDiscount = (taxAmount * (officeTaxBearing || 0)) / 100;
   const finalPayable = grandTotal - calculatedOfficeDiscount;
@@ -310,7 +327,7 @@ const CreateQuotationWizard = (incomingProps) => {
             id: i,
             label: `الدفعة ${i}`,
             percentage: percentagePerPayment.toFixed(0),
-            amount: amountPerPayment,
+            amount: amountPerPayment.toFixed(2),
             condition:
               i === 1
                 ? "عند التعاقد"
@@ -337,9 +354,7 @@ const CreateQuotationWizard = (incomingProps) => {
       ),
     );
   };
-
   const removeItem = (id) => setItems(items.filter((i) => i.id !== id));
-
   const addItemFromLibrary = (e) => {
     const libItem = serverItems.find((i) => i.code === e.target.value);
     if (libItem) {
@@ -362,13 +377,9 @@ const CreateQuotationWizard = (incomingProps) => {
 
   const saveMutation = useMutation({
     mutationFn: async (payload) => {
-      if (isEditMode) {
-        const response = await axios.put(`/quotations/${quotationId}`, payload);
-        return response.data;
-      } else {
-        const response = await axios.post("/quotations", payload);
-        return response.data;
-      }
+      if (isEditMode)
+        return (await axios.put(`/quotations/${quotationId}`, payload)).data;
+      return (await axios.post("/quotations", payload)).data;
     },
     onSuccess: (data) => {
       toast.success(
@@ -377,9 +388,8 @@ const CreateQuotationWizard = (incomingProps) => {
       queryClient.invalidateQueries(["quotations", "quotations-list"]);
       if (onComplete) onComplete(data);
     },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء الحفظ");
-    },
+    onError: (error) =>
+      toast.error(error.response?.data?.message || "حدث خطأ أثناء الحفظ"),
   });
 
   const handleSave = (isDraft = false) => {
@@ -395,11 +405,11 @@ const CreateQuotationWizard = (incomingProps) => {
     }
 
     const payload = {
+      referenceNumber,
       clientId: selectedClient || null,
       propertyId: selectedProperty || null,
       transactionId: selectedTransaction || null,
       meetingId: selectedMeeting || null,
-
       issueDate,
       validityDays: validityDays === "unlimited" ? 30 : validityDays,
       isRenewable,
@@ -412,8 +422,6 @@ const CreateQuotationWizard = (incomingProps) => {
       serviceYear,
       licenseNumber,
       licenseYear,
-
-      // 🚀 إضافة بيانات التمثيل النظامي إلى حمولة الإرسال (Payload)
       clientType,
       signatureMethod,
       repName: signatureMethod !== "SELF" ? repName : null,
@@ -423,7 +431,10 @@ const CreateQuotationWizard = (incomingProps) => {
       authDocType: signatureMethod !== "SELF" ? authDocType : null,
       authDocNumber: signatureMethod !== "SELF" ? authDocNumber : null,
       authDocDate: signatureMethod !== "SELF" ? authDocDate || null : null,
-
+      firstPartyName,
+      firstPartyRep,
+      secondPartyName,
+      secondPartyRep,
       items: items.map((i, idx) => ({
         order: idx + 1,
         title: i.title,
@@ -435,7 +446,6 @@ const CreateQuotationWizard = (incomingProps) => {
         discountType: i.discountType || "PERCENTAGE",
         taxRate: i.taxRate !== undefined ? i.taxRate : 15,
       })),
-
       taxRate,
       officeTaxBearing,
       payments: paymentsList.map((p, idx) => ({
@@ -445,7 +455,8 @@ const CreateQuotationWizard = (incomingProps) => {
         condition: p.condition,
       })),
       acceptedMethods,
-
+      selectedBankAccounts,
+      bankAccountsData,
       ownerAttachments: ownerAttachments.map((att) => ({
         name: att.name,
         type: att.type,
@@ -455,7 +466,6 @@ const CreateQuotationWizard = (incomingProps) => {
         uploadedBy: att.uploadedBy,
         uploadedAt: att.uploadedAt,
       })),
-
       missingDocs,
       showMissingDocs,
       terms: termsText,
@@ -469,18 +479,15 @@ const CreateQuotationWizard = (incomingProps) => {
           ? existingQuote.status
           : "PENDING_APPROVAL",
     };
-
     saveMutation.mutate(payload);
   };
 
-  const handleNextOrSave = () => {
+  const handleNextOrSave = () =>
     setCurrentStep((p) => Math.min(STEPS.length - 1, p + 1));
-  };
 
-  // ==========================================
-  // Props Passed to Steps
-  // ==========================================
   const stepProps = {
+    referenceNumber,
+    setReferenceNumber,
     selectedClient,
     setSelectedClient,
     selectedProperty,
@@ -505,7 +512,6 @@ const CreateQuotationWizard = (incomingProps) => {
     setMeetingSearch,
     meetingsData,
     meetingsLoading,
-
     issueDate,
     setIssueDate,
     validityDays,
@@ -523,7 +529,6 @@ const CreateQuotationWizard = (incomingProps) => {
     serviceNumber,
     setServiceNumber,
     licenseYearsList: generateHijriYears(1400, getCurrentHijriYear()),
-
     templateType,
     setTemplateType,
     selectedTemplate,
@@ -534,8 +539,6 @@ const CreateQuotationWizard = (incomingProps) => {
     setShowClientCode,
     showPropertyCode,
     setShowPropertyCode,
-
-    // 🚀 تمرير حالات التمثيل النظامي الجديدة
     clientType,
     setClientType,
     signatureMethod,
@@ -554,7 +557,14 @@ const CreateQuotationWizard = (incomingProps) => {
     setAuthDocNumber,
     authDocDate,
     setAuthDocDate,
-
+    firstPartyName,
+    setFirstPartyName,
+    firstPartyRep,
+    setFirstPartyRep,
+    secondPartyName,
+    setSecondPartyName,
+    secondPartyRep,
+    setSecondPartyRep,
     items,
     setItems,
     handleItemChange,
@@ -569,7 +579,6 @@ const CreateQuotationWizard = (incomingProps) => {
     setOfficeTaxBearing,
     taxAmount,
     grandTotal,
-
     paymentCount,
     setPaymentCount,
     paymentsList,
@@ -579,6 +588,10 @@ const CreateQuotationWizard = (incomingProps) => {
       setAcceptedMethods((prev) =>
         prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m],
       ),
+    selectedBankAccounts,
+    setSelectedBankAccounts,
+    bankAccountsData,
+    setBankAccountsData,
     missingDocs,
     setMissingDocs,
     showMissingDocs,
@@ -614,6 +627,7 @@ const CreateQuotationWizard = (incomingProps) => {
   );
 
   const previewData = {
+    referenceNumber,
     templateType,
     issueDate,
     validityDays,
@@ -622,28 +636,37 @@ const CreateQuotationWizard = (incomingProps) => {
       getClientName(clientsData?.find((c) => c.id === selectedClient)) ||
       getClientName(existingQuote?.client) ||
       "عميل غير محدد",
+    // 🚀 جلب كود العميل للمعاينة بشكل مباشر بناء على اختياره
+    clientCodeForPreview:
+      clientsData?.find((c) => c.id === selectedClient)?.clientCode ||
+      existingQuote?.client?.clientCode ||
+      "—",
     propertyCodeForPreview:
       propertiesData?.find((p) => p.id === selectedProperty)?.code ||
       existingQuote?.ownership?.code ||
       "الملكية...",
-
-    deedNumber: selectedPropertyDetails?.deedNumber || existingQuote?.ownership?.deedNumber || "",
+    deedNumber:
+      selectedPropertyDetails?.deedNumber ||
+      existingQuote?.ownership?.deedNumber ||
+      "",
     transactionType,
     licenseNumber,
     licenseYear,
     serviceNumber,
     serviceYear,
-
-    // 🚀 إضافة البيانات الجديدة للمعاينة (Live Preview)
     clientType,
     signatureMethod,
     repName,
     repIdNumber,
+    repPhone,
     repCapacity,
     authDocType,
     authDocNumber,
     authDocDate,
-
+    firstPartyName,
+    firstPartyRep,
+    secondPartyName,
+    secondPartyRep,
     items,
     subtotal,
     taxRate,
@@ -655,6 +678,9 @@ const CreateQuotationWizard = (incomingProps) => {
     paymentsList,
     stampType,
     acceptedMethods,
+    selectedBankAccounts,
+    bankAccountsData,
+    handlingMethod,
     showPropertyCode,
     showClientCode,
     officeTaxBearing,
@@ -668,11 +694,7 @@ const CreateQuotationWizard = (incomingProps) => {
 
   return (
     <div
-      className="
-        flex h-full min-h-0 flex-col overflow-hidden
-        bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
-        p-2 sm:p-3 font-[Tajawal] text-[#123f59]
-      "
+      className="flex h-full min-h-0 flex-col overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white p-2 sm:p-3 font-[Tajawal] text-[#123f59]"
       dir="rtl"
     >
       {isEditMode && isQuoteLoading && (
@@ -686,36 +708,12 @@ const CreateQuotationWizard = (incomingProps) => {
         </div>
       )}
 
-      {/* Main Container */}
       <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">
-        {/* ========================================== */}
-        {/* Wizard Section (Sidebar + Content + Footer) */}
-        {/* ========================================== */}
-        <section
-          className="
-            flex min-h-0 min-w-0 flex-1 lg:flex-[1.1] flex-col overflow-hidden
-            rounded-[20px] sm:rounded-[24px] border border-[#d8b46a]/25 bg-white
-            shadow-[0_10px_26px_rgba(18,63,89,0.08)]
-          "
-        >
-          {/* Header */}
-          <div
-            className="
-              shrink-0 border-b border-[#e8ddc8]
-              bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490]
-              px-4 py-3 text-white
-            "
-          >
+        <section className="flex min-h-0 min-w-0 flex-1 lg:flex-[1.1] flex-col overflow-hidden rounded-[20px] sm:rounded-[24px] border border-[#d8b46a]/25 bg-white shadow-[0_10px_26px_rgba(18,63,89,0.08)]">
+          <div className="shrink-0 border-b border-[#e8ddc8] bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490] px-4 py-3 text-white">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
-                <span
-                  className="
-                    grid h-10 w-10 sm:h-11 sm:w-11 shrink-0 place-items-center
-                    rounded-2xl border border-[#e2bf74]/35
-                    bg-white/10 text-[#e2bf74]
-                    shadow-md
-                  "
-                >
+                <span className="grid h-10 w-10 sm:h-11 sm:w-11 shrink-0 place-items-center rounded-2xl border border-[#e2bf74]/35 bg-white/10 text-[#e2bf74] shadow-md">
                   <IconWithText
                     icon={Save}
                     text="عرض"
@@ -724,65 +722,47 @@ const CreateQuotationWizard = (incomingProps) => {
                     textClassName="text-[7px] font-black leading-none hidden sm:block"
                   />
                 </span>
-
-                <div className="min-w-0">
-                  <h2 className="truncate text-base sm:text-lg font-black">
+                <div className="min-w-0 flex flex-col gap-1">
+                  <h2 className="truncate text-base sm:text-lg font-black flex items-center gap-2">
                     {isEditMode ? "تعديل عرض سعر" : "إنشاء عرض سعر"}
+                    <span className="text-[10px] font-mono font-bold bg-[#123f59] border border-[#15536f] px-2 py-0.5 rounded text-indigo-100 hidden sm:inline-block">
+                      {referenceNumber}
+                    </span>
                   </h2>
                   <p className="mt-0.5 truncate text-[10px] sm:text-[11px] font-bold text-white/60">
                     بناء العرض، البنود، الضريبة، والمراجعة بكل سهولة.
                   </p>
                 </div>
               </div>
-
               <span className="shrink-0 rounded-xl border border-[#e2bf74]/35 bg-white/10 px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[10px] font-black text-[#e2bf74]">
                 المرحلة {currentStep + 1} / {STEPS.length}
               </span>
             </div>
           </div>
 
-          {/* Content Area with Vertical Sidebar */}
           <div className="flex flex-1 overflow-hidden bg-[#fbf8f1]/30">
-            {/* Timeline Sidebar */}
             <aside className="hidden md:block w-[180px] shrink-0 border-l border-[#e8ddc8] bg-white/50 p-4 overflow-y-auto custom-scrollbar-slim">
               <div className="relative">
                 <div className="absolute right-[19px] top-4 bottom-8 w-[2px] bg-slate-200/80 rounded-full" />
-
                 <div className="flex flex-col gap-5 relative z-10">
                   {STEPS.map((step, index) => {
                     const isActive = currentStep === step.id;
                     const isCompleted = step.id < currentStep;
                     const Icon = isCompleted ? Check : step.icon;
-
                     return (
                       <button
                         key={step.id}
                         onClick={() => setCurrentStep(step.id)}
-                        className={`
-                          group relative flex items-start gap-3 text-right
-                          transition-all duration-300
-                          ${isActive ? "opacity-100" : isCompleted ? "opacity-80 hover:opacity-100" : "opacity-50 hover:opacity-80"}
-                        `}
+                        className={`group relative flex items-start gap-3 text-right transition-all duration-300 ${isActive ? "opacity-100" : isCompleted ? "opacity-80 hover:opacity-100" : "opacity-50 hover:opacity-80"}`}
                         type="button"
                       >
                         <div
-                          className={`
-                            grid h-10 w-10 shrink-0 place-items-center rounded-full
-                            border-2 transition-all duration-300
-                            ${
-                              isActive
-                                ? "border-[#e2bf74] bg-[#123f59] text-[#e2bf74] shadow-[0_4px_12px_rgba(18,63,89,0.2)] scale-110"
-                                : isCompleted
-                                  ? "border-emerald-500 bg-emerald-50 text-emerald-600"
-                                  : "border-slate-300 bg-slate-50 text-slate-400"
-                            }
-                          `}
+                          className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 transition-all duration-300 ${isActive ? "border-[#e2bf74] bg-[#123f59] text-[#e2bf74] shadow-[0_4px_12px_rgba(18,63,89,0.2)] scale-110" : isCompleted ? "border-emerald-500 bg-emerald-50 text-emerald-600" : "border-slate-300 bg-slate-50 text-slate-400"}`}
                         >
                           <Icon
                             className={`h-4 w-4 ${isCompleted && !isActive ? "text-emerald-500 stroke-[3]" : ""}`}
                           />
                         </div>
-
                         <div className="flex flex-col pt-1">
                           <span
                             className={`text-[11px] font-black transition-colors ${isActive ? "text-[#123f59]" : "text-slate-600"}`}
@@ -802,7 +782,6 @@ const CreateQuotationWizard = (incomingProps) => {
               </div>
             </aside>
 
-            {/* Dynamic Step Content Area */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-5 custom-scrollbar-slim relative">
               <div className="mx-auto max-w-3xl h-full">
                 <div className="md:hidden flex items-center justify-between mb-4 pb-2 border-b border-[#e8ddc8]">
@@ -813,7 +792,6 @@ const CreateQuotationWizard = (incomingProps) => {
                     خطوة {currentStep + 1} من {STEPS.length}
                   </span>
                 </div>
-
                 {currentStep === 0 && <Step2Template props={stepProps} />}
                 {currentStep === 1 && <Step0ClientProperty props={stepProps} />}
                 {currentStep === 2 && <Step1BasicInfo props={stepProps} />}
@@ -827,25 +805,16 @@ const CreateQuotationWizard = (incomingProps) => {
             </div>
           </div>
 
-          {/* Smart Footer Navigation */}
           <div className="shrink-0 border-t border-[#e8ddc8] bg-white p-3 sm:p-4 shadow-[0_-4px_15px_rgba(0,0,0,0.02)] z-10">
             <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
               <button
                 disabled={currentStep === 0}
                 onClick={() => setCurrentStep((p) => p - 1)}
-                className="
-                  inline-flex h-11 w-full sm:w-auto items-center justify-center gap-2
-                  rounded-xl border-2 border-slate-200 bg-white
-                  px-6 text-xs font-black text-slate-500
-                  transition hover:border-[#d8b46a]/50 hover:bg-[#fbf8f1] hover:text-[#123f59]
-                  disabled:cursor-not-allowed disabled:opacity-40
-                "
+                className="inline-flex h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-6 text-xs font-black text-slate-500 transition hover:border-[#d8b46a]/50 hover:bg-[#fbf8f1] hover:text-[#123f59] disabled:cursor-not-allowed disabled:opacity-40"
                 type="button"
               >
-                <ChevronRight className="h-5 w-5" />
-                رجوع للخلف
+                <ChevronRight className="h-5 w-5" /> رجوع للخلف
               </button>
-
               <div className="hidden sm:flex flex-col items-center">
                 <div className="text-[10px] font-bold text-slate-400">
                   إكمال الإعدادات
@@ -854,19 +823,12 @@ const CreateQuotationWizard = (incomingProps) => {
                   {Math.round(((currentStep + 1) / STEPS.length) * 100)}%
                 </div>
               </div>
-
               {currentStep === STEPS.length - 1 ? (
                 <div className="hidden sm:block h-11 w-[180px]" />
               ) : currentStep === STEPS.length - 2 ? (
                 <button
                   onClick={handleNextOrSave}
-                  className="
-                    inline-flex h-11 w-full sm:w-auto min-w-0 sm:min-w-[180px] items-center justify-center gap-2
-                    rounded-xl bg-gradient-to-l from-[#123f59] via-[#15536f] to-[#0e7490]
-                    px-6 text-xs font-black text-white
-                    shadow-[0_8px_20px_rgba(18,63,89,0.2)]
-                    transition-transform hover:-translate-y-[2px] active:scale-[0.98]
-                  "
+                  className="inline-flex h-11 w-full sm:w-auto min-w-0 sm:min-w-[180px] items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-[#123f59] via-[#15536f] to-[#0e7490] px-6 text-xs font-black text-white shadow-[0_8px_20px_rgba(18,63,89,0.2)] transition-transform hover:-translate-y-[2px] active:scale-[0.98]"
                   type="button"
                 >
                   <IconWithText
@@ -879,13 +841,7 @@ const CreateQuotationWizard = (incomingProps) => {
               ) : (
                 <button
                   onClick={handleNextOrSave}
-                  className="
-                    group inline-flex h-11 w-full sm:w-auto min-w-0 sm:min-w-[180px] items-center justify-between
-                    rounded-xl bg-[#123f59]
-                    px-4 sm:px-6 text-xs font-black text-white
-                    shadow-[0_8px_20px_rgba(18,63,89,0.15)]
-                    transition-all hover:bg-[#0e7490] hover:-translate-y-[2px] active:scale-[0.98]
-                  "
+                  className="group inline-flex h-11 w-full sm:w-auto min-w-0 sm:min-w-[180px] items-center justify-between rounded-xl bg-[#123f59] px-4 sm:px-6 text-xs font-black text-white shadow-[0_8px_20px_rgba(18,63,89,0.15)] transition-all hover:bg-[#0e7490] hover:-translate-y-[2px] active:scale-[0.98]"
                   type="button"
                 >
                   <div className="flex flex-col items-start text-right leading-tight">
@@ -905,9 +861,6 @@ const CreateQuotationWizard = (incomingProps) => {
           </div>
         </section>
 
-        {/* ========================================== */}
-        {/* Live Preview Section */}
-        {/* ========================================== */}
         <aside className="hidden lg:flex min-h-0 min-w-0 flex-[0.9] overflow-hidden rounded-[24px] border border-[#d8b46a]/25 shadow-sm bg-white">
           <LivePreview data={previewData} />
         </aside>
@@ -915,5 +868,4 @@ const CreateQuotationWizard = (incomingProps) => {
     </div>
   );
 };
-
 export default CreateQuotationWizard;

@@ -5,12 +5,16 @@ import {
   FileCheck2, 
   UserCheck, 
   ShieldCheck,
-  Type
+  Type,
+  Users,
+  Building,
+  User
 } from "lucide-react";
 import {
   CLIENT_TITLES,
   HANDLING_METHODS,
 } from "../../utils/quotationConstants";
+
 const IconWithText = ({
   icon: Icon,
   text,
@@ -43,7 +47,7 @@ const IconWithText = ({
 };
 
 // ==========================================
-// الخطوة 7: الشروط والأحكام والافتتاحية (تنسيق مكثف وعمودي)
+// الخطوة 7: الشروط والأحكام والافتتاحية وأطراف التعاقد
 // ==========================================
 export const Step7Terms = ({ props }) => {
   const {
@@ -55,6 +59,16 @@ export const Step7Terms = ({ props }) => {
     setHandlingMethod,
     selectedTemplate,
     serverTemplates,
+    
+    // 🆕 خصائص أطراف التعاقد (تأكد من إضافتها في المكون الأب)
+    firstPartyName = "",
+    setFirstPartyName,
+    firstPartyRep = "",
+    setFirstPartyRep,
+    secondPartyName = "",
+    setSecondPartyName,
+    secondPartyRep = "",
+    setSecondPartyRep
   } = props;
 
   // حالة للتحقق مما إذا كان المستخدم يكتب لقباً مخصصاً
@@ -68,7 +82,7 @@ export const Step7Terms = ({ props }) => {
     if (clientTitle && !CLIENT_TITLES.includes(clientTitle)) {
       setIsCustomTitle(true);
     }
-  }, []);
+  }, [clientTitle]);
 
   const handleRestoreTemplateTerms = () => {
     if (activeTemplate) {
@@ -82,7 +96,7 @@ export const Step7Terms = ({ props }) => {
   };
 
   return (
-    <div className="animate-in fade-in duration-300 h-full flex flex-col gap-3 max-w-4xl mx-auto">
+    <div className="animate-in fade-in duration-300 h-full flex flex-col gap-4 max-w-4xl mx-auto pb-4">
       
       {/* 1️⃣ قسم معلومات النموذج وزر الاستعادة (أعلى الصفحة) */}
       <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex min-w-0 items-center justify-between shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
@@ -105,7 +119,7 @@ export const Step7Terms = ({ props }) => {
       </div>
 
       {/* 2️⃣ محرر الشروط والأحكام (يأخذ المساحة الرئيسية) */}
-      <div className="flex flex-col bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] overflow-hidden min-h-[300px]">
+      <div className="flex flex-col bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] overflow-hidden min-h-[250px]">
         <div className="px-4 py-2.5 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-b border-[#d8b46a]/25 flex min-w-0 justify-between items-center">
           <label className="text-xs font-bold text-[#475569] flex min-w-0 items-center gap-2">
             <ScrollText className="w-4 h-4 text-[#64748b]" /> مراجعة وتعديل بنود العرض
@@ -124,7 +138,7 @@ export const Step7Terms = ({ props }) => {
         />
       </div>
 
-      {/* 3️⃣ قسم اللقب المستهدف (تنسيق عمودي) */}
+      {/* 3️⃣ قسم اللقب المستهدف */}
       <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] space-y-3">
         <div className="flex min-w-0 items-center gap-2 text-xs font-bold text-[#475569] pb-2 border-b border-slate-50">
           <UserCheck className="w-4 h-4 text-[#0e7490]" /> لقب العميل المستهدف في مقدمة العرض:
@@ -174,10 +188,82 @@ export const Step7Terms = ({ props }) => {
         )}
       </div>
 
-      {/* 4️⃣ قسم أسلوب التعامل والتفويض (تنسيق عمودي) */}
-      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] space-y-3 mb-3">
+      {/* 4️⃣ قسم أطراف التعاقد (الطرف الأول والثاني) لغايات التوقيع والتحويل لعقد */}
+      <div className="p-4 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] space-y-4">
+        <div className="flex min-w-0 items-center justify-between pb-2 border-b border-slate-50">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#475569]">
+            <Users className="w-4 h-4 text-purple-600" /> أطراف التعاقد والتواقيع 
+          </div>
+          <span className="text-[9px] font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded-md">
+            ينعكس مباشرة في صيغة الاعتماد
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {/* الطرف الأول */}
+          <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/50 space-y-3">
+            <h4 className="text-[11px] font-black text-indigo-900 flex items-center gap-1.5">
+              <Building className="w-4 h-4 text-indigo-500" /> الطرف الأول (مقدم الخدمة / المكتب)
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500">اسم الجهة / الشركة</label>
+                <input
+                  type="text"
+                  value={firstPartyName}
+                  onChange={(e) => setFirstPartyName && setFirstPartyName(e.target.value)}
+                  placeholder="مثال: مكتب الإبداع الهندسي"
+                  className="w-full px-3 py-2 bg-white border border-indigo-100 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 font-bold text-slate-700"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500">يمثلها في التوقيع</label>
+                <input
+                  type="text"
+                  value={firstPartyRep}
+                  onChange={(e) => setFirstPartyRep && setFirstPartyRep(e.target.value)}
+                  placeholder="مثال: م. أحمد محمد"
+                  className="w-full px-3 py-2 bg-white border border-indigo-100 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 font-bold text-slate-700"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* الطرف الثاني */}
+          <div className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-100/50 space-y-3">
+            <h4 className="text-[11px] font-black text-emerald-900 flex items-center gap-1.5">
+              <User className="w-4 h-4 text-emerald-500" /> الطرف الثاني (طالب الخدمة / العميل)
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500">اسم الجهة / العميل</label>
+                <input
+                  type="text"
+                  value={secondPartyName}
+                  onChange={(e) => setSecondPartyName && setSecondPartyName(e.target.value)}
+                  placeholder="اسم العميل أو شركته"
+                  className="w-full px-3 py-2 bg-white border border-emerald-100 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-400 font-bold text-slate-700"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500">يمثله في التوقيع (إن وجد)</label>
+                <input
+                  type="text"
+                  value={secondPartyRep}
+                  onChange={(e) => setSecondPartyRep && setSecondPartyRep(e.target.value)}
+                  placeholder="صفة أو اسم الموقع (اختياري)"
+                  className="w-full px-3 py-2 bg-white border border-emerald-100 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-400 font-bold text-slate-700"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 5️⃣ قسم أسلوب التعامل والتفويض */}
+      <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] space-y-3 mb-2">
         <div className="flex min-w-0 items-center gap-2 text-xs font-bold text-[#475569] pb-2 border-b border-slate-50">
-          <ShieldCheck className="w-4 h-4 text-emerald-500" /> أسلوب التعامل والتفويض القانوني:
+          <ShieldCheck className="w-4 h-4 text-emerald-500" /> أسلوب التعامل والتفويض القانوني (يظهر في التمهيد):
         </div>
         <div className="flex flex-wrap gap-2">
           {HANDLING_METHODS.map((method) => (

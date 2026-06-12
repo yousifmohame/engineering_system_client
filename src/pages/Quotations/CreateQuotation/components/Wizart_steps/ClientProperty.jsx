@@ -110,7 +110,7 @@ export const Step0ClientProperty = ({ props }) => {
         {/* 🌟 الصف الأول: اختيار الملكية والعميل */}
         {/* ========================================== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-          {/* 1️⃣ كارت بيانات المشروع / الملكية (نفس الكود السابق) */}
+          {/* 1️⃣ كارت بيانات المشروع / الملكية */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative flex flex-col h-[280px] overflow-hidden group">
             <div className="absolute right-0 top-0 bottom-0 w-1 bg-cyan-500 transition-all group-hover:w-1.5"></div>
             <div className="p-3.5 flex flex-col h-full">
@@ -231,7 +231,14 @@ export const Step0ClientProperty = ({ props }) => {
                     return (
                       <div
                         key={client.id}
-                        onClick={() => setSelectedClient(client.id)}
+                        onClick={() => {
+                          // 🚀 سحب البيانات وتعبئتها تلقائياً عند النقر على العميل
+                          setSelectedClient(client.id);
+                          if (setRepPhone)
+                            setRepPhone(client.phone || client.mobile || "");
+                          if (setClientType && client.clientType)
+                            setClientType(client.clientType);
+                        }}
                         className={`flex flex-col p-2.5 rounded-lg cursor-pointer border transition-all ${isSelected ? "border-blue-500 bg-blue-50/50 shadow-sm" : "border-slate-100 hover:border-blue-200"}`}
                       >
                         <div className="flex justify-between items-center mb-1.5">
@@ -259,7 +266,7 @@ export const Step0ClientProperty = ({ props }) => {
         </div>
 
         {/* ========================================== */}
-        {/* 🌟 الصف الثاني: الصفة النظامية والتمثيل القانوني (الجزء الجديد بالكامل) */}
+        {/* 🌟 الصف الثاني: الصفة النظامية والتمثيل القانوني */}
         {/* ========================================== */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm relative overflow-hidden mb-4 group">
           <div className="absolute right-0 top-0 bottom-0 w-1 bg-emerald-500 transition-all group-hover:w-1.5"></div>
@@ -291,7 +298,6 @@ export const Step0ClientProperty = ({ props }) => {
                   value={clientType}
                   onChange={(e) => {
                     if (setClientType) setClientType(e.target.value);
-                    // تصفير بيانات التفويض إذا تغير النوع للفرد
                     if (e.target.value === "فرد" && setSignatureMethod)
                       setSignatureMethod("SELF");
                   }}
@@ -446,7 +452,6 @@ export const Step0ClientProperty = ({ props }) => {
         {/* 🌟 الصف الثالث: المعاملات ومحاضر الاجتماعات (اختياري) */}
         {/* ========================================== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* كارت المعاملات */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm relative flex flex-col h-[200px] overflow-hidden group">
             <div className="absolute right-0 top-0 bottom-0 w-1 bg-purple-500 transition-all group-hover:w-1.5"></div>
             <div className="p-3.5 flex flex-col h-full">
@@ -478,7 +483,6 @@ export const Step0ClientProperty = ({ props }) => {
               <div
                 className={`flex-1 overflow-y-auto pr-1 flex flex-col gap-1.5 ${scrollbarClasses}`}
               >
-                {/* كود عرض المعاملات كما هو في نسختك */}
                 {transactionsData?.map((txn) => (
                   <div
                     key={txn.id}
@@ -499,7 +503,6 @@ export const Step0ClientProperty = ({ props }) => {
             </div>
           </div>
 
-          {/* كارت محاضر الاجتماع */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm relative flex flex-col h-[200px] overflow-hidden group">
             <div className="absolute right-0 top-0 bottom-0 w-1 bg-amber-500 transition-all group-hover:w-1.5"></div>
             <div className="p-3.5 flex flex-col h-full">
@@ -531,7 +534,6 @@ export const Step0ClientProperty = ({ props }) => {
               <div
                 className={`flex-1 overflow-y-auto pr-1 flex flex-col gap-1.5 ${scrollbarClasses}`}
               >
-                {/* كود عرض المحاضر */}
                 {meetingsData?.map((meeting) => (
                   <div
                     key={meeting.id}
@@ -551,12 +553,8 @@ export const Step0ClientProperty = ({ props }) => {
         </div>
       </div>
 
-      {/* ============================================================== */}
-      {/* 🌟 النوافذ المنبثقة للملكية والعميل الجديد */}
-      {/* ============================================================== */}
       {isDeedModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
-          {/* محتوى المودال كما في الكود السابق */}
           <div className="bg-white p-4 w-full max-w-6xl h-[95vh] rounded-2xl flex flex-col relative">
             <button
               onClick={() => setIsDeedModalOpen(false)}

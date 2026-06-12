@@ -17,6 +17,7 @@ import {
   Phone,
   Mail,
   Download,
+  Edit3 // 👈 تم إضافة استيراد أيقونة التعديل
 } from "lucide-react";
 import { format } from "date-fns";
 import { arSA } from "date-fns/locale";
@@ -28,6 +29,10 @@ import { useAppStore } from "../../stores/useAppStore";
 // 💡 استيراد مكون الختم الاحترافي
 import { OfficialStamp } from "../../components/OfficialStamp/OfficialStamp";
 import AccessControl from "../../components/AccessControl";
+
+// 🚀 استيراد مودال تفاصيل عرض السعر
+import QuotationDetailsModal from "./QuotationDetailsModal";
+
 const IconWithText = ({
   icon: Icon,
   text,
@@ -126,13 +131,6 @@ const formatCurrency = (value) => {
   return Number(value || 0).toLocaleString("ar-SA");
 };
 
-// ==========================================
-// المكون الرئيسي: دليل العروض
-// ==========================================
-
-
-
-
 const toArabicDigits = (value) =>
   String(value ?? "").replace(/\d/g, (digit) => "٠١٢٣٤٥٦٧٨٩"[Number(digit)]);
 
@@ -157,11 +155,14 @@ const formatDateParts = (value) => {
     day: "2-digit",
   });
 
-  const hijriFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
+  const hijriFormatter = new Intl.DateTimeFormat(
+    "ar-SA-u-ca-islamic-umalqura",
+    {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    },
+  );
 
   const gregorianDay = getDatePart(gregorianFormatter, date, "day");
   const gregorianMonth = getDatePart(gregorianFormatter, date, "month");
@@ -171,7 +172,9 @@ const formatDateParts = (value) => {
   const hijriMonth = getDatePart(hijriFormatter, date, "month");
   const hijriYear = getDatePart(hijriFormatter, date, "year");
 
-  const gregorian = toArabicDigits(`${gregorianDay}/${gregorianMonth}/${gregorianYear}`);
+  const gregorian = toArabicDigits(
+    `${gregorianDay}/${gregorianMonth}/${gregorianYear}`,
+  );
   const hijri = toArabicDigits(`${hijriDay}/${hijriMonth}/${hijriYear}`);
 
   return {
@@ -190,7 +193,10 @@ const DetailsPrintFooter = ({ accentColor = "#0f5570" }) => {
       "
       dir="ltr"
     >
-      <div className="border-t-[2.5px] pt-1.5" style={{ borderColor: accentColor }}>
+      <div
+        className="border-t-[2.5px] pt-1.5"
+        style={{ borderColor: accentColor }}
+      >
         <div className="flex items-start gap-2" style={{ color: accentColor }}>
           <img
             src="/qrcode.png"
@@ -207,7 +213,10 @@ const DetailsPrintFooter = ({ accentColor = "#0f5570" }) => {
               dir="rtl"
             >
               <span>📍</span>
-              <span>حي الملك فهد - الرياض - المملكة العربية السعودية - الرمز البريدي : ١٢٢٧٤</span>
+              <span>
+                حي الملك فهد - الرياض - المملكة العربية السعودية - الرمز البريدي
+                : ١٢٢٧٤
+              </span>
               <span>·</span>
               <span>جوال : ٠٥٩٠٧٢٢٨٢٧</span>
               <span>·</span>
@@ -222,7 +231,10 @@ const DetailsPrintFooter = ({ accentColor = "#0f5570" }) => {
               dir="ltr"
             >
               <span>📍</span>
-              <span>King Fahd Dist - RIYADH - Kingdom of Saudi Arabia -POSTAL CODE :12274</span>
+              <span>
+                King Fahd Dist - RIYADH - Kingdom of Saudi Arabia -POSTAL CODE
+                :12274
+              </span>
               <span>☎</span>
               <span>0590722827</span>
               <span>- N.N:</span>
@@ -237,15 +249,16 @@ const DetailsPrintFooter = ({ accentColor = "#0f5570" }) => {
   );
 };
 
-
 const QuotationsDirectory = () => {
   const queryClient = useQueryClient();
   const { addTab } = useAppStore();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
+  
   const [selectedQuoteId, setSelectedQuoteId] = useState(null);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false); // 🚀 حالة المودال الجديد
 
   const printComponentRef = useRef(null);
 
@@ -260,7 +273,7 @@ const QuotationsDirectory = () => {
       const response = await axios.get("/quotations");
       return response.data.data;
     },
-    staleTime: 5 * 60 * 1000, // 5 دقائق
+    staleTime: 5 * 60 * 1000,
   });
 
   // 2. جلب البيانات الكاملة عند طلب الطباعة فقط
@@ -297,25 +310,37 @@ const QuotationsDirectory = () => {
     [deleteQuotationMutation],
   );
 
-  // فتح شاشة التعديل/المعاينة
+  // 🚀 دالة فتح التاب والتأكد من وصول المعرف (ID) للتعديل
   const handleEditQuotation = useCallback(
     (e, quote) => {
-      e.stopPropagation();
+      e?.stopPropagation();
+      setIsDetailsModalOpen(false); // إغلاق المودال إذا كان مفتوحاً
       addTab(SCREEN_ID, {
         id: `EDIT-QUOTATION-${quote.id}`,
         title: `تعديل عرض ${quote.number}`,
         type: "create-quotation",
         closable: true,
+        // نمرر الـ ID في جميع الأماكن المحتملة لمنع أي فقدان للبيانات
+        quotationId: quote.id,
+        data: { quotationId: quote.id },
         props: { quotationId: quote.id },
       });
     },
     [addTab],
   );
 
+  // 🚀 دالة فتح مودال التفاصيل السريع (للعرض فقط)
+  const handleViewDetails = useCallback((e, id) => {
+    e?.stopPropagation();
+    setSelectedQuoteId(id);
+    setIsDetailsModalOpen(true);
+  }, []);
+
   // فتح نافذة الطباعة
   const handleOpenPrint = useCallback((e, id) => {
-    e.stopPropagation();
+    e?.stopPropagation();
     setSelectedQuoteId(id);
+    setIsDetailsModalOpen(false); // إغلاق التفاصيل إن كانت مفتوحة
     setIsPrintModalOpen(true);
   }, []);
 
@@ -337,7 +362,7 @@ const QuotationsDirectory = () => {
     },
   });
 
-  // الفلترة - باستخدام useMemo للأداء
+  // الفلترة
   const filteredData = useMemo(() => {
     if (!quotationsData) return [];
 
@@ -366,9 +391,6 @@ const QuotationsDirectory = () => {
     [quotationsData],
   );
 
-  // ==========================================
-  // عرض التحميل أو الخطأ
-  // ==========================================
   if (listError) {
     return (
       <div
@@ -393,14 +415,27 @@ const QuotationsDirectory = () => {
   }
 
   return (
-    <div className="flex h-full min-h-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-[Tajawal] relative" dir="rtl">
-      {/* ========================================== */}
+    <div
+      className="flex h-full min-h-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-[Tajawal] relative"
+      dir="rtl"
+    >
+      {/* 🚀 إدراج مودال التفاصيل الجديد */}
+      <QuotationDetailsModal 
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        quotationId={selectedQuoteId}
+        onPrint={(id) => handleOpenPrint(null, id)}
+        onEdit={(quote) => handleEditQuotation(null, quote)}
+      />
+
       {/* الجدول الرئيسي */}
-      {/* ========================================== */}
       <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 md:p-3.5 w-full">
         <div className="flex min-w-0 items-center justify-between mb-3">
           <div className="text-base font-bold text-[#123f59] flex min-w-0 items-center gap-2">
-            <IconWithText icon={FileText} iconClassName="w-5 h-5 text-[#123f59]" />
+            <IconWithText
+              icon={FileText}
+              iconClassName="w-5 h-5 text-[#123f59]"
+            />
             دليل عروض الأسعار
             <span className="text-xs text-[#64748b] font-normal">
               ({filteredData.length} من {quotationsData?.length || 0})
@@ -487,7 +522,8 @@ const QuotationsDirectory = () => {
                     <tr
                       key={q.id}
                       className="border-b border-[#e8ddc8] hover:bg-[#fbf8f1] transition-colors cursor-pointer"
-                      onClick={(e) => handleEditQuotation(e, q)}
+                      // 🚀 التعديل هنا: عند الضغط على الصف يفتح مودال التفاصيل وليس الويزارد
+                      onClick={(e) => handleViewDetails(e, q.id)}
                     >
                       <td className="p-2 text-[10px] text-[#94a3b8] font-mono">
                         {idx + 1}
@@ -530,12 +566,22 @@ const QuotationsDirectory = () => {
                           className="flex min-w-0 items-center justify-center gap-1"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {/* زر التعديل */}
+                          {/* 🚀 زر التعديل يفتح الويزارد */}
                           <button
                             onClick={(e) => handleEditQuotation(e, q)}
-                            className="p-1.5 bg-blue-50 text-[#123f59] rounded hover:bg-blue-100 transition-colors"
-                            title="تعديل ومعاينة"
+                            className="p-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
+                            title="تعديل في معالج العروض"
                             aria-label="تعديل العرض"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* 🚀 زر العرض يفتح المودال الجديد */}
+                          <button
+                            onClick={(e) => handleViewDetails(e, q.id)}
+                            className="p-1.5 bg-slate-100 text-[#123f59] rounded hover:bg-slate-200 transition-colors"
+                            title="استعراض التفاصيل"
+                            aria-label="عرض التفاصيل"
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
