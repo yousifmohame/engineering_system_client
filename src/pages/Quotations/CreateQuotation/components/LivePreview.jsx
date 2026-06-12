@@ -27,10 +27,10 @@ const SECURITY_BACKGROUNDS = {
   none: { label: "بدون (سادة)", value: "none" },
   official1: {
     label: "خلفية رسمية 1 (الذهبية)",
-    value: "url('/safe_background/1.png')",
+    value: "url('/safe_background/1.webp')",
   },
-  official2: { label: "خلفية رسمية 2", value: "url('/safe_background/2.png')" },
-  official3: { label: "خلفية رسمية 3", value: "url('/safe_background/3.png')" },
+  official2: { label: "خلفية رسمية 2", value: "url('/safe_background/2.webp')" },
+  official3: { label: "خلفية رسمية 3", value: "url('/safe_background/3.webp')" },
 };
 
 const IconWithText = ({

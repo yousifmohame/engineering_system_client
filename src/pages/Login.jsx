@@ -319,7 +319,7 @@ const Login = () => {
     >
       {/* Background */}
       <img
-        src={`${ASSETS}login-bg.png`}
+        src={`${ASSETS}login-bg.webp`}
         alt=""
         className="absolute inset-0 z-0 h-full w-full object-cover brightness-[1.03] saturate-[1.10] contrast-[1.04]"
       />
