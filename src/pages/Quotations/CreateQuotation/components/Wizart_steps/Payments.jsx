@@ -1,4 +1,5 @@
 import React from "react";
+
 const IconWithText = ({
   icon: Icon,
   text,
@@ -38,14 +39,21 @@ export const Step5Payments = ({ props }) => {
     paymentCount,
     setPaymentCount,
     paymentsList,
+    setPaymentsList, // 👈 استدعاء الدالة لتحديث الشروط
     acceptedMethods,
     toggleMethod,
-    grandTotal,
   } = props;
+
+  // دالة لتحديث شرط الاستحقاق للدفعة
+  const handleConditionChange = (id, newCondition) => {
+    const updatedPayments = paymentsList.map((payment) =>
+      payment.id === id ? { ...payment, condition: newCondition } : payment
+    );
+    setPaymentsList(updatedPayments);
+  };
 
   return (
     <div className="animate-in fade-in duration-300 h-full flex flex-col text-[#123f59]">
-      
       <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 mb-3 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim">
         <div className="flex min-w-0 items-center gap-3 mb-3">
           <label className="text-[11px] font-bold text-[#475569] mb-0">
@@ -95,15 +103,18 @@ export const Step5Payments = ({ props }) => {
                 </td>
                 <td className="p-1.5 text-[11px] font-bold text-[#123f59] font-mono">
                   {p.amount.toLocaleString(undefined, {
-                    maximumFractionDigits: 0,
+                    minimumFractionDigits: 2, // إضافة خانات عشرية احترافية
+                    maximumFractionDigits: 2,
                   })}{" "}
                   ر.س
                 </td>
                 <td className="p-1.5 text-[10px] text-[#64748b]">
+                  {/* 🚀 تحديث الإدخال لحفظ التغييرات في State */}
                   <input
                     type="text"
-                    defaultValue={p.condition}
-                    className="w-full p-1 bg-transparent border-b border-dashed border-[#d8b46a]/25 outline-none focus:border-[#c5983c]/70"
+                    value={p.condition}
+                    onChange={(e) => handleConditionChange(p.id, e.target.value)}
+                    className="w-full p-1 bg-transparent border-b border-dashed border-[#d8b46a]/25 outline-none focus:border-[#c5983c]/70 transition-colors"
                   />
                 </td>
               </tr>

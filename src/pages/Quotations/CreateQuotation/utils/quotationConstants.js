@@ -4,7 +4,7 @@ import {
   Eye,
   Receipt,
   CreditCard,
-  Paperclip,
+  Upload,
   ScrollText,
   QrCode,
 } from "lucide-react";
@@ -16,7 +16,7 @@ export const STEPS = [
   { id: 3, label: "البنود", icon: Receipt },
   { id: 4, label: "الضريبة", icon: CreditCard },
   { id: 5, label: "الدفعات", icon: CreditCard },
-  { id: 6, label: "المرفقات", icon: Paperclip },
+  { id: 6, label: "مرفقات المالك (داخلي)", icon: Upload },
   { id: 7, label: "الشروط", icon: ScrollText },
   { id: 8, label: "المعاينة", icon: QrCode },
 ];

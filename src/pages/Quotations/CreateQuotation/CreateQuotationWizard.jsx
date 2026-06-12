@@ -105,6 +105,8 @@ const CreateQuotationWizard = (incomingProps) => {
   const [missingDocs, setMissingDocs] = useState("");
   const [showMissingDocs, setShowMissingDocs] = useState(false);
 
+  const [ownerAttachments, setOwnerAttachments] = useState([]);
+
   const [termsText, setTermsText] = useState(
     "1. الدفعة المقدمة غير مستردة.\n2. الرسوم الحكومية على المالك.",
   );
@@ -234,6 +236,7 @@ const CreateQuotationWizard = (incomingProps) => {
       setMissingDocs(existingQuote.missingDocs || "");
       setShowMissingDocs(existingQuote.showMissingDocs);
       setTermsText(existingQuote.terms || "");
+      setOwnerAttachments(existingQuote.ownerAttachments || []);
     }
   }, [existingQuote]);
 
@@ -247,6 +250,7 @@ const CreateQuotationWizard = (incomingProps) => {
     }
   }, [serverTemplates, isEditMode]);
 
+  // 1. الحسابات الأساسية
   const subtotal = items.reduce(
     (sum, item) => sum + (item.qty * item.price - item.discount),
     0,
@@ -260,11 +264,17 @@ const CreateQuotationWizard = (incomingProps) => {
 
   const grandTotal = subtotal + taxAmount;
 
+  // 🚀 الإضافة الجديدة: حساب الإجمالي الفعلي بعد تحمل المكتب للضريبة
+  const calculatedOfficeDiscount = (taxAmount * (officeTaxBearing || 0)) / 100;
+  const finalPayable = grandTotal - calculatedOfficeDiscount;
+
+  // 2. تحديث دالة توزيع الدفعات
   useEffect(() => {
     if (!isEditMode || (isEditMode && paymentsList.length === 0)) {
       let payments = [];
-      if (paymentCount > 0 && grandTotal > 0) {
-        const amountPerPayment = grandTotal / paymentCount;
+      // 🚀 استخدمنا finalPayable بدلاً من grandTotal
+      if (paymentCount > 0 && finalPayable > 0) {
+        const amountPerPayment = finalPayable / paymentCount;
         const percentagePerPayment = 100 / paymentCount;
         for (let i = 1; i <= paymentCount; i++) {
           payments.push({
@@ -283,7 +293,7 @@ const CreateQuotationWizard = (incomingProps) => {
       }
       setPaymentsList(payments);
     }
-  }, [paymentCount, grandTotal, isEditMode]);
+  }, [paymentCount, finalPayable, isEditMode]); // 👈 تحديث المصفوفة لتعتمد على finalPayable
 
   const handleItemChange = (id, field, value) => {
     setItems(
@@ -396,6 +406,16 @@ const CreateQuotationWizard = (incomingProps) => {
       })),
       acceptedMethods,
 
+      ownerAttachments: ownerAttachments.map((att) => ({
+        name: att.name,
+        type: att.type,
+        size: att.size,
+        fileData: att.fileData,
+        description: att.description,
+        uploadedBy: att.uploadedBy,
+        uploadedAt: att.uploadedAt,
+      })),
+
       missingDocs,
       showMissingDocs,
       terms: termsText,
@@ -500,6 +520,8 @@ const CreateQuotationWizard = (incomingProps) => {
     setMissingDocs,
     showMissingDocs,
     setShowMissingDocs,
+    ownerAttachments,
+    setOwnerAttachments,
     termsText,
     setTermsText,
     clientTitle,
