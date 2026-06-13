@@ -3,12 +3,11 @@ import axios from 'axios';
 const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 600000, 
-  withCredentials: true,
 });
 
 api.interceptors.request.use(
