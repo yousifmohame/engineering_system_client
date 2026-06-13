@@ -47,7 +47,7 @@ const IconWithText = ({
 const TAB_TITLES = {
   HR_EMPLOYEES: "إدارة الموظفين",
   ATTENDANCE_AI: "الحضور والانصراف (AI)",
-  CONTRACTS_QIWA: "العقود والاتفاقيات",
+  CONTRACTS_QIWA: "محرك المرفقات للموظف",
   ROLES_PERMISSIONS: "باني الأدوار والصلاحيات",
   ROLES_PERMISSIONSـEMPLOYE: "الأدوار والصلاحيات للموظف",
   HR_REQUESTS: "مركز الطلبات والنماذج",

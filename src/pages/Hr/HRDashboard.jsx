@@ -115,7 +115,7 @@ export default function HRDashboard({ onNavigate }) {
       },
       {
         id: "CONTRACTS_QIWA",
-        title: "العقود والاتفاقيات\n(قوى)",
+        title: "محرك المرفقات للموظف",
         icon: FileText,
         gradient: "from-[#c5983c] to-[#e2bf74]",
       },
