@@ -11,6 +11,8 @@ import PermissionTreeBuilderEmploye from "./screens/permissionTree/PermissionTre
 import EmployeePortal from "./screens/EmployeePortal/EmployeePortal";
 import LeavesAbsenceManagement from "./screens/LeavesAbsence/LeavesAbsenceManagement";
 import PayrollManagement from "./screens/payroll/PayrollManagement";
+// أضف هذا السطر مع باقي الاستيرادات في الأعلى
+import ContractsAttachmentsEngine from "./screens/ContractsAndAttachments/ContractsAttachmentsEngine";
 
 const IconWithText = ({
   icon: Icon,
@@ -154,6 +156,14 @@ const HRScreenWrapper = () => {
         <div className="h-full overflow-hidden bg-[#fbf8f1]">
           {/* نمرر دالة الإغلاق لشاشة الحضور لأن بداخلها زر إغلاق خاص بها */}
           <AttendanceCenter onClose={closeModal} />
+        </div>
+      );
+    }
+
+    if (activeModal === "CONTRACTS_QIWA") {
+      return (
+        <div className="h-full overflow-hidden bg-[#fbf8f1]">
+          <ContractsAttachmentsEngine />
         </div>
       );
     }

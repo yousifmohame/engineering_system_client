@@ -9,4 +9,13 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://backend:5000', // التعديل هنا
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 })

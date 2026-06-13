@@ -6,7 +6,7 @@ import {
   Receipt,
   FileSpreadsheet,
   Banknote,
-  Loader2,
+  Building2,
   ShieldCheck,
 } from "lucide-react";
 
@@ -70,6 +70,13 @@ export default function AccountsDashboard({ onNavigate }) {
         icon: Banknote,
         gradient: "from-indigo-600 to-blue-700 border-indigo-500",
         shadow: "shadow-indigo-600/30",
+      },
+      {
+        id: "BANK_ACCOUNTS",
+        title: "الحسابات البنكية",
+        icon: Building2,
+        gradient: "from-violet-600 to-purple-800 border-violet-500",
+        shadow: "shadow-violet-600/30",
       },
     ],
     [],
