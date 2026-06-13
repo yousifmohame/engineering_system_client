@@ -7,6 +7,7 @@ import {
   Upload,
   ScrollText,
   QrCode,
+  Users,
 } from "lucide-react";
 
 export const STEPS = [
@@ -18,7 +19,9 @@ export const STEPS = [
   { id: 5, label: "الدفعات", icon: CreditCard },
   { id: 6, label: "مرفقات المالك (داخلي)", icon: Upload },
   { id: 7, label: "الشروط", icon: ScrollText },
-  { id: 8, label: "المعاينة", icon: QrCode },
+  { id: 8, label: "الخاتمة", icon: FileText }, // 👈 الخطوة الجديدة
+  { id: 9, label: "إعدادات الأطراف", icon: Users }, // 👈 التاب الجديد
+  { id: 10, label: "المعاينة", icon: QrCode },
 ];
 
 export const PRESET_TERMS = [

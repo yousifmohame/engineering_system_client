@@ -163,6 +163,8 @@ export const LivePreview = ({ data }) => {
     showPropertyCode,
     propertyCodeForPreview,
     termsText,
+    conclusion,
+    validityDays,
     items = [],
     subtotal = 0,
     taxAmount = 0,
@@ -189,15 +191,63 @@ export const LivePreview = ({ data }) => {
     authDocType,
     authDocNumber,
     authDocDate,
-    firstPartyName,
-    firstPartyRep,
-    secondPartyName,
-    secondPartyRep,
     selectedBankAccounts = [],
     bankAccountsData = [],
     propertyDistrict = "---",
     propertyPlanNumber = "---",
+    firstPartyName,
+    firstPartyRep,
+    secondPartyName,
+    secondPartyRep,
+    issueDate,
+    // الإضافات:
+    firstPartyRepCapacity = "إدارة المشاريع وعقود العملاء",
+    firstPartyEmpCode,
+    showFirstPartyEmpId = true,
+    firstPartySignatureType = "MANUAL",
+    employeeSignatureUrl,
+    transactionRefForPreview, // 👈 أضف هذا
+    meetingTitleForPreview,
+    status,
   } = data || {};
+
+  const getQuotationStatusBadge = () => {
+    const currentStatus = status || "DRAFT";
+    
+    const isDraft = currentStatus === "DRAFT" || currentStatus === "PENDING_APPROVAL";
+    const isOfficeApproved = currentStatus === "APPROVED" || currentStatus === "SENT";
+    const isFullyApproved = currentStatus === "ACCEPTED" || currentStatus === "PARTIALLY_PAID";
+    const isCancelled = currentStatus === "CANCELLED" || currentStatus === "REJECTED";
+
+    // حساب انتهاء الصلاحية (فقط إذا لم يتم الاعتماد النهائي ولم يتم الإلغاء)
+    let isExpired = false;
+    if (!isFullyApproved && !isCancelled && issueDate && validityDays !== "unlimited") {
+      const expiryDate = new Date(issueDate);
+      expiryDate.setDate(expiryDate.getDate() + parseInt(validityDays));
+      // تصفير الوقت للمقارنة الدقيقة للأيام
+      expiryDate.setHours(23, 59, 59, 999); 
+      if (new Date() > expiryDate) {
+        isExpired = true;
+      }
+    }
+
+    if (isExpired) {
+      return { text: "منتهي (انتهت الصلاحية)", styles: "bg-slate-100 text-slate-700 border-slate-300" };
+    }
+    if (isCancelled) {
+      return { text: "ملغي", styles: "bg-red-50 text-red-700 border-red-200" };
+    }
+    if (isFullyApproved) {
+      return { text: "معتمد من جميع الأطراف", styles: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+    }
+    if (isOfficeApproved) {
+      return { text: "معتمد من مقدم الخدمة فقط", styles: "bg-blue-50 text-blue-700 border-blue-200" };
+    }
+    
+    return { text: "مسودة غير معتمدة", styles: "bg-amber-50 text-amber-700 border-amber-200" };
+  };
+
+  const statusBadge = getQuotationStatusBadge();
 
   const calculatedOfficeDiscount = (taxAmount * (officeTaxBearing || 0)) / 100;
   const finalPayable = grandTotal - calculatedOfficeDiscount;
@@ -211,9 +261,6 @@ export const LivePreview = ({ data }) => {
 
   const introText = (() => {
     let intro = `إشارة إلى طلبكم بخصوص تقديم عرض سعر خدمات (${transactionType || "الخدمات الهندسية والاستشارية"})`;
-    if (showPropertyCode && propertyCodeForPreview)
-      intro += ` لقطعة الأرض أو الملف رقم (${propertyCodeForPreview})`;
-
     if (handlingMethod)
       intro += `، بناءً على أسلوب التعامل والتفويض المعتمد (${handlingMethod})`;
 
@@ -462,6 +509,11 @@ export const LivePreview = ({ data }) => {
                 ...bgStyleConfig,
               }}
             >
+              <div className="absolute top-8 left-8 z-20">
+                <div className={`px-4 py-2 rounded-xl border-2 font-black text-[12px] shadow-sm ${statusBadge.styles}`}>
+                  {statusBadge.text}
+                </div>
+              </div>
               <div className="absolute inset-0 flex flex-col justify-between items-center text-center p-[80px]">
                 <div className="w-[300px] mt-16 bg-transparent">
                   <img
@@ -504,7 +556,7 @@ export const LivePreview = ({ data }) => {
                   </p>
                   <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-[14px] font-bold text-slate-700">
                     <div className="flex justify-between border-b border-dashed border-slate-300 pb-1">
-                      <span className="text-slate-500">رقم المرجع:</span>
+                      <span className="text-slate-500">رقم العرض /الرقم المرجعي:</span>
                       <span className="font-mono text-slate-900 font-black">
                         {referenceNumber}
                       </span>
@@ -515,6 +567,27 @@ export const LivePreview = ({ data }) => {
                         {issueDateParts.gregorian}
                       </span>
                     </div>
+                    
+                    {/* 🚀 الإضافة الجديدة: رقم المعاملة ومحضر الاجتماع */}
+                    {transactionRefForPreview && (
+                      <div className={`flex justify-between border-b border-dashed border-slate-300 pb-1 ${!meetingTitleForPreview ? 'col-span-2' : ''}`}>
+                        <span className="text-slate-500">معاملة رقم:</span>
+                        <span className="font-mono text-slate-900 font-black">
+                          {transactionRefForPreview}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {meetingTitleForPreview && (
+                      <div className={`flex justify-between border-b border-dashed border-slate-300 pb-1 ${!transactionRefForPreview ? 'col-span-2' : ''}`}>
+                        <span className="text-slate-500">استناداً لمحضر:</span>
+                        <span className="font-mono text-slate-900 font-black truncate max-w-[150px]">
+                          {meetingTitleForPreview}
+                        </span>
+                      </div>
+                    )}
+                    {/* ------------------------------------------- */}
+
                     {propertyCodeForPreview && (
                       <div className="col-span-2 flex justify-between border-b border-dashed border-slate-300 pb-1">
                         <span className="text-slate-500">المشروع/الملكية:</span>
@@ -650,7 +723,7 @@ export const LivePreview = ({ data }) => {
                                 borderColor: `${selectedStyle.accent}44`,
                               }}
                             >
-                              نوع المستند
+                              نوع الخدمة
                             </td>
                             <td
                               className="p-2 border font-black w-[30%]"
@@ -659,7 +732,12 @@ export const LivePreview = ({ data }) => {
                                 color: selectedStyle.accent,
                               }}
                             >
-                              عرض سعر خدمات هندسية
+                              {/* 🚀 تعديل: يعرض نوع الخدمة المختار، وإذا لم يتم اختياره يعرض افتراضياً */}
+                              <EditableSpan
+                                value={transactionType || "عرض سعر خدمات فنية"}
+                                isEditMode={isEditMode}
+                                placeholder="نوع الخدمة"
+                              />
                             </td>
                             <td
                               className="p-2 border bg-slate-50 text-[#475569] w-[20%]"
@@ -735,7 +813,10 @@ export const LivePreview = ({ data }) => {
                                 borderColor: `${selectedStyle.accent}44`,
                               }}
                             >
-                              30 يوماً من تاريخ التحرير
+                              {/* 🚀 تعديل: عرض مدة الصلاحية بالنص المطلوب */}
+                              {validityDays === "unlimited"
+                                ? "مفتوح / غير محدد"
+                                : `${validityDays} يوماً تبدأ بعد اعتماد مقدم الخدمة`}
                             </td>
                             <td
                               className="p-2 border bg-slate-50 text-[#475569]"
@@ -1289,7 +1370,7 @@ export const LivePreview = ({ data }) => {
                           </div>
                         )}
 
-                        {(licenseNumber || serviceNumber || isEditMode) && (
+                        {(licenseNumber || serviceNumber) && (
                           <table
                             className="w-full border-collapse text-right text-[10.5px] bg-transparent mt-3"
                             style={{
@@ -1298,58 +1379,68 @@ export const LivePreview = ({ data }) => {
                           >
                             <tbody className="font-bold text-[#123f59]">
                               <tr>
-                                <td
-                                  className="p-2 border bg-slate-50"
-                                  style={{
-                                    borderColor: `${selectedStyle.accent}44`,
-                                    width: "25%",
-                                  }}
-                                >
-                                  رقم وتاريخ رخصة البناء
-                                </td>
-                                <td
-                                  className="p-2 border font-mono"
-                                  style={{
-                                    borderColor: `${selectedStyle.accent}44`,
-                                    width: "25%",
-                                  }}
-                                >
-                                  <EditableSpan
-                                    value={
-                                      licenseNumber
-                                        ? `${licenseNumber} لعام ${licenseYear}هـ`
-                                        : ""
-                                    }
-                                    isEditMode={isEditMode}
-                                    placeholder="رقم الرخصة"
-                                  />
-                                </td>
-                                <td
-                                  className="p-2 border bg-slate-50"
-                                  style={{
-                                    borderColor: `${selectedStyle.accent}44`,
-                                    width: "25%",
-                                  }}
-                                >
-                                  رقم وتاريخ معاملة البلدي
-                                </td>
-                                <td
-                                  className="p-2 border font-mono"
-                                  style={{
-                                    borderColor: `${selectedStyle.accent}44`,
-                                    width: "25%",
-                                  }}
-                                >
-                                  <EditableSpan
-                                    value={
-                                      serviceNumber
-                                        ? `${serviceNumber} لعام ${serviceYear}هـ`
-                                        : ""
-                                    }
-                                    isEditMode={isEditMode}
-                                    placeholder="رقم المعاملة"
-                                  />
-                                </td>
+                                {/* --- حقل رخصة البناء --- */}
+                                {licenseNumber && (
+                                  <>
+                                    <td
+                                      className="p-2 border bg-slate-50"
+                                      style={{
+                                        borderColor: `${selectedStyle.accent}44`,
+                                        width: "25%",
+                                      }}
+                                    >
+                                      رقم وتاريخ رخصة البناء
+                                    </td>
+                                    <td
+                                      className="p-2 border font-mono"
+                                      style={{
+                                        borderColor: `${selectedStyle.accent}44`,
+                                        // إذا كان الحقلان موجودين يأخذ 25%، وإذا كان لوحده يأخذ 75%
+                                        width:
+                                          licenseNumber && serviceNumber
+                                            ? "25%"
+                                            : "75%",
+                                      }}
+                                    >
+                                      <EditableSpan
+                                        value={`${licenseNumber} لعام ${licenseYear}هـ`}
+                                        isEditMode={isEditMode}
+                                        placeholder="رقم الرخصة"
+                                      />
+                                    </td>
+                                  </>
+                                )}
+
+                                {/* --- حقل المعاملة / الطلب --- */}
+                                {serviceNumber && (
+                                  <>
+                                    <td
+                                      className="p-2 border bg-slate-50"
+                                      style={{
+                                        borderColor: `${selectedStyle.accent}44`,
+                                        width: "25%",
+                                      }}
+                                    >
+                                      رقم وتاريخ المعاملة / الطلب
+                                    </td>
+                                    <td
+                                      className="p-2 border font-mono"
+                                      style={{
+                                        borderColor: `${selectedStyle.accent}44`,
+                                        width:
+                                          licenseNumber && serviceNumber
+                                            ? "25%"
+                                            : "75%",
+                                      }}
+                                    >
+                                      <EditableSpan
+                                        value={`${serviceNumber} لعام ${serviceYear}هـ`}
+                                        isEditMode={isEditMode}
+                                        placeholder="رقم المعاملة"
+                                      />
+                                    </td>
+                                  </>
+                                )}
                               </tr>
                             </tbody>
                           </table>
@@ -1369,6 +1460,7 @@ export const LivePreview = ({ data }) => {
                           className="w-full border-collapse text-center text-[10.5px] bg-transparent"
                           style={{
                             border: `1px solid ${selectedStyle.accent}`,
+                            tableLayout: "fixed",
                           }}
                         >
                           <thead>
@@ -1377,33 +1469,42 @@ export const LivePreview = ({ data }) => {
                               style={{ backgroundColor: selectedStyle.accent }}
                             >
                               <th
-                                className="w-8 p-2.5 border"
-                                style={{ borderColor: selectedStyle.accent }}
+                                className="p-2.5 border"
+                                style={{
+                                  borderColor: selectedStyle.accent,
+                                  width: "5%",
+                                }}
                               >
                                 م
                               </th>
                               <th
                                 className="p-2.5 text-right border"
-                                style={{ borderColor: selectedStyle.accent }}
+                                // أخذ المساحة بالكامل للوصف
+                                style={{
+                                  borderColor: selectedStyle.accent,
+                                  width: showQuantity ? "80%" : "95%",
+                                }}
                               >
                                 وصف الخدمة الاستشارية / نطاق العمل الفني
                               </th>
                               {showQuantity && (
                                 <th
-                                  className="w-16 p-2.5 border"
-                                  style={{ borderColor: selectedStyle.accent }}
+                                  className="p-2.5 border"
+                                  style={{
+                                    borderColor: selectedStyle.accent,
+                                    width: "15%",
+                                  }}
                                 >
                                   الكمية
                                 </th>
                               )}
-                              
                             </tr>
                           </thead>
                           <tbody className="font-bold text-[#123f59]">
                             {items.length === 0 ? (
                               <tr>
                                 <td
-                                  colSpan={showQuantity ? "5" : "4"}
+                                  colSpan={showQuantity ? "3" : "2"}
                                   className="p-6 text-center text-[#94a3b8]"
                                 >
                                   لا توجد بنود فنية مسجلة حتى الآن
@@ -1424,7 +1525,7 @@ export const LivePreview = ({ data }) => {
                                     {index + 1}
                                   </td>
                                   <td
-                                    className="p-2 text-right border leading-relaxed"
+                                    className="p-2 text-right border leading-relaxed break-words whitespace-pre-wrap"
                                     style={{
                                       borderColor: `${selectedStyle.accent}44`,
                                     }}
@@ -1442,58 +1543,64 @@ export const LivePreview = ({ data }) => {
                                       {item.unit}
                                     </td>
                                   )}
-                                  
                                 </tr>
                               ))
                             )}
+
+                            {/* --- قسم الإجماليات --- */}
                             <tr className="avoid-break bg-slate-50/50">
                               <td
-                                colSpan={showQuantity ? "4" : "3"}
-                                className="p-2.5 text-left font-black border"
+                                colSpan={showQuantity ? "3" : "2"}
+                                className="p-0 border"
                                 style={{ borderColor: selectedStyle.accent }}
                               >
-                                المجموع الفرعي
-                              </td>
-                              <td
-                                className="p-2.5 font-mono font-black text-[12px] border text-slate-800"
-                                style={{ borderColor: selectedStyle.accent }}
-                              >
-                                {formatCurrency(subtotal)}
+                                <div className="flex justify-between items-center w-full px-4 py-2.5">
+                                  <span className="font-black">
+                                    المجموع الفرعي
+                                  </span>
+                                  <span className="font-mono font-black text-[12px] text-slate-800">
+                                    {formatCurrency(subtotal)} ر.س
+                                  </span>
+                                </div>
                               </td>
                             </tr>
                             <tr className="avoid-break bg-transparent">
                               <td
-                                colSpan={showQuantity ? "4" : "3"}
-                                className="p-2.5 text-left font-bold text-[#64748b] border"
+                                colSpan={showQuantity ? "3" : "2"}
+                                className="p-0 border"
                                 style={{ borderColor: selectedStyle.accent }}
                               >
-                                ضريبة القيمة المضافة {taxRate || 0}%{" "}
-                                {officeTaxBearing > 0
-                                  ? ` (يتحمل المكتب ${officeTaxBearing}%)`
-                                  : ""}
-                              </td>
-                              <td
-                                className="p-2.5 font-mono font-bold text-[12px] border text-slate-700"
-                                style={{ borderColor: selectedStyle.accent }}
-                              >
-                                {formatCurrency(taxAmount)}
+                                <div className="flex justify-between items-center w-full px-4 py-2.5">
+                                  <span className="font-bold text-[#64748b]">
+                                    ضريبة القيمة المضافة {taxRate || 0}%{" "}
+                                    {officeTaxBearing > 0
+                                      ? ` (يتحمل المكتب ${officeTaxBearing}%)`
+                                      : ""}
+                                  </span>
+                                  <span className="font-mono font-bold text-[12px] text-slate-700">
+                                    {formatCurrency(taxAmount)} ر.س
+                                  </span>
+                                </div>
                               </td>
                             </tr>
                             {officeTaxBearing > 0 && (
                               <tr className="avoid-break bg-transparent text-emerald-700">
                                 <td
-                                  colSpan={showQuantity ? "4" : "3"}
-                                  className="p-2 text-left font-bold border"
+                                  colSpan={showQuantity ? "3" : "2"}
+                                  className="p-0 border"
                                   style={{ borderColor: selectedStyle.accent }}
                                 >
-                                  خصم إعفاء ضريبي ضِمني (المكتب يتحمل نسبة{" "}
-                                  {officeTaxBearing}%)
-                                </td>
-                                <td
-                                  className="p-2 font-mono font-black text-[12px] border"
-                                  style={{ borderColor: selectedStyle.accent }}
-                                >
-                                  - {formatCurrency(calculatedOfficeDiscount)}
+                                  <div className="flex justify-between items-center w-full px-4 py-2">
+                                    <span className="font-bold">
+                                      خصم إعفاء ضريبي ضِمني (المكتب يتحمل نسبة{" "}
+                                      {officeTaxBearing}%)
+                                    </span>
+                                    <span className="font-mono font-black text-[12px]">
+                                      -{" "}
+                                      {formatCurrency(calculatedOfficeDiscount)}{" "}
+                                      ر.س
+                                    </span>
+                                  </div>
                                 </td>
                               </tr>
                             )}
@@ -1502,17 +1609,18 @@ export const LivePreview = ({ data }) => {
                               style={{ backgroundColor: selectedStyle.accent }}
                             >
                               <td
-                                colSpan={showQuantity ? "4" : "3"}
-                                className="p-3 text-left text-[12.5px] border"
+                                colSpan={showQuantity ? "3" : "2"}
+                                className="p-0 border"
                                 style={{ borderColor: selectedStyle.accent }}
                               >
-                                الإجمالي النهائي المستحق الصافي للدفع
-                              </td>
-                              <td
-                                className="p-3 font-mono text-[13.5px] border"
-                                style={{ borderColor: selectedStyle.accent }}
-                              >
-                                {formatCurrency(finalPayable)} ر.س
+                                <div className="flex justify-between items-center w-full px-4 py-3">
+                                  <span className="text-[12.5px]">
+                                    الإجمالي النهائي المستحق الصافي للدفع
+                                  </span>
+                                  <span className="font-mono text-[13.5px]">
+                                    {formatCurrency(finalPayable)} ر.س
+                                  </span>
+                                </div>
                               </td>
                             </tr>
                           </tbody>
@@ -1770,13 +1878,33 @@ export const LivePreview = ({ data }) => {
                         </div>
                       </section>
 
+                      {/* 🚀 الإضافة الجديدة: قسم الخاتمة */}
+                      {conclusion && (
+                        <section className="mb-8 avoid-break bg-transparent">
+                          <div
+                            contentEditable={isEditMode}
+                            suppressContentEditableWarning
+                            style={{
+                              letterSpacing: "0px",
+                              lineHeight: "26px",
+                              fontSize: "12px",
+                              whiteSpace: "pre-wrap",
+                            }}
+                            className={`text-center font-bold text-[#475569] px-8 ${isEditMode ? "bg-amber-50 p-2 rounded outline-none border border-amber-300" : ""}`}
+                          >
+                            {conclusion}
+                          </div>
+                        </section>
+                      )}
+                      {/* ---------------------------------- */}
+
                       {/* 🚀 قسم الاعتمادات والتواقيع المربوط ببيانات أطراف التعاقد  */}
                       <section className="mt-8 pt-4 avoid-break bg-transparent">
                         <h4
                           className="mb-4 text-[12.5px] font-black text-center"
                           style={{ color: selectedStyle.accent }}
                         >
-                          صيغة الاعتماد والموافقة النهائية والتواقيع الرسمي
+                          صيغة الاعتماد والموافقة النهائية والتواقيع الرسمية
                         </h4>
                         <table
                           className="w-full border-collapse text-right text-[10px] bg-transparent table-fixed"
@@ -1793,7 +1921,10 @@ export const LivePreview = ({ data }) => {
                                 className="p-2.5 border-l w-1/2"
                                 style={{ borderColor: selectedStyle.accent }}
                               >
-                                الطرف الثاني: قبول وتوقيع العميل / المفوض
+                                الطرف الثاني: قبول وتوقيع العميل /{" "}
+                                {signatureMethod === "AUTHORIZED"
+                                  ? "المفوض"
+                                  : "الوكيل"}
                               </th>
                               <th className="p-2.5 w-1/2">
                                 الطرف الأول: اعتماد وختم مقدم الخدمة (المكتب)
@@ -1814,14 +1945,7 @@ export const LivePreview = ({ data }) => {
                                       اسم الجهة / العميل:
                                     </span>{" "}
                                     <span className="font-black text-slate-800">
-                                      <EditableSpan
-                                        value={
-                                          secondPartyName ||
-                                          clientNameForPreview
-                                        }
-                                        isEditMode={isEditMode}
-                                        placeholder="أدخل الاسم"
-                                      />
+                                      {clientNameForPreview}
                                     </span>
                                   </div>
                                   <div>
@@ -1829,15 +1953,9 @@ export const LivePreview = ({ data }) => {
                                       يمثلها في التوقيع:
                                     </span>{" "}
                                     <span className="font-black text-slate-800">
-                                      <EditableSpan
-                                        value={
-                                          secondPartyRep ||
-                                          (signatureMethod !== "SELF"
-                                            ? repName
-                                            : "المالك الفعلي ذو العلاقة")
-                                        }
-                                        isEditMode={isEditMode}
-                                      />
+                                      {signatureMethod === "SELF"
+                                        ? "المالك الفعلي ذو العلاقة"
+                                        : repName}
                                     </span>
                                   </div>
                                   <div>
@@ -1845,63 +1963,45 @@ export const LivePreview = ({ data }) => {
                                       الصفة والتمثيل الكياني:
                                     </span>{" "}
                                     <span className="font-black text-slate-800">
-                                      {/* 🚀 السحب بشكل مباشر من repCapacity حسب طلبك */}
-                                      <EditableSpan
-                                        value={
-                                          signatureMethod !== "SELF"
-                                            ? repCapacity
-                                            : "المالك الفعلي"
-                                        }
-                                        isEditMode={isEditMode}
-                                      />
+                                      {signatureMethod === "SELF"
+                                        ? "المالك الأصلي"
+                                        : signatureMethod === "AGENT"
+                                          ? "وكيل شرعي"
+                                          : "مفوض نظامي"}
                                     </span>
                                   </div>
-                                  <div>
-                                    <span className="text-slate-500 font-bold">
-                                      رقم الهوية / السجل:
-                                    </span>{" "}
-                                    <span className="font-mono font-black text-slate-800">
-                                      <EditableSpan
-                                        value={
-                                          signatureMethod !== "SELF"
-                                            ? repIdNumber
-                                            : ""
-                                        }
-                                        isEditMode={isEditMode}
-                                        placeholder="............................"
-                                      />
-                                    </span>
-                                  </div>
+                                  {signatureMethod !== "SELF" && (
+                                    <>
+                                      <div>
+                                        <span className="text-slate-500 font-bold">
+                                          رقم الهوية / السجل:
+                                        </span>{" "}
+                                        <span className="font-mono font-black text-slate-800">
+                                          {repIdNumber ||
+                                            "............................"}
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <span className="text-slate-500 font-bold">
+                                          مستند التفويض/الوكالة:
+                                        </span>{" "}
+                                        <span className="font-mono font-black text-cyan-900">
+                                          {authDocNumber
+                                            ? `رقم (${authDocNumber})`
+                                            : "............................"}
+                                        </span>
+                                      </div>
+                                    </>
+                                  )}
                                   <div>
                                     <span className="text-slate-500 font-bold">
                                       رقم الجوال:
                                     </span>{" "}
                                     <span className="font-mono font-black text-slate-800">
-                                      <EditableSpan
-                                        value={repPhone}
-                                        isEditMode={isEditMode}
-                                        placeholder="............................"
-                                      />
+                                      {repPhone ||
+                                        "............................"}
                                     </span>
                                   </div>
-                                  {signatureMethod !== "SELF" && (
-                                    <div>
-                                      <span className="text-slate-500 font-bold">
-                                        مستند التفويض/الوكالة:
-                                      </span>{" "}
-                                      <span className="font-mono font-black text-cyan-900">
-                                        <EditableSpan
-                                          value={
-                                            authDocNumber
-                                              ? `رقم (${authDocNumber})`
-                                              : ""
-                                          }
-                                          isEditMode={isEditMode}
-                                          placeholder="............................"
-                                        />
-                                      </span>
-                                    </div>
-                                  )}
                                   <div className="mt-8 text-center text-slate-400 font-bold">
                                     التوقيع الشخصي والختم:
                                     <br />
@@ -1909,6 +2009,8 @@ export const LivePreview = ({ data }) => {
                                   </div>
                                 </div>
                               </td>
+
+                              {/* --- الطرف الأول --- */}
                               <td
                                 className="p-3 align-top"
                                 style={{
@@ -1921,56 +2023,50 @@ export const LivePreview = ({ data }) => {
                                       اسم المنشأة الهندسية:
                                     </span>{" "}
                                     <span className="font-black text-slate-800">
-                                      <EditableSpan
-                                        value={
-                                          firstPartyName ||
-                                          "شركة ديتيلز كونسولتس للاستشارات الهندسية"
-                                        }
-                                        isEditMode={isEditMode}
-                                      />
+                                      شركة ديتيلز كونسولتس | Details consults
                                     </span>
                                   </div>
                                   <div>
                                     <span className="text-slate-500 font-bold">
-                                      يمثلها في التوقيع:
+                                      إسم ممثل مقدم الخدمة:
                                     </span>{" "}
                                     <span className="font-black text-slate-800">
-                                      <EditableSpan
-                                        value={
-                                          firstPartyRep ||
-                                          employeeName ||
-                                          "إدارة تطوير الأعمال والمشاريع"
-                                        }
-                                        isEditMode={isEditMode}
-                                      />
+                                      {firstPartyRep || "__________________"}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="text-slate-500 font-bold">
-                                      الإدارة المصدرة للعرض:
+                                      صفة ممثل مقدم الخدمة:
                                     </span>{" "}
                                     <span className="font-black text-slate-800">
-                                      <EditableSpan
-                                        value="إدارة المشاريع وعقود العملاء"
-                                        isEditMode={isEditMode}
-                                      />
+                                      {firstPartyRepCapacity}
                                     </span>
                                   </div>
-                                  <div>
-                                    <span className="text-slate-500 font-bold">
-                                      رقم الموظف الرقمي:
-                                    </span>{" "}
-                                    <span className="font-mono text-slate-800">
-                                      <EditableSpan
-                                        value={employeeId}
-                                        isEditMode={isEditMode}
-                                      />
-                                    </span>
-                                  </div>
-                                  <div className="mt-16 text-center text-slate-400 font-bold">
-                                    ختم الاعتماد والتوقيع:
+                                  {showFirstPartyEmpId && (
+                                    <div>
+                                      <span className="text-slate-500 font-bold">
+                                        الرقم الوظيفي:
+                                      </span>{" "}
+                                      <span className="font-mono text-slate-800">
+                                        {data.firstPartyEmpCode}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <div className="mt-8 text-center text-slate-400 font-bold">
+                                    التوقيع الشخصي والختم:
                                     <br />
-                                    ........................................
+                                    {firstPartySignatureType === "SYSTEM" &&
+                                    data.employeeSignatureUrl ? (
+                                      <img
+                                        src={data.employeeSignatureUrl}
+                                        alt="توقيع الموظف"
+                                        className="h-16 mt-2 mx-auto mix-blend-multiply object-contain"
+                                      />
+                                    ) : (
+                                      <span className="inline-block mt-6">
+                                        ........................................
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               </td>

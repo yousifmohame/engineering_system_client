@@ -1,14 +1,7 @@
-import React, { useState } from "react";
-import {
-  AlertTriangle,
-  Building,
-  Landmark,
-  Plus,
-  Edit2,
-  Trash2,
-  Check,
-  X,
-} from "lucide-react";
+import React, { useEffect } from "react";
+import { AlertTriangle, Building, Landmark, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import axios from "../../../../../api/axios"; // تأكد من مسار الـ axios حسب مشروعك
 
 // ==========================================
 // الخطوة 5: الدفعات
@@ -23,18 +16,34 @@ export const Step5Payments = ({ props }) => {
     toggleMethod,
     finalPayable = 0,
 
-    // 🚀 سحب الحسابات البنكية المحددة من الأب
+    // سحب الحسابات البنكية المحددة ودوال التحديث من الأب
     selectedBankAccounts = [],
     setSelectedBankAccounts,
-    bankAccountsData = [], // 👈 استقبال البيانات من الأب
-    setBankAccountsData,   // 👈 استقبال دالة التحديث من الأب
+    bankAccountsData = [],
+    setBankAccountsData,
   } = props;
 
-  // 🚀 حالات إضافة وتعديل الحسابات البنكية
-  const [isAddingBank, setIsAddingBank] = useState(false);
-  const [newBank, setNewBank] = useState({ name: "", account: "" });
-  const [editingBankId, setEditingBankId] = useState(null);
-  const [editBankData, setEditBankData] = useState({ name: "", account: "" });
+  // 🚀 جلب الحسابات البنكية من الباك إند
+  const { data: fetchedBanks = [], isLoading: isLoadingBanks } = useQuery({
+    queryKey: ["bank-accounts"],
+    queryFn: async () => {
+      const res = await axios.get("/bank-accounts");
+      return res.data?.data || [];
+    },
+  });
+
+  // 🚀 تحديث بيانات الحسابات في المكون الأب (Wizard) لكي تظهر في الـ LivePreview
+  useEffect(() => {
+    if (fetchedBanks.length > 0 && setBankAccountsData) {
+      // توحيد شكل البيانات ليتطابق مع ما يتوقعه الـ LivePreview
+      const formattedBanks = fetchedBanks.map((bank) => ({
+        id: bank.id,
+        name: bank.bankName,
+        account: bank.iban || bank.accountNumber, // نفضل عرض الآيبان، وإلا نعرض رقم الحساب
+      }));
+      setBankAccountsData(formattedBanks);
+    }
+  }, [fetchedBanks, setBankAccountsData]);
 
   const totalQuotationAmount =
     finalPayable > 0
@@ -82,43 +91,6 @@ export const Step5Payments = ({ props }) => {
     );
   };
 
-  // 🚀 دوال إدارة الحسابات البنكية
-  const handleAddBank = () => {
-    if (!newBank.name.trim() || !newBank.account.trim()) return;
-    const newId = `bank_${Date.now()}`;
-    setBankAccountsData([
-      ...bankAccountsData,
-      { id: newId, name: newBank.name, account: newBank.account },
-    ]);
-    setSelectedBankAccounts((prev) => [...prev, newId]); // تحديده تلقائياً عند الإضافة
-    setIsAddingBank(false);
-    setNewBank({ name: "", account: "" });
-  };
-
-  const startEditBank = (bank) => {
-    setEditingBankId(bank.id);
-    setEditBankData({ name: bank.name, account: bank.account });
-  };
-
-  const saveEditBank = () => {
-    if (!editBankData.name.trim() || !editBankData.account.trim()) return;
-    setBankAccountsData(
-      bankAccountsData.map((b) =>
-        b.id === editingBankId
-          ? { ...b, name: editBankData.name, account: editBankData.account }
-          : b,
-      ),
-    );
-    setEditingBankId(null);
-  };
-
-  const deleteBank = (id) => {
-    setBankAccountsData(bankAccountsData.filter((b) => b.id !== id));
-    if (setSelectedBankAccounts && selectedBankAccounts.includes(id)) {
-      setSelectedBankAccounts(selectedBankAccounts.filter((x) => x !== id));
-    }
-  };
-
   const totalPercentage = paymentsList.reduce(
     (sum, p) => sum + (parseFloat(p.percentage) || 0),
     0,
@@ -134,6 +106,7 @@ export const Step5Payments = ({ props }) => {
 
   return (
     <div className="animate-in fade-in duration-300 flex flex-col text-[#123f59] pb-4">
+      {/* 🌟 جدول توزيع الدفعات */}
       <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 mb-4 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim relative">
         <div className="flex min-w-0 items-center gap-3 mb-4 border-b border-slate-100 pb-3">
           <label className="text-[11px] font-bold text-[#475569] mb-0">
@@ -226,6 +199,7 @@ export const Step5Payments = ({ props }) => {
         )}
       </div>
 
+      {/* 🌟 طرق الدفع والحسابات البنكية */}
       <div className="p-4 bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] shrink-0">
         <label className="block text-[11.5px] font-black text-[#123f59] mb-3">
           طرق وقنوات الدفع المعتمدة
@@ -270,153 +244,50 @@ export const Step5Payments = ({ props }) => {
           <div className="mt-4 p-3 bg-blue-50/50 rounded-xl border border-blue-100 animate-in slide-in-from-top-2 duration-300">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-900">
-                <Landmark className="w-3.5 h-3.5" /> الحسابات البنكية المراد
-                إظهار أرقامها في العرض:
+                <Landmark className="w-3.5 h-3.5" /> اختر الحسابات البنكية
+                لإظهارها للعميل:
               </div>
-              {!isAddingBank && (
-                <button
-                  onClick={() => setIsAddingBank(true)}
-                  className="flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-800 bg-white border border-blue-200 px-2 py-1 rounded-md transition-colors"
-                >
-                  <Plus className="w-3 h-3" /> إضافة حساب
-                </button>
-              )}
             </div>
 
             <div className="flex flex-col gap-2">
-              {bankAccountsData.map((bank) => (
-                <div
-                  key={bank.id}
-                  className="flex items-center gap-2 p-2 bg-white border border-blue-100/60 rounded-lg hover:border-blue-300 transition-colors shadow-sm group"
-                >
-                  {editingBankId === bank.id ? (
-                    // 🚀 نمط التعديل
-                    <div className="flex-1 flex gap-2 items-center w-full">
+              {isLoadingBanks ? (
+                <div className="flex flex-col items-center justify-center p-4 text-blue-600">
+                  <Loader2 className="w-5 h-5 animate-spin mb-2" />
+                  <span className="text-[10px] font-bold">
+                    جاري تحميل الحسابات البنكية...
+                  </span>
+                </div>
+              ) : bankAccountsData.length === 0 ? (
+                <div className="p-3 text-center text-[10px] font-bold text-slate-500 bg-white rounded-lg border border-slate-200">
+                  لا توجد حسابات بنكية مسجلة في النظام. الرجاء إضافتها من
+                  إعدادات الحسابات.
+                </div>
+              ) : (
+                bankAccountsData.map((bank) => (
+                  <div
+                    key={bank.id}
+                    className="flex items-center gap-2 p-2 bg-white border border-blue-100/60 rounded-lg hover:border-blue-300 transition-colors shadow-sm"
+                  >
+                    <label className="flex items-center gap-2 flex-1 cursor-pointer select-none">
                       <input
-                        value={editBankData.name}
-                        onChange={(e) =>
-                          setEditBankData({
-                            ...editBankData,
-                            name: e.target.value,
-                          })
-                        }
-                        className="flex-1 px-2 py-1 text-[10.5px] font-bold border border-blue-200 rounded outline-none focus:border-blue-500"
-                        placeholder="اسم البنك"
+                        type="checkbox"
+                        checked={selectedBankAccounts.includes(bank.id)}
+                        onChange={() => toggleBankAccount(bank.id)}
+                        className="w-3.5 h-3.5 text-blue-600 rounded shrink-0"
                       />
-                      <input
-                        value={editBankData.account}
-                        onChange={(e) =>
-                          setEditBankData({
-                            ...editBankData,
-                            account: e.target.value,
-                          })
-                        }
-                        className="flex-[2] px-2 py-1 text-[10px] font-mono border border-blue-200 rounded outline-none focus:border-blue-500"
-                        placeholder="رقم الآيبان (مثال: SA00...)"
+                      <Building className="w-3 h-3 text-slate-400 shrink-0" />
+                      <span className="font-bold text-[10.5px] text-slate-700 min-w-[100px] truncate">
+                        {bank.name}
+                      </span>
+                      <span
+                        className="text-[10px] text-slate-500 font-mono tracking-wider ml-auto truncate"
                         dir="ltr"
-                      />
-                      <div className="flex gap-1 shrink-0">
-                        <button
-                          onClick={saveEditBank}
-                          className="p-1.5 bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setEditingBankId(null)}
-                          className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    // 🚀 نمط العرض
-                    <>
-                      <label className="flex items-center gap-2 flex-1 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={selectedBankAccounts.includes(bank.id)}
-                          onChange={() => toggleBankAccount(bank.id)}
-                          className="w-3.5 h-3.5 text-blue-600 rounded shrink-0"
-                        />
-                        <Building className="w-3 h-3 text-slate-400 shrink-0" />
-                        <span className="font-bold text-[10.5px] text-slate-700 min-w-[100px] truncate">
-                          {bank.name}
-                        </span>
-                        <span
-                          className="text-[10px] text-slate-500 font-mono tracking-wider ml-auto truncate"
-                          dir="ltr"
-                        >
-                          {bank.account}
-                        </span>
-                      </label>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        <button
-                          onClick={() => startEditBank(bank)}
-                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded"
-                          title="تعديل"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => deleteBank(bank.id)}
-                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"
-                          title="حذف"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
-
-              {/* 🚀 نمط الإضافة الجديد */}
-              {isAddingBank && (
-                <div className="flex items-center gap-2 p-2 bg-blue-50/50 border border-blue-200 border-dashed rounded-lg animate-in zoom-in-95">
-                  <div className="flex-1 flex gap-2 items-center w-full">
-                    <input
-                      value={newBank.name}
-                      onChange={(e) =>
-                        setNewBank({ ...newBank, name: e.target.value })
-                      }
-                      className="flex-1 px-2 py-1 text-[10.5px] font-bold border border-blue-200 rounded outline-none focus:border-blue-500"
-                      placeholder="اسم البنك (مثال: بنك الرياض)"
-                      autoFocus
-                    />
-                    <input
-                      value={newBank.account}
-                      onChange={(e) =>
-                        setNewBank({
-                          ...newBank,
-                          account: e.target.value.toUpperCase(),
-                        })
-                      }
-                      className="flex-[2] px-2 py-1 text-[10px] font-mono border border-blue-200 rounded outline-none focus:border-blue-500 uppercase"
-                      placeholder="الآيبان (SA...)"
-                      dir="ltr"
-                    />
-                    <div className="flex gap-1 shrink-0">
-                      <button
-                        onClick={handleAddBank}
-                        disabled={!newBank.name || !newBank.account}
-                        className="p-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Check className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setIsAddingBank(false);
-                          setNewBank({ name: "", account: "" });
-                        }}
-                        className="p-1.5 bg-slate-200 text-slate-600 rounded hover:bg-slate-300"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                        {bank.account}
+                      </span>
+                    </label>
                   </div>
-                </div>
+                ))
               )}
             </div>
           </div>

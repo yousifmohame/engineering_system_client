@@ -13,6 +13,8 @@ import {
   generateHijriYears,
 } from "./utils/quotationConstants";
 import { LivePreview } from "./components/LivePreview";
+import { useAuth } from "../../../context/AuthContext";
+import { getEmployees } from "../../../api/employeeApi";
 
 import { Step0ClientProperty } from "./components/Wizart_steps/ClientProperty";
 import { Step1BasicInfo } from "./components/Wizart_steps/BasicInfo";
@@ -22,6 +24,8 @@ import { Step4Tax } from "./components/Wizart_steps/Tax";
 import { Step5Payments } from "./components/Wizart_steps/Payments";
 import { Step6Attachments } from "./components/Wizart_steps/Attachments";
 import { Step7Terms } from "./components/Wizart_steps/Terms";
+import Conclusion from "./components/Wizart_steps/Conclusion"; // تم إضافة الاستيراد هنا
+import StepPartiesSettings from "./components/Wizart_steps/StepPartiesSettings";
 import { Step8Review } from "./components/Wizart_steps/Review";
 
 const IconWithText = ({
@@ -70,6 +74,7 @@ const CreateQuotationWizard = (incomingProps) => {
     incomingProps.onComplete || incomingProps.props?.onComplete;
 
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const isEditMode = !!quotationId;
 
@@ -109,7 +114,14 @@ const CreateQuotationWizard = (incomingProps) => {
   const [paymentsList, setPaymentsList] = useState([]);
   const [acceptedMethods, setAcceptedMethods] = useState(["bank"]);
 
-  // 🚀 حالة الحسابات البنكية تم رفعها للويزارد
+  const [firstPartyEmployeeId, setFirstPartyEmployeeId] = useState("");
+  const [firstPartyRepCapacity, setFirstPartyRepCapacity] = useState(
+    "إدارة المشاريع وعقود العملاء",
+  );
+  const [showFirstPartyEmpId, setShowFirstPartyEmpId] = useState(true);
+  const [firstPartySignatureType, setFirstPartySignatureType] =
+    useState("MANUAL");
+
   const [selectedBankAccounts, setSelectedBankAccounts] = useState([]);
   const [bankAccountsData, setBankAccountsData] = useState([
     { id: "bank_1", name: "مصرف الراجحي", account: "SA0000000000000000000000" },
@@ -129,6 +141,9 @@ const CreateQuotationWizard = (incomingProps) => {
   const [termsText, setTermsText] = useState(
     "1. الدفعة المقدمة غير مستردة.\n2. الرسوم الحكومية على المالك.",
   );
+  // إضافة حالة الخاتمة الجديدة هنا
+  const [conclusion, setConclusion] = useState("");
+
   const [clientTitle, setClientTitle] = useState("المواطن");
   const [handlingMethod, setHandlingMethod] = useState("المالك مباشرة");
   const [selectedPresetTerm, setSelectedPresetTerm] = useState("manual");
@@ -154,6 +169,11 @@ const CreateQuotationWizard = (incomingProps) => {
     queryFn: async () =>
       (await axios.get("/clients/simple", { params: { search: clientSearch } }))
         .data,
+  });
+
+  const { data: employeesData = [], isLoading: isLoadingEmployees } = useQuery({
+    queryKey: ["employees"],
+    queryFn: getEmployees,
   });
 
   const { data: propertiesData, isLoading: propertiesLoading } = useQuery({
@@ -287,6 +307,8 @@ const CreateQuotationWizard = (incomingProps) => {
       setMissingDocs(existingQuote.missingDocs || "");
       setShowMissingDocs(existingQuote.showMissingDocs);
       setTermsText(existingQuote.terms || "");
+      // جلب الخاتمة عند التعديل
+      setConclusion(existingQuote.conclusion || "");
       setOwnerAttachments(existingQuote.ownerAttachments || []);
     }
   }, [existingQuote]);
@@ -340,6 +362,13 @@ const CreateQuotationWizard = (incomingProps) => {
       setPaymentsList(payments);
     }
   }, [paymentCount, finalPayable, isEditMode]);
+
+  // 🚀 تعيين الموظف الحالي كافتراضي للطرف الأول عند إنشاء عرض جديد
+  useEffect(() => {
+    if (!isEditMode && user?.id && !firstPartyEmployeeId) {
+      setFirstPartyEmployeeId(user.id);
+    }
+  }, [user, isEditMode, firstPartyEmployeeId]);
 
   const handleItemChange = (id, field, value) => {
     setItems(
@@ -469,6 +498,7 @@ const CreateQuotationWizard = (incomingProps) => {
       missingDocs,
       showMissingDocs,
       terms: termsText,
+      conclusion: conclusion, // تضمين الخاتمة في الطلب المرفوع للباك إند
       clientTitle: mapTitleToEnum(clientTitle),
       handlingMethod: mapHandlingToEnum(handlingMethod),
       stampType,
@@ -600,6 +630,8 @@ const CreateQuotationWizard = (incomingProps) => {
     setOwnerAttachments,
     termsText,
     setTermsText,
+    conclusion, // تمرير الحالة للمكونات
+    setConclusion, // تمرير دالة التحديث للمكونات
     clientTitle,
     setClientTitle,
     handlingMethod,
@@ -612,6 +644,15 @@ const CreateQuotationWizard = (incomingProps) => {
     setStampType,
     officeServices,
     servicesLoading,
+    firstPartyEmployeeId,
+    setFirstPartyEmployeeId,
+    firstPartyRepCapacity,
+    setFirstPartyRepCapacity,
+    showFirstPartyEmpId,
+    setShowFirstPartyEmpId,
+    firstPartySignatureType,
+    setFirstPartySignatureType,
+    employeesData,
     quotationData: {
       clientName:
         getClientName(clientsData?.find((c) => c.id === selectedClient)) ||
@@ -626,6 +667,16 @@ const CreateQuotationWizard = (incomingProps) => {
     (p) => p.id === selectedProperty,
   );
 
+  const selectedEmployee = employeesData?.find(
+    (emp) => emp.id === firstPartyEmployeeId,
+  );
+
+  // 🚀 استخراج بيانات المعاملة والمحضر للمعاينة
+  const selectedTxObj = transactionsData?.find(tx => tx.id === selectedTransaction);
+  const selectedMeetingObj = meetingsData?.find(m => m.id === selectedMeeting);
+
+  
+
   const previewData = {
     referenceNumber,
     templateType,
@@ -636,7 +687,6 @@ const CreateQuotationWizard = (incomingProps) => {
       getClientName(clientsData?.find((c) => c.id === selectedClient)) ||
       getClientName(existingQuote?.client) ||
       "عميل غير محدد",
-    // 🚀 جلب كود العميل للمعاينة بشكل مباشر بناء على اختياره
     clientCodeForPreview:
       clientsData?.find((c) => c.id === selectedClient)?.clientCode ||
       existingQuote?.client?.clientCode ||
@@ -672,7 +722,32 @@ const CreateQuotationWizard = (incomingProps) => {
     taxRate,
     taxAmount,
     grandTotal,
+    firstPartyName: "شركة ديتيلز كونسولتس للاستشارات الهندسية", // ثابتة أو يمكن تغييرها
+    firstPartyRep: 
+      selectedEmployee?.fullName || 
+      selectedEmployee?.name || 
+      user?.fullName || 
+      user?.name || 
+      "_________________",
+      
+    firstPartyEmpCode: 
+      selectedEmployee?.employeeCode || 
+      user?.employeeCode || 
+      "SYS-XXX",
+      
+    employeeSignatureUrl: 
+      selectedEmployee?.signatureUrl || 
+      user?.signatureUrl || 
+      null,
+
+    firstPartyRepCapacity,
+    showFirstPartyEmpId,
+    firstPartySignatureType,
+    employeeName:
+      user?.name || user?.fullName || "إدارة المشاريع وعقود العملاء",
+    employeeId: user?.employeeCode || user?.id || "SYS-109",
     termsText,
+    conclusion, // إرسال الخاتمة لبيانات المعاينة الحية
     missingDocs,
     showMissingDocs,
     paymentsList,
@@ -684,6 +759,9 @@ const CreateQuotationWizard = (incomingProps) => {
     showPropertyCode,
     showClientCode,
     officeTaxBearing,
+    transactionRefForPreview: selectedTxObj?.referenceNumber || selectedTxObj?.ref || existingQuote?.transaction?.referenceNumber || null,
+    meetingTitleForPreview: selectedMeetingObj?.referenceNumber || existingQuote?.meetingMinute?.title || null,
+    status: existingQuote?.status || "DRAFT",
     plots:
       selectedPropertyDetails?.plots || existingQuote?.ownership?.plots || [],
     boundaries:
@@ -792,6 +870,7 @@ const CreateQuotationWizard = (incomingProps) => {
                     خطوة {currentStep + 1} من {STEPS.length}
                   </span>
                 </div>
+                {/* ترتيب الخطوات مع إدراج الخاتمة قبل خطوة المعاينة */}
                 {currentStep === 0 && <Step2Template props={stepProps} />}
                 {currentStep === 1 && <Step0ClientProperty props={stepProps} />}
                 {currentStep === 2 && <Step1BasicInfo props={stepProps} />}
@@ -800,7 +879,11 @@ const CreateQuotationWizard = (incomingProps) => {
                 {currentStep === 5 && <Step5Payments props={stepProps} />}
                 {currentStep === 6 && <Step6Attachments props={stepProps} />}
                 {currentStep === 7 && <Step7Terms props={stepProps} />}
-                {currentStep === 8 && <Step8Review props={stepProps} />}
+                {currentStep === 8 && <Conclusion props={stepProps} />}{" "}
+                {/* الخطوة الجديدة */}
+                {currentStep === 9 && <StepPartiesSettings props={stepProps} />}
+                {currentStep === 10 && <Step8Review props={stepProps} />}{" "}
+                {/* تم تأخيرها لتصبح الخطوة الأخيرة */}
               </div>
             </div>
           </div>

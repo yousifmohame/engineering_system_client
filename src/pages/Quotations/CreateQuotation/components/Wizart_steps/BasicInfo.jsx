@@ -32,9 +32,8 @@ const IconWithText = ({
   );
 };
 
-// 🚀 دالة مساعدة لتوليد السنوات الهجرية تلقائياً في حال عدم توفرها من الأب
 const getFallbackHijriYears = () => {
-  const currentYear = 1445; // سنة افتراضية يمكن استبدالها بدالة تجلب السنة الحالية
+  const currentYear = 1445; 
   const years = [];
   for (let y = currentYear + 5; y >= 1400; y--) {
     years.push({ value: y.toString(), label: `${y} هـ` });
@@ -42,9 +41,6 @@ const getFallbackHijriYears = () => {
   return years;
 };
 
-// ==========================================
-// الخطوة 1: البيانات الأساسية
-// ==========================================
 export const Step1BasicInfo = ({ props }) => {
   const {
     issueDate,
@@ -63,18 +59,15 @@ export const Step1BasicInfo = ({ props }) => {
     setLicenseNumber,
     licenseYear,
     setLicenseYear,
-    serviceYearsList = getFallbackHijriYears(), // 👈 استخدام القائمة التلقائية إذا لم تتوفر
+    serviceYearsList = getFallbackHijriYears(), 
     licenseYearsList = getFallbackHijriYears(),
     officeServices = [],
     servicesLoading,
   } = props;
 
-  // 🚀 حالة للتحكم في ظهور قائمة الخدمات (الـ Combo Box)
   const [showServicesDropdown, setShowServicesDropdown] = useState(false);
 
-  // إخفاء القائمة عند النقر خارجها
   const handleDropdownBlur = () => {
-    // نستخدم setTimeout لضمان تنفيذ حدث الـ onClick لعناصر القائمة قبل إخفائها
     setTimeout(() => setShowServicesDropdown(false), 200);
   };
 
@@ -148,83 +141,84 @@ export const Step1BasicInfo = ({ props }) => {
           الخدمة والرخصة
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          {/* 🚀 حقل نوع الخدمة المدمج (Combo Box) */}
+        {/* 🚀 حقل نوع الخدمة في سطر منفصل */}
+        <div className="mb-4">
+          <label className="block text-[11px] font-bold text-[#475569] mb-1.5">
+            نوع الخدمة / المعاملة <span className="text-red-500">*</span>
+          </label>
           <div className="relative">
-            <label className="block text-[11px] font-bold text-[#475569] mb-1.5">
-              نوع الخدمة / المعاملة <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <Type className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                value={transactionType}
-                onChange={(e) => setTransactionType(e.target.value)}
-                onFocus={() => setShowServicesDropdown(true)}
-                onBlur={handleDropdownBlur}
-                placeholder="اكتب اسم الخدمة يدوياً أو اختر..."
-                className="w-full py-2 pr-9 pl-8 border border-[#d8b46a]/35 rounded-xl text-xs font-bold outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 transition-all bg-slate-50/50"
-              />
-              <button
-                onClick={() => setShowServicesDropdown(!showServicesDropdown)}
-                className="absolute left-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-cyan-600 rounded-md"
-                type="button"
-              >
-                {servicesLoading ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
-              </button>
-
-              {/* القائمة المنسدلة للخدمات */}
-              {showServicesDropdown && (
-                <div className="absolute top-full right-0 left-0 mt-1 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1 custom-scrollbar-slim">
-                  {officeServices && officeServices.length > 0 ? (
-                    officeServices.map((srv) => (
-                      <div
-                        key={srv.id || srv.code}
-                        onClick={() => {
-                          setTransactionType(srv.name);
-                          setShowServicesDropdown(false);
-                        }}
-                        className="px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700 cursor-pointer transition-colors"
-                      >
-                        {srv.name}
-                      </div>
-                    ))
-                  ) : (
-                    <>
-                      <div
-                        onClick={() => setTransactionType("إفراغ عقاري")}
-                        className="px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700 cursor-pointer"
-                      >
-                        إفراغ عقاري
-                      </div>
-                      <div
-                        onClick={() => setTransactionType("رهن عقاري")}
-                        className="px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700 cursor-pointer"
-                      >
-                        رهن عقاري
-                      </div>
-                      <div
-                        onClick={() =>
-                          setTransactionType("تصحيح وضع مبنى قائم")
-                        }
-                        className="px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700 cursor-pointer"
-                      >
-                        تصحيح وضع مبنى قائم
-                      </div>
-                    </>
-                  )}
-                </div>
+            <Type className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={transactionType}
+              onChange={(e) => setTransactionType(e.target.value)}
+              onFocus={() => setShowServicesDropdown(true)}
+              onBlur={handleDropdownBlur}
+              placeholder="اكتب اسم الخدمة يدوياً أو اختر..."
+              className="w-full py-2 pr-9 pl-8 border border-[#d8b46a]/35 rounded-xl text-xs font-bold outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 transition-all bg-slate-50/50"
+            />
+            <button
+              onClick={() => setShowServicesDropdown(!showServicesDropdown)}
+              className="absolute left-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-cyan-600 rounded-md"
+              type="button"
+            >
+              {servicesLoading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
               )}
-            </div>
-            <p className="text-[9px] text-slate-400 mt-1 mr-1">
-              يمكنك الاختيار من القائمة أو الكتابة يدوياً مباشرة.
-            </p>
-          </div>
+            </button>
 
+            {/* القائمة المنسدلة للخدمات */}
+            {showServicesDropdown && (
+              <div className="absolute top-full right-0 left-0 mt-1 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1 custom-scrollbar-slim">
+                {officeServices && officeServices.length > 0 ? (
+                  officeServices.map((srv) => (
+                    <div
+                      key={srv.id || srv.code}
+                      onClick={() => {
+                        setTransactionType(srv.name);
+                        setShowServicesDropdown(false);
+                      }}
+                      className="px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700 cursor-pointer transition-colors"
+                    >
+                      {srv.name}
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    <div
+                      onClick={() => setTransactionType("إفراغ عقاري")}
+                      className="px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700 cursor-pointer"
+                    >
+                      إفراغ عقاري
+                    </div>
+                    <div
+                      onClick={() => setTransactionType("رهن عقاري")}
+                      className="px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700 cursor-pointer"
+                    >
+                      رهن عقاري
+                    </div>
+                    <div
+                      onClick={() =>
+                        setTransactionType("تصحيح وضع مبنى قائم")
+                      }
+                      className="px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700 cursor-pointer"
+                    >
+                      تصحيح وضع مبنى قائم
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+          <p className="text-[9px] text-slate-400 mt-1 mr-1">
+            سيظهر هذا في نوع المستند في المعاينة. يمكنك الاختيار أو الكتابة يدوياً.
+          </p>
+        </div>
+
+        {/* الحقول الأخرى في سطر (رقم الطلب وسنة الطلب) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 border-t border-slate-50 pt-4">
           <div>
             <label className="block text-[11px] font-bold text-[#475569] mb-1.5">
               رقم الطلب / الخدمة
