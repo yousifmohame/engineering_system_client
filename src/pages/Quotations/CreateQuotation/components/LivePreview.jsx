@@ -17,6 +17,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import api from "../../../../api/axios";
+// أضف هذا الاستيراد في أعلى الملف
+import QRCode from "react-qr-code";
 
 const A4_WIDTH_PX = 794;
 const A4_HEIGHT_PX = 1123;
