@@ -16,7 +16,8 @@ import {
   Computer,
   Bot,
   Loader2,
-  ShieldCheck
+  ShieldCheck,
+  Briefcase // تم إضافة أيقونة الحقيبة للعروض الوظيفية
 } from "lucide-react";
 import api from "../../api/axios";
 
@@ -105,6 +106,13 @@ export default function HRDashboard({ onNavigate }) {
         icon: Users,
         gradient: "from-[#0e7490] to-[#15536f]",
         badge: dashboardStats.employeesLoading ? "LOADING" : `${dashboardStats.activeEmployeesCount} نشط`,
+      },
+      {
+        id: "JOB_OFFERS", // 👈 إضافة وحدة العروض الوظيفية
+        title: "العروض الوظيفية\n(Job Offers)",
+        icon: Briefcase,
+        gradient: "from-[#0369a1] to-[#1e3a8a]",
+        badge: "جديد",
       },
       {
         id: "ATTENDANCE_AI",

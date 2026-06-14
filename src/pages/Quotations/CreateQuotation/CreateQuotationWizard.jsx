@@ -24,7 +24,7 @@ import { Step4Tax } from "./components/Wizart_steps/Tax";
 import { Step5Payments } from "./components/Wizart_steps/Payments";
 import { Step6Attachments } from "./components/Wizart_steps/Attachments";
 import { Step7Terms } from "./components/Wizart_steps/Terms";
-import Conclusion from "./components/Wizart_steps/Conclusion"; // تم إضافة الاستيراد هنا
+import Conclusion from "./components/Wizart_steps/Conclusion";
 import StepPartiesSettings from "./components/Wizart_steps/StepPartiesSettings";
 import { Step8Review } from "./components/Wizart_steps/Review";
 
@@ -78,6 +78,7 @@ const CreateQuotationWizard = (incomingProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const isEditMode = !!quotationId;
 
+  // --- States ---
   const [referenceNumber, setReferenceNumber] = useState(
     generateReferenceNumber(),
   );
@@ -123,25 +124,14 @@ const CreateQuotationWizard = (incomingProps) => {
     useState("MANUAL");
 
   const [selectedBankAccounts, setSelectedBankAccounts] = useState([]);
-  const [bankAccountsData, setBankAccountsData] = useState([
-    { id: "bank_1", name: "مصرف الراجحي", account: "SA0000000000000000000000" },
-    {
-      id: "bank_2",
-      name: "البنك الأهلي السعودي",
-      account: "SA1111111111111111111111",
-    },
-    { id: "bank_3", name: "بنك الإنماء", account: "SA2222222222222222222222" },
-  ]);
+  const [bankAccountsData, setBankAccountsData] = useState([]); // يُملأ من الـ API عبر Step5
 
   const [missingDocs, setMissingDocs] = useState("");
   const [showMissingDocs, setShowMissingDocs] = useState(true);
-
   const [ownerAttachments, setOwnerAttachments] = useState([]);
-
   const [termsText, setTermsText] = useState(
     "1. الدفعة المقدمة غير مستردة.\n2. الرسوم الحكومية على المالك.",
   );
-  // إضافة حالة الخاتمة الجديدة هنا
   const [conclusion, setConclusion] = useState("");
 
   const [clientTitle, setClientTitle] = useState("المواطن");
@@ -149,21 +139,31 @@ const CreateQuotationWizard = (incomingProps) => {
   const [selectedPresetTerm, setSelectedPresetTerm] = useState("manual");
   const [stampType, setStampType] = useState("NONE");
 
+  // --- States أطراف التعاقد ---
   const [clientType, setClientType] = useState("فرد");
   const [signatureMethod, setSignatureMethod] = useState("SELF");
   const [repName, setRepName] = useState("");
   const [repIdNumber, setRepIdNumber] = useState("");
   const [repPhone, setRepPhone] = useState("");
   const [repCapacity, setRepCapacity] = useState("");
+
   const [authDocType, setAuthDocType] = useState("");
   const [authDocNumber, setAuthDocNumber] = useState("");
   const [authDocDate, setAuthDocDate] = useState("");
+
+  // 🚀 المتغيرات الجديدة للتواريخ ونوع الانتفاع المخصص
+  const [authDocIssueDate, setAuthDocIssueDate] = useState("");
+  const [showAuthDocIssueDate, setShowAuthDocIssueDate] = useState(false);
+  const [authDocExpiryDate, setAuthDocExpiryDate] = useState("");
+  const [showAuthDocExpiryDate, setShowAuthDocExpiryDate] = useState(false);
+  const [customUsufructType, setCustomUsufructType] = useState("");
 
   const [firstPartyName, setFirstPartyName] = useState("");
   const [firstPartyRep, setFirstPartyRep] = useState("");
   const [secondPartyName, setSecondPartyName] = useState("");
   const [secondPartyRep, setSecondPartyRep] = useState("");
 
+  // --- API Queries ---
   const { data: clientsData, isLoading: clientsLoading } = useQuery({
     queryKey: ["clients", clientSearch],
     queryFn: async () =>
@@ -229,6 +229,77 @@ const CreateQuotationWizard = (incomingProps) => {
       [],
   });
 
+  // 🚀 دالة الحقن الذكي: تعمل عند اختيار العميل لتعبئة بيانات الأطراف تلقائياً
+  const handleClientSelection = (clientId) => {
+    setSelectedClient(clientId);
+
+    if (!clientId || !clientsData) return;
+
+    const client = clientsData.find((c) => c.id === clientId);
+    if (!client) return;
+
+    // 1. تعبئة النوع والجوال
+    setClientType(client.type || "فرد");
+    setRepPhone(client.mobile || client.contact?.mobile || "");
+
+    // 2. تحليل بيانات الممثل/الوكيل (إذا كانت موجودة في الـ JSON)
+    if (
+      client.representative &&
+      Object.keys(client.representative).length > 0
+    ) {
+      const rep = client.representative;
+      setRepName(rep.name || "");
+      setRepIdNumber(rep.idNumber || "");
+
+      if (rep.type === "وكيل") {
+        setSignatureMethod("AGENT");
+        setAuthDocType("وكالة");
+      } else if (rep.type === "مفوض") {
+        setSignatureMethod("AUTHORIZED");
+        setAuthDocType("تفويض");
+      } else if (rep.type === "ناظر") {
+        setSignatureMethod("AUTHORIZED");
+        setAuthDocType("مستفيد");
+        setCustomUsufructType("صك نظارة");
+      } else {
+        setSignatureMethod("AUTHORIZED");
+        setAuthDocType("تفويض");
+      }
+
+      setAuthDocNumber(rep.docNumber || "");
+
+      // معالجة التواريخ لتناسب Input type="date"
+      if (rep.issueDate) {
+        setAuthDocIssueDate(rep.issueDate.split("T")[0]);
+        setShowAuthDocIssueDate(true);
+      } else {
+        setAuthDocIssueDate("");
+        setShowAuthDocIssueDate(false);
+      }
+
+      if (rep.expiryDate) {
+        setAuthDocExpiryDate(rep.expiryDate.split("T")[0]);
+        setShowAuthDocExpiryDate(true);
+      } else {
+        setAuthDocExpiryDate("");
+        setShowAuthDocExpiryDate(false);
+      }
+    } else {
+      // إذا لم يكن هناك وكيل، افترض أن المالك يوقع عن نفسه
+      setSignatureMethod("SELF");
+      setRepName(client.officialNameAr || client.name?.ar || "");
+      setRepIdNumber(client.idNumber || "");
+      setAuthDocType("");
+      setAuthDocNumber("");
+      setAuthDocIssueDate("");
+      setShowAuthDocIssueDate(false);
+      setAuthDocExpiryDate("");
+      setShowAuthDocExpiryDate(false);
+      setCustomUsufructType("");
+    }
+  };
+
+  // --- Effects ---
   useEffect(() => {
     if (existingQuote) {
       setReferenceNumber(
@@ -255,6 +326,7 @@ const CreateQuotationWizard = (incomingProps) => {
       setServiceNumber(existingQuote.serviceNumber || "");
       setServiceYear(existingQuote.serviceYear || "");
 
+      // بيانات الأطراف
       setClientType(existingQuote.clientType || "فرد");
       setSignatureMethod(existingQuote.signatureMethod || "SELF");
       setRepName(existingQuote.repName || "");
@@ -268,6 +340,21 @@ const CreateQuotationWizard = (incomingProps) => {
           ? existingQuote.authDocDate.split("T")[0]
           : "",
       );
+
+      // التواريخ الجديدة والنوع المخصص
+      setAuthDocIssueDate(
+        existingQuote.authDocIssueDate
+          ? existingQuote.authDocIssueDate.split("T")[0]
+          : "",
+      );
+      setShowAuthDocIssueDate(existingQuote.showAuthDocIssueDate || false);
+      setAuthDocExpiryDate(
+        existingQuote.authDocExpiryDate
+          ? existingQuote.authDocExpiryDate.split("T")[0]
+          : "",
+      );
+      setShowAuthDocExpiryDate(existingQuote.showAuthDocExpiryDate || false);
+      setCustomUsufructType(existingQuote.customUsufructType || "");
 
       setFirstPartyName(existingQuote.firstPartyName || "");
       setFirstPartyRep(existingQuote.firstPartyRep || "");
@@ -307,7 +394,6 @@ const CreateQuotationWizard = (incomingProps) => {
       setMissingDocs(existingQuote.missingDocs || "");
       setShowMissingDocs(existingQuote.showMissingDocs);
       setTermsText(existingQuote.terms || "");
-      // جلب الخاتمة عند التعديل
       setConclusion(existingQuote.conclusion || "");
       setOwnerAttachments(existingQuote.ownerAttachments || []);
     }
@@ -323,6 +409,13 @@ const CreateQuotationWizard = (incomingProps) => {
     }
   }, [serverTemplates, isEditMode]);
 
+  useEffect(() => {
+    if (!isEditMode && user?.id && !firstPartyEmployeeId) {
+      setFirstPartyEmployeeId(user.id);
+    }
+  }, [user, isEditMode, firstPartyEmployeeId]);
+
+  // --- Calculations ---
   const subtotal = items.reduce(
     (sum, item) => sum + (item.qty * item.price - item.discount),
     0,
@@ -363,13 +456,7 @@ const CreateQuotationWizard = (incomingProps) => {
     }
   }, [paymentCount, finalPayable, isEditMode]);
 
-  // 🚀 تعيين الموظف الحالي كافتراضي للطرف الأول عند إنشاء عرض جديد
-  useEffect(() => {
-    if (!isEditMode && user?.id && !firstPartyEmployeeId) {
-      setFirstPartyEmployeeId(user.id);
-    }
-  }, [user, isEditMode, firstPartyEmployeeId]);
-
+  // --- Handlers ---
   const handleItemChange = (id, field, value) => {
     setItems(
       items.map((i) =>
@@ -451,6 +538,8 @@ const CreateQuotationWizard = (incomingProps) => {
       serviceYear,
       licenseNumber,
       licenseYear,
+
+      // الأطراف
       clientType,
       signatureMethod,
       repName: signatureMethod !== "SELF" ? repName : null,
@@ -459,11 +548,27 @@ const CreateQuotationWizard = (incomingProps) => {
       repCapacity: signatureMethod !== "SELF" ? repCapacity : null,
       authDocType: signatureMethod !== "SELF" ? authDocType : null,
       authDocNumber: signatureMethod !== "SELF" ? authDocNumber : null,
-      authDocDate: signatureMethod !== "SELF" ? authDocDate || null : null,
+
+      // 🚀 إرسال التواريخ وأنواعها
+      authDocIssueDate:
+        signatureMethod !== "SELF" && showAuthDocIssueDate
+          ? authDocIssueDate
+          : null,
+      showAuthDocIssueDate,
+      authDocExpiryDate:
+        signatureMethod !== "SELF" && showAuthDocExpiryDate
+          ? authDocExpiryDate
+          : null,
+      showAuthDocExpiryDate,
+      customUsufructType:
+        authDocType === "مستند انتفاع" ? customUsufructType : null,
+
       firstPartyName,
       firstPartyRep,
       secondPartyName,
       secondPartyRep,
+
+      // البنود والضرائب
       items: items.map((i, idx) => ({
         order: idx + 1,
         title: i.title,
@@ -477,6 +582,8 @@ const CreateQuotationWizard = (incomingProps) => {
       })),
       taxRate,
       officeTaxBearing,
+
+      // الدفعات والحسابات
       payments: paymentsList.map((p, idx) => ({
         installmentNumber: idx + 1,
         percentage: p.percentage,
@@ -486,19 +593,19 @@ const CreateQuotationWizard = (incomingProps) => {
       acceptedMethods,
       selectedBankAccounts,
       bankAccountsData,
+
+      // المستندات والشروط
       ownerAttachments: ownerAttachments.map((att) => ({
         name: att.name,
         type: att.type,
         size: att.size,
         fileData: att.fileData,
         description: att.description,
-        uploadedBy: att.uploadedBy,
-        uploadedAt: att.uploadedAt,
       })),
       missingDocs,
       showMissingDocs,
       terms: termsText,
-      conclusion: conclusion, // تضمين الخاتمة في الطلب المرفوع للباك إند
+      conclusion,
       clientTitle: mapTitleToEnum(clientTitle),
       handlingMethod: mapHandlingToEnum(handlingMethod),
       stampType,
@@ -515,11 +622,12 @@ const CreateQuotationWizard = (incomingProps) => {
   const handleNextOrSave = () =>
     setCurrentStep((p) => Math.min(STEPS.length - 1, p + 1));
 
+  // --- Props and Data Objects ---
   const stepProps = {
     referenceNumber,
     setReferenceNumber,
     selectedClient,
-    setSelectedClient,
+    setSelectedClient: handleClientSelection, // 🚀 تمرير دالة الحقن الذكي
     selectedProperty,
     setSelectedProperty,
     clientSearch,
@@ -587,6 +695,16 @@ const CreateQuotationWizard = (incomingProps) => {
     setAuthDocNumber,
     authDocDate,
     setAuthDocDate,
+    authDocIssueDate,
+    setAuthDocIssueDate,
+    showAuthDocIssueDate,
+    setShowAuthDocIssueDate,
+    authDocExpiryDate,
+    setAuthDocExpiryDate,
+    showAuthDocExpiryDate,
+    setShowAuthDocExpiryDate,
+    customUsufructType,
+    setCustomUsufructType,
     firstPartyName,
     setFirstPartyName,
     firstPartyRep,
@@ -630,8 +748,8 @@ const CreateQuotationWizard = (incomingProps) => {
     setOwnerAttachments,
     termsText,
     setTermsText,
-    conclusion, // تمرير الحالة للمكونات
-    setConclusion, // تمرير دالة التحديث للمكونات
+    conclusion,
+    setConclusion,
     clientTitle,
     setClientTitle,
     handlingMethod,
@@ -666,16 +784,15 @@ const CreateQuotationWizard = (incomingProps) => {
   const selectedPropertyDetails = propertiesData?.find(
     (p) => p.id === selectedProperty,
   );
-
   const selectedEmployee = employeesData?.find(
     (emp) => emp.id === firstPartyEmployeeId,
   );
-
-  // 🚀 استخراج بيانات المعاملة والمحضر للمعاينة
-  const selectedTxObj = transactionsData?.find(tx => tx.id === selectedTransaction);
-  const selectedMeetingObj = meetingsData?.find(m => m.id === selectedMeeting);
-
-  
+  const selectedTxObj = transactionsData?.find(
+    (tx) => tx.id === selectedTransaction,
+  );
+  const selectedMeetingObj = meetingsData?.find(
+    (m) => m.id === selectedMeeting,
+  );
 
   const previewData = {
     referenceNumber,
@@ -713,6 +830,11 @@ const CreateQuotationWizard = (incomingProps) => {
     authDocType,
     authDocNumber,
     authDocDate,
+    authDocIssueDate,
+    showAuthDocIssueDate,
+    authDocExpiryDate,
+    showAuthDocExpiryDate,
+    customUsufructType,
     secondPartyName,
     secondPartyRep,
     items,
@@ -720,24 +842,17 @@ const CreateQuotationWizard = (incomingProps) => {
     taxRate,
     taxAmount,
     grandTotal,
-    firstPartyName: "شركة ديتيلز كونسولتس للاستشارات الهندسية", // ثابتة أو يمكن تغييرها
-    firstPartyRep: 
-      selectedEmployee?.fullName || 
-      selectedEmployee?.name || 
-      user?.fullName || 
-      user?.name || 
+    firstPartyName: "شركة ديتيلز كونسولتس للاستشارات الهندسية",
+    firstPartyRep:
+      selectedEmployee?.fullName ||
+      selectedEmployee?.name ||
+      user?.fullName ||
+      user?.name ||
       "_________________",
-      
-    firstPartyEmpCode: 
-      selectedEmployee?.employeeCode || 
-      user?.employeeCode || 
-      "SYS-XXX",
-      
-    employeeSignatureUrl: 
-      selectedEmployee?.signatureUrl || 
-      user?.signatureUrl || 
-      null,
-
+    firstPartyEmpCode:
+      selectedEmployee?.employeeCode || user?.employeeCode || "SYS-XXX",
+    employeeSignatureUrl:
+      selectedEmployee?.signatureUrl || user?.signatureUrl || null,
     firstPartyRepCapacity,
     showFirstPartyEmpId,
     firstPartySignatureType,
@@ -745,7 +860,7 @@ const CreateQuotationWizard = (incomingProps) => {
       user?.name || user?.fullName || "إدارة المشاريع وعقود العملاء",
     employeeId: user?.employeeCode || user?.id || "SYS-109",
     termsText,
-    conclusion, // إرسال الخاتمة لبيانات المعاينة الحية
+    conclusion,
     missingDocs,
     showMissingDocs,
     paymentsList,
@@ -757,8 +872,15 @@ const CreateQuotationWizard = (incomingProps) => {
     showPropertyCode,
     showClientCode,
     officeTaxBearing,
-    transactionRefForPreview: selectedTxObj?.referenceNumber || selectedTxObj?.ref || existingQuote?.transaction?.referenceNumber || null,
-    meetingTitleForPreview: selectedMeetingObj?.referenceNumber || existingQuote?.meetingMinute?.title || null,
+    transactionRefForPreview:
+      selectedTxObj?.referenceNumber ||
+      selectedTxObj?.ref ||
+      existingQuote?.transaction?.referenceNumber ||
+      null,
+    meetingTitleForPreview:
+      selectedMeetingObj?.referenceNumber ||
+      existingQuote?.meetingMinute?.title ||
+      null,
     status: existingQuote?.status || "DRAFT",
     plots:
       selectedPropertyDetails?.plots || existingQuote?.ownership?.plots || [],
@@ -786,6 +908,7 @@ const CreateQuotationWizard = (incomingProps) => {
 
       <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">
         <section className="flex min-h-0 min-w-0 flex-1 lg:flex-[1.1] flex-col overflow-hidden rounded-[20px] sm:rounded-[24px] border border-[#d8b46a]/25 bg-white shadow-[0_10px_26px_rgba(18,63,89,0.08)]">
+          {/* Header */}
           <div className="shrink-0 border-b border-[#e8ddc8] bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490] px-4 py-3 text-white">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
@@ -817,6 +940,7 @@ const CreateQuotationWizard = (incomingProps) => {
           </div>
 
           <div className="flex flex-1 overflow-hidden bg-[#fbf8f1]/30">
+            {/* Sidebar Steps */}
             <aside className="hidden md:block w-[180px] shrink-0 border-l border-[#e8ddc8] bg-white/50 p-4 overflow-y-auto custom-scrollbar-slim">
               <div className="relative">
                 <div className="absolute right-[19px] top-4 bottom-8 w-[2px] bg-slate-200/80 rounded-full" />
@@ -858,6 +982,7 @@ const CreateQuotationWizard = (incomingProps) => {
               </div>
             </aside>
 
+            {/* Main Content Area */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-5 custom-scrollbar-slim relative">
               <div className="mx-auto max-w-3xl h-full">
                 <div className="md:hidden flex items-center justify-between mb-4 pb-2 border-b border-[#e8ddc8]">
@@ -868,7 +993,8 @@ const CreateQuotationWizard = (incomingProps) => {
                     خطوة {currentStep + 1} من {STEPS.length}
                   </span>
                 </div>
-                {/* ترتيب الخطوات مع إدراج الخاتمة قبل خطوة المعاينة */}
+
+                {/* Steps Router */}
                 {currentStep === 0 && <Step2Template props={stepProps} />}
                 {currentStep === 1 && <Step0ClientProperty props={stepProps} />}
                 {currentStep === 2 && <Step1BasicInfo props={stepProps} />}
@@ -877,15 +1003,14 @@ const CreateQuotationWizard = (incomingProps) => {
                 {currentStep === 5 && <Step5Payments props={stepProps} />}
                 {currentStep === 6 && <Step6Attachments props={stepProps} />}
                 {currentStep === 7 && <Step7Terms props={stepProps} />}
-                {currentStep === 8 && <Conclusion props={stepProps} />}{" "}
-                {/* الخطوة الجديدة */}
+                {currentStep === 8 && <Conclusion props={stepProps} />}
                 {currentStep === 9 && <StepPartiesSettings props={stepProps} />}
-                {currentStep === 10 && <Step8Review props={stepProps} />}{" "}
-                {/* تم تأخيرها لتصبح الخطوة الأخيرة */}
+                {currentStep === 10 && <Step8Review props={stepProps} />}
               </div>
             </div>
           </div>
 
+          {/* Footer Navigation */}
           <div className="shrink-0 border-t border-[#e8ddc8] bg-white p-3 sm:p-4 shadow-[0_-4px_15px_rgba(0,0,0,0.02)] z-10">
             <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
               <button
@@ -904,6 +1029,7 @@ const CreateQuotationWizard = (incomingProps) => {
                   {Math.round(((currentStep + 1) / STEPS.length) * 100)}%
                 </div>
               </div>
+
               {currentStep === STEPS.length - 1 ? (
                 <div className="hidden sm:block h-11 w-[180px]" />
               ) : currentStep === STEPS.length - 2 ? (
@@ -942,6 +1068,7 @@ const CreateQuotationWizard = (incomingProps) => {
           </div>
         </section>
 
+        {/* Live Preview Sidebar */}
         <aside className="hidden lg:flex min-h-0 min-w-0 flex-[0.9] overflow-hidden rounded-[24px] border border-[#d8b46a]/25 shadow-sm bg-white">
           <LivePreview data={previewData} />
         </aside>

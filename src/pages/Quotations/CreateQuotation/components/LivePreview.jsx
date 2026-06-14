@@ -102,9 +102,8 @@ const formatDateParts = (value) => {
     "ar-SA-u-ca-islamic-umalqura",
     { year: "numeric", month: "2-digit", day: "2-digit" },
   );
-  const gregorian = toArabicDigits(
-    `${getDatePart(gregorianFormatter, date, "day")}/${getDatePart(gregorianFormatter, date, "month")}/${getDatePart(gregorianFormatter, date, "year")}`,
-  );
+  const gregorian = `${getDatePart(gregorianFormatter, date, "day")}/${getDatePart(gregorianFormatter, date, "month")}/${getDatePart(gregorianFormatter, date, "year")}`;
+
   const hijri = toArabicDigits(
     `${getDatePart(hijriFormatter, date, "day")}/${getDatePart(hijriFormatter, date, "month")}/${getDatePart(hijriFormatter, date, "year")}`,
   );
@@ -209,42 +208,68 @@ export const LivePreview = ({ data }) => {
     transactionRefForPreview, // 👈 أضف هذا
     meetingTitleForPreview,
     status,
+    authDocIssueDate,
+    showAuthDocIssueDate,
+    authDocExpiryDate,
+    showAuthDocExpiryDate,
+    customUsufructType,
   } = data || {};
 
   const getQuotationStatusBadge = () => {
     const currentStatus = status || "DRAFT";
-    
-    const isDraft = currentStatus === "DRAFT" || currentStatus === "PENDING_APPROVAL";
-    const isOfficeApproved = currentStatus === "APPROVED" || currentStatus === "SENT";
-    const isFullyApproved = currentStatus === "ACCEPTED" || currentStatus === "PARTIALLY_PAID";
-    const isCancelled = currentStatus === "CANCELLED" || currentStatus === "REJECTED";
+
+    const isDraft =
+      currentStatus === "DRAFT" || currentStatus === "PENDING_APPROVAL";
+    const isOfficeApproved =
+      currentStatus === "APPROVED" || currentStatus === "SENT";
+    const isFullyApproved =
+      currentStatus === "ACCEPTED" || currentStatus === "PARTIALLY_PAID";
+    const isCancelled =
+      currentStatus === "CANCELLED" || currentStatus === "REJECTED";
 
     // حساب انتهاء الصلاحية (فقط إذا لم يتم الاعتماد النهائي ولم يتم الإلغاء)
     let isExpired = false;
-    if (!isFullyApproved && !isCancelled && issueDate && validityDays !== "unlimited") {
+    if (
+      !isFullyApproved &&
+      !isCancelled &&
+      issueDate &&
+      validityDays !== "unlimited"
+    ) {
       const expiryDate = new Date(issueDate);
       expiryDate.setDate(expiryDate.getDate() + parseInt(validityDays));
       // تصفير الوقت للمقارنة الدقيقة للأيام
-      expiryDate.setHours(23, 59, 59, 999); 
+      expiryDate.setHours(23, 59, 59, 999);
       if (new Date() > expiryDate) {
         isExpired = true;
       }
     }
 
     if (isExpired) {
-      return { text: "منتهي (انتهت الصلاحية)", styles: "bg-slate-100 text-slate-700 border-slate-300" };
+      return {
+        text: "منتهي (انتهت الصلاحية)",
+        styles: "bg-slate-100 text-slate-700 border-slate-300",
+      };
     }
     if (isCancelled) {
       return { text: "ملغي", styles: "bg-red-50 text-red-700 border-red-200" };
     }
     if (isFullyApproved) {
-      return { text: "معتمد من جميع الأطراف", styles: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+      return {
+        text: "معتمد من جميع الأطراف",
+        styles: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      };
     }
     if (isOfficeApproved) {
-      return { text: "معتمد من مقدم الخدمة فقط", styles: "bg-blue-50 text-blue-700 border-blue-200" };
+      return {
+        text: "معتمد من مقدم الخدمة فقط",
+        styles: "bg-blue-50 text-blue-700 border-blue-200",
+      };
     }
-    
-    return { text: "مسودة غير معتمدة", styles: "bg-amber-50 text-amber-700 border-amber-200" };
+
+    return {
+      text: "مسودة غير معتمدة",
+      styles: "bg-amber-50 text-amber-700 border-amber-200",
+    };
   };
 
   const statusBadge = getQuotationStatusBadge();
@@ -510,7 +535,9 @@ export const LivePreview = ({ data }) => {
               }}
             >
               <div className="absolute top-8 left-8 z-20">
-                <div className={`px-4 py-2 rounded-xl border-2 font-black text-[12px] shadow-sm ${statusBadge.styles}`}>
+                <div
+                  className={`px-4 py-2 rounded-xl border-2 font-black text-[12px] shadow-sm ${statusBadge.styles}`}
+                >
                   {statusBadge.text}
                 </div>
               </div>
@@ -556,8 +583,10 @@ export const LivePreview = ({ data }) => {
                   </p>
                   <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-[14px] font-bold text-slate-700">
                     <div className="flex justify-between border-b border-dashed border-slate-300 pb-1">
-                      <span className="text-slate-500">رقم العرض /الرقم المرجعي:</span>
-                      <span className="font-mono text-slate-900 font-black">
+                      <span className="text-slate-500 text-[12px]">
+                        رقم العرض /الرقم المرجعي:
+                      </span>
+                      <span className="font-mono text-slate-900 text-[12px] font-black">
                         {referenceNumber}
                       </span>
                     </div>
@@ -567,20 +596,26 @@ export const LivePreview = ({ data }) => {
                         {issueDateParts.gregorian}
                       </span>
                     </div>
-                    
+
                     {/* 🚀 الإضافة الجديدة: رقم المعاملة ومحضر الاجتماع */}
                     {transactionRefForPreview && (
-                      <div className={`flex justify-between border-b border-dashed border-slate-300 pb-1 ${!meetingTitleForPreview ? 'col-span-2' : ''}`}>
+                      <div
+                        className={`flex justify-between border-b border-dashed border-slate-300 pb-1 ${!meetingTitleForPreview ? "col-span-2" : ""}`}
+                      >
                         <span className="text-slate-500">معاملة رقم:</span>
                         <span className="font-mono text-slate-900 font-black">
                           {transactionRefForPreview}
                         </span>
                       </div>
                     )}
-                    
+
                     {meetingTitleForPreview && (
-                      <div className={`flex justify-between border-b border-dashed border-slate-300 pb-1 ${!transactionRefForPreview ? 'col-span-2' : ''}`}>
-                        <span className="text-slate-500">استناداً لمحضر:</span>
+                      <div
+                        className={`flex justify-between border-b border-dashed border-slate-300 pb-1 ${!transactionRefForPreview ? "col-span-2" : ""}`}
+                      >
+                        <span className="text-slate-500">
+                          استناداً لمحضر اجتماع:
+                        </span>
                         <span className="font-mono text-slate-900 font-black truncate max-w-[150px]">
                           {meetingTitleForPreview}
                         </span>
@@ -1636,7 +1671,7 @@ export const LivePreview = ({ data }) => {
                           >
                             <DollarSign className="w-4 h-4 text-[#c5983c]" />{" "}
                             {signatureMethod !== "SELF" ? "خامساً" : "رابعاً"}:
-                            جدول توزيع الدفعات المالية
+                            الجدول الزمني للدفعات المالية
                           </h4>
                           <table
                             className="w-full border-collapse text-center text-[10.5px] bg-transparent"
@@ -1723,12 +1758,13 @@ export const LivePreview = ({ data }) => {
                                   <tr className="bg-slate-50">
                                     <td
                                       colSpan="4"
-                                      className="p-2 text-right text-[10.5px] text-[#475569] border"
+                                      className="p-3 text-right text-[10.5px] text-[#475569] border"
                                       style={{
                                         borderColor: `${selectedStyle.accent}44`,
                                       }}
                                     >
-                                      <div className="flex flex-col gap-1.5">
+                                      <div className="flex flex-col gap-3">
+                                        {/* 1️⃣ طرق السداد المتاحة */}
                                         <div>
                                           <span className="font-black ml-2 text-slate-800">
                                             طرق السداد المتاحة:
@@ -1740,47 +1776,148 @@ export const LivePreview = ({ data }) => {
                                             )
                                             .join(" ، ")}
                                         </div>
-
+                                        {/* 🚀 قسم عرض الحسابات البنكية في LivePreview */}
                                         {acceptedMethods.includes("bank") &&
                                           selectedBankAccounts.length > 0 && (
-                                            <div className="flex flex-col gap-1 mt-1 border-t border-[#d8b46a]/20 pt-1.5">
-                                              <span className="font-black text-emerald-800">
+                                            <div className="mt-1 border-t border-[#d8b46a]/20 pt-3">
+                                              <span className="font-black text-[#123f59] mb-2 text-[11px] block text-right">
                                                 البيانات البنكية المعتمدة
                                                 للسداد:
                                               </span>
-                                              {selectedBankAccounts.map(
-                                                (bankId) => {
-                                                  const bank =
-                                                    bankAccountsData.find(
-                                                      (b) => b.id === bankId,
-                                                    );
-                                                  if (!bank) return null;
-                                                  return (
-                                                    <div
-                                                      key={bank.id}
-                                                      className="text-emerald-700 font-mono"
-                                                    >
-                                                      - بنك {bank.name} / آيبان:{" "}
-                                                      {bank.account}
-                                                    </div>
-                                                  );
-                                                },
-                                              )}
-                                            </div>
-                                          )}
 
-                                        {acceptedMethods.includes("bank") &&
-                                          selectedBankAccounts.length === 0 && (
-                                            <div className="flex items-center gap-1 mt-1">
-                                              <span className="font-black text-emerald-800">
-                                                البيانات البنكية:
-                                              </span>
-                                              <EditableSpan
-                                                value=""
-                                                placeholder="اسم البنك: (أدخل البنك) - الآيبان: SA(أدخل رقم الآيبان)"
-                                                isEditMode={isEditMode}
-                                                className="text-emerald-700 font-mono w-[80%]"
-                                              />
+                                              {/* 🚀 جدول موحد لجميع الحسابات البنكية */}
+                                              <table className="w-full border-collapse bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm text-center">
+                                                <thead className="bg-slate-100/80">
+                                                  <tr>
+                                                    <th className="p-2 border border-slate-200 text-[9px] font-black text-slate-600">
+                                                      البنك
+                                                    </th>
+                                                    <th className="p-2 border border-slate-200 text-[9px] font-black text-slate-600">
+                                                      اسم المستفيد
+                                                    </th>
+                                                    <th className="p-2 border border-slate-200 text-[9px] font-black text-slate-600">
+                                                      رقم الحساب
+                                                    </th>
+                                                    <th className="p-2 border border-slate-200 text-[9px] font-black text-slate-600">
+                                                      الآيبان / IBAN
+                                                    </th>
+                                                    <th className="p-2 border border-slate-200 text-[8px] font-black text-slate-600 w-[15%]">
+                                                      QR للنسخ والمشاركة
+                                                    </th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                  {selectedBankAccounts.map(
+                                                    (bankId) => {
+                                                      const bank =
+                                                        bankAccountsData.find(
+                                                          (b) =>
+                                                            b.id === bankId,
+                                                        );
+                                                      if (!bank) return null;
+
+                                                      // دالة تنسيق الآيبان (مسافة كل 4 أرقام)
+                                                      const formatIBAN = (
+                                                        iban,
+                                                      ) => {
+                                                        if (!iban) return "---";
+                                                        return iban
+                                                          .replace(/\s+/g, "")
+                                                          .replace(
+                                                            /(.{4})/g,
+                                                            "$1 ",
+                                                          )
+                                                          .trim();
+                                                      };
+
+                                                      // رابط الـ QR لصفحة البنك
+                                                      const backendUrl =
+                                                        import.meta.env
+                                                          .VITE_API_URL ||
+                                                        "http://localhost:5000/api";
+                                                      const bankPublicUrl = `${window.location.origin}/shared/bank/${bank.id}`;
+                                                      const qrCodeSrc = `${backendUrl}/utils/qr?data=${encodeURIComponent(bankPublicUrl)}`;
+
+                                                      return (
+                                                        <tr
+                                                          key={bank.id}
+                                                          className="hover:bg-slate-50/50 transition-colors"
+                                                        >
+                                                          {/* الشعار واسم البنك */}
+                                                          <td className="p-2 border border-slate-200 align-middle text-center">
+                                                            <div className="flex flex-col items-center justify-center gap-1.5">
+                                                              {bank.logo ? (
+                                                                <img
+                                                                  src={
+                                                                    bank.logo
+                                                                  }
+                                                                  alt="logo"
+                                                                  className="w-6 h-6 object-contain shrink-0"
+                                                                />
+                                                              ) : (
+                                                                <Building className="w-5 h-5 text-slate-400 shrink-0" />
+                                                              )}
+                                                              <span className="font-black text-[#123f59] text-[10.5px]">
+                                                                {bank.name}
+                                                              </span>
+                                                            </div>
+                                                          </td>
+
+                                                          {/* الأسماء عربي وإنجليزي */}
+                                                          <td className="p-2 border border-slate-200 align-middle text-center text-[10.5px] text-slate-600 leading-relaxed">
+                                                            <div className="font-bold text-slate-800">
+                                                              {bank.accountNameAr ||
+                                                                bank.accountName ||
+                                                                "---"}
+                                                            </div>
+                                                            <div
+                                                              dir="ltr"
+                                                              className="mt-0.5"
+                                                            >
+                                                              {bank.accountNameEn ||
+                                                                "---"}
+                                                            </div>
+                                                          </td>
+
+                                                          {/* رقم الحساب */}
+                                                          <td className="p-2 border border-slate-200 align-middle text-center">
+                                                            <div
+                                                              className="font-mono font-bold text-slate-800 text-[10.5px] tracking-widest"
+                                                              dir="ltr"
+                                                            >
+                                                              {bank.accountNumber ||
+                                                                "---"}
+                                                            </div>
+                                                          </td>
+
+                                                          {/* الآيبان المنسق */}
+                                                          <td className="p-2 border border-slate-200 align-middle text-center">
+                                                            <div
+                                                              className="font-mono font-black text-indigo-800 text-[10.5px] tracking-wider"
+                                                              dir="ltr"
+                                                            >
+                                                              {formatIBAN(
+                                                                bank.iban,
+                                                              )}
+                                                            </div>
+                                                          </td>
+
+                                                          {/* الـ QR Code والتوجيه */}
+                                                          <td className="p-0 border border-slate-200 align-middle text-center">
+                                                            <div className="flex items-center justify-center">
+                                                              <img
+                                                                src={qrCodeSrc}
+                                                                alt="QR"
+                                                                className="w-full h-full object-contain mb-1 border border-slate-100 p-0.5 rounded shadow-sm bg-white"
+                                                              />
+                                                            </div>
+                                                          </td>
+                                                        </tr>
+                                                      );
+                                                    },
+                                                  )}
+                                                </tbody>
+                                              </table>
                                             </div>
                                           )}
                                       </div>
@@ -1924,7 +2061,11 @@ export const LivePreview = ({ data }) => {
                                 الطرف الثاني: قبول وتوقيع العميل /{" "}
                                 {signatureMethod === "AUTHORIZED"
                                   ? "المفوض"
-                                  : "الوكيل"}
+                                  : signatureMethod === "AGENT"
+                                    ? "الوكيل"
+                                    : signatureMethod === "BENEFICIARY"
+                                      ? "المستفيد"
+                                      : "المالك"}
                               </th>
                               <th className="p-2.5 w-1/2">
                                 الطرف الأول: اعتماد وختم مقدم الخدمة (المكتب)
@@ -1933,13 +2074,14 @@ export const LivePreview = ({ data }) => {
                           </thead>
                           <tbody className="font-bold text-[#123f59]">
                             <tr>
+                              {/* --- الطرف الثاني --- */}
                               <td
-                                className="p-3 border-l align-top"
+                                className="p-3 border-l align-top leading-relaxed"
                                 style={{
                                   borderColor: `${selectedStyle.accent}44`,
                                 }}
                               >
-                                <div className="flex flex-col gap-2.5">
+                                <div className="flex flex-col gap-3">
                                   <div>
                                     <span className="text-slate-500 font-bold">
                                       اسم الجهة / العميل:
@@ -1955,7 +2097,8 @@ export const LivePreview = ({ data }) => {
                                     <span className="font-black text-slate-800">
                                       {signatureMethod === "SELF"
                                         ? "المالك الفعلي ذو العلاقة"
-                                        : repName}
+                                        : repName ||
+                                          "............................"}
                                     </span>
                                   </div>
                                   <div>
@@ -1964,12 +2107,16 @@ export const LivePreview = ({ data }) => {
                                     </span>{" "}
                                     <span className="font-black text-slate-800">
                                       {signatureMethod === "SELF"
-                                        ? "المالك الأصلي"
+                                        ? "عن نفسه (المالك الأصلي)"
                                         : signatureMethod === "AGENT"
                                           ? "وكيل شرعي"
-                                          : "مفوض نظامي"}
+                                          : signatureMethod === "AUTHORIZED"
+                                            ? "مفوض نظامي"
+                                            : "مستفيد"}
                                     </span>
                                   </div>
+
+                                  {/* تفاصيل مستند التفويض تظهر فقط إذا لم يكن المالك هو الموقع */}
                                   {signatureMethod !== "SELF" && (
                                     <>
                                       <div>
@@ -1981,18 +2128,61 @@ export const LivePreview = ({ data }) => {
                                             "............................"}
                                         </span>
                                       </div>
-                                      <div>
-                                        <span className="text-slate-500 font-bold">
-                                          مستند التفويض/الوكالة:
-                                        </span>{" "}
-                                        <span className="font-mono font-black text-cyan-900">
-                                          {authDocNumber
-                                            ? `رقم (${authDocNumber})`
-                                            : "............................"}
-                                        </span>
+
+                                      <div className="flex flex-col gap-1">
+                                        <div>
+                                          <span className="text-slate-500 font-bold">
+                                            مستند التمثيل (
+                                            {authDocType === "مستند انتفاع" &&
+                                            customUsufructType
+                                              ? customUsufructType
+                                              : authDocType ||
+                                                "الوكالة/التفويض"}
+                                            ):
+                                          </span>{" "}
+                                          <span className="font-mono font-black text-cyan-900">
+                                            {authDocNumber
+                                              ? `رقم (${authDocNumber})`
+                                              : "............................"}
+                                          </span>
+                                        </div>
+
+                                        {/* 🚀 إظهار التواريخ إذا تم تفعيلها */}
+                                        {(showAuthDocIssueDate ||
+                                          showAuthDocExpiryDate) && (
+                                          <div className="flex items-center gap-4 text-[9px] mt-0.5">
+                                            {showAuthDocIssueDate &&
+                                              authDocIssueDate && (
+                                                <span className="text-slate-500">
+                                                  تاريخ الإصدار:{" "}
+                                                  <span className="font-mono font-bold text-slate-700">
+                                                    {new Date(
+                                                      authDocIssueDate,
+                                                    ).toLocaleDateString(
+                                                      "ar-SA",
+                                                    )}
+                                                  </span>
+                                                </span>
+                                              )}
+                                            {showAuthDocExpiryDate &&
+                                              authDocExpiryDate && (
+                                                <span className="text-slate-500">
+                                                  تاريخ الانتهاء:{" "}
+                                                  <span className="font-mono font-bold text-rose-600">
+                                                    {new Date(
+                                                      authDocExpiryDate,
+                                                    ).toLocaleDateString(
+                                                      "ar-SA",
+                                                    )}
+                                                  </span>
+                                                </span>
+                                              )}
+                                          </div>
+                                        )}
                                       </div>
                                     </>
                                   )}
+
                                   <div>
                                     <span className="text-slate-500 font-bold">
                                       رقم الجوال:
@@ -2002,22 +2192,24 @@ export const LivePreview = ({ data }) => {
                                         "............................"}
                                     </span>
                                   </div>
-                                  <div className="mt-8 text-center text-slate-400 font-bold">
+                                  <div className="mt-6 text-center text-slate-400 font-bold">
                                     التوقيع الشخصي والختم:
                                     <br />
-                                    ........................................
+                                    <span className="inline-block mt-4">
+                                      ........................................
+                                    </span>
                                   </div>
                                 </div>
                               </td>
 
                               {/* --- الطرف الأول --- */}
                               <td
-                                className="p-3 align-top"
+                                className="p-3 align-top leading-relaxed"
                                 style={{
                                   borderColor: `${selectedStyle.accent}44`,
                                 }}
                               >
-                                <div className="flex flex-col gap-2.5">
+                                <div className="flex flex-col gap-3">
                                   <div>
                                     <span className="text-slate-500 font-bold">
                                       اسم المنشأة الهندسية:
@@ -2039,7 +2231,8 @@ export const LivePreview = ({ data }) => {
                                       صفة ممثل مقدم الخدمة:
                                     </span>{" "}
                                     <span className="font-black text-slate-800">
-                                      {firstPartyRepCapacity}
+                                      {firstPartyRepCapacity ||
+                                        "__________________"}
                                     </span>
                                   </div>
                                   {showFirstPartyEmpId && (
@@ -2047,12 +2240,14 @@ export const LivePreview = ({ data }) => {
                                       <span className="text-slate-500 font-bold">
                                         الرقم الوظيفي:
                                       </span>{" "}
-                                      <span className="font-mono text-slate-800">
-                                        {data.firstPartyEmpCode}
+                                      <span className="font-mono font-black text-slate-800">
+                                        {/* تأكد أنك تمرر firstPartyEmpCode بشكل صحيح */}
+                                        {data.firstPartyEmpCode ||
+                                          "__________________"}
                                       </span>
                                     </div>
                                   )}
-                                  <div className="mt-8 text-center text-slate-400 font-bold">
+                                  <div className="mt-6 text-center text-slate-400 font-bold">
                                     التوقيع الشخصي والختم:
                                     <br />
                                     {firstPartySignatureType === "SYSTEM" &&
@@ -2063,7 +2258,7 @@ export const LivePreview = ({ data }) => {
                                         className="h-16 mt-2 mx-auto mix-blend-multiply object-contain"
                                       />
                                     ) : (
-                                      <span className="inline-block mt-6">
+                                      <span className="inline-block mt-4">
                                         ........................................
                                       </span>
                                     )}
@@ -2082,24 +2277,60 @@ export const LivePreview = ({ data }) => {
                   <tr>
                     <td style={{ padding: "20px 60px 40px 60px" }}>
                       <div
-                        className="pt-2 text-center border-t-[2.5px] flex flex-col items-center"
+                        className="border-t-[2.5px] pt-3"
                         style={{ borderColor: selectedStyle.accent }}
+                        dir="ltr"
                       >
                         <div
-                          className="flex flex-col items-center gap-1 whitespace-nowrap text-[9px] font-black leading-[1.35] opacity-80"
-                          dir="ltr"
+                          className="flex items-start gap-3"
                           style={{ color: selectedStyle.accent }}
                         >
-                          <span>
-                            📍 King Fahd Dist - RIYADH - Kingdom of Saudi Arabia
-                            - POSTAL CODE : 12274
-                          </span>
-                          <span>
-                            ☎ 0590722827 | N.N: 7052303828 | ✉
-                            info@details-consults.sa
-                          </span>
+                          {/* 🚀 تم استبدال الصورة بمربع فارغ للتحقق */}
+                          <div className="h-[16mm] w-[16mm] shrink-0 border border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center bg-slate-50/50">
+                            <span className="text-[7px] font-black text-slate-400 leading-tight text-center">
+                              QR
+                              <br />
+                              للتحقق
+                            </span>
+                          </div>
+
+                          <div className="min-w-0 flex-1 flex flex-col justify-center py-1">
+                            {/* النسخة العربية */}
+                            <div
+                              className="flex items-center justify-end gap-1.5 whitespace-nowrap text-[10.5px] font-black leading-[1.4]"
+                              dir="rtl"
+                            >
+                              <span>📍</span>
+                              <span>
+                                حي الملك فهد - الرياض - المملكة العربية السعودية
+                                - الرمز البريدي : ١٢٢٧٤
+                              </span>
+                              <span className="opacity-50">·</span>
+                              <span>جوال : ٠٥٩٠٧٢٢٨٢٧</span>
+                              <span className="opacity-50">·</span>
+                              <span>الرقم الوطني الموحد : ٧٠٥٢٣٠٣٨٢٨</span>
+                            </div>
+                            {/* النسخة الإنجليزية */}
+                            <div
+                              className="mt-1 flex items-center justify-start gap-1 whitespace-nowrap text-[10px] font-black leading-[1.4]"
+                              dir="ltr"
+                            >
+                              <span>📍</span>
+                              <span>
+                                King Fahd Dist - RIYADH - Kingdom of Saudi
+                                Arabia - POSTAL CODE : 12274
+                              </span>
+                              <span className="ml-1">☎</span>
+                              <span>0590722827</span>
+                              <span className="ml-1">- N.N:</span>
+                              <span>7052303828</span>
+                              <span className="ml-1">✉</span>
+                              <span>info@details-consults.sa</span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="mt-2 text-[10px] font-bold text-slate-400">
+                        {/* رقم الصفحة */}
+                        <div className="mt-2 text-center text-[10px] font-bold text-slate-400">
                           <span className="page-number"></span>
                         </div>
                       </div>

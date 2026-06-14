@@ -145,9 +145,16 @@ export default function BankAccountsPage() {
     alert(`تم نسخ ${fieldName} بنجاح!`);
   };
 
+  // 🚀 إنشاء رابط الـ QR باستخدام خدمة الباك إند الخاصة بنا (In-house)
   const getQrCodeUrl = (acc) => {
+    // 1. الرابط الذي سيفتحه العميل عند مسح الكود
     const publicUrl = `${window.location.origin}/shared/bank/${acc.id}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(publicUrl)}`;
+    
+    // 2. جلب رابط الباك إند الأساسي (يأخذ القيمة من ملف البيئة .env أو من إعدادات axios)
+    const backendUrl = import.meta.env.VITE_API_URL || api.defaults.baseURL || "http://localhost:5000/api";
+    
+    // 3. توجيه الطلب إلى مسار الـ QR الخاص بنا
+    return `${backendUrl}/utils/qr?data=${encodeURIComponent(publicUrl)}`;
   };
 
   // 🚀 دالة المشاركة الجديدة

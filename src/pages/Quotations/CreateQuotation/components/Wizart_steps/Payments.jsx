@@ -1,7 +1,13 @@
 import React, { useEffect } from "react";
-import { AlertTriangle, Building, Landmark, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Building,
+  Landmark,
+  Loader2,
+  QrCode,
+} from "lucide-react"; // 👈 إضافة QrCode
 import { useQuery } from "@tanstack/react-query";
-import axios from "../../../../../api/axios"; // تأكد من مسار الـ axios حسب مشروعك
+import axios from "../../../../../api/axios";
 
 // ==========================================
 // الخطوة 5: الدفعات
@@ -15,8 +21,6 @@ export const Step5Payments = ({ props }) => {
     acceptedMethods,
     toggleMethod,
     finalPayable = 0,
-
-    // سحب الحسابات البنكية المحددة ودوال التحديث من الأب
     selectedBankAccounts = [],
     setSelectedBankAccounts,
     bankAccountsData = [],
@@ -32,14 +36,19 @@ export const Step5Payments = ({ props }) => {
     },
   });
 
-  // 🚀 تحديث بيانات الحسابات في المكون الأب (Wizard) لكي تظهر في الـ LivePreview
+  // 🚀 تحديث بيانات الحسابات مع الاحتفاظ بالشعار والآيبان
   useEffect(() => {
     if (fetchedBanks.length > 0 && setBankAccountsData) {
-      // توحيد شكل البيانات ليتطابق مع ما يتوقعه الـ LivePreview
       const formattedBanks = fetchedBanks.map((bank) => ({
         id: bank.id,
         name: bank.bankName,
-        account: bank.iban || bank.accountNumber, // نفضل عرض الآيبان، وإلا نعرض رقم الحساب
+        accountName: bank.bankName, 
+        accountNameAr: bank.accountNameAr,
+        accountNameEn: bank.accountNameEn,
+        accountNumber: bank.accountNumber,
+        iban: bank.iban,
+        logo: bank.bankLogo, // 👈 حفظ اللوجو
+        account: bank.iban || bank.accountNumber,
       }));
       setBankAccountsData(formattedBanks);
     }
@@ -106,7 +115,7 @@ export const Step5Payments = ({ props }) => {
 
   return (
     <div className="animate-in fade-in duration-300 flex flex-col text-[#123f59] pb-4">
-      {/* 🌟 جدول توزيع الدفعات */}
+      {/* 🌟 جدول توزيع الدفعات (كما هو) */}
       <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 mb-4 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim relative">
         <div className="flex min-w-0 items-center gap-3 mb-4 border-b border-slate-100 pb-3">
           <label className="text-[11px] font-bold text-[#475569] mb-0">
@@ -193,7 +202,7 @@ export const Step5Payments = ({ props }) => {
             <AlertTriangle className="w-4 h-4 shrink-0" />
             <span className="text-[10px] font-bold">
               تنبيه: مجموع نسب الدفعات الحالية هو ({totalPercentage.toFixed(1)}
-              %). يجب أن يكون المجموع الكلي 100% بالضبط لضمان دقة الفوترة.
+              %). يجب أن يكون المجموع الكلي 100% بالضبط.
             </span>
           </div>
         )}
@@ -249,16 +258,16 @@ export const Step5Payments = ({ props }) => {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-3">
               {isLoadingBanks ? (
-                <div className="flex flex-col items-center justify-center p-4 text-blue-600">
+                <div className="col-span-2 flex flex-col items-center justify-center p-4 text-blue-600">
                   <Loader2 className="w-5 h-5 animate-spin mb-2" />
                   <span className="text-[10px] font-bold">
                     جاري تحميل الحسابات البنكية...
                   </span>
                 </div>
               ) : bankAccountsData.length === 0 ? (
-                <div className="p-3 text-center text-[10px] font-bold text-slate-500 bg-white rounded-lg border border-slate-200">
+                <div className="col-span-2 p-3 text-center text-[10px] font-bold text-slate-500 bg-white rounded-lg border border-slate-200">
                   لا توجد حسابات بنكية مسجلة في النظام. الرجاء إضافتها من
                   إعدادات الحسابات.
                 </div>
@@ -266,26 +275,46 @@ export const Step5Payments = ({ props }) => {
                 bankAccountsData.map((bank) => (
                   <div
                     key={bank.id}
-                    className="flex items-center gap-2 p-2 bg-white border border-blue-100/60 rounded-lg hover:border-blue-300 transition-colors shadow-sm"
+                    onClick={() => toggleBankAccount(bank.id)}
+                    className={`flex items-center gap-3 p-3 bg-white border rounded-xl cursor-pointer transition-all shadow-sm ${
+                      selectedBankAccounts.includes(bank.id)
+                        ? "border-blue-500 ring-1 ring-blue-500 bg-blue-50/30"
+                        : "border-slate-200 hover:border-blue-300"
+                    }`}
                   >
-                    <label className="flex items-center gap-2 flex-1 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={selectedBankAccounts.includes(bank.id)}
-                        onChange={() => toggleBankAccount(bank.id)}
-                        className="w-3.5 h-3.5 text-blue-600 rounded shrink-0"
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${selectedBankAccounts.includes(bank.id) ? "border-blue-500 bg-blue-500" : "border-slate-300"}`}
+                    >
+                      {selectedBankAccounts.includes(bank.id) && (
+                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                      )}
+                    </div>
+
+                    {bank.logo ? (
+                      <img
+                        src={bank.logo}
+                        alt="logo"
+                        className="w-8 h-8 object-contain rounded"
                       />
-                      <Building className="w-3 h-3 text-slate-400 shrink-0" />
-                      <span className="font-bold text-[10.5px] text-slate-700 min-w-[100px] truncate">
+                    ) : (
+                      <Building className="w-6 h-6 text-slate-300 shrink-0" />
+                    )}
+
+                    <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+                      <span className="font-bold text-[11px] text-slate-800 truncate">
                         {bank.name}
                       </span>
                       <span
-                        className="text-[10px] text-slate-500 font-mono tracking-wider ml-auto truncate"
+                        className="text-[10px] text-slate-500 font-mono truncate"
                         dir="ltr"
                       >
-                        {bank.account}
+                        {bank.iban || bank.accountNumber}
                       </span>
-                    </label>
+                    </div>
+
+                    <QrCode
+                      className={`w-5 h-5 shrink-0 ${selectedBankAccounts.includes(bank.id) ? "text-blue-500" : "text-slate-300"}`}
+                    />
                   </div>
                 ))
               )}

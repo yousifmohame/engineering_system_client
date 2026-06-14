@@ -13,6 +13,7 @@ import LeavesAbsenceManagement from "./screens/LeavesAbsence/LeavesAbsenceManage
 import PayrollManagement from "./screens/payroll/PayrollManagement";
 // أضف هذا السطر مع باقي الاستيرادات في الأعلى
 import ContractsAttachmentsEngine from "./screens/ContractsAndAttachments/ContractsAttachmentsEngine";
+import JobOffersScreen from "./screens/JobOffers/JobOffersScreen"; // 👈 أضف هذا السطر
 
 const IconWithText = ({
   icon: Icon,
@@ -60,6 +61,7 @@ const TAB_TITLES = {
   HR_INTERNAL_FORMS: "النماذج الذكية",
   ASSETS_CUSTODY: "العهد والأصول",
   SMART_UPDATE: "التحديث الذكي",
+  JOB_OFFERS: "إدارة العروض الوظيفية", // 👈 أضف هذا السطر
 };
 
 const HRScreenWrapper = () => {
@@ -164,6 +166,14 @@ const HRScreenWrapper = () => {
       return (
         <div className="h-full overflow-hidden bg-[#fbf8f1]">
           <ContractsAttachmentsEngine />
+        </div>
+      );
+    }
+
+    if (activeModal === "JOB_OFFERS") {
+      return (
+        <div className="p-3 h-full overflow-y-auto custom-scrollbar-slim bg-[#fbf8f1] custom-scrollbar">
+          <JobOffersScreen onClose={closeModal} onNavigate={handleNavigate} />
         </div>
       );
     }
