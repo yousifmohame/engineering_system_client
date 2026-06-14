@@ -713,8 +713,6 @@ const CreateQuotationWizard = (incomingProps) => {
     authDocType,
     authDocNumber,
     authDocDate,
-    firstPartyName,
-    firstPartyRep,
     secondPartyName,
     secondPartyRep,
     items,
