@@ -77,7 +77,6 @@ const formatCurrency = (value) =>
     maximumFractionDigits: 2,
   });
 
-// 🚀 دالة جديدة لتنسيق المساحات
 const formatArea = (value) =>
   Number(value || 0).toLocaleString("en-US", {
     minimumFractionDigits: 2,
@@ -89,6 +88,7 @@ const toArabicDigits = (value) =>
 
 const getDatePart = (formatter, date, type) =>
   formatter.formatToParts(date).find((part) => part.type === type)?.value || "";
+
 const formatDateParts = (value) => {
   const date = value ? new Date(value) : new Date();
   if (Number.isNaN(date.getTime()))
@@ -180,7 +180,7 @@ export const LivePreview = ({ data }) => {
     missingDocs = "",
     showMissingDocs = false,
     deedNumber,
-    clientType = "فرد",
+    clientType = "فرد", // 👈 سيأخذ القيمة الافتراضية إذا لم يصل من الباك إند
     signatureMethod = "SELF",
     handlingMethod = "المالك مباشرة",
     repName,
@@ -199,13 +199,12 @@ export const LivePreview = ({ data }) => {
     secondPartyName,
     secondPartyRep,
     issueDate,
-    // الإضافات:
     firstPartyRepCapacity = "إدارة المشاريع وعقود العملاء",
     firstPartyEmpCode,
     showFirstPartyEmpId = true,
     firstPartySignatureType = "MANUAL",
     employeeSignatureUrl,
-    transactionRefForPreview, // 👈 أضف هذا
+    transactionRefForPreview,
     meetingTitleForPreview,
     status,
     authDocIssueDate,
@@ -227,7 +226,6 @@ export const LivePreview = ({ data }) => {
     const isCancelled =
       currentStatus === "CANCELLED" || currentStatus === "REJECTED";
 
-    // حساب انتهاء الصلاحية (فقط إذا لم يتم الاعتماد النهائي ولم يتم الإلغاء)
     let isExpired = false;
     if (
       !isFullyApproved &&
@@ -237,34 +235,29 @@ export const LivePreview = ({ data }) => {
     ) {
       const expiryDate = new Date(issueDate);
       expiryDate.setDate(expiryDate.getDate() + parseInt(validityDays));
-      // تصفير الوقت للمقارنة الدقيقة للأيام
       expiryDate.setHours(23, 59, 59, 999);
       if (new Date() > expiryDate) {
         isExpired = true;
       }
     }
 
-    if (isExpired) {
+    if (isExpired)
       return {
         text: "منتهي (انتهت الصلاحية)",
         styles: "bg-slate-100 text-slate-700 border-slate-300",
       };
-    }
-    if (isCancelled) {
+    if (isCancelled)
       return { text: "ملغي", styles: "bg-red-50 text-red-700 border-red-200" };
-    }
-    if (isFullyApproved) {
+    if (isFullyApproved)
       return {
         text: "معتمد من جميع الأطراف",
         styles: "bg-emerald-50 text-emerald-700 border-emerald-200",
       };
-    }
-    if (isOfficeApproved) {
+    if (isOfficeApproved)
       return {
         text: "معتمد من مقدم الخدمة فقط",
         styles: "bg-blue-50 text-blue-700 border-blue-200",
       };
-    }
 
     return {
       text: "مسودة غير معتمدة",
@@ -288,19 +281,11 @@ export const LivePreview = ({ data }) => {
     let intro = `إشارة إلى طلبكم بخصوص تقديم عرض سعر خدمات (${transactionType || "الخدمات الهندسية والاستشارية"})`;
     if (handlingMethod)
       intro += `، بناءً على أسلوب التعامل والتفويض المعتمد (${handlingMethod})`;
-
     intro +=
       "، فإنه يسرنا تقديم العرض المالي والفني لإنهاء الأعمال المطلوبة وفقاً لنطاق العمل والاشتراطات والملاحظات التالية:";
     return intro;
   })();
 
-  const getItemTotal = (item) =>
-    Math.max(
-      0,
-      Number(item.qty ?? item.quantity ?? 1) *
-        Number(item.price ?? item.unitPrice ?? 0) -
-        Number(item.discount || 0),
-    );
   const handleZoomIn = () => setZoomScale((prev) => Math.min(prev + 0.1, 1.5));
   const handleZoomOut = () =>
     setZoomScale((prev) => Math.max(prev - 0.1, 0.38));
@@ -341,16 +326,23 @@ export const LivePreview = ({ data }) => {
 
   const renderClientRepresentation = () => {
     if (signatureMethod === "SELF" || !signatureMethod) return null;
-    let text = `ويمثل العميل (${clientType.replace("_", " ")}) بالتوقيع والاعتماد على هذا العرض السيد/ة: `;
+
+    // 🚀 حماية المتغير للتعامل مع الأنواع المفقودة
+    const safeClientType = clientType
+      ? String(clientType).replace(/_/g, " ")
+      : "العميل";
+
+    let text = `ويمثل العميل (${safeClientType}) بالتوقيع والاعتماد على هذا العرض السيد/ة: `;
     text += repName ? `${repName}` : "........................";
     if (repIdNumber) text += `، (هوية رقم: ${repIdNumber})`;
     if (repCapacity) text += `، بصفته: ${repCapacity}`;
     if (authDocType || authDocNumber) {
       text += `، بموجب `;
-      if (authDocType) text += `${authDocType} `;
+      if (authDocType)
+        text += `${authDocType === "مستند انتفاع" && customUsufructType ? customUsufructType : authDocType} `;
       if (authDocNumber) text += `رقم (${authDocNumber}) `;
-      if (authDocDate)
-        text += `وتاريخ ${formatDateParts(authDocDate).gregorian}`;
+      if (authDocIssueDate && showAuthDocIssueDate)
+        text += `بتاريخ ${formatDateParts(authDocIssueDate).gregorian}`;
     }
     text += ".";
     return (
@@ -361,9 +353,6 @@ export const LivePreview = ({ data }) => {
     );
   };
 
-  // ==========================================
-  // 🧠 خوارزمية الدمج البصري لبيانات المخططات (Rowspan Logic)
-  // ==========================================
   const totalPlotsArea = plots.reduce(
     (sum, plot) => sum + (Number(plot.area) || 0),
     0,
@@ -372,21 +361,17 @@ export const LivePreview = ({ data }) => {
   let rowSpans = { district: [], plan: [], deed: [], date: [] };
   if (plots && plots.length > 0) {
     let currentIdx = { district: 0, plan: 0, deed: 0, date: 0 };
-
     rowSpans.district = Array(plots.length).fill(0);
     rowSpans.plan = Array(plots.length).fill(0);
     rowSpans.deed = Array(plots.length).fill(0);
     rowSpans.date = Array(plots.length).fill(0);
-
     rowSpans.district[0] = 1;
     rowSpans.plan[0] = 1;
     rowSpans.deed[0] = 1;
     rowSpans.date[0] = 1;
-
     for (let i = 1; i < plots.length; i++) {
       const prevPlot = plots[i - 1];
       const currPlot = plots[i];
-
       if (
         (currPlot.district || propertyDistrict) ===
         (prevPlot.district || propertyDistrict)
@@ -397,7 +382,6 @@ export const LivePreview = ({ data }) => {
         rowSpans.district[i] = 1;
         currentIdx.district = i;
       }
-
       if (
         (currPlot.planNumber || propertyPlanNumber) ===
         (prevPlot.planNumber || propertyPlanNumber)
@@ -408,7 +392,6 @@ export const LivePreview = ({ data }) => {
         rowSpans.plan[i] = 1;
         currentIdx.plan = i;
       }
-
       if (
         (currPlot.deedNumber || deedNumber) ===
         (prevPlot.deedNumber || deedNumber)
@@ -419,7 +402,6 @@ export const LivePreview = ({ data }) => {
         rowSpans.deed[i] = 1;
         currentIdx.deed = i;
       }
-
       if (currPlot.deedDate === prevPlot.deedDate) {
         rowSpans.date[currentIdx.date] += 1;
         rowSpans.date[i] = 0;
@@ -596,8 +578,6 @@ export const LivePreview = ({ data }) => {
                         {issueDateParts.gregorian}
                       </span>
                     </div>
-
-                    {/* 🚀 الإضافة الجديدة: رقم المعاملة ومحضر الاجتماع */}
                     {transactionRefForPreview && (
                       <div
                         className={`flex justify-between border-b border-dashed border-slate-300 pb-1 ${!meetingTitleForPreview ? "col-span-2" : ""}`}
@@ -608,7 +588,6 @@ export const LivePreview = ({ data }) => {
                         </span>
                       </div>
                     )}
-
                     {meetingTitleForPreview && (
                       <div
                         className={`flex justify-between border-b border-dashed border-slate-300 pb-1 ${!transactionRefForPreview ? "col-span-2" : ""}`}
@@ -621,8 +600,6 @@ export const LivePreview = ({ data }) => {
                         </span>
                       </div>
                     )}
-                    {/* ------------------------------------------- */}
-
                     {propertyCodeForPreview && (
                       <div className="col-span-2 flex justify-between border-b border-dashed border-slate-300 pb-1">
                         <span className="text-slate-500">المشروع/الملكية:</span>
@@ -767,7 +744,6 @@ export const LivePreview = ({ data }) => {
                                 color: selectedStyle.accent,
                               }}
                             >
-                              {/* 🚀 تعديل: يعرض نوع الخدمة المختار، وإذا لم يتم اختياره يعرض افتراضياً */}
                               <EditableSpan
                                 value={transactionType || "عرض سعر خدمات فنية"}
                                 isEditMode={isEditMode}
@@ -848,7 +824,6 @@ export const LivePreview = ({ data }) => {
                                 borderColor: `${selectedStyle.accent}44`,
                               }}
                             >
-                              {/* 🚀 تعديل: عرض مدة الصلاحية بالنص المطلوب */}
                               {validityDays === "unlimited"
                                 ? "مفتوح / غير محدد"
                                 : `${validityDays} يوماً تبدأ بعد اعتماد مقدم الخدمة`}
@@ -940,8 +915,13 @@ export const LivePreview = ({ data }) => {
                                   borderColor: `${selectedStyle.accent}44`,
                                 }}
                               >
+                                {/* 🚀 التعديل الهام والآمن */}
                                 <EditableSpan
-                                  value={clientType.replace("_", " ")}
+                                  value={
+                                    clientType
+                                      ? String(clientType).replace(/_/g, " ")
+                                      : "فرد"
+                                  }
                                   isEditMode={isEditMode}
                                   placeholder="أدخل تصنيف العميل"
                                 />
@@ -1036,19 +1016,14 @@ export const LivePreview = ({ data }) => {
                       </section>
 
                       {signatureMethod !== "SELF" && (
-                        <section className="mb-6 avoid-break bg-transparent">
-                          <h4
-                            className="mb-2 text-[11.5px] font-black flex items-center gap-1.5"
-                            style={{ color: selectedStyle.accent }}
-                          >
-                            <Scale className="w-4 h-4 text-[#c5983c]" /> ثانياً:
-                            بيانات التمثيل النظامي والمفوض بالتوقيع الشرعي
-                          </h4>
+                        <div className="avoid-break mb-6">
+                          <div className="section-title text-[#123f59] font-black text-[11.5px] mb-2 border-b-2 border-[#123f59] pb-1 inline-block">
+                            ثانياً: بيانات التمثيل النظامي والمفوض بالتوقيع
+                            الشرعي
+                          </div>
                           <table
-                            className="w-full border-collapse text-right text-[10.5px] bg-transparent"
-                            style={{
-                              border: `1px solid ${selectedStyle.accent}`,
-                            }}
+                            className="w-full border-collapse text-right text-[10.5px] border border-[#123f59]"
+                            style={{ borderColor: selectedStyle.accent }}
                           >
                             <tbody className="font-bold text-[#123f59]">
                               <tr>
@@ -1058,7 +1033,7 @@ export const LivePreview = ({ data }) => {
                                     borderColor: `${selectedStyle.accent}44`,
                                   }}
                                 >
-                                  اسم المفوض بالتوقيع الكامل
+                                  اسم المفوض / الممثل
                                 </td>
                                 <td
                                   className="p-2 border w-1/4 font-black"
@@ -1068,6 +1043,7 @@ export const LivePreview = ({ data }) => {
                                 >
                                   <EditableSpan
                                     value={repName}
+                                    placeholder="اسم الممثل"
                                     isEditMode={isEditMode}
                                   />
                                 </td>
@@ -1087,6 +1063,7 @@ export const LivePreview = ({ data }) => {
                                 >
                                   <EditableSpan
                                     value={repIdNumber}
+                                    placeholder="رقم الهوية"
                                     isEditMode={isEditMode}
                                   />
                                 </td>
@@ -1098,7 +1075,7 @@ export const LivePreview = ({ data }) => {
                                     borderColor: `${selectedStyle.accent}44`,
                                   }}
                                 >
-                                  الصفة بالتكليف
+                                  الصفة القانونية للتمثيل
                                 </td>
                                 <td
                                   className="p-2 border"
@@ -1106,10 +1083,11 @@ export const LivePreview = ({ data }) => {
                                     borderColor: `${selectedStyle.accent}44`,
                                   }}
                                 >
-                                  <EditableSpan
-                                    value={repCapacity}
-                                    isEditMode={isEditMode}
-                                  />
+                                  {signatureMethod === "AGENT" && "وكيل شرعي"}
+                                  {signatureMethod === "AUTHORIZED" &&
+                                    "مفوض نظامي"}
+                                  {signatureMethod === "BENEFICIARY" &&
+                                    "مستفيد"}
                                 </td>
                                 <td
                                   className="p-2 border bg-slate-50"
@@ -1117,16 +1095,17 @@ export const LivePreview = ({ data }) => {
                                     borderColor: `${selectedStyle.accent}44`,
                                   }}
                                 >
-                                  رقم جوال المفوض الثابت
+                                  رقم جوال الممثل
                                 </td>
                                 <td
-                                  className="p-2 border font-mono"
+                                  className="p-2 border font-mono text-blue-700"
                                   style={{
                                     borderColor: `${selectedStyle.accent}44`,
                                   }}
                                 >
                                   <EditableSpan
                                     value={repPhone}
+                                    placeholder="رقم الجوال"
                                     isEditMode={isEditMode}
                                   />
                                 </td>
@@ -1141,15 +1120,15 @@ export const LivePreview = ({ data }) => {
                                   نوع مستند التفويض والصفة
                                 </td>
                                 <td
-                                  className="p-2 border"
+                                  className="p-2 border font-black text-slate-700"
                                   style={{
                                     borderColor: `${selectedStyle.accent}44`,
                                   }}
                                 >
-                                  <EditableSpan
-                                    value={authDocType}
-                                    isEditMode={isEditMode}
-                                  />
+                                  {authDocType === "مستند انتفاع" &&
+                                  customUsufructType
+                                    ? customUsufructType
+                                    : authDocType || "---"}
                                 </td>
                                 <td
                                   className="p-2 border bg-slate-50"
@@ -1157,7 +1136,7 @@ export const LivePreview = ({ data }) => {
                                     borderColor: `${selectedStyle.accent}44`,
                                   }}
                                 >
-                                  توثيق رقم وتاريخ الصك
+                                  بيانات المستند المعتمد
                                 </td>
                                 <td
                                   className="p-2 border font-mono font-bold text-cyan-800"
@@ -1165,26 +1144,38 @@ export const LivePreview = ({ data }) => {
                                     borderColor: `${selectedStyle.accent}44`,
                                   }}
                                 >
-                                  <EditableSpan
-                                    value={
-                                      authDocNumber
+                                  <div className="flex flex-col gap-0.5">
+                                    <span>
+                                      {authDocNumber
                                         ? `رقم: ${authDocNumber}`
-                                        : ""
-                                    }
-                                    isEditMode={isEditMode}
-                                    placeholder="رقم التفويض"
-                                  />{" "}
-                                  {authDocDate && !isEditMode
-                                    ? `بتاريخ: ${formatDateParts(authDocDate).gregorian}`
-                                    : ""}
+                                        : "رقم: ---"}
+                                    </span>
+                                    {showAuthDocIssueDate &&
+                                      authDocIssueDate && (
+                                        <span className="text-[9px] text-slate-500">
+                                          إصدار:{" "}
+                                          {new Date(
+                                            authDocIssueDate,
+                                          ).toLocaleDateString("ar-SA")}
+                                        </span>
+                                      )}
+                                    {showAuthDocExpiryDate &&
+                                      authDocExpiryDate && (
+                                        <span className="text-[9px] text-rose-500">
+                                          انتهاء:{" "}
+                                          {new Date(
+                                            authDocExpiryDate,
+                                          ).toLocaleDateString("ar-SA")}
+                                        </span>
+                                      )}
+                                  </div>
                                 </td>
                               </tr>
                             </tbody>
                           </table>
-                        </section>
+                        </div>
                       )}
 
-                      {/* 🚀 قسم بيانات المشروع المطور (الدمج البصري للقطع) */}
                       <section className="mb-6 avoid-break bg-transparent">
                         <div className="flex justify-between items-end mb-2">
                           <h4
@@ -1285,8 +1276,6 @@ export const LivePreview = ({ data }) => {
                                       placeholder="---"
                                     />
                                   </td>
-
-                                  {/* الحي مدمج */}
                                   {rowSpans.district[index] > 0 && (
                                     <td
                                       rowSpan={rowSpans.district[index]}
@@ -1305,8 +1294,6 @@ export const LivePreview = ({ data }) => {
                                       />
                                     </td>
                                   )}
-
-                                  {/* رقم المخطط مدمج */}
                                   {rowSpans.plan[index] > 0 && (
                                     <td
                                       rowSpan={rowSpans.plan[index]}
@@ -1325,8 +1312,6 @@ export const LivePreview = ({ data }) => {
                                       />
                                     </td>
                                   )}
-
-                                  {/* رقم الوثيقة مدمج */}
                                   {rowSpans.deed[index] > 0 && (
                                     <td
                                       rowSpan={rowSpans.deed[index]}
@@ -1343,8 +1328,6 @@ export const LivePreview = ({ data }) => {
                                       />
                                     </td>
                                   )}
-
-                                  {/* تاريخ الوثيقة مدمج */}
                                   {rowSpans.date[index] > 0 && (
                                     <td
                                       rowSpan={rowSpans.date[index]}
@@ -1360,7 +1343,6 @@ export const LivePreview = ({ data }) => {
                                         : "---"}
                                     </td>
                                   )}
-
                                   <td
                                     className="p-2 border font-mono"
                                     style={{
@@ -1376,8 +1358,6 @@ export const LivePreview = ({ data }) => {
                                   </td>
                                 </tr>
                               ))}
-
-                              {/* صف إجمالي المساحة */}
                               <tr className="bg-slate-50">
                                 <td
                                   colSpan="6"
@@ -1414,7 +1394,6 @@ export const LivePreview = ({ data }) => {
                           >
                             <tbody className="font-bold text-[#123f59]">
                               <tr>
-                                {/* --- حقل رخصة البناء --- */}
                                 {licenseNumber && (
                                   <>
                                     <td
@@ -1430,7 +1409,6 @@ export const LivePreview = ({ data }) => {
                                       className="p-2 border font-mono"
                                       style={{
                                         borderColor: `${selectedStyle.accent}44`,
-                                        // إذا كان الحقلان موجودين يأخذ 25%، وإذا كان لوحده يأخذ 75%
                                         width:
                                           licenseNumber && serviceNumber
                                             ? "25%"
@@ -1445,8 +1423,6 @@ export const LivePreview = ({ data }) => {
                                     </td>
                                   </>
                                 )}
-
-                                {/* --- حقل المعاملة / الطلب --- */}
                                 {serviceNumber && (
                                   <>
                                     <td
@@ -1514,7 +1490,6 @@ export const LivePreview = ({ data }) => {
                               </th>
                               <th
                                 className="p-2.5 text-right border"
-                                // أخذ المساحة بالكامل للوصف
                                 style={{
                                   borderColor: selectedStyle.accent,
                                   width: showQuantity ? "80%" : "95%",
@@ -1581,8 +1556,6 @@ export const LivePreview = ({ data }) => {
                                 </tr>
                               ))
                             )}
-
-                            {/* --- قسم الإجماليات --- */}
                             <tr className="avoid-break bg-slate-50/50">
                               <td
                                 colSpan={showQuantity ? "3" : "2"}
@@ -1752,7 +1725,6 @@ export const LivePreview = ({ data }) => {
                                   </td>
                                 </tr>
                               ))}
-
                               {acceptedMethods &&
                                 acceptedMethods.length > 0 && (
                                   <tr className="bg-slate-50">
@@ -1764,7 +1736,6 @@ export const LivePreview = ({ data }) => {
                                       }}
                                     >
                                       <div className="flex flex-col gap-3">
-                                        {/* 1️⃣ طرق السداد المتاحة */}
                                         <div>
                                           <span className="font-black ml-2 text-slate-800">
                                             طرق السداد المتاحة:
@@ -1776,7 +1747,6 @@ export const LivePreview = ({ data }) => {
                                             )
                                             .join(" ، ")}
                                         </div>
-                                        {/* 🚀 قسم عرض الحسابات البنكية في LivePreview */}
                                         {acceptedMethods.includes("bank") &&
                                           selectedBankAccounts.length > 0 && (
                                             <div className="mt-1 border-t border-[#d8b46a]/20 pt-3">
@@ -1784,8 +1754,6 @@ export const LivePreview = ({ data }) => {
                                                 البيانات البنكية المعتمدة
                                                 للسداد:
                                               </span>
-
-                                              {/* 🚀 جدول موحد لجميع الحسابات البنكية */}
                                               <table className="w-full border-collapse bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm text-center">
                                                 <thead className="bg-slate-100/80">
                                                   <tr>
@@ -1815,8 +1783,6 @@ export const LivePreview = ({ data }) => {
                                                             b.id === bankId,
                                                         );
                                                       if (!bank) return null;
-
-                                                      // دالة تنسيق الآيبان (مسافة كل 4 أرقام)
                                                       const formatIBAN = (
                                                         iban,
                                                       ) => {
@@ -1829,21 +1795,17 @@ export const LivePreview = ({ data }) => {
                                                           )
                                                           .trim();
                                                       };
-
-                                                      // رابط الـ QR لصفحة البنك
                                                       const backendUrl =
                                                         import.meta.env
                                                           .VITE_API_URL ||
                                                         "http://localhost:5000/api";
                                                       const bankPublicUrl = `${window.location.origin}/shared/bank/${bank.id}`;
                                                       const qrCodeSrc = `${backendUrl}/utils/qr?data=${encodeURIComponent(bankPublicUrl)}`;
-
                                                       return (
                                                         <tr
                                                           key={bank.id}
                                                           className="hover:bg-slate-50/50 transition-colors"
                                                         >
-                                                          {/* الشعار واسم البنك */}
                                                           <td className="p-2 border border-slate-200 align-middle text-center">
                                                             <div className="flex flex-col items-center justify-center gap-1.5">
                                                               {bank.logo ? (
@@ -1862,8 +1824,6 @@ export const LivePreview = ({ data }) => {
                                                               </span>
                                                             </div>
                                                           </td>
-
-                                                          {/* الأسماء عربي وإنجليزي */}
                                                           <td className="p-2 border border-slate-200 align-middle text-center text-[10.5px] text-slate-600 leading-relaxed">
                                                             <div className="font-bold text-slate-800">
                                                               {bank.accountNameAr ||
@@ -1878,8 +1838,6 @@ export const LivePreview = ({ data }) => {
                                                                 "---"}
                                                             </div>
                                                           </td>
-
-                                                          {/* رقم الحساب */}
                                                           <td className="p-2 border border-slate-200 align-middle text-center">
                                                             <div
                                                               className="font-mono font-bold text-slate-800 text-[10.5px] tracking-widest"
@@ -1889,8 +1847,6 @@ export const LivePreview = ({ data }) => {
                                                                 "---"}
                                                             </div>
                                                           </td>
-
-                                                          {/* الآيبان المنسق */}
                                                           <td className="p-2 border border-slate-200 align-middle text-center">
                                                             <div
                                                               className="font-mono font-black text-indigo-800 text-[10.5px] tracking-wider"
@@ -1901,8 +1857,6 @@ export const LivePreview = ({ data }) => {
                                                               )}
                                                             </div>
                                                           </td>
-
-                                                          {/* الـ QR Code والتوجيه */}
                                                           <td className="p-0 border border-slate-200 align-middle text-center">
                                                             <div className="flex items-center justify-center">
                                                               <img
@@ -2015,7 +1969,6 @@ export const LivePreview = ({ data }) => {
                         </div>
                       </section>
 
-                      {/* 🚀 الإضافة الجديدة: قسم الخاتمة */}
                       {conclusion && (
                         <section className="mb-8 avoid-break bg-transparent">
                           <div
@@ -2033,9 +1986,7 @@ export const LivePreview = ({ data }) => {
                           </div>
                         </section>
                       )}
-                      {/* ---------------------------------- */}
 
-                      {/* 🚀 قسم الاعتمادات والتواقيع المربوط ببيانات أطراف التعاقد  */}
                       <section className="mt-8 pt-4 avoid-break bg-transparent">
                         <h4
                           className="mb-4 text-[12.5px] font-black text-center"
@@ -2074,7 +2025,6 @@ export const LivePreview = ({ data }) => {
                           </thead>
                           <tbody className="font-bold text-[#123f59]">
                             <tr>
-                              {/* --- الطرف الثاني --- */}
                               <td
                                 className="p-3 border-l align-top leading-relaxed"
                                 style={{
@@ -2115,8 +2065,6 @@ export const LivePreview = ({ data }) => {
                                             : "مستفيد"}
                                     </span>
                                   </div>
-
-                                  {/* تفاصيل مستند التفويض تظهر فقط إذا لم يكن المالك هو الموقع */}
                                   {signatureMethod !== "SELF" && (
                                     <>
                                       <div>
@@ -2128,7 +2076,6 @@ export const LivePreview = ({ data }) => {
                                             "............................"}
                                         </span>
                                       </div>
-
                                       <div className="flex flex-col gap-1">
                                         <div>
                                           <span className="text-slate-500 font-bold">
@@ -2146,8 +2093,6 @@ export const LivePreview = ({ data }) => {
                                               : "............................"}
                                           </span>
                                         </div>
-
-                                        {/* 🚀 إظهار التواريخ إذا تم تفعيلها */}
                                         {(showAuthDocIssueDate ||
                                           showAuthDocExpiryDate) && (
                                           <div className="flex items-center gap-4 text-[9px] mt-0.5">
@@ -2182,7 +2127,6 @@ export const LivePreview = ({ data }) => {
                                       </div>
                                     </>
                                   )}
-
                                   <div>
                                     <span className="text-slate-500 font-bold">
                                       رقم الجوال:
@@ -2201,8 +2145,6 @@ export const LivePreview = ({ data }) => {
                                   </div>
                                 </div>
                               </td>
-
-                              {/* --- الطرف الأول --- */}
                               <td
                                 className="p-3 align-top leading-relaxed"
                                 style={{
@@ -2241,8 +2183,7 @@ export const LivePreview = ({ data }) => {
                                         الرقم الوظيفي:
                                       </span>{" "}
                                       <span className="font-mono font-black text-slate-800">
-                                        {/* تأكد أنك تمرر firstPartyEmpCode بشكل صحيح */}
-                                        {data.firstPartyEmpCode ||
+                                        {firstPartyEmpCode ||
                                           "__________________"}
                                       </span>
                                     </div>
@@ -2251,9 +2192,9 @@ export const LivePreview = ({ data }) => {
                                     التوقيع الشخصي والختم:
                                     <br />
                                     {firstPartySignatureType === "SYSTEM" &&
-                                    data.employeeSignatureUrl ? (
+                                    employeeSignatureUrl ? (
                                       <img
-                                        src={data.employeeSignatureUrl}
+                                        src={employeeSignatureUrl}
                                         alt="توقيع الموظف"
                                         className="h-16 mt-2 mx-auto mix-blend-multiply object-contain"
                                       />
@@ -2285,7 +2226,6 @@ export const LivePreview = ({ data }) => {
                           className="flex items-start gap-3"
                           style={{ color: selectedStyle.accent }}
                         >
-                          {/* 🚀 تم استبدال الصورة بمربع فارغ للتحقق */}
                           <div className="h-[16mm] w-[16mm] shrink-0 border border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center bg-slate-50/50">
                             <span className="text-[7px] font-black text-slate-400 leading-tight text-center">
                               QR
@@ -2293,9 +2233,7 @@ export const LivePreview = ({ data }) => {
                               للتحقق
                             </span>
                           </div>
-
                           <div className="min-w-0 flex-1 flex flex-col justify-center py-1">
-                            {/* النسخة العربية */}
                             <div
                               className="flex items-center justify-end gap-1.5 whitespace-nowrap text-[10.5px] font-black leading-[1.4]"
                               dir="rtl"
@@ -2310,7 +2248,6 @@ export const LivePreview = ({ data }) => {
                               <span className="opacity-50">·</span>
                               <span>الرقم الوطني الموحد : ٧٠٥٢٣٠٣٨٢٨</span>
                             </div>
-                            {/* النسخة الإنجليزية */}
                             <div
                               className="mt-1 flex items-center justify-start gap-1 whitespace-nowrap text-[10px] font-black leading-[1.4]"
                               dir="ltr"
@@ -2329,7 +2266,6 @@ export const LivePreview = ({ data }) => {
                             </div>
                           </div>
                         </div>
-                        {/* رقم الصفحة */}
                         <div className="mt-2 text-center text-[10px] font-bold text-slate-400">
                           <span className="page-number"></span>
                         </div>
