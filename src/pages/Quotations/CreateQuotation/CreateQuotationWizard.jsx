@@ -490,14 +490,31 @@ const CreateQuotationWizard = (incomingProps) => {
   };
 
   const saveMutation = useMutation({
-    mutationFn: async (payload) => {
-      if (isEditMode)
-        return (await axios.put(`/quotations/${quotationId}`, payload)).data;
-      return (await axios.post("/quotations", payload)).data;
+    // 🌟 1. تعديل هنا: نستقبل payload (بيانات الداتابيز) و pdfData (بيانات شاشة العرض)
+    mutationFn: async ({ payload, pdfData }) => {
+      let result;
+      // حفظ العرض في قاعدة البيانات
+      if (isEditMode) {
+        result = (await axios.put(`/quotations/${quotationId}`, payload)).data;
+      } else {
+        result = (await axios.post("/quotations", payload)).data;
+      }
+      
+      // 🌟 2. الخطوة الذهبية: نأمر الباك إند بتوليد الـ PDF في الخلفية وحفظه كملف
+      try {
+        await axios.post("/quotations/generate-and-save-pdf", {
+          ...pdfData, // نمرر نفس بيانات العرض المباشر (Live Preview)
+          quotationId: result.data.id // نمرر الـ ID لربط الملف بالداتابيز
+        });
+      } catch (pdfError) {
+        console.error("تم الحفظ في قاعدة البيانات، لكن فشل توليد الـ PDF التلقائي:", pdfError);
+      }
+
+      return result;
     },
     onSuccess: (data) => {
       toast.success(
-        isEditMode ? "تم تحديث عرض السعر بنجاح!" : "تم حفظ عرض السعر بنجاح!",
+        isEditMode ? "تم تحديث عرض السعر وتوثيقه بنجاح!" : "تم حفظ عرض السعر وتوثيقه بنجاح!",
       );
       queryClient.invalidateQueries(["quotations", "quotations-list"]);
       if (onComplete) onComplete(data);
@@ -618,7 +635,8 @@ const CreateQuotationWizard = (incomingProps) => {
           ? existingQuote.status
           : "PENDING_APPROVAL",
     };
-    saveMutation.mutate(payload);
+    
+    saveMutation.mutate({ payload, pdfData: previewData });
   };
 
   const handleNextOrSave = () =>

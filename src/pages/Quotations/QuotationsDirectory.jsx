@@ -199,42 +199,35 @@ const QuotationsDirectory = () => {
   }, []);
 
   // 🚀 الطباعة عبر الباك إند (Live Preview API)
-  const handlePrint = async (e, quoteId, quoteNumber) => {
+  const handlePrint = async (e, quoteId, quoteNumber, pdfUrl) => {
     e?.stopPropagation();
+
+    // 🚀 1. التحديث الجوهري: فتح الملف الجاهز مباشرة بدون تحميل أو انتظار!
+    if (pdfUrl) {
+       // تأكد من ضبط الرابط بناءً على سيرفرك (مثال: http://localhost:5000)
+       const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
+       window.open(`${baseUrl}${pdfUrl}`, "_blank");
+       return;
+    }
+
+    // 2. إذا لم يكن له ملف محفوظ مسبقاً (Fallback)
     setGeneratingPdfId(quoteId);
     const loadingToast = toast.loading("جاري معالجة وتجهيز الوثيقة للطباعة...");
 
     try {
-      // 1. جلب بيانات العرض كاملة لتهيئة الـ Payload للطباعة
       const { data: quoteResponse } = await axios.get(`/quotations/${quoteId}`);
-      const quoteData = quoteResponse.data;
-
-      // 2. إرسال الطلب لتوليد الـ PDF في الباك إند
-      const response = await axios.post("/quotations/generate-pdf", quoteData, {
+      const response = await axios.post("/quotations/generate-pdf", quoteResponse.data, {
         responseType: "blob",
       });
 
-      // 3. معالجة الـ Blob وفتحه / تحميله
       const blob = new Blob([response.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
-      
-      // فتح في نافذة جديدة
       window.open(url, "_blank");
 
-      // إنشاء خيار التحميل
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `عرض_سعر_${quoteNumber || quoteId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      
       setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-
-      toast.success("تم تجهيز الوثيقة بنجاح", { id: loadingToast });
+      toast.success("تم التجهيز بنجاح", { id: loadingToast });
     } catch (error) {
-      console.error("Error downloading PDF:", error);
-      toast.error("حدث خطأ أثناء معالجة الوثيقة. يرجى المحاولة مرة أخرى.", { id: loadingToast });
+      toast.error("حدث خطأ أثناء المعالجة", { id: loadingToast });
     } finally {
       setGeneratingPdfId(null);
     }
@@ -297,7 +290,7 @@ const QuotationsDirectory = () => {
         quotationId={selectedQuoteId}
         onPrint={(id) => {
           const q = quotationsData?.find(x => x.id === id);
-          handlePrint(null, id, q?.number);
+          handlePrint(null, id, q?.number, q?.pdfUrl);
         }}
         onEdit={(quote) => handleEditQuotation(null, quote)}
       />
