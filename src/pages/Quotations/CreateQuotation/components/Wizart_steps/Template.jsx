@@ -1,14 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Loader2,
   CheckCircle2,
   Eye,
   LayoutTemplate,
-  Settings2,
   X,
   FileText,
   ListChecks,
   Table as TableIcon,
+  Search,
+  Tag
 } from "lucide-react";
 
 const IconWithText = ({
@@ -51,11 +52,22 @@ export const Step2Template = ({ props }) => {
     setTermsText,
   } = props;
 
-  // حالة التحكم في نافذة المعاينة
   const [previewTemplate, setPreviewTemplate] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // 🚀 جلب كافة النماذج مباشرة دون تقسيم
   const currentTemplates = serverTemplates || [];
+
+  // 🚀 تصفية النماذج بناءً على البحث
+  const filteredTemplates = useMemo(() => {
+    if (!searchTerm.trim()) return currentTemplates;
+    const term = searchTerm.toLowerCase();
+    return currentTemplates.filter(
+      (tpl) =>
+        tpl.title?.toLowerCase().includes(term) ||
+        tpl.category?.toLowerCase().includes(term) ||
+        tpl.id?.toLowerCase().includes(term)
+    );
+  }, [currentTemplates, searchTerm]);
 
   // ==========================================
   // مكون المعاينة المنبثق (Preview Modal)
@@ -65,7 +77,7 @@ export const Step2Template = ({ props }) => {
     return (
       <div className="absolute inset-0 z-50 flex min-w-0 items-center justify-center p-3 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
         <div className="bg-white w-full max-w-2xl rounded-[20px] shadow-[0_20px_55px_rgba(18,63,89,0.18)] overflow-hidden flex flex-col border border-[#d8b46a]/25 animate-in zoom-in-95 duration-200">
-          {/* رأس المعاينة */}
+          
           <div className="flex min-w-0 justify-between items-center p-3 border-b border-[#e8ddc8] bg-[#fbf8f1]/50">
             <div className="flex min-w-0 items-center gap-2">
               <div className="p-1.5 bg-indigo-100 text-indigo-600 rounded-xl">
@@ -75,9 +87,16 @@ export const Step2Template = ({ props }) => {
                 <h3 className="text-sm font-bold text-[#123f59]">
                   {previewTemplate.title}
                 </h3>
-                <p className="text-[10px] font-mono text-[#64748b]">
-                  {previewTemplate.id}
-                </p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[9px] font-mono text-[#64748b] bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                    {previewTemplate.id}
+                  </span>
+                  {/* 🌟 عرض نوع المستند / التصنيف من بيانات النموذج */}
+                  <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                    <Tag className="w-2.5 h-2.5" />
+                    {previewTemplate.documentType || previewTemplate.category || "عرض سعر فني ومالي"}
+                  </span>
+                </div>
               </div>
             </div>
             <button
@@ -88,7 +107,6 @@ export const Step2Template = ({ props }) => {
             </button>
           </div>
 
-          {/* محتوى المعاينة المكتف */}
           <div className="p-3 overflow-y-auto overflow-x-hidden custom-scrollbar-slim max-h-[300px] space-y-3">
             <div>
               <div className="text-[10px] font-bold text-[#64748b] mb-1 flex min-w-0 items-center gap-1">
@@ -139,7 +157,6 @@ export const Step2Template = ({ props }) => {
             </div>
           </div>
 
-          {/* زر الاختيار المباشر من المعاينة */}
           <div className="p-3 border-t border-[#e8ddc8] bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white flex justify-end">
             <button
               onClick={() => {
@@ -169,92 +186,128 @@ export const Step2Template = ({ props }) => {
           </span>
         </div>
       ) : (
-        <div className="flex-1 bg-white p-4 rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex flex-col min-h-[300px]">
-          {/* عنوان القسم */}
-          <div className="text-[11px] font-bold text-[#64748b] mb-4 flex min-w-0 justify-between items-center pb-3 border-b border-slate-100">
-            <span className="flex items-center gap-1.5">
-              <LayoutTemplate className="w-4 h-4 text-indigo-500" />
-              النماذج الإدارية المعتمدة ({currentTemplates.length})
-            </span>
-            {selectedTemplate && (
-              <span className="text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full text-[10px]">
-                تم الاختيار
+        <div className="flex-1 bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex flex-col h-[400px]">
+          
+          {/* 🌟 شريط الأدوات: العنوان + مربع البحث */}
+          <div className="flex flex-col gap-3 mb-3 pb-3 border-b border-slate-100 shrink-0">
+            <div className="text-[11px] font-bold text-[#64748b] flex min-w-0 justify-between items-center">
+              <span className="flex items-center gap-1.5">
+                <LayoutTemplate className="w-4 h-4 text-indigo-500" />
+                النماذج الإدارية المعتمدة ({currentTemplates.length})
               </span>
-            )}
+              {selectedTemplate && (
+                <span className="text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full text-[10px] flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> تم تحديد نموذج
+                </span>
+              )}
+            </div>
+
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="ابحث بالاسم، رقم النموذج، أو التصنيف..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-3 pr-8 py-1.5 text-[10.5px] border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-bold text-[#123f59]"
+              />
+            </div>
           </div>
 
-          {/* القائمة بخاصية الشبكة (Grid View) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 overflow-y-auto overflow-x-hidden custom-scrollbar-slim pr-1 content-start flex-1">
-            {currentTemplates.length === 0 ? (
-              <div className="col-span-full text-center text-xs text-[#94a3b8] py-8">
-                لا توجد نماذج متاحة حالياً
-              </div>
-            ) : (
-              currentTemplates.map((tpl) => {
-                const isSelected = selectedTemplate === tpl.id;
-                return (
-                  <div
-                    key={tpl.id}
-                    className={`group relative flex flex-col justify-between p-3 rounded-xl border cursor-pointer transition-all ${
-                      isSelected
-                        ? "border-indigo-400 bg-indigo-50/40 shadow-[0_0_0_1px_rgba(99,102,241,1)]"
-                        : "border-[#d8b46a]/25 bg-white hover:border-indigo-300 hover:shadow-[0_8px_18px_rgba(18,63,89,0.05)]"
-                    }`}
-                  >
-                    {/* منطقة الضغط لاختيار النموذج */}
-                    <div
-                      className="absolute inset-0 z-0"
-                      onClick={() => {
-                        setSelectedTemplate(tpl.id);
-                        setTermsText(tpl.defaultTerms || "");
-                      }}
-                    ></div>
-
-                    <div className="flex min-w-0 justify-between items-start z-10 pointer-events-none">
-                      <div className="flex min-w-0 items-center gap-2">
-                        {isSelected ? (
-                          <CheckCircle2 className="w-4 h-4 text-indigo-600" />
-                        ) : (
-                          <div className="w-4 h-4 rounded-full border border-[#d8b46a]/40 group-hover:border-indigo-400"></div>
-                        )}
-                        <div
-                          className={`text-[12px] font-bold line-clamp-1 pr-1 ${isSelected ? "text-indigo-800" : "text-[#123f59]"}`}
-                        >
-                          {tpl.title}
-                        </div>
-                      </div>
-                      {tpl.isDefault && (
-                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[9px] font-bold whitespace-nowrap mr-2">
-                          افتراضي
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="mt-3 flex min-w-0 justify-between items-end z-10">
-                      <div className="text-[10px] text-[#94a3b8] font-mono pointer-events-none bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
-                        {tpl.id}
-                      </div>
-
-                      {/* زر المعاينة - يظهر عند التمرير أو إذا كان مختاراً */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation(); // منع تفعيل الاختيار عند ضغط زر المعاينة
-                          setPreviewTemplate(tpl);
+          {/* 🌟 جدول البيانات المكثف (Excel Style) */}
+          <div className="flex-1 overflow-auto custom-scrollbar-slim border border-slate-200 rounded-lg bg-slate-50/30">
+            <table className="w-full text-right border-collapse table-auto min-w-[500px]">
+              <thead className="bg-slate-100 sticky top-0 z-10 shadow-sm text-[#475569]">
+                <tr>
+                  <th className="p-1.5 border border-slate-200 w-8 text-center text-[10px] font-black">✔</th>
+                  <th className="p-1.5 border border-slate-200 w-12 text-center text-[10px] font-black">الرقم</th>
+                  <th className="p-1.5 border border-slate-200 text-[10px] font-black">اسم النموذج</th>
+                  <th className="p-1.5 border border-slate-200 w-32 text-center text-[10px] font-black">تصنيف المعاملة</th>
+                  <th className="p-1.5 border border-slate-200 w-14 text-center text-[10px] font-black">الإجراء</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white">
+                {filteredTemplates.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="p-4 text-center text-[10.5px] font-bold text-slate-400">
+                      لا توجد نماذج مطابقة للبحث
+                    </td>
+                  </tr>
+                ) : (
+                  filteredTemplates.map((tpl, index) => {
+                    const isSelected = selectedTemplate === tpl.id;
+                    return (
+                      <tr
+                        key={tpl.id}
+                        onClick={() => {
+                          setSelectedTemplate(tpl.id);
+                          setTermsText(tpl.defaultTerms || "");
                         }}
-                        className={`p-1.5 rounded-xl flex min-w-0 items-center justify-center transition-all ${
-                          isSelected
-                            ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 opacity-100"
-                            : "bg-[#fbf8f1] text-[#64748b] hover:bg-indigo-50 hover:text-indigo-600 opacity-0 group-hover:opacity-100"
+                        className={`cursor-pointer transition-colors border-b border-slate-100 group ${
+                          isSelected ? "bg-indigo-50/80" : "hover:bg-slate-50"
                         }`}
-                        title="معاينة النموذج"
                       >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
+                        {/* خانة التحديد */}
+                        <td className="p-1 border-x border-slate-100 text-center align-middle">
+                          <div
+                            className={`w-3.5 h-3.5 mx-auto rounded-sm border flex items-center justify-center ${
+                              isSelected
+                                ? "bg-indigo-600 border-indigo-600"
+                                : "bg-white border-slate-300 group-hover:border-indigo-400"
+                            }`}
+                          >
+                            {isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}
+                          </div>
+                        </td>
+                        
+                        {/* خانة الرقم التسلسلي */}
+                        <td className="p-1.5 border-x border-slate-100 text-center font-mono text-[9px] text-slate-500 align-middle">
+                          {index + 1}
+                        </td>
+                        
+                        {/* خانة اسم النموذج */}
+                        <td className="p-1.5 border-x border-slate-100 text-[10.5px] align-middle">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`font-bold ${isSelected ? "text-indigo-800" : "text-[#123f59]"}`}>
+                              {tpl.title}
+                            </span>
+                            {tpl.isDefault && (
+                              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-[4px] text-[8px] font-bold">
+                                افتراضي
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[8.5px] font-mono text-slate-400 mt-0.5">
+                            {tpl.id}
+                          </div>
+                        </td>
+
+                        {/* خانة التصنيف الرئيسي */}
+                        <td className="p-1.5 border-x border-slate-100 text-center align-middle">
+                          <span className="inline-block px-1.5 py-0.5 bg-slate-100 border border-slate-200 text-slate-600 rounded-[4px] text-[9px] font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px]">
+                            {tpl.category || tpl.documentType || "معاملة عامة"}
+                          </span>
+                        </td>
+
+                        {/* خانة زر المعاينة */}
+                        <td className="p-1 border-x border-slate-100 text-center align-middle">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewTemplate(tpl);
+                            }}
+                            className="p-1.5 rounded-lg flex items-center justify-center mx-auto transition-colors bg-slate-50 text-slate-500 border border-slate-200 hover:bg-indigo-100 hover:text-indigo-700 hover:border-indigo-200"
+                            title="معاينة"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

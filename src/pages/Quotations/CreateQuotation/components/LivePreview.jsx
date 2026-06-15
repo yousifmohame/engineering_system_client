@@ -93,6 +93,9 @@ const getDatePart = (formatter, date, type) =>
 
 const formatDateParts = (value) => {
   const date = value ? new Date(value) : new Date();
+  const dayName = new Intl.DateTimeFormat("ar-SA", { weekday: "long" }).format(
+    date,
+  );
   if (Number.isNaN(date.getTime()))
     return { gregorian: value, hijri: value, combined: value };
   const gregorianFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-gregory", {
@@ -112,7 +115,8 @@ const formatDateParts = (value) => {
   return {
     gregorian,
     hijri,
-    combined: `ميلادي: ${gregorian} / هجري: ${hijri}`,
+    combined: `${dayName}، ميلادي: ${gregorian} / هجري: ${hijri}`,
+    dayName,
   };
 };
 
@@ -214,6 +218,7 @@ export const LivePreview = ({ data }) => {
     authDocExpiryDate,
     showAuthDocExpiryDate,
     customUsufructType,
+    documentType
   } = data || {};
 
   const getQuotationStatusBadge = () => {
@@ -326,13 +331,30 @@ export const LivePreview = ({ data }) => {
     backgroundPosition: "top center",
   };
 
+  const clientTypeTranslations = {
+    individual: "فرد",
+    company: "شركة",
+    institution: "مؤسسة",
+    government: "جهة حكومية",
+    charity: "جهة خيرية / جمعية",
+    organization: "منظمة / هيئة",
+  };
+
+  // دالة مساعدة لترجمة النوع
+  const getArabicClientType = (type) => {
+    if (!type) return "فرد";
+    const normalizedType = String(type).toLowerCase().trim();
+    return (
+      clientTypeTranslations[normalizedType] || String(type).replace(/_/g, " ")
+    );
+  };
+
+  const safeClientType = getArabicClientType(
+    clientType ? String(clientType).replace(/_/g, " ") : "العميل",
+  );
+
   const renderClientRepresentation = () => {
     if (signatureMethod === "SELF" || !signatureMethod) return null;
-
-    // 🚀 حماية المتغير للتعامل مع الأنواع المفقودة
-    const safeClientType = clientType
-      ? String(clientType).replace(/_/g, " ")
-      : "العميل";
 
     let text = `ويمثل العميل (${safeClientType}) بالتوقيع والاعتماد على هذا العرض السيد/ة: `;
     text += repName ? `${repName}` : "........................";
@@ -542,10 +564,12 @@ export const LivePreview = ({ data }) => {
                       className="text-[42px] font-black mb-6 leading-tight"
                       style={{ color: selectedStyle.accent }}
                     >
-                      عرض سعر فني ومالي
+                      {/* 🌟 الآن سيقرأ الاسم الذي قمنا بتمريره */}
+                      {data.documentType}
                     </h1>
                     <h2 className="text-[22px] font-bold text-[#475569]">
-                      {transactionType || "خدمات هندسية واستشارية استراتيجية"}
+                      {data.transactionType ||
+                        "خدمات هندسية واستشارية استراتيجية"}
                     </h2>
                   </div>
                 </div>
@@ -584,7 +608,10 @@ export const LivePreview = ({ data }) => {
                       <div
                         className={`flex justify-between border-b border-dashed border-slate-300 pb-1 ${!meetingTitleForPreview ? "col-span-2" : ""}`}
                       >
-                        <span className="text-slate-500">معاملة رقم:</span>
+                        <span className="text-slate-500">
+                          {" "}
+                          الرقم الداخلي للمعاملة:
+                        </span>
                         <span className="font-mono text-slate-900 font-black">
                           {transactionRefForPreview}
                         </span>
@@ -675,7 +702,7 @@ export const LivePreview = ({ data }) => {
                                     color: selectedStyle.accent,
                                   }}
                                 >
-                                  عرض سعر خدمات فنية
+                                  {documentType || "عرض سعر خدمات فنية"}
                                 </td>
                               </tr>
                               <tr>
@@ -688,7 +715,7 @@ export const LivePreview = ({ data }) => {
                                   التاريخ
                                 </td>
                                 <td
-                                  className="p-2 border text-[9.5px] font-bold text-[#123f59]"
+                                  className="p-2 border text-[9px] font-bold text-[#123f59]"
                                   style={{
                                     borderColor: `${selectedStyle.accent}44`,
                                   }}
@@ -920,8 +947,11 @@ export const LivePreview = ({ data }) => {
                                 {/* 🚀 التعديل الهام والآمن */}
                                 <EditableSpan
                                   value={
-                                    clientType
-                                      ? String(clientType).replace(/_/g, " ")
+                                    safeClientType
+                                      ? String(safeClientType).replace(
+                                          /_/g,
+                                          " ",
+                                        )
                                       : "فرد"
                                   }
                                   isEditMode={isEditMode}
@@ -952,12 +982,12 @@ export const LivePreview = ({ data }) => {
                             </tr>
                             <tr>
                               <td
-                                className="p-2 border bg-slate-50"
+                                className="p-2 border text-[10px] bg-slate-50"
                                 style={{
                                   borderColor: `${selectedStyle.accent}44`,
                                 }}
                               >
-                                أسلوب التعامل والتفويض
+                                الصفة الرسمية للتعامل و الاعتماد
                               </td>
                               <td
                                 className="p-2 border"
@@ -990,27 +1020,6 @@ export const LivePreview = ({ data }) => {
                                   isEditMode={isEditMode}
                                   placeholder="أدخل رقم الهاتف"
                                 />
-                              </td>
-                            </tr>
-                            <tr>
-                              <td
-                                className="p-2 border bg-slate-50"
-                                style={{
-                                  borderColor: `${selectedStyle.accent}44`,
-                                }}
-                              >
-                                الصفة القانونية للتوقيع
-                              </td>
-                              <td
-                                colSpan="3"
-                                className="p-2 border"
-                                style={{
-                                  borderColor: `${selectedStyle.accent}44`,
-                                }}
-                              >
-                                {signatureMethod === "SELF"
-                                  ? "المالك الأصلي مباشرة"
-                                  : "ممثل نظامي بموجب مستند ساري الكفاءة"}
                               </td>
                             </tr>
                           </tbody>
@@ -1797,12 +1806,6 @@ export const LivePreview = ({ data }) => {
                                                           )
                                                           .trim();
                                                       };
-                                                      const backendUrl =
-                                                        import.meta.env
-                                                          .VITE_API_URL ||
-                                                        "http://localhost:5000/api";
-                                                      const bankPublicUrl = `${window.location.origin}/shared/bank/${bank.id}`;
-                                                      const qrCodeSrc = `${backendUrl}/utils/qr?data=${encodeURIComponent(bankPublicUrl)}`;
                                                       return (
                                                         <tr
                                                           key={bank.id}
@@ -1862,7 +1865,9 @@ export const LivePreview = ({ data }) => {
                                                           <td className="p-0 border border-slate-200 align-middle text-center">
                                                             <div className="flex items-center justify-center">
                                                               <img
-                                                                src={qrCodeSrc}
+                                                                src={
+                                                                  bank.qrCodeData
+                                                                }
                                                                 alt="QR"
                                                                 className="w-full h-full object-contain mb-1 border border-slate-100 p-0.5 rounded shadow-sm bg-white"
                                                               />
@@ -1922,22 +1927,29 @@ export const LivePreview = ({ data }) => {
                                 </span>
                               </div>
                               <div className="p-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                                {/* 🌟 التعديل هنا: تحويل الشبكة إلى قائمة رأسية مرقمة متناسقة */}
+                                <div className="flex flex-col gap-2">
                                   {missingDocs
                                     .split("\n")
                                     .filter((doc) => doc.trim() !== "")
                                     .map((doc, idx) => (
                                       <div
                                         key={idx}
-                                        className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-50/80 border border-slate-100"
+                                        className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50/50 border border-slate-100/50"
                                       >
-                                        <div
-                                          className="mt-0.5 shrink-0 bg-white rounded-[3px] w-3.5 h-3.5 flex items-center justify-center shadow-sm"
+                                        {/* الرقم التسلسلي */}
+                                        <span
+                                          className="shrink-0 flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white shadow-sm mt-0.5"
                                           style={{
-                                            border: `1px solid #c5983c`,
+                                            backgroundColor:
+                                              selectedStyle.accent || "#123f59",
                                           }}
-                                        ></div>
-                                        <span className="text-[10.5px] font-bold text-slate-700 leading-snug">
+                                        >
+                                          {idx + 1}
+                                        </span>
+
+                                        {/* نص المستند */}
+                                        <span className="text-[11px] font-bold text-slate-700 leading-snug">
                                           {doc.replace(/^- /, "").trim()}
                                         </span>
                                       </div>

@@ -149,10 +149,13 @@ export default function BankAccountsPage() {
   const getQrCodeUrl = (acc) => {
     // 1. الرابط الذي سيفتحه العميل عند مسح الكود
     const publicUrl = `${window.location.origin}/shared/bank/${acc.id}`;
-    
+
     // 2. جلب رابط الباك إند الأساسي (يأخذ القيمة من ملف البيئة .env أو من إعدادات axios)
-    const backendUrl = import.meta.env.VITE_API_URL || api.defaults.baseURL || "http://localhost:5000/api";
-    
+    const backendUrl =
+      import.meta.env.VITE_API_URL ||
+      api.defaults.baseURL ||
+      "http://localhost:5000/api";
+
     // 3. توجيه الطلب إلى مسار الـ QR الخاص بنا
     return `${backendUrl}/utils/qr?data=${encodeURIComponent(publicUrl)}`;
   };
@@ -496,15 +499,23 @@ export default function BankAccountsPage() {
               شارك بيانات الحساب
             </h3>
             <p className="text-[11px] font-bold text-slate-500 mb-6">
-              امسح الكود بكاميرا الجوال لعرض البيانات ونسخها، أو شارك الرابط مباشرة
+              امسح الكود بكاميرا الجوال لعرض البيانات ونسخها، أو شارك الرابط
+              مباشرة
             </p>
 
-            <div className="p-2 bg-white rounded-2xl shadow-sm border border-slate-200 mb-6">
-              <img
-                src={getQrCodeUrl(mobilePreviewAccount)}
-                alt="Bank QR Code"
-                className="w-48 h-48"
-              />
+            {/* داخل Modal المشاركة */}
+            <div className="p-2 bg-white rounded-2xl shadow-sm border border-slate-200 mb-6 flex justify-center">
+              {mobilePreviewAccount.qrCodeData ? (
+                <img
+                  src={mobilePreviewAccount.qrCodeData}
+                  alt="QR Code"
+                  className="w-48 h-48 object-contain"
+                />
+              ) : (
+                <div className="w-48 h-48 flex items-center justify-center text-slate-400 bg-slate-50 rounded-xl">
+                  لا يوجد QR Code
+                </div>
+              )}
             </div>
 
             <div className="w-full bg-violet-50 border border-violet-100 rounded-xl p-4 flex items-center gap-3">
@@ -535,7 +546,6 @@ export default function BankAccountsPage() {
               <Share2 className="w-5 h-5" /> {/*[cite: 1] */}
               مشاركة رابط الحساب البنكي
             </button>
-
           </div>
         </div>
       )}

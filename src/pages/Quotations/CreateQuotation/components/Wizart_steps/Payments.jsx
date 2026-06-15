@@ -37,6 +37,7 @@ export const Step5Payments = ({ props }) => {
   });
 
   // 🚀 تحديث بيانات الحسابات مع الاحتفاظ بالشعار والآيبان
+  // 🚀 تحديث بيانات الحسابات مع الاحتفاظ بالشعار والآيبان والـ QR Code
   useEffect(() => {
     if (fetchedBanks.length > 0 && setBankAccountsData) {
       const formattedBanks = fetchedBanks.map((bank) => ({
@@ -48,6 +49,7 @@ export const Step5Payments = ({ props }) => {
         accountNumber: bank.accountNumber,
         iban: bank.iban,
         logo: bank.bankLogo, // 👈 حفظ اللوجو
+        qrCodeData: bank.qrCodeData, // 👈 🌟 السطر الجديد: جلب وحفظ الـ QR Code
         account: bank.iban || bank.accountNumber,
       }));
       setBankAccountsData(formattedBanks);
