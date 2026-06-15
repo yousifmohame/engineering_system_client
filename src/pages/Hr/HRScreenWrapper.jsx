@@ -14,6 +14,7 @@ import PayrollManagement from "./screens/payroll/PayrollManagement";
 // أضف هذا السطر مع باقي الاستيرادات في الأعلى
 import ContractsAttachmentsEngine from "./screens/ContractsAndAttachments/ContractsAttachmentsEngine";
 import JobOffersScreen from "./screens/JobOffers/JobOffersScreen"; // 👈 أضف هذا السطر
+import EmployeeContractsManager from "./screens/EmployeeContracts/EmployeeContractsManager"; // 👈 أضف هذا السطر
 
 const IconWithText = ({
   icon: Icon,
@@ -56,7 +57,7 @@ const TAB_TITLES = {
   HR_PAYROLL: "الرواتب والمسيرات",
   LEAVES_ABSENCE: "ادارة الإجازات والغياب",
   HR_SETTINGS: "إعدادات الحالات والبدلات",
-  PROF_PLATFORMS: "المنصات المهنية والهيئات",
+  EMPLOYEE_CONTRACTS: "عقود الموظفين",
   RESIDENCY_INSURANCE: "شؤون المقيمين والتأمين",
   HR_INTERNAL_FORMS: "النماذج الذكية",
   ASSETS_CUSTODY: "العهد والأصول",
@@ -177,6 +178,15 @@ const HRScreenWrapper = () => {
         </div>
       );
     }
+
+    if (activeModal === "EMPLOYEE_CONTRACTS") {
+      return (
+        <div className="h-full overflow-hidden bg-[#fbf8f1]">
+          <EmployeeContractsManager />
+        </div>
+      );
+    }
+
 
     if (TAB_TITLES[activeModal]) {
       return renderPlaceholder(TAB_TITLES[activeModal]);

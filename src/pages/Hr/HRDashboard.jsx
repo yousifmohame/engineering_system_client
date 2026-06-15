@@ -171,9 +171,9 @@ export default function HRDashboard({ onNavigate }) {
         gradient: "from-[#64748b] to-[#334155]",
       },
       {
-        id: "PROF_PLATFORMS",
-        title: "المنصات المهنية\nوالهيئات",
-        icon: Award,
+        id: "EMPLOYEE_CONTRACTS",
+        title: "عقود الموظفين",
+        icon: FileText,
         gradient: "from-[#be123c] to-[#9f1239]",
       },
       {
