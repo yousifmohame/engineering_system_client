@@ -9,7 +9,7 @@ import {
   Loader2,
   Trash2,
   Edit3,
-  Plus
+  Plus,
 } from "lucide-react";
 import { format } from "date-fns";
 import { arSA } from "date-fns/locale";
@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { useAppStore } from "../../stores/useAppStore";
 import AccessControl from "../../components/AccessControl";
 import QuotationDetailsModal from "./QuotationDetailsModal";
+import { getFullUrl } from "../../utils/urlUtils";
 
 const IconWithText = ({
   icon: Icon,
@@ -121,7 +122,7 @@ const QuotationsDirectory = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
-  
+
   const [selectedQuoteId, setSelectedQuoteId] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [generatingPdfId, setGeneratingPdfId] = useState(null);
@@ -202,11 +203,10 @@ const QuotationsDirectory = () => {
   const handlePrint = async (e, quoteId, quoteNumber, pdfUrl) => {
     e?.stopPropagation();
 
-    // 🚀 1. التحديث الجوهري: فتح الملف الجاهز مباشرة بدون تحميل أو انتظار!
+    // 🚀 استخدام getFullUrl لمعالجة الرابط بشكل نظيف وموحد
     if (pdfUrl) {
-       // تأكد من ضبط الرابط بناءً على سيرفرك (مثال: http://localhost:5000)
-       const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
-       window.open(`${baseUrl}${pdfUrl}`, "_blank");
+       const finalPdfUrl = getFullUrl(pdfUrl);
+       window.open(finalPdfUrl, "_blank");
        return;
     }
 
@@ -264,13 +264,18 @@ const QuotationsDirectory = () => {
 
   if (listError) {
     return (
-      <div className="flex h-full min-h-0 items-center justify-center bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white" dir="rtl">
+      <div
+        className="flex h-full min-h-0 items-center justify-center bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
+        dir="rtl"
+      >
         <div className="text-center p-3">
           <div className="text-red-500 font-bold mb-2">
             ⚠️ حدث خطأ في تحميل البيانات
           </div>
           <button
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["quotations-list"] })}
+            onClick={() =>
+              queryClient.invalidateQueries({ queryKey: ["quotations-list"] })
+            }
             className="px-4 py-2 bg-[#123f59] text-white rounded-xl text-sm hover:bg-[#0f3448]"
           >
             إعادة المحاولة
@@ -281,15 +286,17 @@ const QuotationsDirectory = () => {
   }
 
   return (
-    <div className="flex h-full min-h-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-[Tajawal] relative" dir="rtl">
-      
+    <div
+      className="flex h-full min-h-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-[Tajawal] relative"
+      dir="rtl"
+    >
       {/* مودال التفاصيل */}
-      <QuotationDetailsModal 
+      <QuotationDetailsModal
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         quotationId={selectedQuoteId}
         onPrint={(id) => {
-          const q = quotationsData?.find(x => x.id === id);
+          const q = quotationsData?.find((x) => x.id === id);
           handlePrint(null, id, q?.number, q?.pdfUrl);
         }}
         onEdit={(quote) => handleEditQuotation(null, quote)}
@@ -373,16 +380,34 @@ const QuotationsDirectory = () => {
               <table className="w-full text-right border-collapse min-w-[1200px]">
                 <thead>
                   <tr className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-b-2 border-[#d8b46a]/25">
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold w-10">#</th>
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold">رقم العرض</th>
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold">التاريخ</th>
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold">العميل</th>
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold">الملكية</th>
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold">الإجمالي</th>
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold w-10">
+                      #
+                    </th>
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
+                      رقم العرض
+                    </th>
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
+                      التاريخ
+                    </th>
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
+                      العميل
+                    </th>
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
+                      الملكية
+                    </th>
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
+                      الإجمالي
+                    </th>
                     {/* 🌟 عمود التحصيل والنسب المضافة حديثاً */}
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold text-center w-32">نسبة التحصيل</th>
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold">الحالة</th>
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold text-center">إجراءات</th>
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold text-center w-32">
+                      نسبة التحصيل
+                    </th>
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
+                      الحالة
+                    </th>
+                    <th className="p-2 text-[10px] text-[#64748b] font-bold text-center">
+                      إجراءات
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -390,7 +415,8 @@ const QuotationsDirectory = () => {
                     // 🌟 الحسابات لنسبة السداد
                     const total = q.total || 0;
                     const paid = q.paidAmount || 0; // تأكد أن الباك إند يرسل paidAmount
-                    const paidPct = total > 0 ? Math.round((paid / total) * 100) : 0;
+                    const paidPct =
+                      total > 0 ? Math.round((paid / total) * 100) : 0;
                     const remPct = 100 - paidPct;
 
                     return (
@@ -432,16 +458,23 @@ const QuotationsDirectory = () => {
                         <td className="p-2 text-[11px] font-bold text-[#123f59] font-mono">
                           {formatCurrency(q.total)} ر.س
                         </td>
-                        
+
                         {/* 🌟 عرض نسبة التحصيل بـ Progress Bar */}
                         <td className="p-2 text-center align-middle">
                           <div className="flex flex-col gap-1.5 w-24 mx-auto">
                             <div className="flex justify-between text-[8px] font-black">
-                              <span className="text-emerald-600">{paidPct}% مسدد</span>
-                              <span className="text-rose-600">{remPct}% متبقي</span>
+                              <span className="text-emerald-600">
+                                {paidPct}% مسدد
+                              </span>
+                              <span className="text-rose-600">
+                                {remPct}% متبقي
+                              </span>
                             </div>
                             <div className="w-full h-1.5 bg-rose-100 rounded-full overflow-hidden flex">
-                              <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${paidPct}%` }}></div>
+                              <div
+                                className="h-full bg-emerald-500 transition-all duration-500"
+                                style={{ width: `${paidPct}%` }}
+                              ></div>
                             </div>
                           </div>
                         </td>
@@ -461,7 +494,6 @@ const QuotationsDirectory = () => {
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
-
                             <button
                               onClick={(e) => handleViewDetails(e, q.id)}
                               className="p-1.5 bg-slate-100 text-[#123f59] rounded hover:bg-slate-200 transition-colors"
@@ -469,10 +501,12 @@ const QuotationsDirectory = () => {
                             >
                               <Eye className="w-3.5 h-3.5" />
                             </button>
-
                             {/* 🚀 الزر المحدث للطباعة باستخدام Endpoint الباك إند */}
+                            
                             <button
-                              onClick={(e) => handlePrint(e, q.id, q.number)}
+                              onClick={(e) =>
+                                handlePrint(e, q.id, q.number, q.pdfUrl)
+                              }
                               disabled={generatingPdfId === q.id}
                               className="p-1.5 bg-emerald-50 text-[#0f766e] rounded hover:bg-emerald-100 transition-colors disabled:opacity-50"
                               title="تصدير وطباعة"
@@ -483,7 +517,6 @@ const QuotationsDirectory = () => {
                                 <Printer className="w-3.5 h-3.5" />
                               )}
                             </button>
-
                             <AccessControl
                               code="QUOTE_ACTION_DELETE"
                               name="حذف عرض السعر"
