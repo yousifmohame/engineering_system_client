@@ -50,7 +50,7 @@ import HubScreen from "./pages/Archives_and_records/ArchivesHubWrapper";
 import AccountsScreenWrapper from "./pages/AccountsCenter/AccountsScreenWrapper";
 import OfficeServicesScreen from "./pages/ServicesOffices/EngineeringOfficeServices";
 import DocumentScreenWrapper from "./pages/DocsStation/DocsStationScreenWrapper";
-import OperationsSupervisorScreen from "./pages/OperationsSupervisor/OperationsSupervisorScreen";
+import SupervisorScreenWrapper from "./pages/OperationsSupervisor/SupervisorScreenWrapper";
 import SharedBankAccount from "./pages/Public/SharedBankAccount";
 
 // --- Icons & Context ---
@@ -368,7 +368,7 @@ const AppContent = () => {
             <div
               className={activeScreenId === "18" ? "block h-full" : "hidden"}
             >
-              <OperationsSupervisorScreen />
+              <SupervisorScreenWrapper />
             </div>
 
             {/* --- 👈 السحر هنا: شاشة Fallback لأي كود غير مبرمج --- */}

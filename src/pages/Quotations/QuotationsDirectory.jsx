@@ -116,7 +116,7 @@ const formatCurrency = (value) => {
   return Number(value || 0).toLocaleString("ar-SA");
 };
 
-const QuotationsDirectory = () => {
+const QuotationsDirectory = ({ onNavigate }) => {
   const queryClient = useQueryClient();
   const { addTab } = useAppStore();
 
@@ -165,31 +165,46 @@ const QuotationsDirectory = () => {
   );
 
   // فتح عرض سعر جديد
+  // فتح عرض سعر جديد
   const handleCreateNew = useCallback(() => {
-    addTab(SCREEN_ID, {
-      id: `CREATE-QUOTATION-${Date.now()}`,
-      title: "إنشاء عرض سعر",
-      type: "create-quotation",
-      closable: true,
-    });
-  }, [addTab]);
+    if (onNavigate) {
+      // 🌟 التوجيه باستخدام دالة النافذة الحاضنة
+      onNavigate("CREATE_QUOTATION");
+    } else {
+      // (Fallback) في حال تم استخدامه خارج الـ Wrapper
+      addTab(SCREEN_ID, {
+        id: `CREATE-QUOTATION-${Date.now()}`,
+        title: "إنشاء عرض سعر",
+        type: "create-quotation",
+        closable: true,
+      });
+    }
+  }, [onNavigate, addTab]);
 
+  // التعديل
   // التعديل
   const handleEditQuotation = useCallback(
     (e, quote) => {
       e?.stopPropagation();
-      setIsDetailsModalOpen(false);
-      addTab(SCREEN_ID, {
-        id: `EDIT-QUOTATION-${quote.id}`,
-        title: `تعديل عرض ${quote.number}`,
-        type: "create-quotation",
-        closable: true,
-        quotationId: quote.id,
-        data: { quotationId: quote.id },
-        props: { quotationId: quote.id },
-      });
+      setIsDetailsModalOpen(false); // إغلاق نافذة التفاصيل إن كانت مفتوحة
+
+      if (onNavigate) {
+        // 🌟 التوجيه وإرسال الـ ID الخاص بالعرض لمعالج العروض
+        onNavigate("CREATE_QUOTATION", { quotationId: quote.id });
+      } else {
+        // (Fallback)
+        addTab(SCREEN_ID, {
+          id: `EDIT-QUOTATION-${quote.id}`,
+          title: `تعديل عرض ${quote.number}`,
+          type: "create-quotation",
+          closable: true,
+          quotationId: quote.id,
+          data: { quotationId: quote.id },
+          props: { quotationId: quote.id },
+        });
+      }
     },
-    [addTab],
+    [onNavigate, addTab],
   );
 
   // فتح التفاصيل السريعة

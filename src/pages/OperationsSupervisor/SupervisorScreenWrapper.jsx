@@ -1,16 +1,12 @@
 import React, { useState } from "react";
-import { X, ClipboardList } from "lucide-react";
+import { X, ShieldCheck } from "lucide-react";
 
-// استيراد الشاشات والمكونات الفرعية
-import QuotationsDashboard from "./QuotationsDashboard";
-import CreateQuotationWizard from "./CreateQuotation/CreateQuotationWizard";
-import QuotationsDirectory from "./QuotationsDirectory";
-import QuotationsTemplates from "./Templates/index";
-import QuotationsItems from "./QuotationsItems";
-import QuotationsApprovals from "./QuotationsApprovals";
-import QuotationsPayments from "./QuotationsPayments";
-import QuotationsReports from "./QuotationsReports";
-import QuotationsCancellations from "./QuotationsCancellations";
+// 🌟 استيراد الداشبورد الخاصة بالمشرفين
+import SupervisorDashboard from "./SupervisorDashboard";
+// 🌟 استيراد شاشة مشرف التوثيق (تأكد من صحة المسار حسب هيكلة مشروعك)
+import OperationsSupervisorScreen from "./pages/OperationsSupervisorScreen";
+// 🌟 استيراد شاشات عروض الأسعار (ليستخدمها مشرف العروض)
+import QuotationsSupervisorScreen from "./pages/QuotationsSupervisorScreen";
 
 const IconWithText = ({
   icon: Icon,
@@ -41,21 +37,19 @@ const IconWithText = ({
   );
 };
 
-// 💡 قاموس بأسماء جميع الشاشات لعرضها في عنوان النافذة
+// 💡 قاموس بأسماء شاشات المشرفين لعرضها في عنوان النافذة
 const TAB_TITLES = {
-  CREATE_QUOTATION: "إنشاء عرض سعر",
-  DIRECTORY: "دليل العروض",
-  TEMPLATES: "نماذج عروض الأسعار",
-  ITEMS: "البنود والمجموعات",
-  APPROVALS: "الاعتماد والمراجعة",
-  PAYMENTS: "الدفعات والتحصيل",
-  REPORTS: "تقارير عروض الأسعار",
-  CANCELLATIONS: "الملغاة والاسترجاع",
+  OPERATIONS_SUPERVISOR: "مشرف التوثيق والختم",
+  QUOTATIONS_SUPERVISOR: "إدارة عروض الأسعار",
+  CONTRACTS_SUPERVISOR: "إدارة العقود والاتفاقيات",
+  FINANCE_SUPERVISOR: "الاعتمادات المالية",
+  AUDIT_SUPERVISOR: "الجودة والتدقيق الشامل",
+  CREATE_QUOTATION: "إنشاء / تعديل عرض سعر", // مبقاة لدعم شاشة العروض
 };
 
-const QuotationsScreenWrapper = () => {
+const SupervisorScreenWrapper = () => {
   const [activeModal, setActiveModal] = useState(null);
-  const [editQuoteId, setEditQuoteId] = useState(null); // 🌟 1. حالة جديدة لحفظ الـ ID المراد تعديله
+  const [editQuoteId, setEditQuoteId] = useState(null); // حالة لحفظ الـ ID الخاص بتعديل العروض
 
   const handleNavigate = (targetId, data = null) => {
     if (targetId === "DASHBOARD") {
@@ -64,8 +58,8 @@ const QuotationsScreenWrapper = () => {
       return;
     }
     setActiveModal(targetId);
-    
-    // إذا كان هناك ID ممرر، نقوم بحفظه
+
+    // إذا كان هناك ID ممرر (خاص بشاشة عروض الأسعار)، نقوم بحفظه
     if (data?.quotationId) {
       setEditQuoteId(data.quotationId);
     } else {
@@ -86,56 +80,25 @@ const QuotationsScreenWrapper = () => {
   );
 
   const renderModalContent = () => {
-    if (activeModal === "DIRECTORY") {
+    // 🌟 1. شاشة مشرف التوثيق والختم
+    if (activeModal === "OPERATIONS_SUPERVISOR") {
       return (
         <div className="h-full min-h-0 overflow-hidden bg-[#fbf8f1]">
-          <QuotationsDirectory onNavigate={handleNavigate} />
-        </div>
-      );
-    }
-    if (activeModal === "TEMPLATES") {
-      return (
-        <div className="h-full min-h-0 overflow-hidden bg-[#fbf8f1]">
-          <QuotationsTemplates />
-        </div>
-      );
-    }
-    if (activeModal === "ITEMS") {
-      return (
-        <div className="h-full min-h-0 overflow-hidden bg-[#fbf8f1]">
-          <QuotationsItems />
-        </div>
-      );
-    }
-    if (activeModal === "APPROVALS") {
-      return (
-        <div className="h-full min-h-0 overflow-hidden bg-[#fbf8f1]">
-          <QuotationsApprovals />
-        </div>
-      );
-    }
-    if (activeModal === "PAYMENTS") {
-      return (
-        <div className="h-full min-h-0 overflow-hidden bg-[#fbf8f1]">
-          <QuotationsPayments />
-        </div>
-      );
-    }
-    if (activeModal === "REPORTS") {
-      return (
-        <div className="h-full min-h-0 overflow-hidden bg-[#fbf8f1]">
-          <QuotationsReports />
-        </div>
-      );
-    }
-    if (activeModal === "CANCELLATIONS") {
-      return (
-        <div className="h-full min-h-0 overflow-hidden bg-[#fbf8f1]">
-          <QuotationsCancellations />
+          <OperationsSupervisorScreen />
         </div>
       );
     }
 
+    // 🌟 2. شاشة مشرف عروض الأسعار (تمرر onNavigate لتتمكن من فتح معالج العروض)
+    if (activeModal === "QUOTATIONS_SUPERVISOR") {
+      return (
+        <div className="h-full min-h-0 overflow-hidden bg-[#fbf8f1]">
+          <QuotationsSupervisorScreen onNavigate={handleNavigate} />
+        </div>
+      );
+    }
+
+    // عرض الـ Placeholder لباقي الشاشات التي لم تكتمل بعد
     if (TAB_TITLES[activeModal]) {
       return renderPlaceholder(TAB_TITLES[activeModal]);
     }
@@ -149,23 +112,24 @@ const QuotationsScreenWrapper = () => {
       dir="rtl"
     >
       {/* 1. الخلفية الثابتة: لوحة المؤشرات (Dashboard) */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white shadow-[0_10px_24px_rgba(18,63,89,0.08)] m-3 rounded-[18px] border border-[#e8ddc8] overflow-hidden relative">
-        <div className="flex-1 relative h-full overflow-hidden">
-          <QuotationsDashboard onNavigate={handleNavigate} />
+      <div className="flex-1 flex flex-col min-w-0 min-h-[400px] w-full h-full bg-white shadow-[0_10px_24px_rgba(18,63,89,0.08)] m-3 rounded-[18px] border border-[#e8ddc8] overflow-hidden relative">
+        <div className="flex-1 relative w-full h-full min-h-0 overflow-hidden">
+          {/* 🌟 استدعاء شاشة الداشبورد الجديدة للمشرفين */}
+          <SupervisorDashboard onNavigate={handleNavigate} />
         </div>
       </div>
 
-      {/* 2. النافذة المنبثقة لإنشاء عرض السعر (Wizard) */}
-      {/* تم فصله لأنه يمتلك تصميمه الخاص والـ Overlay الخاص به كما قمنا ببرمجته سابقاً */}
+      {/* 2. النافذة المنبثقة لإنشاء وتعديل عرض السعر (Wizard) */}
+      {/* يتم فتحها من داخل جدول عروض الأسعار */}
       {activeModal === "CREATE_QUOTATION" && (
         <CreateQuotationWizard
           quotationId={editQuoteId}
           onClose={closeModal}
-          onComplete={closeModal} // إغلاق النافذة عند الحفظ بنجاح
+          onComplete={closeModal}
         />
       )}
 
-      {/* 3. النافذة المنبثقة (Modal) الموحدة لباقي الشاشات */}
+      {/* 3. النافذة المنبثقة (Modal) الموحدة لباقي شاشات الإشراف */}
       {activeModal && activeModal !== "CREATE_QUOTATION" && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#06111d]/60 backdrop-blur-sm p-4 font-cairo animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-[95vw] h-[95vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative animate-in zoom-in-95 duration-200">
@@ -173,14 +137,14 @@ const QuotationsScreenWrapper = () => {
             <div className="flex shrink-0 items-center justify-between border-b border-[#d8b46a]/25 bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490] px-3 py-1.5 text-white shadow-[0_8px_22px_rgba(18,63,89,0.16)]">
               <div className="flex min-w-0 items-center gap-2">
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-[#e2bf74]/35 bg-white/10 text-[#e2bf74]">
-                  <ClipboardList className="h-3.5 w-3.5" />
+                  <ShieldCheck className="h-3.5 w-3.5" />
                 </span>
                 <div className="min-w-0">
                   <h2 className="truncate text-[13px] font-black leading-tight text-white">
                     {TAB_TITLES[activeModal]}
                   </h2>
                   <p className="hidden text-[9px] font-bold text-white/55 lg:block">
-                    نافذة عمل مدمجة لإدارة عروض الأسعار والتسعير.
+                    نافذة الإشراف المتقدمة للتحكم في الاعتمادات والعمليات.
                   </p>
                 </div>
               </div>
@@ -189,11 +153,15 @@ const QuotationsScreenWrapper = () => {
                 onClick={closeModal}
                 className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/10 px-2 text-[9px] font-black text-white/80 transition hover:bg-rose-500/15 hover:text-white"
               >
-                <IconWithText icon={X} text="إغلاق" iconClassName="h-3.5 w-3.5" />
+                <IconWithText
+                  icon={X}
+                  text="إغلاق"
+                  iconClassName="h-3.5 w-3.5"
+                />
               </button>
             </div>
 
-            {/* محتوى الشاشة الفعلي */}
+            {/* محتوى الشاشة الفعلي (يتم تحديده بناءً على renderModalContent) */}
             <div className="relative min-w-0 flex-1 overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white">
               {renderModalContent()}
             </div>
@@ -204,4 +172,4 @@ const QuotationsScreenWrapper = () => {
   );
 };
 
-export default QuotationsScreenWrapper;
+export default SupervisorScreenWrapper;

@@ -9,7 +9,7 @@ import {
   ListChecks,
   Table as TableIcon,
   Search,
-  Tag
+  Tag,
 } from "lucide-react";
 
 const IconWithText = ({
@@ -65,7 +65,7 @@ export const Step2Template = ({ props }) => {
       (tpl) =>
         tpl.title?.toLowerCase().includes(term) ||
         tpl.category?.toLowerCase().includes(term) ||
-        tpl.id?.toLowerCase().includes(term)
+        tpl.id?.toLowerCase().includes(term),
     );
   }, [currentTemplates, searchTerm]);
 
@@ -77,7 +77,6 @@ export const Step2Template = ({ props }) => {
     return (
       <div className="absolute inset-0 z-50 flex min-w-0 items-center justify-center p-3 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
         <div className="bg-white w-full max-w-2xl rounded-[20px] shadow-[0_20px_55px_rgba(18,63,89,0.18)] overflow-hidden flex flex-col border border-[#d8b46a]/25 animate-in zoom-in-95 duration-200">
-          
           <div className="flex min-w-0 justify-between items-center p-3 border-b border-[#e8ddc8] bg-[#fbf8f1]/50">
             <div className="flex min-w-0 items-center gap-2">
               <div className="p-1.5 bg-indigo-100 text-indigo-600 rounded-xl">
@@ -94,7 +93,9 @@ export const Step2Template = ({ props }) => {
                   {/* 🌟 عرض نوع المستند / التصنيف من بيانات النموذج */}
                   <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
                     <Tag className="w-2.5 h-2.5" />
-                    {previewTemplate.documentType || previewTemplate.category || "عرض سعر فني ومالي"}
+                    {previewTemplate.documentType ||
+                      previewTemplate.category ||
+                      "عرض سعر فني ومالي"}
                   </span>
                 </div>
               </div>
@@ -187,7 +188,6 @@ export const Step2Template = ({ props }) => {
         </div>
       ) : (
         <div className="flex-1 bg-white p-3 rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex flex-col h-[400px]">
-          
           {/* 🌟 شريط الأدوات: العنوان + مربع البحث */}
           <div className="flex flex-col gap-3 mb-3 pb-3 border-b border-slate-100 shrink-0">
             <div className="text-[11px] font-bold text-[#64748b] flex min-w-0 justify-between items-center">
@@ -219,23 +219,37 @@ export const Step2Template = ({ props }) => {
             <table className="w-full text-right border-collapse table-auto min-w-[500px]">
               <thead className="bg-slate-100 sticky top-0 z-10 shadow-sm text-[#475569]">
                 <tr>
-                  <th className="p-1.5 border border-slate-200 w-8 text-center text-[10px] font-black">✔</th>
-                  <th className="p-1.5 border border-slate-200 w-12 text-center text-[10px] font-black">الرقم</th>
-                  <th className="p-1.5 border border-slate-200 text-[10px] font-black">اسم النموذج</th>
-                  <th className="p-1.5 border border-slate-200 w-32 text-center text-[10px] font-black">تصنيف المعاملة</th>
-                  <th className="p-1.5 border border-slate-200 w-14 text-center text-[10px] font-black">الإجراء</th>
+                  <th className="p-1.5 border border-slate-200 w-8 text-center text-[10px] font-black">
+                    ✔
+                  </th>
+                  <th className="p-1.5 border border-slate-200 w-12 text-center text-[10px] font-black">
+                    الرقم
+                  </th>
+                  <th className="p-1.5 border border-slate-200 text-[10px] font-black">
+                    اسم النموذج
+                  </th>
+                  <th className="p-1.5 border border-slate-200 w-32 text-center text-[10px] font-black">
+                    تصنيف المعاملة
+                  </th>
+                  <th className="p-1.5 border border-slate-200 w-14 text-center text-[10px] font-black">
+                    الإجراء
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white">
                 {filteredTemplates.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="p-4 text-center text-[10.5px] font-bold text-slate-400">
+                    <td
+                      colSpan="5"
+                      className="p-4 text-center text-[10.5px] font-bold text-slate-400"
+                    >
                       لا توجد نماذج مطابقة للبحث
                     </td>
                   </tr>
                 ) : (
                   filteredTemplates.map((tpl, index) => {
-                    const isSelected = selectedTemplate === tpl.id;
+                    const isSelected =
+                      String(selectedTemplate) === String(tpl.id);
                     return (
                       <tr
                         key={tpl.id}
@@ -256,19 +270,23 @@ export const Step2Template = ({ props }) => {
                                 : "bg-white border-slate-300 group-hover:border-indigo-400"
                             }`}
                           >
-                            {isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}
+                            {isSelected && (
+                              <CheckCircle2 className="w-3 h-3 text-white" />
+                            )}
                           </div>
                         </td>
-                        
+
                         {/* خانة الرقم التسلسلي */}
                         <td className="p-1.5 border-x border-slate-100 text-center font-mono text-[9px] text-slate-500 align-middle">
                           {index + 1}
                         </td>
-                        
+
                         {/* خانة اسم النموذج */}
                         <td className="p-1.5 border-x border-slate-100 text-[10.5px] align-middle">
                           <div className="flex items-center gap-1.5">
-                            <span className={`font-bold ${isSelected ? "text-indigo-800" : "text-[#123f59]"}`}>
+                            <span
+                              className={`font-bold ${isSelected ? "text-indigo-800" : "text-[#123f59]"}`}
+                            >
                               {tpl.title}
                             </span>
                             {tpl.isDefault && (
