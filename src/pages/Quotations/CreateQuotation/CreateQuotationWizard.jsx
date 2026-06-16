@@ -91,6 +91,9 @@ const CreateQuotationWizard = (incomingProps) => {
   const [referenceNumber, setReferenceNumber] = useState(
     generateReferenceNumber(),
   );
+  // 👇 أضف هذين السطرين هنا 👇
+  const [subject, setSubject] = useState("");
+  const [address, setAddress] = useState("");
   const [selectedClient, setSelectedClient] = useState("");
   const [selectedProperty, setSelectedProperty] = useState("");
   const [clientSearch, setClientSearch] = useState("");
@@ -307,6 +310,8 @@ const CreateQuotationWizard = (incomingProps) => {
       setReferenceNumber(
         existingQuote.referenceNumber || generateReferenceNumber(),
       );
+      setSubject(existingQuote.subject || "");
+      setAddress(existingQuote.address || "");
       setSelectedClient(existingQuote.clientId || "");
       setSelectedProperty(existingQuote.ownershipId || "");
       setSelectedTransaction(existingQuote.transactionId || "");
@@ -556,6 +561,8 @@ const CreateQuotationWizard = (incomingProps) => {
 
     const payload = {
       referenceNumber,
+      subject,
+      address,
       clientId: selectedClient || null,
       propertyId: selectedProperty || null,
       transactionId: selectedTransaction || null,
@@ -661,6 +668,10 @@ const CreateQuotationWizard = (incomingProps) => {
   const stepProps = {
     referenceNumber,
     setReferenceNumber,
+    subject,
+    setSubject,
+    address,
+    setAddress,
     selectedClient,
     setSelectedClient: handleClientSelection,
     selectedProperty,
@@ -831,6 +842,8 @@ const CreateQuotationWizard = (incomingProps) => {
 
   const previewData = {
     referenceNumber,
+    subject,
+    address,
     templateType,
     documentType:
       selectedTemplateObj?.documentType ||

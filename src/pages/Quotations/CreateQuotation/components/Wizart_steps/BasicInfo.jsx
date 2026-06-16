@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FileSearch, Loader2, Type, ChevronDown } from "lucide-react";
+import { FileSearch, Loader2, Type, ChevronDown, MapPin, AlignLeft, Book } from "lucide-react";
 
 const IconWithText = ({
   icon: Icon,
@@ -43,6 +43,13 @@ const getFallbackHijriYears = () => {
 
 export const Step1BasicInfo = ({ props }) => {
   const {
+    // 🌟 المتغيرات الجديدة التي تمت إضافتها
+    subject,
+    setSubject,
+    address,
+    setAddress,
+    
+    // المتغيرات السابقة
     issueDate,
     setIssueDate,
     validityDays,
@@ -73,7 +80,49 @@ export const Step1BasicInfo = ({ props }) => {
 
   return (
     <div className="animate-in fade-in duration-300">
-      {/* 🌟 كارت معلومات العرض العامة */}
+      
+      {/* 🌟 كارت العناوين الرئيسية (الموضوع والعنوان) */}
+      <div className="p-4 bg-white rounded-xl border border-[#d8b46a]/25 border-r-[3px] border-r-indigo-500 mb-3 shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
+        <div className="text-xs font-bold text-indigo-700 mb-4 flex min-w-0 items-center gap-1.5">
+          <IconWithText icon={AlignLeft} iconClassName="w-4 h-4" /> البيانات الوصفية للمستند
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[11px] font-bold text-[#475569] mb-1.5">
+              موضوع العرض <span className="text-indigo-500/70 text-[9px] font-normal">(يظهر في صفحة الغلاف)</span>
+            </label>
+            <div className="relative">
+              <AlignLeft className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                value={subject || ""}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="مثال: عرض سعر للإشراف الهندسي..."
+                className="w-full py-2 pr-9 pl-3 border border-[#d8b46a]/35 rounded-xl text-xs font-bold outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 transition-all bg-slate-50/50"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-[#475569] mb-1.5">
+              العنوان<span className="text-indigo-500/70 text-[9px] font-normal">(يظهر في ترويسة الغلاف)</span>
+            </label>
+            <div className="relative">
+              <Book className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                value={address || ""}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="مثال: عرض سعر "
+                className="w-full py-2 pr-9 pl-3 border border-[#d8b46a]/35 rounded-xl text-xs font-bold outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 transition-all bg-slate-50/50"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 🌟 كارت معلومات العرض العامة (التواريخ والصلاحية) */}
       <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 mb-3 shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <div>

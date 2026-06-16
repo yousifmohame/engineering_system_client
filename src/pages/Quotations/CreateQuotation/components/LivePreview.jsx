@@ -15,10 +15,9 @@ import {
   FolderOpen,
   DollarSign,
   AlertTriangle,
+  Book,
 } from "lucide-react";
 import api from "../../../../api/axios";
-// أضف هذا الاستيراد في أعلى الملف
-import QRCode from "react-qr-code";
 
 const A4_WIDTH_PX = 794;
 const A4_HEIGHT_PX = 1123;
@@ -158,6 +157,8 @@ export const LivePreview = ({ data }) => {
     referenceNumber = `QT-${Date.now().toString().slice(-5)}`,
     transactionType,
     licenseNumber,
+    subject,
+    address,
     licenseYear,
     serviceNumber,
     serviceYear,
@@ -550,12 +551,30 @@ export const LivePreview = ({ data }) => {
                 </div>
               </div>
               <div className="absolute inset-0 flex flex-col justify-between items-center text-center p-[80px]">
-                <div className="w-[300px] mt-16 bg-transparent">
-                  <img
-                    src="/logo.jpeg"
-                    alt="Logo"
-                    className="max-h-full max-w-full object-contain mix-blend-multiply"
-                  />
+                <div className="w-full mt-12 flex flex-col items-center justify-center gap-12 bg-transparent">
+                  {/* 🌟 الشعار */}
+                  <div className="w-[300px] flex items-center justify-center">
+                    <img
+                      src="/logo.jpeg"
+                      alt="Logo"
+                      className="max-h-full max-w-full object-contain mix-blend-multiply drop-shadow-sm"
+                    />
+                  </div>
+
+                  {/* 🌟 العنوان الرئيسي للمستند (عنوان الكتاب/التقرير) */}
+                  {address && (
+                    <div className="flex flex-col items-center text-center max-w-3xl px-6 gap-5">
+                      {/* خط ذهبي ديكوري علوي */}
+                      <div className="w-20 h-1.5 bg-[#d8b46a] rounded-full opacity-80"></div>
+
+                      <h1 className="text-4xl md:text-5xl font-black text-[#123f59] leading-[1.4] tracking-wide">
+                        {address}
+                      </h1>
+
+                      {/* خط ذهبي ديكوري سفلي */}
+                      <div className="w-20 h-1.5 bg-[#d8b46a] rounded-full opacity-80"></div>
+                    </div>
+                  )}
                 </div>
                 <div className="w-full flex flex-col items-center">
                   <div
@@ -676,11 +695,24 @@ export const LivePreview = ({ data }) => {
                         style={{ borderColor: selectedStyle.accent }}
                       >
                         <div className="flex h-16 w-48 items-center justify-center bg-transparent">
-                          <img
+                          <div>
+                            <img
                             src="/logo.jpeg"
                             alt="Logo"
                             className="max-h-full max-w-full object-contain mix-blend-multiply"
                           />
+                          
+                          {subject && (
+                            <tr>
+                              <td className="border border-[#123f5944] p-2 text-[#475569]">
+                                الموضوع
+                              </td>
+                              <td className="border border-[#123f5944] p-2 text-[13px] font-bold text-[#123f59]">
+                                {subject}
+                              </td>
+                            </tr>
+                          )}
+                          </div>
                         </div>
                         <div className="w-[280px]">
                           <table
