@@ -10,85 +10,41 @@ import {
   Trash2,
   Edit3,
   Plus,
+  Lock,
+  DownloadCloud
 } from "lucide-react";
 import { format } from "date-fns";
 import { arSA } from "date-fns/locale";
 import { toast } from "sonner";
 
-// استيراد متجر التابات لفتح شاشة التعديل أو الإنشاء
 import { useAppStore } from "../../stores/useAppStore";
 import AccessControl from "../../components/AccessControl";
 import QuotationDetailsModal from "./QuotationDetailsModal";
 import { getFullUrl } from "../../utils/urlUtils";
 
-const IconWithText = ({
-  icon: Icon,
-  text,
-  className = "",
-  iconClassName = "",
-  textClassName = "",
-  vertical = false,
-}) => {
-  return (
-    <span
-      className={`
-        inline-flex min-w-0 items-center justify-center
-        ${vertical ? "flex-col gap-0.5" : "gap-1.5"}
-        ${className}
-      `}
-    >
-      {Icon && <Icon className={iconClassName || "h-4 w-4 shrink-0"} />}
-      {text && (
-        <span
-          className={
-            textClassName ||
-            "min-w-0 break-words text-[10px] font-black leading-tight"
-          }
-        >
-          {text}
-        </span>
-      )}
-    </span>
-  );
-};
+const IconWithText = ({ icon: Icon, text, className = "", iconClassName = "", textClassName = "", vertical = false }) => (
+  <span className={`inline-flex min-w-0 items-center justify-center ${vertical ? "flex-col gap-0.5" : "gap-1.5"} ${className}`}>
+    {Icon && <Icon className={iconClassName || "h-4 w-4 shrink-0"} />}
+    {text && <span className={textClassName || "min-w-0 break-words text-[10px] font-black leading-tight"}>{text}</span>}
+  </span>
+);
 
 // ==========================================
 // ثوابت التطبيق
 // ==========================================
 const STATUS_CONFIG = {
-  DRAFT: { label: "مسودة", bg: "bg-[#fbf8f1]", text: "text-[#64748b]" },
-  PENDING_APPROVAL: {
-    label: "تحت المراجعة",
-    bg: "bg-blue-100",
-    text: "text-[#123f59]",
-  },
-  REJECTED: {
-    label: "راجع بملاحظات",
-    bg: "bg-orange-100",
-    text: "text-orange-700",
-  },
-  SENT: {
-    label: "بانتظار توقيع المالك",
-    bg: "bg-amber-100",
-    text: "text-amber-700",
-  },
-  APPROVED: {
-    label: "معتمد — بانتظار الدفع",
-    bg: "bg-emerald-100",
-    text: "text-[#0f766e]",
-  },
-  PARTIALLY_PAID: {
-    label: "مسدد جزئياً",
-    bg: "bg-yellow-100",
-    text: "text-yellow-700",
-  },
-  ACCEPTED: {
-    label: "مسدد بالكامل",
-    bg: "bg-green-100",
-    text: "text-green-700",
-  },
-  EXPIRED: { label: "منتهي الصلاحية", bg: "bg-red-50", text: "text-red-700" },
-  CANCELLED: { label: "ملغى", bg: "bg-red-100", text: "text-red-800" },
+  DRAFT: { label: "مسودة", bg: "bg-slate-100", text: "text-slate-600" },
+  PENDING_APPROVAL: { label: "تحت المراجعة", bg: "bg-blue-100", text: "text-blue-700" },
+  NEEDS_MODIFICATION: { label: "مُعاد للتعديل", bg: "bg-orange-100", text: "text-orange-700" },
+  REJECTED: { label: "مرفوض", bg: "bg-rose-100", text: "text-rose-700" },
+  APPROVED: { label: "معتمد (جاهز)", bg: "bg-emerald-100", text: "text-emerald-700" },
+  SENT: { label: "مُرسل للعميل", bg: "bg-cyan-100", text: "text-cyan-700" },
+  ACCEPTED: { label: "مقبول", bg: "bg-green-100", text: "text-green-700" },
+  PARTIALLY_PAID: { label: "مسدد جزئياً", bg: "bg-lime-100", text: "text-lime-700" },
+  EXPIRED: { label: "منتهي", bg: "bg-gray-100", text: "text-gray-500" },
+  CANCELLED: { label: "ملغى", bg: "bg-red-100", text: "text-red-700" },
+  REFUND_IN_PROGRESS: { label: "استرجاع جارٍ", bg: "bg-purple-100", text: "text-purple-700" },
+  REFUNDED: { label: "مسترد بالكامل", bg: "bg-fuchsia-100", text: "text-fuchsia-700" },
 };
 
 const SCREEN_ID = "815";
@@ -96,9 +52,7 @@ const SCREEN_ID = "815";
 const StatusBadge = React.memo(({ status }) => {
   const current = STATUS_CONFIG[status] || STATUS_CONFIG.DRAFT;
   return (
-    <span
-      className={`px-2.5 py-1 rounded-xl text-[10px] font-bold ${current.bg} ${current.text}`}
-    >
+    <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold ${current.bg} ${current.text} border border-white/20 shadow-sm`}>
       {current.label}
     </span>
   );
@@ -106,16 +60,15 @@ const StatusBadge = React.memo(({ status }) => {
 
 const getClientName = (client) => {
   if (!client) return "عميل غير محدد";
-  if (typeof client.name === "object") {
-    return client.name.ar || client.name.en || "عميل غير محدد";
-  }
+  if (typeof client.name === "object") return client.name.ar || client.name.en || "عميل غير محدد";
   return client.name || "عميل غير محدد";
 };
 
-const formatCurrency = (value) => {
-  return Number(value || 0).toLocaleString("ar-SA");
-};
+const formatCurrency = (value) => Number(value || 0).toLocaleString("ar-SA");
 
+// ==========================================
+// المكون الرئيسي
+// ==========================================
 const QuotationsDirectory = ({ onNavigate }) => {
   const queryClient = useQueryClient();
   const { addTab } = useAppStore();
@@ -127,113 +80,68 @@ const QuotationsDirectory = ({ onNavigate }) => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [generatingPdfId, setGeneratingPdfId] = useState(null);
 
-  // 1. جلب البيانات الأساسية للجدول
-  const {
-    data: quotationsData,
-    isLoading: isListLoading,
-    error: listError,
-  } = useQuery({
+  // جلب البيانات
+  const { data: quotationsData, isLoading: isListLoading, error: listError } = useQuery({
     queryKey: ["quotations-list"],
-    queryFn: async () => {
-      const response = await axios.get("/quotations");
-      return response.data.data;
-    },
+    queryFn: async () => (await axios.get("/quotations")).data.data,
     staleTime: 5 * 60 * 1000,
   });
 
-  // الحذف
+  // النقل لسلة المحذوفات
   const deleteQuotationMutation = useMutation({
     mutationFn: async (id) => axios.delete(`/quotations/${id}`),
     onSuccess: () => {
-      toast.success("تم النقل لسلة المحذوفات");
+      toast.success("تم النقل لسلة المحذوفات بنجاح");
       queryClient.invalidateQueries({ queryKey: ["quotations-list"] });
     },
     onError: (err) => {
-      console.error("Delete error:", err);
-      toast.error("حدث خطأ أثناء محاولة الحذف");
+      toast.error(err.response?.data?.message || "حدث خطأ أثناء محاولة الحذف");
     },
   });
 
-  const handleDelete = useCallback(
-    (e, id) => {
-      e.stopPropagation();
-      if (window.confirm("هل أنت متأكد من النقل لسلة المحذوفات؟")) {
-        deleteQuotationMutation.mutate(id);
-      }
-    },
-    [deleteQuotationMutation],
-  );
-
-  // فتح عرض سعر جديد
-  // فتح عرض سعر جديد
-  const handleCreateNew = useCallback(() => {
-    if (onNavigate) {
-      // 🌟 التوجيه باستخدام دالة النافذة الحاضنة
-      onNavigate("CREATE_QUOTATION");
-    } else {
-      // (Fallback) في حال تم استخدامه خارج الـ Wrapper
-      addTab(SCREEN_ID, {
-        id: `CREATE-QUOTATION-${Date.now()}`,
-        title: "إنشاء عرض سعر",
-        type: "create-quotation",
-        closable: true,
-      });
+  const handleDelete = useCallback((e, quote) => {
+    e.stopPropagation();
+    if (window.confirm(`هل أنت متأكد من نقل العرض (${quote.number}) إلى سلة المحذوفات؟`)) {
+      deleteQuotationMutation.mutate(quote.id);
     }
+  }, [deleteQuotationMutation]);
+
+  // فتح عرض جديد
+  const handleCreateNew = useCallback(() => {
+    if (onNavigate) onNavigate("CREATE_QUOTATION");
+    else addTab(SCREEN_ID, { id: `CREATE-QUOTATION-${Date.now()}`, title: "إنشاء عرض سعر", type: "create-quotation", closable: true });
   }, [onNavigate, addTab]);
 
-  // التعديل
-  // التعديل
-  const handleEditQuotation = useCallback(
-    (e, quote) => {
-      e?.stopPropagation();
-      setIsDetailsModalOpen(false); // إغلاق نافذة التفاصيل إن كانت مفتوحة
+  // تعديل عرض
+  const handleEditQuotation = useCallback((e, quote) => {
+    e?.stopPropagation();
+    setIsDetailsModalOpen(false);
+    if (onNavigate) onNavigate("CREATE_QUOTATION", { quotationId: quote.id });
+    else addTab(SCREEN_ID, { id: `EDIT-QUOTATION-${quote.id}`, title: `تعديل ${quote.number}`, type: "create-quotation", closable: true, quotationId: quote.id, data: { quotationId: quote.id }, props: { quotationId: quote.id } });
+  }, [onNavigate, addTab]);
 
-      if (onNavigate) {
-        // 🌟 التوجيه وإرسال الـ ID الخاص بالعرض لمعالج العروض
-        onNavigate("CREATE_QUOTATION", { quotationId: quote.id });
-      } else {
-        // (Fallback)
-        addTab(SCREEN_ID, {
-          id: `EDIT-QUOTATION-${quote.id}`,
-          title: `تعديل عرض ${quote.number}`,
-          type: "create-quotation",
-          closable: true,
-          quotationId: quote.id,
-          data: { quotationId: quote.id },
-          props: { quotationId: quote.id },
-        });
-      }
-    },
-    [onNavigate, addTab],
-  );
-
-  // فتح التفاصيل السريعة
+  // التفاصيل
   const handleViewDetails = useCallback((e, id) => {
     e?.stopPropagation();
     setSelectedQuoteId(id);
     setIsDetailsModalOpen(true);
   }, []);
 
-  // 🚀 الطباعة عبر الباك إند (Live Preview API)
-  const handlePrint = async (e, quoteId, quoteNumber, pdfUrl) => {
+  // الطباعة
+  const handlePrint = async (e, quote) => {
     e?.stopPropagation();
 
-    // 🚀 استخدام getFullUrl لمعالجة الرابط بشكل نظيف وموحد
-    if (pdfUrl) {
-       const finalPdfUrl = getFullUrl(pdfUrl);
-       window.open(finalPdfUrl, "_blank");
+    if (quote.pdfUrl) {
+       window.open(getFullUrl(quote.pdfUrl), "_blank");
        return;
     }
 
-    // 2. إذا لم يكن له ملف محفوظ مسبقاً (Fallback)
-    setGeneratingPdfId(quoteId);
-    const loadingToast = toast.loading("جاري معالجة وتجهيز الوثيقة للطباعة...");
+    setGeneratingPdfId(quote.id);
+    const loadingToast = toast.loading("جاري توليد معاينة مؤقتة للعرض...");
 
     try {
-      const { data: quoteResponse } = await axios.get(`/quotations/${quoteId}`);
-      const response = await axios.post("/quotations/generate-pdf", quoteResponse.data, {
-        responseType: "blob",
-      });
+      const { data: quoteResponse } = await axios.get(`/quotations/${quote.id}`);
+      const response = await axios.post("/quotations/generate-pdf", quoteResponse.data, { responseType: "blob" });
 
       const blob = new Blob([response.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
@@ -248,306 +156,215 @@ const QuotationsDirectory = ({ onNavigate }) => {
     }
   };
 
-  // الفلترة
+  // 🌟 الفلترة الشاملة بدون قيود المستخدمين
   const filteredData = useMemo(() => {
     if (!quotationsData) return [];
-
     return quotationsData.filter((q) => {
       if (q.isDeleted || q.status === "TRASHED") return false;
 
       const searchLower = searchTerm.toLowerCase();
-      const matchesSearch =
-        !searchTerm ||
-        q.number?.toLowerCase().includes(searchLower) ||
-        getClientName(q.client)?.toLowerCase().includes(searchLower) ||
-        q.ownership?.code?.toLowerCase().includes(searchLower);
-
+      const matchesSearch = !searchTerm || q.number?.toLowerCase().includes(searchLower) || getClientName(q.client)?.toLowerCase().includes(searchLower) || q.ownership?.code?.toLowerCase().includes(searchLower);
       const matchesStatus = filterStatus === "ALL" || q.status === filterStatus;
 
       return matchesSearch && matchesStatus;
     });
   }, [quotationsData, searchTerm, filterStatus]);
 
-  const getStatusCount = useCallback(
-    (status) => {
-      if (!quotationsData) return 0;
-      return quotationsData.filter((q) => q.status === status && !q.isDeleted)
-        .length;
-    },
-    [quotationsData],
-  );
+  // 🌟 العداد الشامل بدون قيود المستخدمين
+  const getStatusCount = useCallback((status) => {
+    if (!quotationsData) return 0;
+    return quotationsData.filter((q) => q.status === status && !q.isDeleted).length;
+  }, [quotationsData]);
 
   if (listError) {
     return (
-      <div
-        className="flex h-full min-h-0 items-center justify-center bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
-        dir="rtl"
-      >
-        <div className="text-center p-3">
-          <div className="text-red-500 font-bold mb-2">
-            ⚠️ حدث خطأ في تحميل البيانات
-          </div>
-          <button
-            onClick={() =>
-              queryClient.invalidateQueries({ queryKey: ["quotations-list"] })
-            }
-            className="px-4 py-2 bg-[#123f59] text-white rounded-xl text-sm hover:bg-[#0f3448]"
-          >
-            إعادة المحاولة
-          </button>
-        </div>
+      <div className="flex h-full min-h-0 items-center justify-center bg-[#fbf8f1]" dir="rtl">
+        <div className="text-center p-3 text-rose-500 font-bold">⚠️ حدث خطأ في تحميل البيانات</div>
       </div>
     );
   }
 
   return (
-    <div
-      className="flex h-full min-h-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-[Tajawal] relative"
-      dir="rtl"
-    >
-      {/* مودال التفاصيل */}
+    <div className="flex h-full min-h-0 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-[Tajawal] relative" dir="rtl">
+      
       <QuotationDetailsModal
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         quotationId={selectedQuoteId}
         onPrint={(id) => {
           const q = quotationsData?.find((x) => x.id === id);
-          handlePrint(null, id, q?.number, q?.pdfUrl);
+          handlePrint(null, q);
         }}
         onEdit={(quote) => handleEditQuotation(null, quote)}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 md:p-3.5 w-full">
-        <div className="flex min-w-0 items-center justify-between mb-3">
-          <div className="text-base font-bold text-[#123f59] flex min-w-0 items-center gap-2">
-            <IconWithText
-              icon={FileText}
-              iconClassName="w-5 h-5 text-[#123f59]"
-            />
-            دليل عروض الأسعار
-            <span className="text-xs text-[#64748b] font-normal">
-              ({filteredData.length} من {quotationsData?.length || 0})
-            </span>
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 md:p-4 w-full">
+        
+        {/* Header */}
+        <div className="flex min-w-0 items-center justify-between mb-4">
+          <div className="text-base font-black text-[#123f59] flex min-w-0 items-center gap-2">
+            <div className="p-2 bg-[#123f59] text-[#e2bf74] rounded-xl shadow-md">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div>
+              <h2>دليل عروض الأسعار</h2>
+              <p className="text-[10px] text-slate-500 font-bold mt-0.5">
+                يحتوي على {filteredData.length} عرض مسجل بالنظام
+              </p>
+            </div>
           </div>
 
-          {/* 🌟 زر الإضافة الجديد */}
-          <AccessControl
-            code="QUOTE_ACTION_CREATE"
-            name="إنشاء عرض سعر"
-            moduleName="عروض الأسعار"
-            tabName="الجدول"
-          >
-            <button
-              onClick={handleCreateNew}
-              className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#123f59] to-[#0f3448] text-white rounded-xl font-black text-xs hover:shadow-[0_8px_18px_rgba(18,63,89,0.15)] hover:-translate-y-0.5 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              عرض سعر جديد
+          <AccessControl code="QUOTE_ACTION_CREATE" name="إنشاء عرض سعر" moduleName="عروض الأسعار" tabName="الجدول">
+            <button onClick={handleCreateNew} className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-[#123f59] to-[#0f3448] text-white rounded-xl font-black text-xs hover:shadow-lg transition-all">
+              <Plus className="w-4 h-4 text-[#e2bf74]" /> عرض سعر جديد
             </button>
           </AccessControl>
         </div>
 
-        {/* شريط البحث */}
-        <div className="relative mb-3">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
-          <input
-            type="text"
-            placeholder="بحث ذكي: اسم العميل، الكود، آخر 4 أرقام..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full py-2 pr-9 pl-3 border border-[#d8b46a]/25 rounded-xl text-xs outline-none focus:border-[#c5983c]/70 focus:ring-1 focus:ring-blue-500 transition-all"
-            aria-label="بحث في العروض"
-          />
+        {/* Toolbar */}
+        <div className="flex flex-col md:flex-row gap-3 mb-4">
+          <div className="relative flex-1 md:max-w-xs">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="بحث برقم العرض، اسم العميل..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full py-2 pr-9 pl-3 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-[#123f59] focus:ring-1 focus:ring-[#123f59] bg-white shadow-sm"
+            />
+          </div>
+          <div className="flex gap-1.5 flex-wrap flex-1">
+            {[{ key: "ALL", label: "الكل" }, { key: "DRAFT", label: "مسودات" }, { key: "PENDING_APPROVAL", label: "تحت المراجعة" }, { key: "APPROVED", label: "معتمد وجاهز" }].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setFilterStatus(key)}
+                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-all ${
+                  filterStatus === key
+                    ? "bg-[#123f59] border-[#123f59] text-white shadow-md"
+                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {label} ({key === "ALL" ? filteredData.length : getStatusCount(key)})
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* أزرار الفلترة */}
-        <div className="flex gap-1.5 mb-3 flex-wrap">
-          {[
-            { key: "ALL", label: "الكل" },
-            { key: "DRAFT", label: "مسودة" },
-            { key: "PENDING_APPROVAL", label: "تحت المراجعة" },
-            { key: "APPROVED", label: "معتمد" },
-          ].map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setFilterStatus(key)}
-              className={`px-3 py-1 rounded-xl text-[10px] font-bold border transition-all ${
-                filterStatus === key
-                  ? "bg-[#123f59] border-blue-600 text-white shadow-[0_8px_22px_rgba(18,63,89,0.06)]"
-                  : "bg-white border-[#d8b46a]/25 text-[#64748b] hover:bg-[#fbf8f1]"
-              }`}
-            >
-              {label} (
-              {key === "ALL" ? filteredData.length : getStatusCount(key)})
-            </button>
-          ))}
-        </div>
-
-        {/* جدول البيانات */}
-        <div className="bg-white rounded-xl border border-[#d8b46a]/25 overflow-hidden shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
-          <div className="overflow-x-auto custom-scrollbar-slim min-h-[300px]">
+        {/* Table */}
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto custom-scrollbar-slim min-h-[400px]">
             {isListLoading ? (
-              <div className="flex flex-col items-center justify-center h-40 text-[#94a3b8]">
+              <div className="flex flex-col items-center justify-center h-40 text-slate-400">
                 <Loader2 className="w-8 h-8 animate-spin mb-2 text-[#123f59]" />
-                <span className="text-xs">جاري التحميل...</span>
+                <span className="text-xs font-bold">جاري التحميل...</span>
               </div>
             ) : (
-              <table className="w-full text-right border-collapse min-w-[1200px]">
+              <table className="w-full text-right border-collapse min-w-[1100px]">
                 <thead>
-                  <tr className="bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-b-2 border-[#d8b46a]/25">
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold w-10">
-                      #
-                    </th>
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
-                      رقم العرض
-                    </th>
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
-                      التاريخ
-                    </th>
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
-                      العميل
-                    </th>
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
-                      الملكية
-                    </th>
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
-                      الإجمالي
-                    </th>
-                    {/* 🌟 عمود التحصيل والنسب المضافة حديثاً */}
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold text-center w-32">
-                      نسبة التحصيل
-                    </th>
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold">
-                      الحالة
-                    </th>
-                    <th className="p-2 text-[10px] text-[#64748b] font-bold text-center">
-                      إجراءات
-                    </th>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="p-3 text-[10px] text-slate-500 font-black w-10">#</th>
+                    <th className="p-3 text-[10px] text-slate-500 font-black">رقم العرض</th>
+                    <th className="p-3 text-[10px] text-slate-500 font-black">التاريخ</th>
+                    <th className="p-3 text-[10px] text-slate-500 font-black">العميل</th>
+                    <th className="p-3 text-[10px] text-slate-500 font-black">الإجمالي</th>
+                    <th className="p-3 text-[10px] text-slate-500 font-black text-center w-32">نسبة التحصيل</th>
+                    <th className="p-3 text-[10px] text-slate-500 font-black">الحالة</th>
+                    <th className="p-3 text-[10px] text-slate-500 font-black text-center">الإجراءات المتاحة</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredData.map((q, idx) => {
-                    // 🌟 الحسابات لنسبة السداد
                     const total = q.total || 0;
-                    const paid = q.paidAmount || 0; // تأكد أن الباك إند يرسل paidAmount
-                    const paidPct =
-                      total > 0 ? Math.round((paid / total) * 100) : 0;
-                    const remPct = 100 - paidPct;
+                    const paid = q.collectedAmount || 0; 
+                    const paidPct = total > 0 ? Math.round((paid / total) * 100) : 0;
+
+                    // 🌟 القيود المنطقية للعمل (Business Logic Locks) فقط
+                    const canEdit = q.status === "DRAFT" || q.status === "NEEDS_MODIFICATION";
+                    const canTrash = ["DRAFT", "NEEDS_MODIFICATION", "REJECTED"].includes(q.status);
+                    const hasPdf = !!q.pdfUrl;
 
                     return (
-                      <tr
-                        key={q.id}
-                        className="border-b border-[#e8ddc8] hover:bg-[#fbf8f1] transition-colors cursor-pointer"
-                        onClick={(e) => handleViewDetails(e, q.id)}
-                      >
-                        <td className="p-2 text-[10px] text-[#94a3b8] font-mono">
-                          {idx + 1}
-                        </td>
-                        <td className="p-2">
-                          <div className="flex min-w-0 items-center gap-1.5">
-                            <span className="font-mono text-[11px] font-bold text-[#123f59]">
-                              {q.number}
-                            </span>
-                            <span className="text-[8px] text-purple-600 font-bold bg-purple-50 px-1 rounded">
-                              {q.templateType === "DETAILED" ? "T" : "S"}
-                            </span>
+                      <tr key={q.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={(e) => handleViewDetails(e, q.id)}>
+                        <td className="p-3 text-[10px] text-slate-400 font-mono font-bold">{idx + 1}</td>
+                        <td className="p-3">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="font-mono text-xs font-black text-[#123f59]">{q.number}</span>
+                            {q.templateType === "DETAILED" && (
+                              <span className="text-[8px] text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded font-black">تفصيلي</span>
+                            )}
                           </div>
                         </td>
-                        <td className="p-2">
-                          <div className="text-[10px] font-mono">
-                            {format(new Date(q.issueDate), "yyyy-MM-dd", {
-                              locale: arSA,
-                            })}
-                          </div>
+                        <td className="p-3 text-[11px] font-mono text-slate-600 font-bold">
+                          {format(new Date(q.issueDate), "yyyy-MM-dd", { locale: arSA })}
                         </td>
-                        <td className="p-2">
-                          <div className="font-bold text-[11px] text-[#475569]">
-                            {getClientName(q.client)}
-                          </div>
-                        </td>
-                        <td className="p-2">
-                          <span className="font-mono text-[10px] text-[#0f766e] font-bold">
-                            {q.ownership?.code || "—"}
-                          </span>
-                        </td>
-                        <td className="p-2 text-[11px] font-bold text-[#123f59] font-mono">
+                        <td className="p-3 font-bold text-xs text-slate-700">{getClientName(q.client)}</td>
+                        <td className="p-3 text-xs font-black text-[#0f766e] font-mono">
                           {formatCurrency(q.total)} ر.س
                         </td>
-
-                        {/* 🌟 عرض نسبة التحصيل بـ Progress Bar */}
-                        <td className="p-2 text-center align-middle">
-                          <div className="flex flex-col gap-1.5 w-24 mx-auto">
-                            <div className="flex justify-between text-[8px] font-black">
-                              <span className="text-emerald-600">
-                                {paidPct}% مسدد
-                              </span>
-                              <span className="text-rose-600">
-                                {remPct}% متبقي
-                              </span>
+                        
+                        <td className="p-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex flex-col gap-1 w-20 mx-auto" title={`تم سداد ${formatCurrency(paid)} من أصل ${formatCurrency(total)}`}>
+                            <div className="flex justify-between text-[9px] font-black">
+                              <span className={paidPct > 0 ? "text-emerald-600" : "text-slate-400"}>{paidPct}%</span>
                             </div>
-                            <div className="w-full h-1.5 bg-rose-100 rounded-full overflow-hidden flex">
-                              <div
-                                className="h-full bg-emerald-500 transition-all duration-500"
-                                style={{ width: `${paidPct}%` }}
-                              ></div>
+                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-emerald-500 transition-all" style={{ width: `${paidPct}%` }}></div>
                             </div>
                           </div>
                         </td>
 
-                        <td className="p-2">
-                          <StatusBadge status={q.status} />
-                        </td>
-                        <td className="p-2">
-                          <div
-                            className="flex min-w-0 items-center justify-center gap-1"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              onClick={(e) => handleEditQuotation(e, q)}
-                              className="p-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
-                              title="تعديل في معالج العروض"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={(e) => handleViewDetails(e, q.id)}
-                              className="p-1.5 bg-slate-100 text-[#123f59] rounded hover:bg-slate-200 transition-colors"
-                              title="استعراض التفاصيل"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                            </button>
-                            {/* 🚀 الزر المحدث للطباعة باستخدام Endpoint الباك إند */}
+                        <td className="p-3"><StatusBadge status={q.status} /></td>
+                        
+                        <td className="p-3 text-center">
+                          <div className="flex min-w-0 items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                             
+                            {/* استعراض التفاصيل */}
+                            <button onClick={(e) => handleViewDetails(e, q.id)} className="p-1.5 bg-slate-100 text-slate-600 rounded hover:bg-slate-200 transition-colors" title="عرض تفاصيل الطلب والسجل">
+                              <Eye className="w-4 h-4" />
+                            </button>
+
+                            {/* زر التعديل */}
+                            <AccessControl code="QUOTE_ACTION_EDIT" name="تعديل عرض سعر" moduleName="عروض الأسعار" tabName="الجدول">
+                              <button
+                                onClick={(e) => canEdit && handleEditQuotation(e, q)}
+                                disabled={!canEdit}
+                                className={`p-1.5 rounded transition-colors ${canEdit ? "bg-blue-50 text-blue-600 hover:bg-blue-100" : "bg-slate-50 text-slate-300 cursor-not-allowed"}`}
+                                title={canEdit ? "تعديل محتوى العرض" : "مغلق: العرض قيد المراجعة أو معتمد"}
+                              >
+                                {canEdit ? <Edit3 className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                              </button>
+                            </AccessControl>
+
+                            {/* زر الطباعة / PDF */}
                             <button
-                              onClick={(e) =>
-                                handlePrint(e, q.id, q.number, q.pdfUrl)
-                              }
+                              onClick={(e) => handlePrint(e, q)}
                               disabled={generatingPdfId === q.id}
-                              className="p-1.5 bg-emerald-50 text-[#0f766e] rounded hover:bg-emerald-100 transition-colors disabled:opacity-50"
-                              title="تصدير وطباعة"
+                              className={`p-1.5 rounded transition-colors flex items-center justify-center ${hasPdf ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100" : "bg-amber-50 text-amber-600 hover:bg-amber-100"}`}
+                              title={hasPdf ? "تحميل الوثيقة المعتمدة (PDF)" : "معاينة مسودة العرض مؤقتاً"}
                             >
                               {generatingPdfId === q.id ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : hasPdf ? (
+                                <DownloadCloud className="w-4 h-4" />
                               ) : (
-                                <Printer className="w-3.5 h-3.5" />
+                                <Printer className="w-4 h-4" />
                               )}
                             </button>
-                            <AccessControl
-                              code="QUOTE_ACTION_DELETE"
-                              name="حذف عرض السعر"
-                              moduleName="عروض الأسعار"
-                              tabName="الجدول"
-                            >
+
+                            {/* زر الحذف */}
+                            <AccessControl code="QUOTE_ACTION_DELETE" name="حذف عرض السعر" moduleName="عروض الأسعار" tabName="الجدول">
                               <button
-                                onClick={(e) => handleDelete(e, q.id)}
-                                disabled={deleteQuotationMutation.isPending}
-                                className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors disabled:opacity-50"
-                                title="حذف"
+                                onClick={(e) => canTrash && handleDelete(e, q)}
+                                disabled={!canTrash || deleteQuotationMutation.isPending}
+                                className={`p-1.5 rounded transition-colors ${canTrash ? "bg-rose-50 text-rose-600 hover:bg-rose-100" : "bg-slate-50 text-slate-300 cursor-not-allowed"}`}
+                                title={canTrash ? "نقل لسلة المحذوفات" : "مغلق: لا يمكن حذف العروض المعتمدة مالياً"}
                               >
-                                {deleteQuotationMutation.isPending ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                {deleteQuotationMutation.isPending && selectedQuoteId === q.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : canTrash ? (
+                                  <Trash2 className="w-4 h-4" />
                                 ) : (
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Lock className="w-4 h-4" />
                                 )}
                               </button>
                             </AccessControl>
@@ -558,13 +375,11 @@ const QuotationsDirectory = ({ onNavigate }) => {
                   })}
                   {filteredData.length === 0 && (
                     <tr>
-                      <td
-                        colSpan="9"
-                        className="p-3 text-center text-[#94a3b8] text-xs"
-                      >
-                        {searchTerm || filterStatus !== "ALL"
-                          ? "لا يوجد عروض أسعار مطابقة لبحثك"
-                          : "لا توجد عروض أسعار حالياً"}
+                      <td colSpan="8" className="p-8 text-center">
+                        <div className="flex flex-col items-center justify-center text-slate-400 gap-2">
+                          <FileText className="w-10 h-10 opacity-20" />
+                          <span className="text-sm font-bold">لا يوجد عروض مطابقة للبحث</span>
+                        </div>
                       </td>
                     </tr>
                   )}

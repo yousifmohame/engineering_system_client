@@ -395,7 +395,17 @@ const CreateQuotationWizard = (incomingProps) => {
       setShowMissingDocs(existingQuote.showMissingDocs);
       setTermsText(existingQuote.terms || "");
       setConclusion(existingQuote.conclusion || "");
-      setOwnerAttachments(existingQuote.ownerAttachments || []);
+      // 👈 واستبدله بهذا الكود:
+      setOwnerAttachments(
+        (existingQuote.attachments || []).map((a) => ({
+          id: a.id,
+          name: a.fileName,
+          size: (a.fileSize / 1024 / 1024).toFixed(2), // تحويل البايت إلى ميجابايت
+          type: a.fileType,
+          filePath: a.filePath, // مسار السيرفر الحقيقي
+          description: a.notes || "",
+        })),
+      );
     }
   }, [existingQuote]);
 
@@ -499,22 +509,27 @@ const CreateQuotationWizard = (incomingProps) => {
       } else {
         result = (await axios.post("/quotations", payload)).data;
       }
-      
+
       // 🌟 2. الخطوة الذهبية: نأمر الباك إند بتوليد الـ PDF في الخلفية وحفظه كملف
       try {
         await axios.post("/quotations/generate-and-save-pdf", {
           ...pdfData, // نمرر نفس بيانات العرض المباشر (Live Preview)
-          quotationId: result.data.id // نمرر الـ ID لربط الملف بالداتابيز
+          quotationId: result.data.id, // نمرر الـ ID لربط الملف بالداتابيز
         });
       } catch (pdfError) {
-        console.error("تم الحفظ في قاعدة البيانات، لكن فشل توليد الـ PDF التلقائي:", pdfError);
+        console.error(
+          "تم الحفظ في قاعدة البيانات، لكن فشل توليد الـ PDF التلقائي:",
+          pdfError,
+        );
       }
 
       return result;
     },
     onSuccess: (data) => {
       toast.success(
-        isEditMode ? "تم تحديث عرض السعر وتوثيقه بنجاح!" : "تم حفظ عرض السعر وتوثيقه بنجاح!",
+        isEditMode
+          ? "تم تحديث عرض السعر وتوثيقه بنجاح!"
+          : "تم حفظ عرض السعر وتوثيقه بنجاح!",
       );
       queryClient.invalidateQueries(["quotations", "quotations-list"]);
       if (onComplete) onComplete(data);
@@ -618,7 +633,8 @@ const CreateQuotationWizard = (incomingProps) => {
         name: att.name,
         type: att.type,
         size: att.size,
-        fileData: att.fileData,
+        fileData: att.fileData, // للملفات الجديدة فقط
+        filePath: att.filePath, // 👈 أضف هذا السطر للملفات القديمة
         description: att.description,
       })),
       missingDocs,
@@ -635,7 +651,7 @@ const CreateQuotationWizard = (incomingProps) => {
           ? existingQuote.status
           : "PENDING_APPROVAL",
     };
-    
+
     saveMutation.mutate({ payload, pdfData: previewData });
   };
 
@@ -970,7 +986,23 @@ const CreateQuotationWizard = (incomingProps) => {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 mr-auto pr-10">
+                <div className="flex items-center gap-3 mr-auto pr-10">
+                  {/* 🌟 زر الحفظ السريع كمسودة */}
+                  <button
+                    type="button"
+                    onClick={() => handleSave(true)} // تمرير true لحفظه كمسودة
+                    disabled={saveMutation?.isPending}
+                    className="flex items-center gap-1.5 bg-[#e2bf74]/10 hover:bg-[#e2bf74]/25 text-[#e2bf74] border border-[#e2bf74]/40 px-3 py-1.5 rounded-xl text-[10px] font-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saveMutation?.isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Save className="w-3.5 h-3.5" />
+                    )}
+                    حفظ كمسودة
+                  </button>
+
+                  {/* عداد المراحل الحالي */}
                   <span className="shrink-0 rounded-xl border border-[#e2bf74]/35 bg-white/10 px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[10px] font-black text-[#e2bf74]">
                     المرحلة {currentStep + 1} / {STEPS.length}
                   </span>

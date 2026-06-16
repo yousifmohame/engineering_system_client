@@ -14,12 +14,12 @@ import {
   Printer,
   Plus,
   Edit2,
-  Check
+  Check,
 } from "lucide-react";
 import { useAuth } from "../../../../../context/AuthContext";
 
 // ⚠️ تأكد من تعديل هذا المسار ليتطابق مع مكان وجود المودال في مشروعك
-import FileViewerModal from "../../../../FilesExplorer/modals/FileViewerModal"; 
+import FileViewerModal from "../../../../FilesExplorer/modals/FileViewerModal";
 
 const convertToBase64 = (file) => {
   return new Promise((resolve, reject) => {
@@ -47,7 +47,7 @@ export const Step6Attachments = ({ props }) => {
 
   // 1. حالة لإضافة مستند مخصص بالكتابة الحرة
   const [customDocInput, setCustomDocInput] = useState("");
-  
+
   // 2. حالات التحكم في نافذة عرض الملفات
   const [viewingFile, setViewingFile] = useState(null);
 
@@ -59,16 +59,30 @@ export const Step6Attachments = ({ props }) => {
   const getRecommendedMissingDocs = (type) => {
     switch (type) {
       case "ورثة":
-        return ["صك حصر الورثة", "وكالة شرعية من جميع الورثة", "هوية ممثل الورثة", "صك الملكية المحدث"];
+        return [
+          "صك حصر الورثة",
+          "وكالة شرعية من جميع الورثة",
+          "هوية ممثل الورثة",
+          "صك الملكية المحدث",
+        ];
       case "شركة_مؤسسة":
-        return ["السجل التجاري ساري المفعول", "هوية المفوض بالتوقيع", "خطاب تفويض أو قرار مديرين", "صك الملكية"];
+        return [
+          "السجل التجاري ساري المفعول",
+          "هوية المفوض بالتوقيع",
+          "خطاب تفويض أو قرار مديرين",
+          "صك الملكية",
+        ];
       case "وقف":
         return ["صك النظارة ساري المفعول", "هوية ناظر الوقف", "صك الوقف"];
       case "جهة_حكومية":
         return ["خطاب تفويض رسمي أو تعميد", "بيانات المشروع"];
       case "فرد":
       default:
-        return ["صورة هوية المالك", "صورة صك الملكية", "وكالة شرعية (إن كان الموقّع وكيلًا)"];
+        return [
+          "صورة هوية المالك",
+          "صورة صك الملكية",
+          "وكالة شرعية (إن كان الموقّع وكيلًا)",
+        ];
     }
   };
 
@@ -96,7 +110,7 @@ export const Step6Attachments = ({ props }) => {
   const handleAddCustomDoc = (e) => {
     e.preventDefault();
     if (!customDocInput.trim()) return;
-    
+
     // إضافته للقائمة كعنصر محدد مسبقاً
     const currentArray = [...missingDocsArray];
     if (!currentArray.includes(customDocInput.trim())) {
@@ -126,9 +140,10 @@ export const Step6Attachments = ({ props }) => {
             uploadedBy: user?.name || "موظف النظام",
             uploadedAt: new Date().toISOString(),
           };
-        })
+        }),
       );
-      if (setOwnerAttachments) setOwnerAttachments([...ownerAttachments, ...newAttachments]);
+      if (setOwnerAttachments)
+        setOwnerAttachments([...ownerAttachments, ...newAttachments]);
     } catch (error) {
       console.error("Error reading files:", error);
     } finally {
@@ -139,7 +154,11 @@ export const Step6Attachments = ({ props }) => {
 
   const updateDescription = (id, text) => {
     if (setOwnerAttachments) {
-      setOwnerAttachments(ownerAttachments.map((att) => att.id === id ? { ...att, description: text } : att));
+      setOwnerAttachments(
+        ownerAttachments.map((att) =>
+          att.id === id ? { ...att, description: text } : att,
+        ),
+      );
     }
   };
 
@@ -153,7 +172,8 @@ export const Step6Attachments = ({ props }) => {
   const startRenaming = (att) => {
     setEditingAttachmentId(att.id);
     // إزالة الامتداد عند التعديل لسهولة الكتابة
-    const nameWithoutExt = att.name.substring(0, att.name.lastIndexOf('.')) || att.name;
+    const nameWithoutExt =
+      att.name.substring(0, att.name.lastIndexOf(".")) || att.name;
     setNewAttachmentName(nameWithoutExt);
   };
 
@@ -163,53 +183,65 @@ export const Step6Attachments = ({ props }) => {
       setEditingAttachmentId(null);
       return;
     }
-    const extension = att.name.includes('.') ? att.name.substring(att.name.lastIndexOf('.')) : '';
+    const extension = att.name.includes(".")
+      ? att.name.substring(att.name.lastIndexOf("."))
+      : "";
     const finalName = `${newAttachmentName.trim()}${extension}`;
 
     if (setOwnerAttachments) {
-      setOwnerAttachments(ownerAttachments.map((item) => 
-        item.id === att.id ? { ...item, name: finalName } : item
-      ));
+      setOwnerAttachments(
+        ownerAttachments.map((item) =>
+          item.id === att.id ? { ...item, name: finalName } : item,
+        ),
+      );
     }
     setEditingAttachmentId(null);
   };
 
   // 🚀 فتح نافذة عرض الملفات داخل النظام
+  // 🚀 فتح نافذة عرض الملفات داخل النظام (تدعم السيرفر والمحلي)
   const handlePreviewFile = (att) => {
-    // تجهيز الكائن ليتوافق مع FileViewerModal
-    const extension = att.name.includes('.') ? att.name.split('.').pop() : 'pdf';
+    const extension = att.name.includes(".")
+      ? att.name.split(".").pop()
+      : "pdf";
+
+    // 👈 التعديل هنا: إذا كان الملف له filePath نستخدم getFullUrl، وإلا نستخدم fileData (Base64)
+    const fileUrl = att.filePath ? getFullUrl(att.filePath) : att.fileData;
+
     setViewingFile({
-      url: att.fileData, // نمرر الـ Base64 ليعمل كرابط مباشر
+      url: fileUrl,
       name: att.name,
       originalName: att.name,
       extension: extension,
-      size: parseFloat(att.size) * 1024 * 1024 // تحويل من MB إلى Bytes لأن المودال يتوقعها بالبايت
+      size: parseFloat(att.size) * 1024 * 1024,
     });
   };
 
   const getFileIcon = (fileType) => {
-    if (fileType.includes("image")) return <ImageIcon className="w-8 h-8 text-blue-500" />;
-    if (fileType.includes("pdf")) return <FileText className="w-8 h-8 text-red-500" />;
+    if (fileType.includes("image"))
+      return <ImageIcon className="w-8 h-8 text-blue-500" />;
+    if (fileType.includes("pdf"))
+      return <FileText className="w-8 h-8 text-red-500" />;
     return <File className="w-8 h-8 text-slate-500" />;
   };
 
   // دمج القائمة المقترحة مع العناصر المخصصة التي أضافها المستخدم ليتم عرضها كلها كـ Checkboxes
-  const allDisplayDocs = Array.from(new Set([...recommendedDocs, ...missingDocsArray]));
+  const allDisplayDocs = Array.from(
+    new Set([...recommendedDocs, ...missingDocsArray]),
+  );
 
   return (
     <div className="animate-in fade-in duration-300 max-w-5xl mx-auto mt-6">
-      
       {/* 🚀 استدعاء مودال العرض */}
       {viewingFile && (
-        <FileViewerModal 
-          file={viewingFile} 
-          onClose={() => setViewingFile(null)} 
+        <FileViewerModal
+          file={viewingFile}
+          onClose={() => setViewingFile(null)}
         />
       )}
 
       {/* تم تغيير الكلاس هنا ليكون عمودياً بالكامل (flex-col) بدلاً من الشبكة */}
       <div className="flex flex-col gap-6">
-        
         {/* ========================================== */}
         {/* القسم الأول: النواقص والمستندات المطلوبة (Checklist) */}
         {/* ========================================== */}
@@ -220,8 +252,12 @@ export const Step6Attachments = ({ props }) => {
                 <CheckSquare className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <h3 className="text-sm font-black text-slate-800">مستندات مطلوبة من العميل</h3>
-                <p className="text-[10px] text-slate-500">حسب نوع العميل ({clientType.replace("_", " ")})</p>
+                <h3 className="text-sm font-black text-slate-800">
+                  مستندات مطلوبة من العميل
+                </h3>
+                <p className="text-[10px] text-slate-500">
+                  حسب نوع العميل ({clientType.replace("_", " ")})
+                </p>
               </div>
             </div>
 
@@ -234,9 +270,12 @@ export const Step6Attachments = ({ props }) => {
               {allDisplayDocs.map((doc, idx) => {
                 const isChecked = missingDocsArray.includes(doc);
                 return (
-                  <label key={idx} className="flex items-center gap-2.5 p-2.5 rounded-lg border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors select-none">
-                    <input 
-                      type="checkbox" 
+                  <label
+                    key={idx}
+                    className="flex items-center gap-2.5 p-2.5 rounded-lg border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors select-none"
+                  >
+                    <input
+                      type="checkbox"
                       className="hidden"
                       checked={isChecked}
                       onChange={() => toggleMissingDoc(doc)}
@@ -246,7 +285,9 @@ export const Step6Attachments = ({ props }) => {
                     ) : (
                       <Square className="w-4 h-4 text-slate-300 shrink-0" />
                     )}
-                    <span className={`text-[11px] font-bold leading-relaxed ${isChecked ? "text-emerald-800" : "text-slate-600"}`}>
+                    <span
+                      className={`text-[11px] font-bold leading-relaxed ${isChecked ? "text-emerald-800" : "text-slate-600"}`}
+                    >
                       {doc}
                     </span>
                   </label>
@@ -256,16 +297,18 @@ export const Step6Attachments = ({ props }) => {
 
             {/* 🚀 مربع إدخال مستند مخصص (الكتابة الحرة) */}
             <form onSubmit={handleAddCustomDoc} className="mb-4">
-              <label className="block text-[10px] font-bold text-slate-500 mb-1.5">إضافة مستند آخر (غير موجود بالقائمة)</label>
+              <label className="block text-[10px] font-bold text-slate-500 mb-1.5">
+                إضافة مستند آخر (غير موجود بالقائمة)
+              </label>
               <div className="flex gap-2">
-                <input 
+                <input
                   type="text"
                   value={customDocInput}
                   onChange={(e) => setCustomDocInput(e.target.value)}
                   placeholder="اكتب اسم المستند هنا..."
                   className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-emerald-500 focus:bg-white transition-all"
                 />
-                <button 
+                <button
                   type="submit"
                   disabled={!customDocInput.trim()}
                   className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg flex items-center justify-center transition-colors"
@@ -281,11 +324,17 @@ export const Step6Attachments = ({ props }) => {
                 type="checkbox"
                 id="printMissingDocs"
                 checked={showMissingDocs}
-                onChange={(e) => setShowMissingDocs && setShowMissingDocs(e.target.checked)}
+                onChange={(e) =>
+                  setShowMissingDocs && setShowMissingDocs(e.target.checked)
+                }
                 className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
               />
-              <label htmlFor="printMissingDocs" className="flex items-center gap-1.5 text-[11px] font-black text-blue-800 cursor-pointer select-none">
-                <Printer className="w-3.5 h-3.5" /> إظهار النواقص في العرض المطبوع
+              <label
+                htmlFor="printMissingDocs"
+                className="flex items-center gap-1.5 text-[11px] font-black text-blue-800 cursor-pointer select-none"
+              >
+                <Printer className="w-3.5 h-3.5" /> إظهار النواقص في العرض
+                المطبوع
               </label>
             </div>
           </div>
@@ -300,36 +349,59 @@ export const Step6Attachments = ({ props }) => {
               <AlertTriangle className="w-5 h-5 text-amber-400" />
             </div>
             <div>
-              <h3 className="text-white font-bold text-sm mb-1">مرفقات داخلية للمكتب</h3>
+              <h3 className="text-white font-bold text-sm mb-1">
+                مرفقات داخلية للمكتب
+              </h3>
               <p className="text-slate-400 text-[11px] leading-relaxed">
-                ارفع المخططات، الكراسات، أو مسوغات التسعير هنا. <span className="text-amber-400 font-bold">لن تظهر في العرض المطبوع.</span>
+                ارفع المخططات، الكراسات، أو مسوغات التسعير هنا.{" "}
+                <span className="text-amber-400 font-bold">
+                  لن تظهر في العرض المطبوع.
+                </span>
               </p>
             </div>
           </div>
 
-          <div 
+          <div
             onClick={() => !isUploading && fileInputRef.current?.click()}
             className={`bg-white border-2 border-dashed border-slate-300 rounded-[20px] p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 hover:border-[#123f59] transition-all ${isUploading ? "opacity-50 cursor-wait" : ""}`}
           >
             <div className="w-14 h-14 bg-[#eef7f6] rounded-full flex items-center justify-center mb-3">
-              {isUploading ? <Loader2 className="w-6 h-6 text-[#0e7490] animate-spin" /> : <Upload className="w-6 h-6 text-[#0e7490]" />}
+              {isUploading ? (
+                <Loader2 className="w-6 h-6 text-[#0e7490] animate-spin" />
+              ) : (
+                <Upload className="w-6 h-6 text-[#0e7490]" />
+              )}
             </div>
-            <p className="font-black text-[#123f59] text-sm mb-1 text-center">اسحب وأفلت الملفات، أو اضغط للاستعراض</p>
-            <p className="text-[10px] text-slate-400 font-bold text-center">يدعم PDF, الصور, والملفات المضغوطة</p>
-            <input type="file" multiple ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+            <p className="font-black text-[#123f59] text-sm mb-1 text-center">
+              اسحب وأفلت الملفات، أو اضغط للاستعراض
+            </p>
+            <p className="text-[10px] text-slate-400 font-bold text-center">
+              يدعم PDF, الصور, والملفات المضغوطة
+            </p>
+            <input
+              type="file"
+              multiple
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              className="hidden"
+            />
           </div>
 
           {/* قائمة المرفقات الداخلية */}
           {ownerAttachments.length > 0 && (
             <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
               <h4 className="font-black text-[#123f59] text-[11px] flex items-center gap-2 mb-3">
-                <FileText className="w-4 h-4 text-[#c5983c]" /> الملفات المرفوعة ({ownerAttachments.length})
+                <FileText className="w-4 h-4 text-[#c5983c]" /> الملفات المرفوعة
+                ({ownerAttachments.length})
               </h4>
-              
+
               <div className="grid grid-cols-1 gap-3 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar-slim">
                 {ownerAttachments.map((att) => (
-                  <div key={att.id} className="border border-slate-100 bg-slate-50/50 rounded-lg p-3 hover:bg-white hover:border-slate-200 transition-colors relative group">
-                    <button 
+                  <div
+                    key={att.id}
+                    className="border border-slate-100 bg-slate-50/50 rounded-lg p-3 hover:bg-white hover:border-slate-200 transition-colors relative group"
+                  >
+                    <button
                       onClick={() => removeAttachment(att.id)}
                       className="absolute top-2 left-0 p-1.5 bg-white border border-red-100 text-red-500 rounded-md hover:bg-red-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100 shadow-sm"
                       title="حذف"
@@ -342,36 +414,54 @@ export const Step6Attachments = ({ props }) => {
                         {getFileIcon(att.type)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        
                         {/* 🚀 نظام إعادة التسمية */}
                         {editingAttachmentId === att.id ? (
                           <div className="flex items-center gap-2 mb-1">
-                            <input 
-                              type="text" 
+                            <input
+                              type="text"
                               autoFocus
                               value={newAttachmentName}
-                              onChange={(e) => setNewAttachmentName(e.target.value)}
-                              onKeyDown={(e) => e.key === 'Enter' && saveRename(att)}
+                              onChange={(e) =>
+                                setNewAttachmentName(e.target.value)
+                              }
+                              onKeyDown={(e) =>
+                                e.key === "Enter" && saveRename(att)
+                              }
                               className="flex-1 text-xs font-bold text-[#123f59] border-b-2 border-indigo-500 bg-transparent outline-none pb-0.5"
                             />
-                            <button onClick={() => saveRename(att)} className="text-emerald-600 bg-emerald-50 p-1 rounded hover:bg-emerald-100">
+                            <button
+                              onClick={() => saveRename(att)}
+                              className="text-emerald-600 bg-emerald-50 p-1 rounded hover:bg-emerald-100"
+                            >
                               <Check className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 mb-1 group/title">
-                            <h5 className="font-bold text-[#123f59] text-xs truncate max-w-[80%]" title={att.name}>
+                            <h5
+                              className="font-bold text-[#123f59] text-xs truncate max-w-[80%]"
+                              title={att.name}
+                            >
                               {att.name}
                             </h5>
-                            <button onClick={() => startRenaming(att)} className="text-slate-400 opacity-0 bg-white group-hover/title:opacity-100 hover:text-indigo-600 transition-all" title="إعادة تسمية">
+                            <button
+                              onClick={() => startRenaming(att)}
+                              className="text-slate-400 opacity-0 bg-white group-hover/title:opacity-100 hover:text-indigo-600 transition-all"
+                              title="إعادة تسمية"
+                            >
                               <Edit2 className="w-3 h-3" />
                             </button>
                           </div>
                         )}
 
                         <div className="flex gap-2 items-center text-[9px] text-slate-500 font-mono mt-0.5">
-                          <span className="bg-slate-200/50 px-1.5 py-0.5 rounded">{att.size} MB</span>
-                          <button onClick={() => handlePreviewFile(att)} className="text-[#0e7490] hover:underline flex items-center gap-0.5">
+                          <span className="bg-slate-200/50 px-1.5 py-0.5 rounded">
+                            {att.size} MB
+                          </span>
+                          <button
+                            onClick={() => handlePreviewFile(att)}
+                            className="text-[#0e7490] hover:underline flex items-center gap-0.5"
+                          >
                             <Eye className="w-3 h-3" /> استعراض
                           </button>
                         </div>
@@ -380,10 +470,12 @@ export const Step6Attachments = ({ props }) => {
 
                     <div className="relative">
                       <MessageSquareText className="absolute right-2 top-1.5 w-3 h-3 text-slate-400" />
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={att.description}
-                        onChange={(e) => updateDescription(att.id, e.target.value)}
+                        onChange={(e) =>
+                          updateDescription(att.id, e.target.value)
+                        }
                         placeholder="وصف للمرفق (مثال: مسودة الكروكي)..."
                         className="w-full bg-white border border-slate-200 rounded-md py-1 pl-2 pr-7 text-[10px] font-bold text-slate-700 outline-none focus:border-[#0e7490] focus:ring-1 focus:ring-[#0e7490]/20"
                       />
@@ -393,7 +485,6 @@ export const Step6Attachments = ({ props }) => {
               </div>
             </div>
           )}
-
         </div>
       </div>
     </div>
