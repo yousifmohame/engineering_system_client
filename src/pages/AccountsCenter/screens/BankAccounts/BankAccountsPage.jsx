@@ -4,9 +4,6 @@ import {
   Edit2,
   Trash2,
   QrCode,
-  Copy,
-  CheckCircle2,
-  Building2,
   X,
   Building,
   Loader2,
@@ -14,20 +11,6 @@ import {
   Share2, // 👈 تم استيراد أيقونة المشاركة
 } from "lucide-react";
 import api from "../../../../api/axios";
-
-const formatCurrency = (value) =>
-  Number(value || 0).toLocaleString("ar-SA", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
-const EditableSpan = ({ value, placeholder = "---", className = "" }) => {
-  return (
-    <span className={`outline-none transition-colors ${className}`}>
-      {value || placeholder}
-    </span>
-  );
-};
 
 export default function BankAccountsPage() {
   const [accounts, setAccounts] = useState([]);
@@ -138,28 +121,6 @@ export default function BankAccountsPage() {
       }
     }
   };
-
-  const handleCopy = (text, fieldName) => {
-    if (!text) return;
-    navigator.clipboard.writeText(text);
-    alert(`تم نسخ ${fieldName} بنجاح!`);
-  };
-
-  // 🚀 إنشاء رابط الـ QR باستخدام خدمة الباك إند الخاصة بنا (In-house)
-  const getQrCodeUrl = (acc) => {
-    // 1. الرابط الذي سيفتحه العميل عند مسح الكود
-    const publicUrl = `${window.location.origin}/shared/bank/${acc.id}`;
-
-    // 2. جلب رابط الباك إند الأساسي (يأخذ القيمة من ملف البيئة .env أو من إعدادات axios)
-    const backendUrl =
-      import.meta.env.VITE_API_URL ||
-      api.defaults.baseURL ||
-      "http://localhost:5000/api";
-
-    // 3. توجيه الطلب إلى مسار الـ QR الخاص بنا
-    return `${backendUrl}/utils/qr?data=${encodeURIComponent(publicUrl)}`;
-  };
-
   // 🚀 دالة المشاركة الجديدة
   const handleShareLink = async () => {
     if (!mobilePreviewAccount) return;
