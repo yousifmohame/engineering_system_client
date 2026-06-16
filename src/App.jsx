@@ -52,7 +52,7 @@ import OfficeServicesScreen from "./pages/ServicesOffices/EngineeringOfficeServi
 import DocumentScreenWrapper from "./pages/DocsStation/DocsStationScreenWrapper";
 import SupervisorScreenWrapper from "./pages/OperationsSupervisor/SupervisorScreenWrapper";
 import SharedBankAccount from "./pages/Public/SharedBankAccount";
-
+import QuoteVerificationPage from "./pages/verify/QuoteVerificationPage";
 // --- Icons & Context ---
 import { Wrench } from "lucide-react"; // 👈 استيراد أيقونة شاشة الصيانة
 import SystemHeader from "./components/layout/shell/SystemHeader";
@@ -402,6 +402,7 @@ function App() {
             <Route path="/req/:shortLink" element={<ClientRequestWrapper />} />
             <Route path="/s/:shortLink" element={<ClientDownloadWrapper />} />
             <Route path="/shared/bank/:id" element={<SharedBankAccount />} />
+            <Route path="/quote/:barcode" element={<QuoteVerificationPage />} />
             <Route
               path="/verify/:refNumber"
               element={<MinuteVerificationPage />}

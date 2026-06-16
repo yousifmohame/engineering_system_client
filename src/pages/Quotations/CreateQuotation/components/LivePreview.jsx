@@ -186,6 +186,7 @@ export const LivePreview = ({ data }) => {
     missingDocs = "",
     showMissingDocs = false,
     deedNumber,
+    deedDate,
     clientType = "فرد", // 👈 سيأخذ القيمة الافتراضية إذا لم يصل من الباك إند
     signatureMethod = "SELF",
     handlingMethod = "المالك مباشرة",
@@ -218,7 +219,7 @@ export const LivePreview = ({ data }) => {
     authDocExpiryDate,
     showAuthDocExpiryDate,
     customUsufructType,
-    documentType
+    documentType,
   } = data || {};
 
   const getQuotationStatusBadge = () => {
@@ -426,7 +427,8 @@ export const LivePreview = ({ data }) => {
         rowSpans.deed[i] = 1;
         currentIdx.deed = i;
       }
-      if (currPlot.deedDate === prevPlot.deedDate) {
+      // 👈 نضع deedDate العام كبديل إذا لم يوجد للقطعة تاريخ منفصل
+      if ((currPlot.deedDate || deedDate) === (prevPlot.deedDate || deedDate)) {
         rowSpans.date[currentIdx.date] += 1;
         rowSpans.date[i] = 0;
       } else {
@@ -601,7 +603,7 @@ export const LivePreview = ({ data }) => {
                     <div className="flex justify-between border-b border-dashed border-slate-300 pb-1">
                       <span className="text-slate-500">تاريخ الإصدار:</span>
                       <span className="font-mono text-slate-900">
-                        {issueDateParts.gregorian}
+                        {new Date(issueDate).toLocaleDateString("en-US")}
                       </span>
                     </div>
                     {transactionRefForPreview && (
@@ -1200,7 +1202,7 @@ export const LivePreview = ({ data }) => {
                           {plots && plots.length > 0 && (
                             <span className="text-[10px] font-bold text-slate-500 bg-white px-2 py-1 border border-slate-200 rounded-lg shadow-sm">
                               عدد القطع: {plots.length} | إجمالي المساحة:{" "}
-                              {formatArea(totalPlotsArea)} م² | كود الملف:{" "}
+                              {formatArea(totalPlotsArea)} م² | رمز الملف:{" "}
                               {propertyCodeForPreview || "---"}
                             </span>
                           )}
@@ -1348,9 +1350,11 @@ export const LivePreview = ({ data }) => {
                                         verticalAlign: "middle",
                                       }}
                                     >
-                                      {plot.deedDate
-                                        ? formatDateParts(plot.deedDate)
-                                            .gregorian
+                                      {/* 👈 نأخذ تاريخ القطعة، وإن لم يوجد نأخذ تاريخ الملكية الرئيسي */}
+                                      {plot.deedDate || deedDate
+                                        ? formatDateParts(
+                                            plot.deedDate || deedDate,
+                                          ).gregorian
                                         : "---"}
                                     </td>
                                   )}
@@ -1476,7 +1480,7 @@ export const LivePreview = ({ data }) => {
                         >
                           <FileText className="w-4 h-4 text-[#c5983c]" />{" "}
                           {signatureMethod !== "SELF" ? "رابعاً" : "ثالثاً"}:
-                          نطاق الأعمال وقائمة التكاليف المالية
+                          نطاق الأعمال و التكلفة
                         </h4>
                         <table
                           className="w-full border-collapse text-center text-[10.5px] bg-transparent"
@@ -1506,7 +1510,7 @@ export const LivePreview = ({ data }) => {
                                   width: showQuantity ? "80%" : "95%",
                                 }}
                               >
-                                وصف الخدمة الاستشارية / نطاق العمل الفني
+                                وصف الخدمة
                               </th>
                               {showQuantity && (
                                 <th
@@ -1904,7 +1908,7 @@ export const LivePreview = ({ data }) => {
                               لبدء العمل
                             </h4>
                             <div
-                              className="w-full rounded-[14px] overflow-hidden bg-white"
+                              className="w-full rounded-[14px] overflow-hidden bg-transparent border border-slate-200 shadow-sm"
                               style={{
                                 border: `1px solid ${selectedStyle.accent}33`,
                               }}
@@ -1935,7 +1939,7 @@ export const LivePreview = ({ data }) => {
                                     .map((doc, idx) => (
                                       <div
                                         key={idx}
-                                        className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50/50 border border-slate-100/50"
+                                        className="flex items-start gap-2.5 p-2 rounded-lg bg-transparent border border-slate-100/50"
                                       >
                                         {/* الرقم التسلسلي */}
                                         <span

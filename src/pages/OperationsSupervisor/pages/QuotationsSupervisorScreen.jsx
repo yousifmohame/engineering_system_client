@@ -63,22 +63,13 @@ const QuotationReviewModal = ({ quoteId, onClose }) => {
     mutationFn: async ({ actionType, payload }) => {
       let endpoint = '';
       
-      // توجيه الطلب للمسار الصحيح 
-      if (actionType === "SUBMIT") endpoint = `/quotations/${quoteId}/submit`; // 🌟 مسار الإرسال للمراجعة
+      if (actionType === "SUBMIT") endpoint = `/quotations/${quoteId}/submit`;
       if (actionType === "APPROVE") endpoint = `/quotations/${quoteId}/approve`;
       if (actionType === "REJECT") endpoint = `/quotations/${quoteId}/reject`;
       if (actionType === "MODIFY") endpoint = `/quotations/${quoteId}/modify`;
 
+      // 🌟 السيرفر سيقوم بكل شيء (تغيير الحالة + توليد QR + إنشاء PDF) ويعيد لنا النتيجة!
       const res = await axios.put(endpoint, payload || {});
-
-      // توليد الـ PDF عند الاعتماد فقط
-      if (actionType === "APPROVE") {
-        await axios.post("/quotations/generate-and-save-pdf", {
-          ...quote,
-          quotationId: quoteId,
-          status: "APPROVED"
-        });
-      }
       return res.data;
     },
     onSuccess: (_, variables) => {

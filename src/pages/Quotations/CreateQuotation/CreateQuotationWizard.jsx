@@ -852,10 +852,7 @@ const CreateQuotationWizard = (incomingProps) => {
       propertiesData?.find((p) => p.id === selectedProperty)?.code ||
       existingQuote?.ownership?.code ||
       "الملكية...",
-    deedNumber:
-      selectedPropertyDetails?.deedNumber ||
-      existingQuote?.ownership?.deedNumber ||
-      "",
+
     transactionType,
     licenseNumber,
     licenseYear,
@@ -905,6 +902,16 @@ const CreateQuotationWizard = (incomingProps) => {
     showMissingDocs,
     paymentsList,
     stampType,
+    propertyDistrict:
+      selectedPropertyDetails?.district ||
+      selectedPropertyDetails?.districtNode?.name ||
+      "---",
+
+    // 👈 سحب تاريخ الوثيقة (الصك)
+    deedDate: selectedPropertyDetails?.deedDate || null,
+
+    // 👈 سحب رقم الصك (للتأكيد فقط)
+    deedNumber: selectedPropertyDetails?.deedNumber || "---",
     acceptedMethods,
     selectedBankAccounts,
     bankAccountsData,

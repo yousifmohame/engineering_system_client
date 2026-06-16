@@ -156,9 +156,16 @@ export const Step0ClientProperty = ({ props }) => {
                     return (
                       <div
                         key={prop.id}
+                        // الكود المعدل للملكية
                         onClick={() => {
-                          setSelectedProperty(prop.id);
-                          if (prop.clientId) setSelectedClient(prop.clientId);
+                          if (selectedProperty === prop.id) {
+                            // إلغاء التحديد إذا ضغط عليه مرة أخرى
+                            setSelectedProperty("");
+                          } else {
+                            // تحديد جديد
+                            setSelectedProperty(prop.id);
+                            if (prop.clientId) setSelectedClient(prop.clientId);
+                          }
                         }}
                         className={`flex flex-col p-2.5 rounded-lg cursor-pointer border transition-all ${isSelected ? "border-cyan-500 bg-cyan-50/50 shadow-sm" : "border-slate-100 hover:border-cyan-200"}`}
                       >
@@ -231,13 +238,19 @@ export const Step0ClientProperty = ({ props }) => {
                     return (
                       <div
                         key={client.id}
+                        // الكود المعدل للعميل
                         onClick={() => {
-                          // 🚀 سحب البيانات وتعبئتها تلقائياً عند النقر على العميل
-                          setSelectedClient(client.id);
-                          if (setRepPhone)
-                            setRepPhone(client.phone || client.mobile || "");
-                          if (setClientType && client.clientType)
-                            setClientType(client.clientType);
+                          if (selectedClient === client.id) {
+                            // إلغاء التحديد
+                            setSelectedClient("");
+                          } else {
+                            // تحديد جديد وسحب بياناته
+                            setSelectedClient(client.id);
+                            if (setRepPhone)
+                              setRepPhone(client.phone || client.mobile || "");
+                            if (setClientType && client.clientType)
+                              setClientType(client.clientType);
+                          }
                         }}
                         className={`flex flex-col p-2.5 rounded-lg cursor-pointer border transition-all ${isSelected ? "border-blue-500 bg-blue-50/50 shadow-sm" : "border-slate-100 hover:border-blue-200"}`}
                       >
@@ -486,9 +499,14 @@ export const Step0ClientProperty = ({ props }) => {
                 {transactionsData?.map((txn) => (
                   <div
                     key={txn.id}
-                    onClick={() =>
-                      setSelectedTransaction && setSelectedTransaction(txn.id)
-                    }
+                    // الكود المعدل للمعاملات
+                    onClick={() => {
+                      if (setSelectedTransaction) {
+                        setSelectedTransaction(
+                          selectedTransaction === txn.id ? "" : txn.id,
+                        );
+                      }
+                    }}
                     className={`flex justify-between items-center p-2 rounded-lg cursor-pointer border ${selectedTransaction === txn.id ? "border-purple-500 bg-purple-50/50" : "border-slate-100 hover:border-purple-200"}`}
                   >
                     <span className="font-bold text-[10px] truncate">
@@ -537,9 +555,14 @@ export const Step0ClientProperty = ({ props }) => {
                 {meetingsData?.map((meeting) => (
                   <div
                     key={meeting.id}
-                    onClick={() =>
-                      setSelectedMeeting && setSelectedMeeting(meeting.id)
-                    }
+                    // الكود المعدل لمحاضر الاجتماعات
+                    onClick={() => {
+                      if (setSelectedMeeting) {
+                        setSelectedMeeting(
+                          selectedMeeting === meeting.id ? "" : meeting.id,
+                        );
+                      }
+                    }}
                     className={`flex justify-between items-center p-2 rounded-lg cursor-pointer border ${selectedMeeting === meeting.id ? "border-amber-500 bg-amber-50/50" : "border-slate-100 hover:border-amber-200"}`}
                   >
                     <span className="font-bold text-[10px] truncate">
