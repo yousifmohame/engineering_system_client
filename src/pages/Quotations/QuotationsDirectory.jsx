@@ -11,7 +11,8 @@ import {
   Edit3,
   Plus,
   Lock,
-  DownloadCloud
+  DownloadCloud,
+  Unlock // أيقونة فك القفل الجديدة
 } from "lucide-react";
 import { format } from "date-fns";
 import { arSA } from "date-fns/locale";
@@ -52,7 +53,7 @@ const SCREEN_ID = "815";
 const StatusBadge = React.memo(({ status }) => {
   const current = STATUS_CONFIG[status] || STATUS_CONFIG.DRAFT;
   return (
-    <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold ${current.bg} ${current.text} border border-white/20 shadow-sm`}>
+    <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold ${current.bg} ${current.text} border border-white/20 shadow-sm whitespace-nowrap`}>
       {current.label}
     </span>
   );
@@ -99,6 +100,18 @@ const QuotationsDirectory = ({ onNavigate }) => {
     },
   });
 
+  // تحديث العرض (يُستخدم لفك القفل وإرسال سبب التعديل)
+  const updateQuotationMutation = useMutation({
+    mutationFn: async ({ id, data }) => axios.put(`/quotations/${id}`, data),
+    onSuccess: () => {
+      toast.success("تم فك القفل بنجاح، يمكنك الآن تعديل العرض");
+      queryClient.invalidateQueries({ queryKey: ["quotations-list"] });
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "حدث خطأ أثناء فك قفل العرض");
+    },
+  });
+
   const handleDelete = useCallback((e, quote) => {
     e.stopPropagation();
     if (window.confirm(`هل أنت متأكد من نقل العرض (${quote.number}) إلى سلة المحذوفات؟`)) {
@@ -112,13 +125,35 @@ const QuotationsDirectory = ({ onNavigate }) => {
     else addTab(SCREEN_ID, { id: `CREATE-QUOTATION-${Date.now()}`, title: "إنشاء عرض سعر", type: "create-quotation", closable: true });
   }, [onNavigate, addTab]);
 
-  // تعديل عرض
+  // تعديل عرض (عادي أو بعد فك القفل)
   const handleEditQuotation = useCallback((e, quote) => {
     e?.stopPropagation();
     setIsDetailsModalOpen(false);
     if (onNavigate) onNavigate("CREATE_QUOTATION", { quotationId: quote.id });
     else addTab(SCREEN_ID, { id: `EDIT-QUOTATION-${quote.id}`, title: `تعديل ${quote.number}`, type: "create-quotation", closable: true, quotationId: quote.id, data: { quotationId: quote.id }, props: { quotationId: quote.id } });
   }, [onNavigate, addTab]);
+
+  // 🌟 إجراء فك القفل وإعادة التوجيه للتعديل
+  const handleUnlockAndEdit = useCallback((e, quote) => {
+    e?.stopPropagation();
+    const reason = window.prompt("يُرجى إدخال سبب التعديل بعد الاعتماد. سيتم إلغاء الأختام الحالية وإعادة العرض للمراجعة:");
+    if (!reason || reason.trim() === "") {
+      toast.error("تعديل العرض المعتمد يتطلب إدخال سبب واضح!");
+      return;
+    }
+
+    const toastId = toast.loading("جاري فك قفل العرض...");
+    updateQuotationMutation.mutate({
+      id: quote.id,
+      data: { editReason: reason } // 👈 إرسال السبب للباك إند لفك القفل
+    }, {
+      onSuccess: () => {
+        toast.dismiss(toastId);
+        // فتح شاشة التعديل مباشرة بعد نجاح فك القفل
+        handleEditQuotation(null, quote);
+      }
+    });
+  }, [handleEditQuotation, updateQuotationMutation]);
 
   // التفاصيل
   const handleViewDetails = useCallback((e, id) => {
@@ -195,7 +230,15 @@ const QuotationsDirectory = ({ onNavigate }) => {
           const q = quotationsData?.find((x) => x.id === id);
           handlePrint(null, q);
         }}
-        onEdit={(quote) => handleEditQuotation(null, quote)}
+        onEdit={(quote) => {
+          // إذا كان مقفول يطلب السبب، غير كدة يعدل على طول
+          const isLocked = ["APPROVED", "SENT", "ACCEPTED", "PARTIALLY_PAID"].includes(quote.status);
+          if (isLocked) {
+             handleUnlockAndEdit(null, quote);
+          } else {
+             handleEditQuotation(null, quote);
+          }
+        }}
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim p-3 md:p-4 w-full">
@@ -234,7 +277,7 @@ const QuotationsDirectory = ({ onNavigate }) => {
             />
           </div>
           <div className="flex gap-1.5 flex-wrap flex-1">
-            {[{ key: "ALL", label: "الكل" }, { key: "DRAFT", label: "مسودات" }, { key: "PENDING_APPROVAL", label: "تحت المراجعة" }, { key: "APPROVED", label: "معتمد وجاهز" }].map(({ key, label }) => (
+            {[{ key: "ALL", label: "الكل" }, { key: "DRAFT", label: "مسودات" }, { key: "PENDING_APPROVAL", label: "تحت المراجعة" }, { key: "APPROVED", label: "معتمد وجاهز" }, { key: "ACCEPTED", label: "مقبول" }].map(({ key, label }) => (
               <button
                 key={key}
                 onClick={() => setFilterStatus(key)}
@@ -268,7 +311,7 @@ const QuotationsDirectory = ({ onNavigate }) => {
                     <th className="p-3 text-[10px] text-slate-500 font-black">العميل</th>
                     <th className="p-3 text-[10px] text-slate-500 font-black">الإجمالي</th>
                     <th className="p-3 text-[10px] text-slate-500 font-black text-center w-32">نسبة التحصيل</th>
-                    <th className="p-3 text-[10px] text-slate-500 font-black">الحالة</th>
+                    <th className="p-3 text-[10px] text-slate-500 font-black text-center">الحالة</th>
                     <th className="p-3 text-[10px] text-slate-500 font-black text-center">الإجراءات المتاحة</th>
                   </tr>
                 </thead>
@@ -278,8 +321,9 @@ const QuotationsDirectory = ({ onNavigate }) => {
                     const paid = q.collectedAmount || 0; 
                     const paidPct = total > 0 ? Math.round((paid / total) * 100) : 0;
 
-                    // 🌟 القيود المنطقية للعمل (Business Logic Locks) فقط
-                    const canEdit = q.status === "DRAFT" || q.status === "NEEDS_MODIFICATION";
+                    // 🌟 القيود المنطقية للعمل
+                    const isLocked = ["APPROVED", "SENT", "ACCEPTED", "PARTIALLY_PAID"].includes(q.status);
+                    const canEdit = ["DRAFT", "NEEDS_MODIFICATION", "PENDING_APPROVAL"].includes(q.status);
                     const canTrash = ["DRAFT", "NEEDS_MODIFICATION", "REJECTED"].includes(q.status);
                     const hasPdf = !!q.pdfUrl;
 
@@ -294,8 +338,12 @@ const QuotationsDirectory = ({ onNavigate }) => {
                             )}
                           </div>
                         </td>
-                        <td className="p-3 text-[11px] font-mono text-slate-600 font-bold">
-                          {format(new Date(q.issueDate), "yyyy-MM-dd", { locale: arSA })}
+                        <td className="p-3 text-[10px] font-mono text-slate-600 font-bold whitespace-nowrap">
+                          {/* 🌟 التعديل: عرض التاريخ والساعة */}
+                          <div className="flex flex-col gap-0.5">
+                            <span>{format(new Date(q.issueDate), "yyyy-MM-dd", { locale: arSA })}</span>
+                            <span className="text-[9px] text-slate-400">{format(new Date(q.issueDate), "hh:mm a", { locale: arSA })}</span>
+                          </div>
                         </td>
                         <td className="p-3 font-bold text-xs text-slate-700">{getClientName(q.client)}</td>
                         <td className="p-3 text-xs font-black text-[#0f766e] font-mono">
@@ -313,7 +361,7 @@ const QuotationsDirectory = ({ onNavigate }) => {
                           </div>
                         </td>
 
-                        <td className="p-3"><StatusBadge status={q.status} /></td>
+                        <td className="p-3 text-center"><StatusBadge status={q.status} /></td>
                         
                         <td className="p-3 text-center">
                           <div className="flex min-w-0 items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
@@ -323,17 +371,35 @@ const QuotationsDirectory = ({ onNavigate }) => {
                               <Eye className="w-4 h-4" />
                             </button>
 
-                            {/* زر التعديل */}
-                            <AccessControl code="QUOTE_ACTION_EDIT" name="تعديل عرض سعر" moduleName="عروض الأسعار" tabName="الجدول">
-                              <button
-                                onClick={(e) => canEdit && handleEditQuotation(e, q)}
-                                disabled={!canEdit}
-                                className={`p-1.5 rounded transition-colors ${canEdit ? "bg-blue-50 text-blue-600 hover:bg-blue-100" : "bg-slate-50 text-slate-300 cursor-not-allowed"}`}
-                                title={canEdit ? "تعديل محتوى العرض" : "مغلق: العرض قيد المراجعة أو معتمد"}
-                              >
-                                {canEdit ? <Edit3 className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                              </button>
-                            </AccessControl>
+                            {/* زر التعديل العادي */}
+                            {canEdit && (
+                              <AccessControl code="QUOTE_ACTION_EDIT" name="تعديل عرض سعر" moduleName="عروض الأسعار" tabName="الجدول">
+                                <button
+                                  onClick={(e) => handleEditQuotation(e, q)}
+                                  className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                                  title="تعديل محتوى العرض"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </button>
+                              </AccessControl>
+                            )}
+
+                            {/* زر التعديل الاستثنائي (فك القفل للملفات المعتمدة) */}
+                            {isLocked && (
+                              <AccessControl code="QUOTE_ACTION_EDIT" name="تعديل عرض سعر" moduleName="عروض الأسعار" tabName="الجدول">
+                                <button
+                                  onClick={(e) => handleUnlockAndEdit(e, q)}
+                                  className="p-1.5 bg-orange-50 text-orange-600 hover:bg-orange-100 rounded transition-colors flex items-center justify-center"
+                                  title="تعديل استثنائي: إلغاء الاعتماد وطلب التعديل"
+                                >
+                                  {updateQuotationMutation.isPending && selectedQuoteId === q.id ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Unlock className="w-4 h-4" />
+                                  )}
+                                </button>
+                              </AccessControl>
+                            )}
 
                             {/* زر الطباعة / PDF */}
                             <button
