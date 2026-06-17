@@ -34,6 +34,7 @@ import { Step7Terms } from "./components/Wizart_steps/Terms";
 import Conclusion from "./components/Wizart_steps/Conclusion";
 import StepPartiesSettings from "./components/Wizart_steps/StepPartiesSettings";
 import { Step8Review } from "./components/Wizart_steps/Review";
+import { Step5Timeline } from "./components/Wizart_steps/Step5Timeline";
 
 const IconWithText = ({
   icon: Icon,
@@ -173,6 +174,19 @@ const CreateQuotationWizard = (incomingProps) => {
   const [firstPartyRep, setFirstPartyRep] = useState("");
   const [secondPartyName, setSecondPartyName] = useState("");
   const [secondPartyRep, setSecondPartyRep] = useState("");
+
+  const [timelineState, setTimelineState] = useState({
+    showTimeline: true,
+    totalDuration: 20,
+    durationUnit: "WORKING_DAY",
+    startConditions: ["DOCUMENTS_RECEIVED"],
+    customStartDate: "",
+    showEndDate: false,
+    timelineItems: [], // مصفوفة الخدمات المرتبطة بالمدة
+    showTimelineNotes: true,
+    timelineNotes:
+      "المدة الموضحة أعلاه تقديرية وتُحتسب كأيام عمل، ولا تشمل العطلات الأسبوعية أو الرسمية أو مدد التأخير الناتجة عن نقص المستندات أو متطلبات الجهات ذات العلاقة.",
+  });
 
   // --- API Queries ---
   const { data: clientsData, isLoading: clientsLoading } = useQuery({
@@ -411,6 +425,39 @@ const CreateQuotationWizard = (incomingProps) => {
           description: a.notes || "",
         })),
       );
+      // 🚀 4. استرجاع بيانات الجدول الزمني عند التعديل 🚀
+      let parsedStartConditions = ["DOCUMENTS_RECEIVED"];
+      try {
+        if (existingQuote.startConditions) {
+           parsedStartConditions = typeof existingQuote.startConditions === 'string'
+             ? JSON.parse(existingQuote.startConditions)
+             : existingQuote.startConditions;
+        }
+      } catch (e) {}
+
+      // استخراج الخدمات التي تم تحديد مدة لها مسبقاً
+      const mappedTimelineItems = (existingQuote.items || [])
+        .filter(i => i.executionDuration !== null && i.executionDuration !== undefined)
+        .map((i, idx) => ({
+           id: `time_${Date.now()}_${idx}`,
+           itemId: String(i.id), // يجب أن يكون نصياً ليتطابق مع الـ Select
+           duration: i.executionDuration,
+           unit: i.durationUnit || existingQuote.durationUnit || "WORKING_DAY",
+           notes: i.timelineNotes || "",
+           showInQuote: i.showInTimeline !== false
+        }));
+
+      setTimelineState({
+        showTimeline: existingQuote.showTimeline ?? true,
+        totalDuration: existingQuote.totalDuration || 20,
+        durationUnit: existingQuote.durationUnit || "WORKING_DAY",
+        startConditions: parsedStartConditions,
+        customStartDate: existingQuote.customStartDate ? existingQuote.customStartDate.split("T")[0] : "",
+        showEndDate: existingQuote.showEndDate ?? false,
+        timelineItems: mappedTimelineItems,
+        showTimelineNotes: existingQuote.showTimelineNotes ?? true,
+        timelineNotes: existingQuote.timelineNotes || "المدة الموضحة أعلاه تقديرية وتُحتسب كأيام عمل، ولا تشمل العطلات الأسبوعية أو الرسمية أو مدد التأخير الناتجة عن نقص المستندات أو متطلبات الجهات ذات العلاقة."
+      });
     }
   }, [existingQuote]);
 
@@ -559,6 +606,20 @@ const CreateQuotationWizard = (incomingProps) => {
       return;
     }
 
+    if (timelineState.showTimeline && !isDraft) {
+      const distributed = timelineState.timelineItems.reduce(
+        (sum, t) => sum + (Number(t.duration) || 0),
+        0,
+      );
+      if (distributed > Number(timelineState.totalDuration)) {
+        toast.error(
+          "مجموع مدد الخدمات يتجاوز إجمالي مدة التنفيذ! يرجى التعديل.",
+        );
+        setCurrentStep(10); // رقم خطوة الجدول الزمني (عدّله إذا غيرت ترتيب الخطوات)
+        return;
+      }
+    }
+
     const payload = {
       referenceNumber,
       subject,
@@ -611,18 +672,41 @@ const CreateQuotationWizard = (incomingProps) => {
       firstPartyRep,
       secondPartyName,
       secondPartyRep,
+      showTimeline: timelineState.showTimeline,
+      totalDuration: Number(timelineState.totalDuration),
+      durationUnit: timelineState.durationUnit,
+      startConditions: timelineState.startConditions,
+      customStartDate:
+        timelineState.startConditions.includes("SPECIFIC_DATE") &&
+        timelineState.customStartDate
+          ? new Date(timelineState.customStartDate).toISOString()
+          : null,
+      showEndDate: timelineState.showEndDate,
+      showTimelineNotes: timelineState.showTimelineNotes,
+      timelineNotes: timelineState.timelineNotes,
 
-      items: items.map((i, idx) => ({
-        order: idx + 1,
-        title: i.title,
-        category: i.category || "عام",
-        qty: i.qty,
-        unit: i.unit,
-        price: i.price,
-        discount: i.discount,
-        discountType: i.discountType || "PERCENTAGE",
-        taxRate: i.taxRate !== undefined ? i.taxRate : 15,
-      })),
+      items: items.map((i, idx) => {
+        // البحث هل هذه الخدمة تم ربطها بمدة في الجدول الزمني؟
+        const tItem = timelineState.timelineItems.find(
+          (t) => String(t.itemId) === String(i.id),
+        );
+        return {
+          order: idx + 1,
+          title: i.title,
+          category: i.category || "عام",
+          qty: i.qty,
+          unit: i.unit,
+          price: i.price,
+          discount: i.discount,
+          discountType: i.discountType || "PERCENTAGE",
+          taxRate: i.taxRate !== undefined ? i.taxRate : 15,
+          // إرسال تفاصيل المدة للباك إند
+          executionDuration: tItem ? Number(tItem.duration) : null,
+          durationUnit: tItem ? tItem.unit : null,
+          timelineNotes: tItem ? tItem.notes : null,
+          showInTimeline: !!tItem,
+        };
+      }),
       taxRate,
       officeTaxBearing,
 
@@ -948,6 +1032,7 @@ const CreateQuotationWizard = (incomingProps) => {
       selectedPropertyDetails?.boundaries ||
       existingQuote?.ownership?.boundaries ||
       [],
+    timelineState: timelineState,
   };
 
   return (
@@ -1100,7 +1185,16 @@ const CreateQuotationWizard = (incomingProps) => {
                   {currentStep === 9 && (
                     <StepPartiesSettings props={stepProps} />
                   )}
-                  {currentStep === 10 && <Step8Review props={stepProps} />}
+                  {currentStep === 10 && (
+                    <Step5Timeline
+                      props={{
+                        timelineState,
+                        setTimelineState,
+                        itemsList: items, // مصفوفة الخدمات التي تمت إضافتها في خطوة نطاق العمل
+                      }}
+                    />
+                  )}
+                  {currentStep === 11 && <Step8Review props={stepProps} />}
                 </div>
               </div>
             </div>

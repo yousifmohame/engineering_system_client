@@ -5,12 +5,12 @@ import {
   Landmark,
   Loader2,
   QrCode,
-} from "lucide-react"; // 👈 إضافة QrCode
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "../../../../../api/axios";
 
 // ==========================================
-// الخطوة 5: الدفعات
+// الخطوة 5: الدفعات (نسخة الشركات الاحترافية)
 // ==========================================
 export const Step5Payments = ({ props }) => {
   const {
@@ -36,7 +36,6 @@ export const Step5Payments = ({ props }) => {
     },
   });
 
-  // 🚀 تحديث بيانات الحسابات مع الاحتفاظ بالشعار والآيبان
   // 🚀 تحديث بيانات الحسابات مع الاحتفاظ بالشعار والآيبان والـ QR Code
   useEffect(() => {
     if (fetchedBanks.length > 0 && setBankAccountsData) {
@@ -48,19 +47,28 @@ export const Step5Payments = ({ props }) => {
         accountNameEn: bank.accountNameEn,
         accountNumber: bank.accountNumber,
         iban: bank.iban,
-        logo: bank.bankLogo, // 👈 حفظ اللوجو
-        qrCodeData: bank.qrCodeData, // 👈 🌟 السطر الجديد: جلب وحفظ الـ QR Code
+        logo: bank.bankLogo,
+        qrCodeData: bank.qrCodeData, // جلب الـ QR Code
         account: bank.iban || bank.accountNumber,
       }));
       setBankAccountsData(formattedBanks);
     }
   }, [fetchedBanks, setBankAccountsData]);
 
-  const totalQuotationAmount =
-    finalPayable > 0
-      ? finalPayable
-      : paymentsList.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+  // ==========================================
+  // 🚀 [المعيار المالي المتقدم] معالجة المبالغ بدقة
+  // ==========================================
 
+  // 1. ضمان أن المبلغ الكلي رقم دقيق بمنزلتين عشريتين فقط لتجنب أخطاء JS
+  const totalQuotationAmount = Number(
+    parseFloat(
+      finalPayable > 0
+        ? finalPayable
+        : paymentsList.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+    ).toFixed(2)
+  );
+
+  // تحديث شرط الدفعة (متى تُدفع؟)
   const handleConditionChange = (id, newCondition) => {
     setPaymentsList(
       paymentsList.map((p) =>
@@ -69,32 +77,101 @@ export const Step5Payments = ({ props }) => {
     );
   };
 
+  // 2. تحديث النسبة عند التعديل اليدوي
   const handlePercentageChange = (id, newPct) => {
     const parsedPct = parseFloat(newPct) || 0;
-    const newAmount =
-      totalQuotationAmount > 0 ? (parsedPct / 100) * totalQuotationAmount : 0;
+    const newAmount = totalQuotationAmount > 0 ? (parsedPct / 100) * totalQuotationAmount : 0;
+    
     setPaymentsList(
       paymentsList.map((p) =>
         p.id === id
-          ? { ...p, percentage: newPct, amount: newAmount.toFixed(2) }
+          ? { ...p, percentage: newPct, amount: Number(newAmount).toFixed(2) }
           : p,
       ),
     );
   };
 
+  // 3. تحديث المبلغ عند التعديل اليدوي
   const handleAmountChange = (id, newAmt) => {
     const parsedAmt = parseFloat(newAmt) || 0;
-    const newPct =
-      totalQuotationAmount > 0 ? (parsedAmt / totalQuotationAmount) * 100 : 0;
+    const newPct = totalQuotationAmount > 0 ? (parsedAmt / totalQuotationAmount) * 100 : 0;
+    
     setPaymentsList(
       paymentsList.map((p) =>
         p.id === id
-          ? { ...p, amount: newAmt, percentage: newPct.toFixed(2) }
+          ? { ...p, amount: newAmt, percentage: Number(newPct).toFixed(2) }
           : p,
       ),
     );
   };
 
+  // 4. دالة التوزيع الذكي والمطابق للمعايير المحاسبية (Enterprise Split)
+  const handlePaymentCountChange = (newCount) => {
+    setPaymentCount(newCount);
+
+    if (newCount <= 0) {
+      setPaymentsList([]);
+      return;
+    }
+
+    // حساب النسبة الأساسية والمبلغ الأساسي لكل دفعة وتقريبها فوراً لمنزلتين
+    const basePct = Number((100 / newCount).toFixed(2));
+    const baseAmt = Number((totalQuotationAmount / newCount).toFixed(2));
+
+    const newPayments = Array.from({ length: newCount }, (_, i) => ({
+      id: `pay_${Date.now()}_${i}`,
+      label: `الدفعة ${i + 1}`,
+      percentage: basePct.toFixed(2),
+      amount: baseAmt.toFixed(2),
+      condition: "حسب الاتفاق وجداول الإنجاز",
+    }));
+
+    // 🌟 معالجة الدفعة الأخيرة لامتصاص أي كسور متبقية وضمان تطابق المجموع 100%
+    if (newCount > 1) {
+      // نجمع كل ما تم توزيعه فعلياً (بدون الدفعة الأخيرة)
+      const distributedPctSum = Number((basePct * (newCount - 1)).toFixed(2));
+      const distributedAmtSum = Number((baseAmt * (newCount - 1)).toFixed(2));
+
+      // الدفعة الأخيرة تأخذ المتبقي الدقيق
+      const lastPct = Number((100 - distributedPctSum).toFixed(2));
+      const lastAmt = Number((totalQuotationAmount - distributedAmtSum).toFixed(2));
+
+      newPayments[newCount - 1].percentage = Math.max(0, lastPct).toFixed(2);
+      newPayments[newCount - 1].amount = Math.max(0, lastAmt).toFixed(2);
+    } else if (newCount === 1) {
+      // لو كانت دفعة واحدة، تأخذ الـ 100% والمبلغ كاملاً
+      newPayments[0].percentage = (100).toFixed(2);
+      newPayments[0].amount = totalQuotationAmount.toFixed(2);
+    }
+
+    setPaymentsList(newPayments);
+  };
+
+  // 5. مراقبة تغير إجمالي عرض السعر لإعادة ضبط الدفعات تلقائياً (مع الاحتفاظ بالنسب)
+  useEffect(() => {
+    if (paymentsList.length > 0 && totalQuotationAmount > 0) {
+      const updatedPayments = paymentsList.map((p, index) => {
+        // لا نطبق هذا التوزيع إلا لو كان المجموع يختلف عن مجموع الدفعات الحالية
+        const currentSum = paymentsList.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
+        if (Math.abs(currentSum - totalQuotationAmount) < 0.1) return p;
+
+        const pct = parseFloat(p.percentage) || 0;
+        return {
+          ...p,
+          amount: ((pct / 100) * totalQuotationAmount).toFixed(2)
+        };
+      });
+
+      // التحقق لمعرفة هل تم تحديث شيء لتجنب إعادة الرندر اللانهائي
+      const isChanged = updatedPayments.some((up, i) => up.amount !== paymentsList[i].amount);
+      if (isChanged) {
+        setPaymentsList(updatedPayments);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalQuotationAmount]); 
+
+  // تبديل اختيار البنك
   const toggleBankAccount = (id) => {
     if (!setSelectedBankAccounts) return;
     setSelectedBankAccounts((prev) =>
@@ -102,6 +179,7 @@ export const Step5Payments = ({ props }) => {
     );
   };
 
+  // التحقق من صحة المجموع الكلي للنسب لغرض عرض التنبيه
   const totalPercentage = paymentsList.reduce(
     (sum, p) => sum + (parseFloat(p.percentage) || 0),
     0,
@@ -117,7 +195,7 @@ export const Step5Payments = ({ props }) => {
 
   return (
     <div className="animate-in fade-in duration-300 flex flex-col text-[#123f59] pb-4">
-      {/* 🌟 جدول توزيع الدفعات (كما هو) */}
+      {/* 🌟 جدول توزيع الدفعات */}
       <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 mb-4 shadow-[0_8px_22px_rgba(18,63,89,0.06)] flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-slim relative">
         <div className="flex min-w-0 items-center gap-3 mb-4 border-b border-slate-100 pb-3">
           <label className="text-[11px] font-bold text-[#475569] mb-0">
@@ -127,7 +205,7 @@ export const Step5Payments = ({ props }) => {
             {[1, 2, 3, 4, 5, 6].map((num) => (
               <button
                 key={num}
-                onClick={() => setPaymentCount(num)}
+                onClick={() => handlePaymentCountChange(num)}
                 className={`w-8 h-8 rounded-lg border text-xs font-bold transition-colors ${paymentCount === num ? "bg-[#0e7490] text-white border-[#0e7490] shadow-md" : "bg-white text-[#64748b] border-[#d8b46a]/25 hover:bg-[#fbf8f1]"}`}
               >
                 {num}

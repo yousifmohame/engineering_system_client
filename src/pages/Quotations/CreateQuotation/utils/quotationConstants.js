@@ -21,7 +21,8 @@ export const STEPS = [
   { id: 7, label: "الشروط", icon: ScrollText },
   { id: 8, label: "الخاتمة", icon: FileText }, // 👈 الخطوة الجديدة
   { id: 9, label: "إعدادات الأطراف", icon: Users }, // 👈 التاب الجديد
-  { id: 10, label: "المعاينة", icon: QrCode },
+  { id: 10, label: "الجدول الزمني", icon: Users }, // 👈 التاب الجديد
+  { id: 11, label: "المعاينة", icon: QrCode },
 ];
 
 export const PRESET_TERMS = [
