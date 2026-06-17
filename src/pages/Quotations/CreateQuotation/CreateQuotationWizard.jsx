@@ -640,8 +640,8 @@ const CreateQuotationWizard = (incomingProps) => {
         name: att.name,
         type: att.type,
         size: att.size,
-        fileData: att.fileData, // للملفات الجديدة فقط
-        filePath: att.filePath, // 👈 أضف هذا السطر للملفات القديمة
+        tempPath: att.tempPath, // 👈 هذا هو السطر الأهم! يخبر الباك إند بمكان الملف المؤقت
+        filePath: att.filePath, // للملفات المرفوعة مسبقاً (عند التعديل)
         description: att.description,
       })),
       missingDocs,

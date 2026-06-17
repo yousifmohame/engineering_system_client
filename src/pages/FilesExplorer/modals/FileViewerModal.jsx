@@ -10,12 +10,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  getFullUrl,
   getFileIcon,
   getFileColor,
   formatFileSize,
   copyToClipboard,
 } from "../utils";
+import { getFullUrl } from "../../../utils/urlUtils";
 
 export default function FileViewerModal({ file, onClose }) {
   const fileUrl = getFullUrl(file.url);

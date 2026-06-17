@@ -18,17 +18,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../../../context/AuthContext";
 
-// ⚠️ تأكد من تعديل هذا المسار ليتطابق مع مكان وجود المودال في مشروعك
+// ⚠️ تأكد من تعديل هذه المسارات لتتطابق مع مشروعك
+import axios from "../../../../../api/axios"; 
+import { getFullUrl } from "../../../../../utils/urlUtils"; 
 import FileViewerModal from "../../../../FilesExplorer/modals/FileViewerModal";
-
-const convertToBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
-  });
-};
 
 export const Step6Attachments = ({ props }) => {
   const {
@@ -121,31 +114,52 @@ export const Step6Attachments = ({ props }) => {
     setCustomDocInput(""); // تفريغ الحقل
   };
 
+  // 🚀 الرفع الفوري للملفات إلى السيرفر (Temp Upload) 
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
     try {
-      const newAttachments = await Promise.all(
-        files.map(async (file) => {
-          const base64Data = await convertToBase64(file);
+      // 1. تجهيز الملفات للإرسال المباشر
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append("files", file);
+      });
+
+      // 2. إرسال الملفات للسيرفر ليحفظها في المجلد المؤقت temp
+      const res = await axios.post("/quotations/upload-temp", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (res.data.success) {
+        const uploadedFilesData = res.data.data;
+
+        // 3. دمج البيانات الراجعة من السيرفر مع بيانات الملف لإنشاء objectUrl للاستعراض
+        const newAttachments = files.map((file, index) => {
+          const serverData = uploadedFilesData[index];
+          const tempObjectUrl = URL.createObjectURL(file); // 👈 لغرض الاستعراض المحلي السريع فقط
+
           return {
             id: Date.now() + Math.random(),
             name: file.name,
             size: (file.size / 1024 / 1024).toFixed(2), // بالحجم الميغابايت
             type: file.type,
-            fileData: base64Data,
+            tempPath: serverData.tempPath, // 👈 نحتفظ بالمسار المؤقت لإرساله لاحقاً في الحفظ النهائي
+            objectUrl: tempObjectUrl,      // 👈 يستخدم فقط للعرض المباشر عبر الـ FileViewer
             description: "",
             uploadedBy: user?.name || "موظف النظام",
             uploadedAt: new Date().toISOString(),
           };
-        }),
-      );
-      if (setOwnerAttachments)
-        setOwnerAttachments([...ownerAttachments, ...newAttachments]);
+        });
+
+        if (setOwnerAttachments) {
+          setOwnerAttachments([...ownerAttachments, ...newAttachments]);
+        }
+      }
     } catch (error) {
-      console.error("Error reading files:", error);
+      console.error("Error uploading temp files:", error);
+      alert("حدث خطأ أثناء رفع الملفات للسيرفر. يرجى المحاولة مرة أخرى.");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -171,7 +185,6 @@ export const Step6Attachments = ({ props }) => {
   // 🚀 بدء تعديل اسم الملف
   const startRenaming = (att) => {
     setEditingAttachmentId(att.id);
-    // إزالة الامتداد عند التعديل لسهولة الكتابة
     const nameWithoutExt =
       att.name.substring(0, att.name.lastIndexOf(".")) || att.name;
     setNewAttachmentName(nameWithoutExt);
@@ -199,21 +212,22 @@ export const Step6Attachments = ({ props }) => {
   };
 
   // 🚀 فتح نافذة عرض الملفات داخل النظام
-  // 🚀 فتح نافذة عرض الملفات داخل النظام (تدعم السيرفر والمحلي)
   const handlePreviewFile = (att) => {
     const extension = att.name.includes(".")
       ? att.name.split(".").pop()
       : "pdf";
 
-    // 👈 التعديل هنا: إذا كان الملف له filePath نستخدم getFullUrl، وإلا نستخدم fileData (Base64)
-    const fileUrl = att.filePath ? getFullUrl(att.filePath) : att.fileData;
+    // 👈 إذا كان الملف له filePath فهذا يعني أنه محفوظ مسبقاً، وإلا نستخدم objectUrl الوهمي للملف المؤقت
+    const fileUrl = att.filePath 
+                    ? getFullUrl(att.filePath) 
+                    : (att.objectUrl || att.fileData);
 
     setViewingFile({
       url: fileUrl,
       name: att.name,
       originalName: att.name,
       extension: extension,
-      size: parseFloat(att.size) * 1024 * 1024,
+      size: parseFloat(att.size) * 1024 * 1024, // تحويل الميجا إلى بايت للمودال
     });
   };
 
@@ -225,7 +239,7 @@ export const Step6Attachments = ({ props }) => {
     return <File className="w-8 h-8 text-slate-500" />;
   };
 
-  // دمج القائمة المقترحة مع العناصر المخصصة التي أضافها المستخدم ليتم عرضها كلها كـ Checkboxes
+  // دمج القائمة المقترحة مع العناصر المخصصة التي أضافها المستخدم
   const allDisplayDocs = Array.from(
     new Set([...recommendedDocs, ...missingDocsArray]),
   );
@@ -240,10 +254,9 @@ export const Step6Attachments = ({ props }) => {
         />
       )}
 
-      {/* تم تغيير الكلاس هنا ليكون عمودياً بالكامل (flex-col) بدلاً من الشبكة */}
       <div className="flex flex-col gap-6">
         {/* ========================================== */}
-        {/* القسم الأول: النواقص والمستندات المطلوبة (Checklist) */}
+        {/* القسم الأول: النواقص والمستندات المطلوبة */}
         {/* ========================================== */}
         <div className="flex flex-col gap-4">
           <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">

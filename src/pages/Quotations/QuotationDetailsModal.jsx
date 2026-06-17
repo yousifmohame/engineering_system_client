@@ -94,6 +94,26 @@ export default function QuotationDetailsModal({
     enabled: !!quotationId && isOpen,
   });
 
+  // 🚀 دالة ذكية لجلب سبب التعديل أو الرفض من السجل التاريخي إذا لم يكن موجوداً في الملاحظات الأساسية
+  const getReasonText = () => {
+    if (!quote) return null;
+    if (quote.notes && quote.notes.trim() !== "") return quote.notes;
+    
+    if (quote.logs && quote.logs.length > 0) {
+      // نبحث عن أحدث سجل مرتبط بطلب التعديل أو الرفض
+      const relevantLog = quote.logs.find(
+        (log) =>
+          ["REQUEST_MODIFICATION", "REJECT", "POST_APPROVAL_EDIT"].includes(log.action) &&
+          log.notes &&
+          log.notes.trim() !== ""
+      );
+      if (relevantLog) return relevantLog.notes;
+    }
+    return null;
+  };
+
+  const reasonText = getReasonText();
+
   if (!isOpen) return null;
 
   return (
@@ -131,15 +151,19 @@ export default function QuotationDetailsModal({
           <div className="flex items-center gap-2">
             {!isLoading && quote && !isError && (
               <>
-                <button
-                  onClick={() => {
-                    onClose();
-                    onEdit(quote);
-                  }}
-                  className="px-4 py-2 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold hover:bg-blue-100 flex items-center gap-2 transition-colors"
-                >
-                  <Edit3 className="w-4 h-4" /> تعديل
-                </button>
+                {/* 🚀 إخفاء زر التعديل إذا كانت الحالة مرفوضة */}
+                {quote.status !== "REJECTED" && (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onEdit(quote);
+                    }}
+                    className="px-4 py-2 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold hover:bg-blue-100 flex items-center gap-2 transition-colors"
+                  >
+                    <Edit3 className="w-4 h-4" /> تعديل
+                  </button>
+                )}
+                
                 <button
                   onClick={() => {
                     onClose();
@@ -226,8 +250,8 @@ export default function QuotationDetailsModal({
                 </div>
               </div>
 
-              {/* 🌟 صندوق الأسباب والملاحظات (يظهر فقط إذا كان هناك سبب مسجل) */}
-              {quote.notes && (
+              {/* 🚀 التعديل هنا: استخدام reasonText الذي يستخرج السبب من السجل التاريخي */}
+              {reasonText && (
                 <div
                   className={`p-4 rounded-2xl border flex items-start gap-3 shadow-sm ${
                     ["REJECTED", "CANCELLED", "NEEDS_MODIFICATION"].includes(
@@ -244,10 +268,12 @@ export default function QuotationDetailsModal({
                   <Info className="w-5 h-5 shrink-0 mt-0.5" />
                   <div>
                     <h4 className="font-black text-xs mb-1">
-                      الملاحظات / سبب الحالة الحالية:
+                      {quote.status === "NEEDS_MODIFICATION" 
+                        ? "سبب الإعادة والملاحظات المطلوبة لتعديل العرض:" 
+                        : "الملاحظات / سبب الحالة الحالية:"}
                     </h4>
                     <p className="text-sm font-bold leading-relaxed whitespace-pre-wrap">
-                      {quote.notes}
+                      {reasonText}
                     </p>
                   </div>
                 </div>
