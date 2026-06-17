@@ -96,7 +96,7 @@ export const Step5Timeline = ({ props }) => {
   return (
     <div className="flex flex-col gap-6 text-[#123f59] pb-8 animate-in fade-in duration-500">
       
-      {/* 🌟 1. المفتاح الرئيسي (تم إصلاحه برمجياً وتصميمياً) 🌟 */}
+      {/* 🌟 1. المفتاح الرئيسي 🌟 */}
       <div 
         onClick={() => handleStateChange("showTimeline", !timelineState.showTimeline)}
         className={`relative overflow-hidden p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 flex items-center justify-between shadow-sm ${
@@ -184,7 +184,7 @@ export const Step5Timeline = ({ props }) => {
             </div>
           </div>
 
-          {/* --- القسم الثاني: شروط البدء (تم تحسين الـ UX) --- */}
+          {/* --- القسم الثاني: شروط البدء --- */}
           <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm">
             <div className="mb-4">
               <h3 className="text-sm font-black text-[#123f59] flex items-center gap-2">
@@ -214,7 +214,6 @@ export const Step5Timeline = ({ props }) => {
                       </span>
                     </div>
                     
-                    {/* حقل التاريخ المنبثق */}
                     {cond.id === "SPECIFIC_DATE" && isSelected && (
                       <div className="mr-8 animate-in slide-in-from-top-2 fade-in">
                         <input
@@ -236,14 +235,16 @@ export const Step5Timeline = ({ props }) => {
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-5 border-b border-slate-100 bg-slate-50/50 gap-4">
               <div>
                 <h3 className="text-sm font-black text-[#123f59]">توزيع مدة التنفيذ على الخدمات</h3>
-                <p className="text-[10px] font-bold text-slate-400 mt-1">تحديد المدد التفصيلية لكل مرحلة عمل (اختياري).</p>
+                <p className="text-[10px] font-bold text-slate-400 mt-1">
+                  المدة الآن مخصصة لجميع الخدمات. لتقسيم المدة، اضغط على "إضافة تفصيل".
+                </p>
               </div>
               <button
                 onClick={handleAddTimelineItem}
                 disabled={itemsList.length === 0}
                 className="flex items-center justify-center gap-1.5 px-4 py-2 bg-[#123f59] text-white rounded-xl text-[11px] font-black hover:bg-[#0e7490] hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Plus className="w-4 h-4" /> إضافة مرحلة
+                <Plus className="w-4 h-4" /> إضافة تفصيل لمرحلة
               </button>
             </div>
 
@@ -253,87 +254,93 @@ export const Step5Timeline = ({ props }) => {
               </div>
             )}
 
-            {timelineState.timelineItems.length > 0 && (
-              <div className="overflow-x-auto custom-scrollbar-slim">
-                <table className="w-full text-right border-collapse min-w-[750px]">
-                  <thead>
-                    <tr className="bg-white border-b border-slate-200">
-                      <th className="p-3 text-[10px] text-slate-400 font-black w-12 text-center">م</th>
-                      <th className="p-3 text-[10px] text-slate-500 font-black w-1/3">الخدمة / المرحلة المحددة</th>
-                      <th className="p-3 text-[10px] text-slate-500 font-black w-32 text-center">المدة المخصصة</th>
-                      <th className="p-3 text-[10px] text-slate-500 font-black">ملاحظات (للعميل)</th>
-                      <th className="p-3 text-[10px] text-slate-500 font-black w-12 text-center"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {timelineState.timelineItems.map((item, index) => (
-                      <tr key={item.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors group">
-                        <td className="p-3 text-[11px] font-black text-slate-300 text-center">{index + 1}</td>
-                        <td className="p-3">
-                          <select
-                            value={item.itemId}
-                            onChange={(e) => handleUpdateTimelineItem(item.id, "itemId", e.target.value)}
-                            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-[#123f59] outline-none focus:border-[#0e7490] focus:ring-1 focus:ring-[#0e7490] transition-all"
-                          >
-                            <option value="">-- اختر الخدمة --</option>
-                            {itemsList.map(srv => (
-                              <option key={srv.id} value={srv.id}>{srv.title}</option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2 focus-within:border-[#0e7490] focus-within:ring-1 focus-within:ring-[#0e7490] transition-all">
-                            <input
-                              type="number"
-                              min="0"
-                              value={item.duration}
-                              onChange={(e) => handleUpdateTimelineItem(item.id, "duration", e.target.value)}
-                              className="w-12 p-2 bg-transparent text-center text-sm font-black text-[#0e7490] outline-none font-mono"
-                            />
-                            <span className="text-[10px] font-bold text-slate-400">{selectedUnitLabel}</span>
-                          </div>
-                        </td>
-                        <td className="p-3">
+            <div className="overflow-x-auto custom-scrollbar-slim">
+              <table className="w-full text-right border-collapse min-w-[750px] table-fixed">
+                <thead>
+                  <tr className="bg-white border-b border-slate-200">
+                    <th className="p-3 text-[10px] text-slate-400 font-black w-12 text-center shrink-0">م</th>
+                    <th className="p-3 text-[10px] text-slate-500 font-black w-[45%]">الخدمة / المرحلة المحددة</th>
+                    <th className="p-3 text-[10px] text-slate-500 font-black w-[20%] text-center">المدة المخصصة</th>
+                    <th className="p-3 text-[10px] text-slate-500 font-black w-[25%]">ملاحظات (للعميل)</th>
+                    <th className="p-3 text-[10px] text-slate-500 font-black w-14 text-center"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {timelineState.timelineItems.map((item, index) => (
+                    <tr key={item.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                      <td className="p-3 text-[11px] font-black text-slate-300 text-center align-middle">{index + 1}</td>
+                      <td className="p-3 align-middle">
+                        <select
+                          value={item.itemId}
+                          onChange={(e) => handleUpdateTimelineItem(item.id, "itemId", e.target.value)}
+                          className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-[#123f59] outline-none focus:border-[#0e7490] focus:ring-1 focus:ring-[#0e7490] transition-all"
+                          title={itemsList.find(s => s.id === item.itemId)?.title || "اختر الخدمة"}
+                        >
+                          <option value="">-- اختر الخدمة --</option>
+                          {itemsList.map(srv => (
+                            <option key={srv.id} value={srv.id} title={srv.title}>{srv.title}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="p-3 align-middle">
+                        <div className="flex items-center justify-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2 py-0.5 focus-within:border-[#0e7490] focus-within:ring-1 focus-within:ring-[#0e7490] transition-all">
                           <input
-                            type="text"
-                            placeholder="مثال: بعد موافقة الأمانة..."
-                            value={item.notes}
-                            onChange={(e) => handleUpdateTimelineItem(item.id, "notes", e.target.value)}
-                            className="w-full p-2.5 bg-transparent border-b border-dashed border-slate-300 text-xs font-bold text-[#475569] outline-none focus:border-[#0e7490] transition-colors"
+                            type="number"
+                            min="0"
+                            value={item.duration}
+                            onChange={(e) => handleUpdateTimelineItem(item.id, "duration", e.target.value)}
+                            className="w-12 p-2 bg-transparent text-center text-sm font-black text-[#0e7490] outline-none font-mono"
                           />
-                        </td>
-                        <td className="p-3 text-center">
-                          <button 
-                            onClick={() => handleRemoveTimelineItem(item.id)} 
-                            className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                            title="حذف"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                          <span className="text-[10px] font-bold text-slate-400">{selectedUnitLabel}</span>
+                        </div>
+                      </td>
+                      <td className="p-3 align-middle">
+                        <input
+                          type="text"
+                          placeholder="مثال: بعد موافقة الأمانة..."
+                          value={item.notes}
+                          onChange={(e) => handleUpdateTimelineItem(item.id, "notes", e.target.value)}
+                          className="w-full p-2.5 bg-transparent border-b border-dashed border-slate-300 text-xs font-bold text-[#475569] outline-none focus:border-[#0e7490] transition-colors"
+                        />
+                      </td>
+                      <td className="p-3 text-center align-middle">
+                        {/* 🚀 الزر ظاهر دائماً وبشكل أوضح */}
+                        <button 
+                          onClick={() => handleRemoveTimelineItem(item.id)} 
+                          className="p-2 rounded-lg text-rose-500 bg-rose-50 hover:bg-rose-100 hover:text-rose-700 transition-colors shadow-sm"
+                          title="حذف هذه المرحلة"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
 
-                    {/* 🚀 الصف التلقائي */}
-                    {remainingDuration > 0 && (
-                      <tr className="bg-emerald-50/50">
-                        <td className="p-3 text-xs font-black text-emerald-400 text-center">*</td>
-                        <td className="p-3 text-xs font-black text-emerald-800">بقية خدمات نطاق العمل</td>
-                        <td className="p-3 text-center">
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-emerald-200 shadow-sm text-emerald-700 rounded-lg">
-                            <span className="font-mono text-sm font-black">{remainingDuration}</span>
-                            <span className="text-[9px] font-bold">{selectedUnitLabel}</span>
-                          </div>
-                        </td>
-                        <td className="p-3 text-[10px] font-bold text-emerald-600/70" colSpan="2">
-                          تُحسب تلقائياً لباقي الخدمات (إجمالي: {totalDuration} - موزع: {distributedDuration})
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  {/* 🚀 الصف التلقائي (الذي يجمع أو يحسب المتبقي) */}
+                  {remainingDuration > 0 && (
+                    <tr className="bg-emerald-50/50 border-t border-emerald-100">
+                      <td className="p-3 text-xs font-black text-emerald-400 text-center align-middle">*</td>
+                      <td className="p-3 text-xs font-black text-emerald-800 align-middle break-words whitespace-normal leading-relaxed">
+                        {timelineState.timelineItems.length === 0 
+                          ? "جميع الخدمات المذكورة في نطاق العمل" 
+                          : "باقي الخدمات في نطاق العمل"}
+                      </td>
+                      <td className="p-3 text-center align-middle">
+                        <div className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white border border-emerald-200 shadow-sm text-emerald-700 rounded-lg">
+                          <span className="font-mono text-sm font-black">{remainingDuration}</span>
+                          <span className="text-[9px] font-bold">{selectedUnitLabel}</span>
+                        </div>
+                      </td>
+                      <td className="p-3 text-[10px] font-bold text-emerald-600/80 whitespace-normal align-middle leading-relaxed" colSpan="2">
+                        {timelineState.timelineItems.length === 0 
+                          ? `المدة المخصصة لإنجاز كامل المشروع بشكل مشاع (${totalDuration} ${selectedUnitLabel})`
+                          : `متبقي لباقي الخدمات (إجمالي: ${totalDuration} - تم تخصيص: ${distributedDuration})`}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
             {/* 🛑 تحذير التجاوز */}
             {isExceeding && (
@@ -342,7 +349,7 @@ export const Step5Timeline = ({ props }) => {
                 <div className="flex flex-col gap-1">
                   <span className="text-xs font-black">تحذير: تجاوز الإجمالي الزمني!</span>
                   <span className="text-[11px] font-bold opacity-90">
-                    مجموع مدد الخدمات ({distributedDuration}) يتجاوز الإجمالي المسموح به ({totalDuration}). يرجى زيادة الإجمالي أو تقليل المدد لكي تتمكن من الحفظ.
+                    مجموع مدد الخدمات ({distributedDuration}) يتجاوز الإجمالي المسموح به ({totalDuration}). يرجى زيادة الإجمالي أو تقليل المدد المخصصة.
                   </span>
                 </div>
               </div>

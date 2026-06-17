@@ -74,7 +74,7 @@ const previewStyles = {
 };
 
 const formatCurrency = (value) =>
-  Number(value || 0).toLocaleString("ar-SA", {
+  Number(value || 0).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -281,6 +281,61 @@ export const LivePreview = ({ data }) => {
 
   const statusBadge = getQuotationStatusBadge();
 
+  // --- إزالة دالة getQuotationStatusBadge السابقة ---
+
+  // 🚀 استخراج وتعريف متغيرات الحالة لكي يراها الجدول العلوي
+  const currentStatus = status || "DRAFT";
+  const isOfficeApproved =
+    currentStatus === "APPROVED" || currentStatus === "SENT";
+  const isFullyApproved =
+    currentStatus === "ACCEPTED" || currentStatus === "PARTIALLY_PAID";
+  const isCancelled =
+    currentStatus === "CANCELLED" || currentStatus === "REJECTED";
+
+  let isExpired = false;
+  if (
+    !isFullyApproved &&
+    !isCancelled &&
+    issueDate &&
+    validityDays !== "unlimited"
+  ) {
+    const expiryDate = new Date(issueDate);
+    expiryDate.setDate(expiryDate.getDate() + parseInt(validityDays));
+    expiryDate.setHours(23, 59, 59, 999);
+    if (new Date() > expiryDate) {
+      isExpired = true;
+    }
+  }
+
+  // ================= إعدادات جدول الاعتماد العلوي =================
+  const validityText = isExpired ? "غير ساري" : "ساري";
+  const validityColor = isExpired ? "text-rose-600" : "text-emerald-600";
+
+  let firstPartyStatusText = "مسودة";
+  let firstPartyStatusColor = "text-slate-500";
+  if (status === "REJECTED" || status === "CANCELLED") {
+    firstPartyStatusText = "مرفوض / ملغي";
+    firstPartyStatusColor = "text-rose-600";
+  } else if (isOfficeApproved || isFullyApproved) {
+    firstPartyStatusText = `معتمد بتاريخ ${issueDateParts.gregorian}`;
+    firstPartyStatusColor = "text-[#123f59]";
+  } else {
+    firstPartyStatusText = "في انتظار الاعتماد";
+    firstPartyStatusColor = "text-amber-600";
+  }
+
+  let secondPartyStatusText = "في انتظار الاعتماد";
+  let secondPartyStatusColor = "text-amber-600";
+  if (isFullyApproved) {
+    secondPartyStatusText = "معتمد";
+    secondPartyStatusColor = "text-emerald-600";
+  } else if (status === "REJECTED" || status === "CANCELLED") {
+    secondPartyStatusText = "مرفوض / ملغي";
+    secondPartyStatusColor = "text-rose-600";
+  }
+
+  // --- نهاية إعدادات الحالة ---
+
   const calculatedOfficeDiscount = (taxAmount * (officeTaxBearing || 0)) / 100;
   const finalPayable = grandTotal - calculatedOfficeDiscount;
 
@@ -458,24 +513,34 @@ export const LivePreview = ({ data }) => {
     if (!timelineState?.startConditions?.length) return "";
     const conds = timelineState.startConditions;
     let parts = [];
-    if (conds.includes("DOCUMENTS_RECEIVED")) parts.push("استلام كافة المستندات والبيانات المطلوبة");
-    if (conds.includes("ADVANCE_PAYMENT")) parts.push("تأكيد استلام الدفعة الأولى أو المستحق المالي");
+    if (conds.includes("DOCUMENTS_RECEIVED"))
+      parts.push("استلام كافة المستندات والبيانات المطلوبة");
+    if (conds.includes("ADVANCE_PAYMENT"))
+      parts.push("تأكيد استلام الدفعة الأولى أو المستحق المالي");
     if (conds.includes("SPECIFIC_DATE") && timelineState.customStartDate) {
-      parts.push(`التاريخ المحدد (${new Date(timelineState.customStartDate).toLocaleDateString("ar-SA")})`);
+      parts.push(
+        `التاريخ المحدد (${new Date(timelineState.customStartDate).toLocaleDateString("ar-SA")})`,
+      );
     }
-    
-    let text = "تبدأ مدة تنفيذ الخدمات من تاريخ " + parts.join("، و") + (parts.length > 1 ? "، أيهما لاحق." : ".");
-    
+
+    let text =
+      "تبدأ مدة تنفيذ الخدمات من تاريخ " +
+      parts.join("، و") +
+      (parts.length > 1 ? "، أيهما لاحق." : ".");
+
     if (conds.includes("TRAFFIC_STUDY")) {
-      text += " وفي حال تطلب الأمر دراسة مرورية، تستكمل المدة بعد استلام خطاب الاعتماد من الجهة المختصة.";
+      text +=
+        " وفي حال تطلب الأمر دراسة مرورية، تستكمل المدة بعد استلام خطاب الاعتماد من الجهة المختصة.";
     }
     return text;
   };
 
-  const distributedDuration = timelineState?.timelineItems?.reduce(
-    (sum, item) => sum + (Number(item.duration) || 0), 0
-  ) || 0;
-  
+  const distributedDuration =
+    timelineState?.timelineItems?.reduce(
+      (sum, item) => sum + (Number(item.duration) || 0),
+      0,
+    ) || 0;
+
   const totalDuration = Number(timelineState?.totalDuration) || 0;
   const remainingDuration = Math.max(0, totalDuration - distributedDuration);
 
@@ -583,15 +648,112 @@ export const LivePreview = ({ data }) => {
                 ...bgStyleConfig,
               }}
             >
-              <div className="absolute top-8 left-8 z-20">
-                <div
-                  className={`px-4 py-2 rounded-xl border-2 font-black text-[12px] shadow-sm ${statusBadge.styles}`}
+              {/* 🚀 التعديل هنا: جدول الاعتمادات العلوي المدمج (لصفحة الغلاف) */}
+              <div className="absolute top-5 left-8 right-8 z-20">
+                <table
+                  className="w-full border-collapse bg-white/95 backdrop-blur-sm shadow-sm text-right"
+                  style={{ border: `2px solid ${selectedStyle.accent}` }}
                 >
-                  {statusBadge.text}
-                </div>
+                  <tbody>
+                    <tr>
+                      {/* العمود الأيمن: الـ QR */}
+                      <td
+                        className="w-[30%] p-2 text-center align-middle"
+                        style={{
+                          borderLeft: `2px solid ${selectedStyle.accent}`,
+                        }}
+                      >
+                        <div className="flex flex-col items-center justify-center gap-1">
+                          {/* في نافذة الـ Preview للفرونت إند لا يوجد verificationQrImage مولد بشكل حقيقي، لذا نضع أيقونة توضيحية */}
+                          <div className="w-14 h-14 border border-dashed border-slate-300 flex items-center justify-center bg-slate-50">
+                            <span className="text-[8px] text-slate-400 font-black">
+                              QR
+                            </span>
+                          </div>
+                          <span className="text-[8px] font-black text-[#123f59] leading-tight">
+                            شركة ديتيلز كونسولتس
+                            <br />
+                            للاستشارات الهندسية
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* العمود الأوسط: حالات الاعتماد */}
+                      <td
+                        className="w-[40%] p-0 align-top"
+                        style={{
+                          borderLeft: `2px solid ${selectedStyle.accent}`,
+                        }}
+                      >
+                        <div className="flex flex-col h-full">
+                          <div className="flex justify-between px-3 py-2 border-b border-slate-300 flex-1 items-center">
+                            <span className="text-[11px] font-black text-slate-600">
+                              حالة السريان
+                            </span>
+                            <span
+                              className={`text-[11px] font-black ${validityColor}`}
+                            >
+                              {validityText}
+                            </span>
+                          </div>
+                          <div className="flex justify-between px-3 py-2 border-b border-slate-300 flex-1 items-center">
+                            <span className="text-[11px] font-black text-slate-600">
+                              اعتماد الطرف الأول
+                            </span>
+                            <span
+                              className={`text-[11px] font-black ${firstPartyStatusColor}`}
+                            >
+                              {firstPartyStatusText}
+                            </span>
+                          </div>
+                          <div className="flex justify-between px-3 py-2 flex-1 items-center">
+                            <span className="text-[11px] font-black text-slate-600">
+                              اعتماد الطرف الثاني
+                            </span>
+                            <span
+                              className={`text-[11px] font-black ${secondPartyStatusColor}`}
+                            >
+                              {secondPartyStatusText}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* العمود الأيسر: بيانات العقار */}
+                      <td className="w-[30%] p-0 align-top">
+                        <div className="flex flex-col h-full">
+                          <div className="flex justify-between px-3 py-2 border-b border-slate-300 flex-1 items-center">
+                            <span className="text-[11px] font-black text-slate-600">
+                              اسم الحي
+                            </span>
+                            <span className="text-[11px] font-black text-[#123f59] truncate max-w-[100px]">
+                              {propertyDistrict || "---"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between px-3 py-2 border-b border-slate-300 flex-1 items-center">
+                            <span className="text-[11px] font-black text-slate-600">
+                              مساحة الأرض
+                            </span>
+                            <span className="text-[11px] font-mono font-black text-[#123f59]">
+                              {formatArea(totalPlotsArea)} م²
+                            </span>
+                          </div>
+                          <div className="flex justify-between px-3 py-2 bg-slate-50 flex-1 items-center">
+                            <span className="text-[10px] font-black text-slate-600">
+                              إجمالي قيمة مع الضريبة
+                            </span>
+                            <span className="text-[12px] font-mono font-black text-emerald-700">
+                              {formatCurrency(finalPayable)}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
               <div className="absolute inset-0 flex flex-col justify-between items-center text-center p-[80px]">
-                <div className="w-full mt-12 flex flex-col items-center justify-center gap-12 bg-transparent">
+                <div className="w-full mt-12 flex flex-col items-center justify-center gap-5 bg-transparent">
                   {/* 🌟 الشعار */}
                   <div className="w-[300px] flex items-center justify-center">
                     <img
@@ -635,11 +797,13 @@ export const LivePreview = ({ data }) => {
                   </div>
                 </div>
                 <div className="w-full text-right bg-transparent p-8 rounded-3xl border border-[#d8b46a]/30 shadow-sm">
-                  <p className="text-[16px] font-black text-slate-500 mb-3">
+                  <p className="text-[16px] text-center font-black text-slate-500 mb-3">
                     مقدم إلى السادة / الطرف الثاني:
                   </p>
+
+                  {/* 🚀 تم تعديل الـ mb-8 لتصبح ديناميكية */}
                   <p
-                    className="text-[34px] font-black mb-8 leading-tight"
+                    className={`text-[28px] font-black leading-tight ${signatureMethod !== "SELF" ? "mb-2" : "mb-8"}`}
                     style={{ color: selectedStyle.accent }}
                   >
                     <EditableSpan value={clientTitle} isEditMode={isEditMode} />{" "}
@@ -650,6 +814,28 @@ export const LivePreview = ({ data }) => {
                       placeholder="اسم العميل"
                     />
                   </p>
+
+                  {/* 🚀 السطر الجديد الخاص بمعلومات التفويض والوكالة */}
+                  {signatureMethod !== "SELF" && (
+                    <p className="text-[11.5px] text-center font-black text-rose-600 mb-6">
+                      {[
+                        (
+                          authDocType === "مستند انتفاع" && customUsufructType
+                            ? customUsufructType
+                            : authDocType
+                        )
+                          ? `معلومات التفويض: ${authDocType === "مستند انتفاع" && customUsufructType ? customUsufructType : authDocType}`
+                          : "",
+                        authDocNumber ? `رقم المستند: ${authDocNumber}` : "",
+                        showAuthDocExpiryDate && authDocExpiryDate
+                          ? `تاريخ انتهاء المستند: ${new Date(authDocExpiryDate).toLocaleDateString("en-US")}`
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" | ")}
+                    </p>
+                  )}
+
                   <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-[14px] font-bold text-slate-700">
                     <div className="flex justify-between border-b border-dashed border-slate-300 pb-1">
                       <span className="text-slate-500 text-[12px]">
@@ -1584,17 +1770,7 @@ export const LivePreview = ({ data }) => {
                               >
                                 وصف الخدمة
                               </th>
-                              {showQuantity && (
-                                <th
-                                  className="p-2.5 border"
-                                  style={{
-                                    borderColor: selectedStyle.accent,
-                                    width: "15%",
-                                  }}
-                                >
-                                  الكمية
-                                </th>
-                              )}
+                              
                             </tr>
                           </thead>
                           <tbody className="font-bold text-[#123f59]">
@@ -1730,9 +1906,10 @@ export const LivePreview = ({ data }) => {
                             style={{ color: selectedStyle.accent }}
                           >
                             <Calendar className="w-4 h-4 text-[#c5983c]" />{" "}
-                            {signatureMethod !== "SELF" ? "خامساً" : "رابعاً"}: الجدول الزمني لتنفيذ الخدمات
+                            {signatureMethod !== "SELF" ? "خامساً" : "رابعاً"}:
+                            الجدول الزمني لتنفيذ الخدمات
                           </h4>
-                          
+
                           {/* نص شروط البداية */}
                           <div className="mb-3 text-[10.5px] font-bold text-slate-600 bg-slate-50/50 p-2.5 rounded-lg border border-slate-100 leading-relaxed">
                             {getTimelineStartText()}
@@ -1740,73 +1917,196 @@ export const LivePreview = ({ data }) => {
 
                           <table
                             className="w-full border-collapse text-center text-[10.5px] bg-transparent"
-                            style={{ border: `1px solid ${selectedStyle.accent}` }}
+                            style={{
+                              border: `1px solid ${selectedStyle.accent}`,
+                            }}
                           >
                             <thead>
                               <tr
                                 className="font-black text-white"
-                                style={{ backgroundColor: selectedStyle.accent }}
+                                style={{
+                                  backgroundColor: selectedStyle.accent,
+                                }}
                               >
-                                <th className="p-2 border w-[8%]" style={{ borderColor: selectedStyle.accent }}>م</th>
-                                <th className="p-2 border w-[45%]" style={{ borderColor: selectedStyle.accent }}>الخدمة / المرحلة</th>
-                                <th className="p-2 border w-[22%]" style={{ borderColor: selectedStyle.accent }}>المدة</th>
-                                <th className="p-2 border w-[25%]" style={{ borderColor: selectedStyle.accent }}>ملاحظات</th>
+                                <th
+                                  className="p-2 border w-[8%]"
+                                  style={{ borderColor: selectedStyle.accent }}
+                                >
+                                  م
+                                </th>
+                                <th
+                                  className="p-2 border w-[45%]"
+                                  style={{ borderColor: selectedStyle.accent }}
+                                >
+                                  الخدمة / المرحلة
+                                </th>
+                                <th
+                                  className="p-2 border w-[22%]"
+                                  style={{ borderColor: selectedStyle.accent }}
+                                >
+                                  المدة
+                                </th>
+                                <th
+                                  className="p-2 border w-[25%]"
+                                  style={{ borderColor: selectedStyle.accent }}
+                                >
+                                  ملاحظات
+                                </th>
                               </tr>
                             </thead>
                             <tbody className="font-bold text-[#123f59]">
-                              {timelineState.timelineItems?.map((tItem, index) => {
-                                const relatedItem = items.find(i => String(i.id) === String(tItem.itemId));
-                                return (
-                                  <tr key={tItem.id} className="border-b border-slate-100">
-                                    <td className="p-2 border bg-slate-50/50 font-mono" style={{ borderColor: `${selectedStyle.accent}44` }}>{index + 1}</td>
-                                    <td className="p-2 border text-right leading-relaxed" style={{ borderColor: `${selectedStyle.accent}44` }}>
-                                      {relatedItem ? relatedItem.title : "خدمة غير محددة"}
+                              {timelineState.timelineItems?.map(
+                                (tItem, index) => {
+                                  const relatedItem = items.find(
+                                    (i) =>
+                                      String(i.id) === String(tItem.itemId),
+                                  );
+                                  return (
+                                    <tr
+                                      key={tItem.id}
+                                      className="border-b border-slate-100"
+                                    >
+                                      <td
+                                        className="p-2 border bg-slate-50/50 font-mono"
+                                        style={{
+                                          borderColor: `${selectedStyle.accent}44`,
+                                        }}
+                                      >
+                                        {index + 1}
+                                      </td>
+                                      <td
+                                        className="p-2 border text-right leading-relaxed"
+                                        style={{
+                                          borderColor: `${selectedStyle.accent}44`,
+                                        }}
+                                      >
+                                        {relatedItem
+                                          ? relatedItem.title
+                                          : "خدمة غير محددة"}
+                                      </td>
+                                      <td
+                                        className="p-2 border font-mono"
+                                        style={{
+                                          borderColor: `${selectedStyle.accent}44`,
+                                        }}
+                                      >
+                                        {tItem.duration}{" "}
+                                        {
+                                          DURATION_UNITS_AR[
+                                            tItem.unit ||
+                                              timelineState.durationUnit
+                                          ]
+                                        }
+                                      </td>
+                                      <td
+                                        className="p-2 border text-[9.5px] text-slate-500"
+                                        style={{
+                                          borderColor: `${selectedStyle.accent}44`,
+                                        }}
+                                      >
+                                        {tItem.notes || "---"}
+                                      </td>
+                                    </tr>
+                                  );
+                                },
+                              )}
+
+                              {/* صف بقية الخدمات */}
+                              {remainingDuration > 0 &&
+                                timelineState.timelineItems?.length > 0 && (
+                                  <tr className="bg-slate-50 border-b border-slate-100">
+                                    <td
+                                      className="p-2 border font-mono text-slate-400"
+                                      style={{
+                                        borderColor: `${selectedStyle.accent}44`,
+                                      }}
+                                    >
+                                      *
                                     </td>
-                                    <td className="p-2 border font-mono" style={{ borderColor: `${selectedStyle.accent}44` }}>
-                                      {tItem.duration} {DURATION_UNITS_AR[tItem.unit || timelineState.durationUnit]}
+                                    <td
+                                      className="p-2 border text-right text-slate-700"
+                                      style={{
+                                        borderColor: `${selectedStyle.accent}44`,
+                                      }}
+                                    >
+                                      بقية خدمات نطاق العمل
                                     </td>
-                                    <td className="p-2 border text-[9.5px] text-slate-500" style={{ borderColor: `${selectedStyle.accent}44` }}>
-                                      {tItem.notes || "---"}
+                                    <td
+                                      className="p-2 border font-mono text-slate-700"
+                                      style={{
+                                        borderColor: `${selectedStyle.accent}44`,
+                                      }}
+                                    >
+                                      {remainingDuration}{" "}
+                                      {
+                                        DURATION_UNITS_AR[
+                                          timelineState.durationUnit
+                                        ]
+                                      }
+                                    </td>
+                                    <td
+                                      className="p-2 border text-[9.5px] text-slate-500"
+                                      style={{
+                                        borderColor: `${selectedStyle.accent}44`,
+                                      }}
+                                    >
+                                      حسب التتابع الزمني
                                     </td>
                                   </tr>
-                                );
-                              })}
-                              
-                              {/* صف بقية الخدمات */}
-                              {remainingDuration > 0 && timelineState.timelineItems?.length > 0 && (
-                                <tr className="bg-slate-50 border-b border-slate-100">
-                                  <td className="p-2 border font-mono text-slate-400" style={{ borderColor: `${selectedStyle.accent}44` }}>*</td>
-                                  <td className="p-2 border text-right text-slate-700" style={{ borderColor: `${selectedStyle.accent}44` }}>بقية خدمات نطاق العمل</td>
-                                  <td className="p-2 border font-mono text-slate-700" style={{ borderColor: `${selectedStyle.accent}44` }}>
-                                    {remainingDuration} {DURATION_UNITS_AR[timelineState.durationUnit]}
-                                  </td>
-                                  <td className="p-2 border text-[9.5px] text-slate-500" style={{ borderColor: `${selectedStyle.accent}44` }}>حسب التتابع الزمني</td>
-                                </tr>
-                              )}
+                                )}
 
                               {/* الإجمالي */}
                               <tr className="bg-slate-100/80">
-                                <td colSpan="2" className="p-2 border text-left font-black text-slate-800" style={{ borderColor: `${selectedStyle.accent}44` }}>
+                                <td
+                                  colSpan="2"
+                                  className="p-2 border text-left font-black text-slate-800"
+                                  style={{
+                                    borderColor: `${selectedStyle.accent}44`,
+                                  }}
+                                >
                                   إجمالي مدة تنفيذ الخدمات:
                                 </td>
-                                <td colSpan="2" className="p-2 border font-black font-mono text-[#123f59]" style={{ borderColor: `${selectedStyle.accent}44` }}>
-                                  {totalDuration} {DURATION_UNITS_AR[timelineState.durationUnit]}
-                                  {timelineState.showEndDate && timelineState.startConditions.includes("SPECIFIC_DATE") && timelineState.customStartDate && (
-                                     <span className="block text-[9px] text-emerald-700 mt-1 font-sans">
-                                       (ينتهي تقريباً في: {new Date(new Date(timelineState.customStartDate).getTime() + totalDuration * 24 * 60 * 60 * 1000).toLocaleDateString("ar-SA")})
-                                     </span>
-                                  )}
+                                <td
+                                  colSpan="2"
+                                  className="p-2 border font-black font-mono text-[#123f59]"
+                                  style={{
+                                    borderColor: `${selectedStyle.accent}44`,
+                                  }}
+                                >
+                                  {totalDuration}{" "}
+                                  {
+                                    DURATION_UNITS_AR[
+                                      timelineState.durationUnit
+                                    ]
+                                  }
+                                  {timelineState.showEndDate &&
+                                    timelineState.startConditions.includes(
+                                      "SPECIFIC_DATE",
+                                    ) &&
+                                    timelineState.customStartDate && (
+                                      <span className="block text-[9px] text-emerald-700 mt-1 font-sans">
+                                        (ينتهي تقريباً في:{" "}
+                                        {new Date(
+                                          new Date(
+                                            timelineState.customStartDate,
+                                          ).getTime() +
+                                            totalDuration * 24 * 60 * 60 * 1000,
+                                        ).toLocaleDateString("ar-SA")}
+                                        )
+                                      </span>
+                                    )}
                                 </td>
                               </tr>
                             </tbody>
                           </table>
 
                           {/* الملاحظة التقديرية */}
-                          {timelineState.showTimelineNotes && timelineState.timelineNotes && (
-                            <div className="mt-2 text-[10px] font-bold text-slate-500 leading-relaxed text-justify">
-                              * {timelineState.timelineNotes}
-                            </div>
-                          )}
+                          {timelineState.showTimelineNotes &&
+                            timelineState.timelineNotes && (
+                              <div className="mt-2 text-[10px] font-bold text-slate-500 leading-relaxed text-justify">
+                                * {timelineState.timelineNotes}
+                              </div>
+                            )}
                         </section>
                       )}
 
@@ -2187,7 +2487,8 @@ export const LivePreview = ({ data }) => {
                                 className="p-2.5 border-l w-1/2"
                                 style={{ borderColor: selectedStyle.accent }}
                               >
-                                الطرف الثاني: اعتماد المالك أو المستفيد أو من يمثله 
+                                الطرف الثاني: اعتماد المالك أو المستفيد أو من
+                                يمثله
                               </th>
                               <th className="p-2.5 w-1/2">
                                 الطرف الأول: اعتماد مقدم الخدمة
