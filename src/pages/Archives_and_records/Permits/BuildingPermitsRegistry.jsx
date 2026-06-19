@@ -27,12 +27,10 @@ import {
   RefreshCw,
   X,
 } from "lucide-react";
-
-import { ModalPermitDetails } from "./components/ModalPermitDetails";
+import { ModalPermitDetails } from "./PermitDetails/ModalPermitDetails";
 import { ModalManualPermit } from "./components/ModalManualPermit";
 import { ModalUploadAi } from "./components/ModalUploadAi";
 import { AiBadge, FormBadge } from "./components/PermitSharedUI";
-import { formatDate } from "./utils/permitHelpers";
 
 const COLUMNS = [
   { key: "permitNumber", label: "رقم الرخصة", width: 110 },
@@ -700,7 +698,9 @@ export default function BuildingPermitsRegistry({ fixedOffice = null }) {
                               className="px-2 py-1.5 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 flex items-center gap-1"
                             >
                               <Edit3 size={14} />
-                              <span className="text-[10px] font-bold">تعديل</span>
+                              <span className="text-[10px] font-bold">
+                                تعديل
+                              </span>
                             </button>
                             <button
                               onClick={() => {

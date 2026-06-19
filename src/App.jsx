@@ -402,7 +402,7 @@ function App() {
             <Route path="/req/:shortLink" element={<ClientRequestWrapper />} />
             <Route path="/s/:shortLink" element={<ClientDownloadWrapper />} />
             <Route path="/shared/bank/:id" element={<SharedBankAccount />} />
-            <Route path="/quote/:barcode" element={<QuoteVerificationPage />} />
+            <Route path="/verify/quote/:barcode" element={<QuoteVerificationPage />} />
             <Route
               path="/verify/:refNumber"
               element={<MinuteVerificationPage />}
