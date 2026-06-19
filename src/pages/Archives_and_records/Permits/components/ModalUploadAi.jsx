@@ -204,6 +204,7 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
     try {
       const fd = new FormData();
       fd.append("file", file);
+      fd.append("processingMode", "INTERACTIVE");
 
       if (fixedOffice) {
         fd.append("fixedOffice", fixedOffice);
@@ -231,8 +232,6 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
     }
   };
 
-  // داخل ModalUploadAi.jsx
-
   useEffect(() => {
     let interval;
     if (jobId) {
@@ -249,27 +248,69 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
             setJobId(null);
             setProgress(100);
 
-            // 👈 إظهار إشعار ذكي
-            toast.success(
-              "تم الحفظ بنجاح! 🚀 (الرخص المكررة تحمل حالة 'بانتظار الدمج')",
+            // 🚀 الحل الجذري: حلقة فك التشفير (Double Stringification Fix)
+            let parsedResult = job.result;
+
+            // الاستمرار بفك التشفير طالما أن النتيجة لا تزال نصاً (String)
+            while (typeof parsedResult === "string") {
+              try {
+                parsedResult = JSON.parse(parsedResult);
+              } catch (e) {
+                console.error("خطأ في فك تشفير JSON:", e);
+                break; // نخرج من الحلقة إذا فشل الـ Parse لسبب آخر
+              }
+            }
+
+            console.log(
+              "🔥 البيانات المستلمة بعد فك التشفير العميق:",
+              parsedResult,
             );
 
-            // تحديث الجدول لظهور الرخص الجديدة فوراً
-            queryClient.invalidateQueries(["building-permits"]);
+            // توحيد شكل البيانات لمعالجة أي هيكل قادم من السيرفر بمرونة
+            let finalPermits = [];
+            let actionStatus = "NEEDS_REVIEW"; // الحالة الافتراضية
 
-            // إغلاق النافذة بصمت بعد ثانية
-            setTimeout(() => {
-              onClose();
-            }, 1000);
+            if (Array.isArray(parsedResult)) {
+              // إذا كان الخادم يرجع مصفوفة مباشرة
+              finalPermits = parsedResult;
+            } else if (parsedResult && typeof parsedResult === "object") {
+              // إذا كان الخادم يرجع العقد المنطقي { status, data }
+              finalPermits = parsedResult.data || parsedResult.permits || [];
+              actionStatus = parsedResult.status || "NEEDS_REVIEW";
+            }
+
+            // ✅ التحقق النهائي وفتح نافذة المراجعة
+            if (finalPermits.length > 0) {
+              if (
+                actionStatus === "NEEDS_REVIEW" ||
+                finalPermits[0]?._action === "REVIEW_NEEDED"
+              ) {
+                toast.success("تم الانتهاء من التحليل! يرجى مراجعة البيانات.");
+                processAiResults(finalPermits); // سينقلك هذا للخطوة 2 مع البيانات المعبأة
+              } else if (
+                actionStatus === "AUTO_SAVED" ||
+                finalPermits[0]?._action === "CREATED"
+              ) {
+                toast.success("تم الحفظ بنجاح! 🚀");
+                queryClient.invalidateQueries(["building-permits"]);
+                setTimeout(() => onClose(), 1000);
+              } else {
+                // حالة الطوارئ كصمام أمان: نعرض البيانات للمراجعة بدلاً من إضاعتها
+                toast.success("تم استخراج البيانات، يرجى المراجعة.");
+                processAiResults(finalPermits);
+              }
+            } else {
+              toast.error("فشل استخراج البيانات من الملف رغم انتهاء المهمة.");
+            }
           } else if (job.status === "FAILED") {
             clearInterval(interval);
             setJobId(null);
-            toast.error(job.errorMessage || "فشل التحليل الذكي.");
+            toast.error(job.errorMessage || "فشل التحليل الذكي في الخلفية.");
           }
         } catch (error) {
           console.error("خطأ في متابعة المهمة:", error);
         }
-      }, 2000);
+      }, 2000); // يفحص كل ثانيتين
     }
     return () => clearInterval(interval);
   }, [jobId]);
@@ -280,36 +321,59 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
       return toast.error("لم يتم العثور على أي رخص صالحة في الملف.");
     toast.success(`تم استخراج ومطابقة ${aiPermits.length} رخصة بنجاح!`);
 
-    const mappedPermits = aiPermits.map((p) => ({
-      ...p,
-      permitNumber: toEnglishNumbers(p.permitNumber || ""),
-      issueDate: toEnglishNumbers(p.issueDate || ""),
-      expiryDate: toEnglishNumbers(p.expiryDate || ""),
-      year: toEnglishNumbers(p.year || new Date().getFullYear()),
-      type: p.type || "غير محدد",
-      form: p.form || "أخضر",
-      ownerName: p.ownerName || "",
-      idNumber: toEnglishNumbers(p.idNumber || ""),
-      district: p.district || "",
-      sector: p.sector || "",
-      plotNumber: toEnglishNumbers(p.plotNumber || ""),
-      planNumber: toEnglishNumbers(p.planNumber || ""),
-      landArea: toEnglishNumbers(p.landArea || ""),
-      mainUsage: p.mainUsage || p.usage || "سكني",
-      subUsage: p.subUsage || "",
-      engineeringOffice: fixedOffice || p.engineeringOffice || "",
-      notes: p.notes || "",
-      detailedReport: p.detailedReport || "",
-      componentsData: p.componentsData || [],
-      boundariesData: p.boundariesData || [],
-      source: "رفع يدوي (AI)",
-      linkedClientId: p.linkedClientId || "",
-      linkedOfficeId: p.linkedOfficeId || "",
-      linkedDistrictId: p.linkedDistrictId || "",
-      linkedPlanId: p.linkedPlanId || "",
-      linkedOwnershipId: "",
-      linkedTransactionId: "",
-    }));
+    const mappedPermits = aiPermits.map((p) => {
+      // 💡 1. معالجة اسم الحي: إذا كان ID نقوم بتحويله للاسم العربي
+      let finalDistrict = p.district || "";
+      if (finalDistrict.length > 20 && flatDistricts.length > 0) {
+        const found = flatDistricts.find((d) => d.id === finalDistrict);
+        if (found) finalDistrict = found.name;
+      }
+
+      // 💡 2. معالجة اسم العميل: تجنباً لظهور ID بدلاً من الاسم
+      let finalClient = p.ownerName || "";
+      if (finalClient.length > 20 && clients.length > 0) {
+        const found = clients.find((c) => c.id === finalClient);
+        if (found) finalClient = found.name;
+      }
+
+      // 💡 3. معالجة اسم المكتب: تجنباً لظهور ID بدلاً من الاسم
+      let finalOffice = fixedOffice || p.engineeringOffice || "";
+      if (finalOffice.length > 20 && offices.length > 0) {
+        const found = offices.find((o) => o.id === finalOffice);
+        if (found) finalOffice = found.nameAr || found.nameEn;
+      }
+
+      return {
+        ...p,
+        permitNumber: toEnglishNumbers(p.permitNumber || ""),
+        issueDate: toEnglishNumbers(p.issueDate || ""),
+        expiryDate: toEnglishNumbers(p.expiryDate || ""),
+        year: toEnglishNumbers(p.year || new Date().getFullYear()),
+        type: p.type || "غير محدد",
+        form: p.form || "أخضر",
+        ownerName: finalClient, // 👈 استخدام الاسم النظيف
+        idNumber: toEnglishNumbers(p.idNumber || ""),
+        district: finalDistrict, // 👈 استخدام الحي النظيف
+        sector: p.sector || "",
+        plotNumber: toEnglishNumbers(p.plotNumber || ""),
+        planNumber: toEnglishNumbers(p.planNumber || ""),
+        landArea: toEnglishNumbers(p.landArea || ""),
+        mainUsage: p.mainUsage || p.usage || "سكني",
+        subUsage: p.subUsage || "",
+        engineeringOffice: finalOffice, // 👈 استخدام المكتب النظيف
+        notes: p.notes || "",
+        detailedReport: p.detailedReport || "",
+        componentsData: p.componentsData || [],
+        boundariesData: p.boundariesData || [],
+        source: "رفع يدوي (AI)",
+        linkedClientId: p.linkedClientId || "",
+        linkedOfficeId: p.linkedOfficeId || "",
+        linkedDistrictId: p.linkedDistrictId || "",
+        linkedPlanId: p.linkedPlanId || "",
+        linkedOwnershipId: "",
+        linkedTransactionId: "",
+      };
+    });
 
     setPermits(mappedPermits);
     setStep(2);
@@ -378,7 +442,6 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
   };
 
   const handleApplyLink = () => {
-    /* ... (كما هي بدون تغيير) ... */
     if (!selectedValue) return toast.error("يرجى اختيار السجل من القائمة");
     const updated = [...permits];
     if (linkingMode === "client")
@@ -442,7 +505,6 @@ export function ModalUploadAi({ onClose, fixedOffice }) {
             ارفع ملف الرخصة، اسحبه هنا، أو الصقه (Ctrl+V) وسنقوم بتفريغه.
           </p>
 
-          {/* حالة قيد التحليل (عرض شريط التحميل) */}
           {/* حالة قيد التحليل (عرض شريط التحميل) */}
           {jobId ? (
             <div className="w-full flex flex-col items-center py-6">
