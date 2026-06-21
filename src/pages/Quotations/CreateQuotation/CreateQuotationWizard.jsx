@@ -103,6 +103,7 @@ const CreateQuotationWizard = (incomingProps) => {
   const [transactionSearch, setTransactionSearch] = useState("");
   const [selectedMeeting, setSelectedMeeting] = useState("");
   const [meetingSearch, setMeetingSearch] = useState("");
+  const [showSummaryTable, setShowSummaryTable] = useState(true);
 
   const [issueDate, setIssueDate] = useState(
     new Date().toISOString().split("T")[0],
@@ -673,6 +674,7 @@ const CreateQuotationWizard = (incomingProps) => {
       secondPartyName,
       secondPartyRep,
       showTimeline: timelineState.showTimeline,
+      showSummaryTable,
       totalDuration: Number(timelineState.totalDuration),
       durationUnit: timelineState.durationUnit,
       startConditions: timelineState.startConditions,
@@ -756,6 +758,8 @@ const CreateQuotationWizard = (incomingProps) => {
     setSubject,
     address,
     setAddress,
+    showSummaryTable,     // 👈 2. أضف هذا السطر
+    setShowSummaryTable,  // 👈 وأضف هذا السطر
     selectedClient,
     setSelectedClient: handleClientSelection,
     selectedProperty,
@@ -1033,6 +1037,7 @@ const CreateQuotationWizard = (incomingProps) => {
       existingQuote?.ownership?.boundaries ||
       [],
     timelineState: timelineState,
+    showSummaryTable,
   };
 
   return (

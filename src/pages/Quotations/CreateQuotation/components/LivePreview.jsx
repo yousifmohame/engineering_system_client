@@ -151,6 +151,7 @@ export const LivePreview = ({ data }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [zoomScale, setZoomScale] = useState(0.68);
   const [bgType, setBgType] = useState("official1");
+  const [selectedFont, setSelectedFont] = useState("Tajawal");
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const componentRef = useRef(null);
 
@@ -226,6 +227,7 @@ export const LivePreview = ({ data }) => {
     customUsufructType,
     documentType,
     timelineState,
+    showSummaryTable = true,
   } = data || {};
 
   const getQuotationStatusBadge = () => {
@@ -362,9 +364,16 @@ export const LivePreview = ({ data }) => {
   const handlePrint = async () => {
     setIsGeneratingPdf(true);
     try {
-      const response = await api.post("/quotations/generate-pdf", data, {
+      const printData = {
+        ...data,
+        bgType: bgType,
+        fontFamily: selectedFont,
+      };
+
+      const response = await api.post("/quotations/generate-pdf", printData, {
         responseType: "blob",
       });
+
       const blob = new Blob([response.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -391,6 +400,7 @@ export const LivePreview = ({ data }) => {
     backgroundSize: `${A4_WIDTH_PX}px 1123px`,
     backgroundRepeat: "repeat-y",
     backgroundPosition: "top center",
+    fontFamily: selectedFont,
   };
 
   const clientTypeTranslations = {
@@ -553,6 +563,7 @@ export const LivePreview = ({ data }) => {
       <div className="shrink-0 border-b border-[#e8ddc8] bg-white px-3 py-2 z-10 shadow-sm">
         <div className="mx-auto max-w-[980px] rounded-[18px] border border-[#d8b46a]/25 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white p-2 shadow-[0_4px_12px_rgba(18,63,89,0.04)]">
           <div className="flex min-w-0 items-center justify-between gap-2">
+            {/* اختيار الخلفية */}
             <div className="flex items-center gap-1.5 px-2 py-1 bg-white border border-[#d8b46a]/25 rounded-xl shadow-sm">
               <ShieldCheck className="w-3.5 h-3.5 text-[#c5983c]" />
               <select
@@ -565,6 +576,21 @@ export const LivePreview = ({ data }) => {
                     {bg.label}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            {/* 🌟 اختيار الخط الجديد */}
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-white border border-[#d8b46a]/25 rounded-xl shadow-sm">
+              <FileText className="w-3.5 h-3.5 text-[#c5983c]" />
+              <select
+                value={selectedFont}
+                onChange={(e) => setSelectedFont(e.target.value)}
+                className="bg-transparent text-[10px] font-black text-[#123f59] outline-none cursor-pointer"
+              >
+                <option value="Tajawal">تجوال (Tajawal)</option>
+                <option value="Cairo">القاهرة (Cairo)</option>
+                <option value="Almarai">المراعي (Almarai)</option>
+                <option value="Arial">Arial</option>
               </select>
             </div>
             <div className="flex min-w-0 flex-1 items-center justify-end gap-1 overflow-x-auto custom-scrollbar-slim">
@@ -649,111 +675,113 @@ export const LivePreview = ({ data }) => {
               }}
             >
               {/* 🚀 التعديل هنا: جدول الاعتمادات العلوي المدمج (لصفحة الغلاف) */}
-              <div className="absolute top-5 left-8 right-8 z-20">
-                <table
-                  className="w-full border-collapse bg-white/95 backdrop-blur-sm shadow-sm text-right"
-                  style={{ border: `2px solid ${selectedStyle.accent}` }}
-                >
-                  <tbody>
-                    <tr>
-                      {/* العمود الأيمن: الـ QR */}
-                      <td
-                        className="w-[30%] p-2 text-center align-middle"
-                        style={{
-                          borderLeft: `2px solid ${selectedStyle.accent}`,
-                        }}
-                      >
-                        <div className="flex flex-col items-center justify-center gap-1">
-                          {/* في نافذة الـ Preview للفرونت إند لا يوجد verificationQrImage مولد بشكل حقيقي، لذا نضع أيقونة توضيحية */}
-                          <div className="w-14 h-14 border border-dashed border-slate-300 flex items-center justify-center bg-slate-50">
-                            <span className="text-[8px] text-slate-400 font-black">
-                              QR
+              {showSummaryTable && (
+                <div className="absolute bottom-20 left-8 right-8 z-20">
+                  <table
+                    className="w-full border-collapse bg-white/95 backdrop-blur-sm shadow-sm text-right"
+                    style={{ border: `2px solid ${selectedStyle.accent}` }}
+                  >
+                    <tbody>
+                      <tr>
+                        {/* العمود الأيمن: الـ QR */}
+                        <td
+                          className="w-[30%] p-2 text-center align-middle"
+                          style={{
+                            borderLeft: `2px solid ${selectedStyle.accent}`,
+                          }}
+                        >
+                          <div className="flex flex-col items-center justify-center gap-1">
+                            {/* في نافذة الـ Preview للفرونت إند لا يوجد verificationQrImage مولد بشكل حقيقي، لذا نضع أيقونة توضيحية */}
+                            <div className="w-14 h-14 border border-dashed border-slate-300 flex items-center justify-center bg-slate-50">
+                              <span className="text-[8px] text-slate-400 font-black">
+                                QR
+                              </span>
+                            </div>
+                            <span className="text-[8px] font-black text-[#123f59] leading-tight">
+                              شركة ديتيلز كونسولتس
+                              <br />
+                              للاستشارات الهندسية
                             </span>
                           </div>
-                          <span className="text-[8px] font-black text-[#123f59] leading-tight">
-                            شركة ديتيلز كونسولتس
-                            <br />
-                            للاستشارات الهندسية
-                          </span>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* العمود الأوسط: حالات الاعتماد */}
-                      <td
-                        className="w-[40%] p-0 align-top"
-                        style={{
-                          borderLeft: `2px solid ${selectedStyle.accent}`,
-                        }}
-                      >
-                        <div className="flex flex-col h-full">
-                          <div className="flex justify-between px-3 py-2 border-b border-slate-300 flex-1 items-center">
-                            <span className="text-[11px] font-black text-slate-600">
-                              حالة السريان
-                            </span>
-                            <span
-                              className={`text-[11px] font-black ${validityColor}`}
-                            >
-                              {validityText}
-                            </span>
+                        {/* العمود الأوسط: حالات الاعتماد */}
+                        <td
+                          className="w-[40%] p-0 align-top"
+                          style={{
+                            borderLeft: `2px solid ${selectedStyle.accent}`,
+                          }}
+                        >
+                          <div className="flex flex-col h-full">
+                            <div className="flex justify-between px-3 py-2 border-b border-slate-300 flex-1 items-center">
+                              <span className="text-[11px] font-black text-slate-600">
+                                حالة السريان
+                              </span>
+                              <span
+                                className={`text-[11px] font-black ${validityColor}`}
+                              >
+                                {validityText}
+                              </span>
+                            </div>
+                            <div className="flex justify-between px-3 py-2 border-b border-slate-300 flex-1 items-center">
+                              <span className="text-[11px] font-black text-slate-600">
+                                اعتماد الطرف الأول
+                              </span>
+                              <span
+                                className={`text-[11px] font-black ${firstPartyStatusColor}`}
+                              >
+                                {firstPartyStatusText}
+                              </span>
+                            </div>
+                            <div className="flex justify-between px-3 py-2 flex-1 items-center">
+                              <span className="text-[11px] font-black text-slate-600">
+                                اعتماد الطرف الثاني
+                              </span>
+                              <span
+                                className={`text-[11px] font-black ${secondPartyStatusColor}`}
+                              >
+                                {secondPartyStatusText}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex justify-between px-3 py-2 border-b border-slate-300 flex-1 items-center">
-                            <span className="text-[11px] font-black text-slate-600">
-                              اعتماد الطرف الأول
-                            </span>
-                            <span
-                              className={`text-[11px] font-black ${firstPartyStatusColor}`}
-                            >
-                              {firstPartyStatusText}
-                            </span>
-                          </div>
-                          <div className="flex justify-between px-3 py-2 flex-1 items-center">
-                            <span className="text-[11px] font-black text-slate-600">
-                              اعتماد الطرف الثاني
-                            </span>
-                            <span
-                              className={`text-[11px] font-black ${secondPartyStatusColor}`}
-                            >
-                              {secondPartyStatusText}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* العمود الأيسر: بيانات العقار */}
-                      <td className="w-[30%] p-0 align-top">
-                        <div className="flex flex-col h-full">
-                          <div className="flex justify-between px-3 py-2 border-b border-slate-300 flex-1 items-center">
-                            <span className="text-[11px] font-black text-slate-600">
-                              اسم الحي
-                            </span>
-                            <span className="text-[11px] font-black text-[#123f59] truncate max-w-[100px]">
-                              {propertyDistrict || "---"}
-                            </span>
+                        {/* العمود الأيسر: بيانات العقار */}
+                        <td className="w-[30%] p-0 align-top">
+                          <div className="flex flex-col h-full">
+                            <div className="flex justify-between px-3 py-2 border-b border-slate-300 flex-1 items-center">
+                              <span className="text-[11px] font-black text-slate-600">
+                                اسم الحي
+                              </span>
+                              <span className="text-[11px] font-black text-[#123f59] truncate max-w-[100px]">
+                                {propertyDistrict || "---"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between px-3 py-2 border-b border-slate-300 flex-1 items-center">
+                              <span className="text-[11px] font-black text-slate-600">
+                                مساحة الأرض
+                              </span>
+                              <span className="text-[11px] font-mono font-black text-[#123f59]">
+                                {formatArea(totalPlotsArea)} م²
+                              </span>
+                            </div>
+                            <div className="flex justify-between px-3 py-2 bg-slate-50 flex-1 items-center">
+                              <span className="text-[10px] font-black text-slate-600">
+                                إجمالي قيمة مع الضريبة
+                              </span>
+                              <span className="text-[12px] font-mono font-black text-emerald-700">
+                                {formatCurrency(finalPayable)}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex justify-between px-3 py-2 border-b border-slate-300 flex-1 items-center">
-                            <span className="text-[11px] font-black text-slate-600">
-                              مساحة الأرض
-                            </span>
-                            <span className="text-[11px] font-mono font-black text-[#123f59]">
-                              {formatArea(totalPlotsArea)} م²
-                            </span>
-                          </div>
-                          <div className="flex justify-between px-3 py-2 bg-slate-50 flex-1 items-center">
-                            <span className="text-[10px] font-black text-slate-600">
-                              إجمالي قيمة مع الضريبة
-                            </span>
-                            <span className="text-[12px] font-mono font-black text-emerald-700">
-                              {formatCurrency(finalPayable)}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
               <div className="absolute inset-0 flex flex-col justify-between items-center text-center p-[80px]">
-                <div className="w-full mt-12 flex flex-col items-center justify-center gap-5 bg-transparent">
+                <div className="w-full mt-1 flex flex-col items-center justify-center gap-5 bg-transparent">
                   {/* 🌟 الشعار */}
                   <div className="w-[300px] flex items-center justify-center">
                     <img
@@ -1770,7 +1798,6 @@ export const LivePreview = ({ data }) => {
                               >
                                 وصف الخدمة
                               </th>
-                              
                             </tr>
                           </thead>
                           <tbody className="font-bold text-[#123f59]">

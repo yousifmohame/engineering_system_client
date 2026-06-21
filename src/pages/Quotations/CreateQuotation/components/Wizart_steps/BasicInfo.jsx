@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FileSearch, Loader2, Type, ChevronDown, MapPin, AlignLeft, Book } from "lucide-react";
+import { FileSearch, Loader2, Type, ChevronDown, AlignLeft, Book } from "lucide-react";
 
 const IconWithText = ({
   icon: Icon,
@@ -43,12 +43,15 @@ const getFallbackHijriYears = () => {
 
 export const Step1BasicInfo = ({ props }) => {
   const {
-    // 🌟 المتغيرات الجديدة التي تمت إضافتها
     subject,
     setSubject,
     address,
     setAddress,
     
+    // 🌟 المتغيرات الجديدة الخاصة بالجدول
+    showSummaryTable = true,
+    setShowSummaryTable,
+
     // المتغيرات السابقة
     issueDate,
     setIssueDate,
@@ -81,7 +84,7 @@ export const Step1BasicInfo = ({ props }) => {
   return (
     <div className="animate-in fade-in duration-300">
       
-      {/* 🌟 كارت العناوين الرئيسية (الموضوع والعنوان) */}
+      {/* كارت العناوين الرئيسية (الموضوع والعنوان) */}
       <div className="p-4 bg-white rounded-xl border border-[#d8b46a]/25 border-r-[3px] border-r-indigo-500 mb-3 shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
         <div className="text-xs font-bold text-indigo-700 mb-4 flex min-w-0 items-center gap-1.5">
           <IconWithText icon={AlignLeft} iconClassName="w-4 h-4" /> البيانات الوصفية للمستند
@@ -122,7 +125,7 @@ export const Step1BasicInfo = ({ props }) => {
         </div>
       </div>
 
-      {/* 🌟 كارت معلومات العرض العامة (التواريخ والصلاحية) */}
+      {/* كارت معلومات العرض العامة (التواريخ والصلاحية وإعدادات العرض) */}
       <div className="p-3 bg-white rounded-xl border border-[#d8b46a]/25 mb-3 shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <div>
@@ -150,7 +153,7 @@ export const Step1BasicInfo = ({ props }) => {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-3 justify-center md:justify-start">
+        <div className="flex flex-wrap gap-2 mb-4 justify-center md:justify-start">
           {[3, 7, 14, 30, 60, "unlimited"].map((val) => (
             <button
               key={val}
@@ -166,31 +169,50 @@ export const Step1BasicInfo = ({ props }) => {
           ))}
         </div>
 
-        <div className="flex min-w-0 items-center gap-2 pt-3 border-t border-[#e8ddc8]">
-          <label className="text-[11px] font-bold text-[#475569]">
-            قابل للتجديد التلقائي؟
-          </label>
-          <button
-            onClick={() => setIsRenewable(!isRenewable)}
-            className={`px-4 py-1 rounded-full text-[10px] font-bold cursor-pointer border transition-colors ${
-              isRenewable
-                ? "bg-emerald-50 text-[#0f766e] border-emerald-200 shadow-sm"
-                : "bg-[#fbf8f1] text-[#94a3b8] border-[#d8b46a]/25 hover:bg-[#eef7f6]"
-            }`}
-          >
-            {isRenewable ? "نعم" : "لا"}
-          </button>
+        {/* 🚀 التعديل هنا: دمج خيار التجديد مع خيار إظهار الجدول في سطر واحد متناسق */}
+        <div className="flex flex-col sm:flex-row min-w-0 items-start sm:items-center gap-6 pt-3 border-t border-[#e8ddc8]">
+          <div className="flex items-center gap-2">
+            <label className="text-[11px] font-bold text-[#475569]">
+              قابل للتجديد التلقائي؟
+            </label>
+            <button
+              onClick={() => setIsRenewable(!isRenewable)}
+              className={`px-4 py-1 rounded-full text-[10px] font-bold cursor-pointer border transition-colors ${
+                isRenewable
+                  ? "bg-emerald-50 text-[#0f766e] border-emerald-200 shadow-sm"
+                  : "bg-[#fbf8f1] text-[#94a3b8] border-[#d8b46a]/25 hover:bg-[#eef7f6]"
+              }`}
+            >
+              {isRenewable ? "نعم" : "لا"}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-[11px] font-bold text-[#475569]">
+              إظهار جدول الاعتمادات (الخلاصة)؟
+            </label>
+            <button
+              onClick={() => setShowSummaryTable(!showSummaryTable)}
+              className={`px-4 py-1 rounded-full text-[10px] font-bold cursor-pointer border transition-colors ${
+                showSummaryTable !== false
+                  ? "bg-emerald-50 text-[#0f766e] border-emerald-200 shadow-sm"
+                  : "bg-rose-50 text-rose-600 border-rose-200 shadow-sm hover:bg-rose-100"
+              }`}
+            >
+              {showSummaryTable !== false ? "إظهار" : "إخفاء"}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 🌟 كارت بيانات الخدمة والمراجع */}
+      {/* كارت بيانات الخدمة والمراجع */}
       <div className="p-4 bg-white rounded-xl border border-[#d8b46a]/25 border-r-[3px] border-r-cyan-600 mb-3 shadow-[0_8px_22px_rgba(18,63,89,0.06)] relative">
         <div className="text-xs font-bold text-cyan-700 mb-4 flex min-w-0 items-center gap-1.5">
           <IconWithText icon={FileSearch} iconClassName="w-4 h-4" /> بيانات
           الخدمة والرخصة
         </div>
 
-        {/* 🚀 حقل نوع الخدمة في سطر منفصل */}
+        {/* حقل نوع الخدمة في سطر منفصل */}
         <div className="mb-4">
           <label className="block text-[11px] font-bold text-[#475569] mb-1.5">
             نوع الخدمة / المعاملة <span className="text-red-500">*</span>
