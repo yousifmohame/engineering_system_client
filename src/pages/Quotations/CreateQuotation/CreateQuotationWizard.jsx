@@ -274,22 +274,26 @@ const CreateQuotationWizard = (incomingProps) => {
       setRepName(rep.name || "");
       setRepIdNumber(rep.idNumber || "");
 
+      // 👇 التعديلات تبدأ من هنا (ربط نوع الممثل بأسلوب التعامل) 👇
       if (rep.type === "وكيل") {
         setSignatureMethod("AGENT");
         setAuthDocType("وكالة");
+        setHandlingMethod("وكيل بموجب وكالة"); // 👈 تأكد أن هذا النص مطابق تماماً لما هو موجود في مصفوفة HANDLING_METHODS
       } else if (rep.type === "مفوض") {
         setSignatureMethod("AUTHORIZED");
         setAuthDocType("تفويض");
+        setHandlingMethod("مفوض بموجب تفويض"); // 👈 تأكد من تطابق النص
       } else if (rep.type === "ناظر") {
         setSignatureMethod("AUTHORIZED");
         setAuthDocType("مستفيد");
         setCustomUsufructType("صك نظارة");
+        setHandlingMethod("ناظر وقف"); // 👈 تأكد من تطابق النص
       } else {
         setSignatureMethod("AUTHORIZED");
         setAuthDocType("تفويض");
+        setHandlingMethod("مفوض بموجب تفويض");
       }
-
-      setAuthDocNumber(rep.docNumber || "");
+      // 👆 نهاية التعديل المضاف 👆
 
       if (rep.issueDate) {
         setAuthDocIssueDate(rep.issueDate.split("T")[0]);
@@ -317,6 +321,9 @@ const CreateQuotationWizard = (incomingProps) => {
       setAuthDocExpiryDate("");
       setShowAuthDocExpiryDate(false);
       setCustomUsufructType("");
+
+      // 👇 إعادة أسلوب التعامل للوضع الافتراضي إذا لم يكن هناك وكيل
+      setHandlingMethod("المالك مباشرة");
     }
   };
 
@@ -415,6 +422,7 @@ const CreateQuotationWizard = (incomingProps) => {
       setShowMissingDocs(existingQuote.showMissingDocs);
       setTermsText(existingQuote.terms || "");
       setConclusion(existingQuote.conclusion || "");
+      setHandlingMethod(existingQuote.handlingMethod || "المالك مباشرة");
       // 👈 واستبدله بهذا الكود:
       setOwnerAttachments(
         (existingQuote.attachments || []).map((a) => ({
@@ -430,22 +438,26 @@ const CreateQuotationWizard = (incomingProps) => {
       let parsedStartConditions = ["DOCUMENTS_RECEIVED"];
       try {
         if (existingQuote.startConditions) {
-           parsedStartConditions = typeof existingQuote.startConditions === 'string'
-             ? JSON.parse(existingQuote.startConditions)
-             : existingQuote.startConditions;
+          parsedStartConditions =
+            typeof existingQuote.startConditions === "string"
+              ? JSON.parse(existingQuote.startConditions)
+              : existingQuote.startConditions;
         }
       } catch (e) {}
 
       // استخراج الخدمات التي تم تحديد مدة لها مسبقاً
       const mappedTimelineItems = (existingQuote.items || [])
-        .filter(i => i.executionDuration !== null && i.executionDuration !== undefined)
+        .filter(
+          (i) =>
+            i.executionDuration !== null && i.executionDuration !== undefined,
+        )
         .map((i, idx) => ({
-           id: `time_${Date.now()}_${idx}`,
-           itemId: String(i.id), // يجب أن يكون نصياً ليتطابق مع الـ Select
-           duration: i.executionDuration,
-           unit: i.durationUnit || existingQuote.durationUnit || "WORKING_DAY",
-           notes: i.timelineNotes || "",
-           showInQuote: i.showInTimeline !== false
+          id: `time_${Date.now()}_${idx}`,
+          itemId: String(i.id), // يجب أن يكون نصياً ليتطابق مع الـ Select
+          duration: i.executionDuration,
+          unit: i.durationUnit || existingQuote.durationUnit || "WORKING_DAY",
+          notes: i.timelineNotes || "",
+          showInQuote: i.showInTimeline !== false,
         }));
 
       setTimelineState({
@@ -453,11 +465,15 @@ const CreateQuotationWizard = (incomingProps) => {
         totalDuration: existingQuote.totalDuration || 20,
         durationUnit: existingQuote.durationUnit || "WORKING_DAY",
         startConditions: parsedStartConditions,
-        customStartDate: existingQuote.customStartDate ? existingQuote.customStartDate.split("T")[0] : "",
+        customStartDate: existingQuote.customStartDate
+          ? existingQuote.customStartDate.split("T")[0]
+          : "",
         showEndDate: existingQuote.showEndDate ?? false,
         timelineItems: mappedTimelineItems,
         showTimelineNotes: existingQuote.showTimelineNotes ?? true,
-        timelineNotes: existingQuote.timelineNotes || "المدة الموضحة أعلاه تقديرية وتُحتسب كأيام عمل، ولا تشمل العطلات الأسبوعية أو الرسمية أو مدد التأخير الناتجة عن نقص المستندات أو متطلبات الجهات ذات العلاقة."
+        timelineNotes:
+          existingQuote.timelineNotes ||
+          "المدة الموضحة أعلاه تقديرية وتُحتسب كأيام عمل، ولا تشمل العطلات الأسبوعية أو الرسمية أو مدد التأخير الناتجة عن نقص المستندات أو متطلبات الجهات ذات العلاقة.",
       });
     }
   }, [existingQuote]);
@@ -758,8 +774,8 @@ const CreateQuotationWizard = (incomingProps) => {
     setSubject,
     address,
     setAddress,
-    showSummaryTable,     // 👈 2. أضف هذا السطر
-    setShowSummaryTable,  // 👈 وأضف هذا السطر
+    showSummaryTable, // 👈 2. أضف هذا السطر
+    setShowSummaryTable, // 👈 وأضف هذا السطر
     selectedClient,
     setSelectedClient: handleClientSelection,
     selectedProperty,

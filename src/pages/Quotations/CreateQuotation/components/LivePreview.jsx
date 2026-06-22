@@ -128,6 +128,8 @@ const EditableSpan = ({
   placeholder = "---",
   isEditMode,
   className = "",
+  dataObj, // 👈 تمرير كائن البيانات
+  dataKey, // 👈 مفتاح الحقل المراد تعديله
 }) => {
   const [localValue, setLocalValue] = useState(value);
   useEffect(() => {
@@ -135,11 +137,21 @@ const EditableSpan = ({
       setLocalValue(value);
     }
   }, [value]);
+
+  const handleBlur = (e) => {
+    const newVal = e.currentTarget.textContent;
+    setLocalValue(newVal);
+    // حفظ القيمة المعدلة مباشرة في كائن البيانات الذي سيرسل للباك إند
+    if (dataObj && dataKey) {
+      dataObj[dataKey] = newVal;
+    }
+  };
+
   return (
     <span
       contentEditable={isEditMode}
       suppressContentEditableWarning
-      onBlur={(e) => setLocalValue(e.currentTarget.textContent)}
+      onBlur={handleBlur}
       className={`outline-none transition-colors ${isEditMode ? "bg-amber-50 border-b border-dashed border-amber-400 px-1 min-w-[50px] inline-block cursor-text text-amber-900" : ""} ${className}`}
     >
       {localValue || (isEditMode ? "" : placeholder)}
@@ -425,29 +437,29 @@ export const LivePreview = ({ data }) => {
     clientType ? String(clientType).replace(/_/g, " ") : "العميل",
   );
 
-  const renderClientRepresentation = () => {
-    if (signatureMethod === "SELF" || !signatureMethod) return null;
+  // const renderClientRepresentation = () => {
+  //   if (signatureMethod === "SELF" || !signatureMethod) return null;
 
-    let text = `ويمثل العميل (${safeClientType}) بالتوقيع والاعتماد على هذا العرض السيد/ة: `;
-    text += repName ? `${repName}` : "........................";
-    if (repIdNumber) text += `، (هوية رقم: ${repIdNumber})`;
-    if (repCapacity) text += `، بصفته: ${repCapacity}`;
-    if (authDocType || authDocNumber) {
-      text += `، بموجب `;
-      if (authDocType)
-        text += `${authDocType === "مستند انتفاع" && customUsufructType ? customUsufructType : authDocType} `;
-      if (authDocNumber) text += `رقم (${authDocNumber}) `;
-      if (authDocIssueDate && showAuthDocIssueDate)
-        text += `بتاريخ ${formatDateParts(authDocIssueDate).gregorian}`;
-    }
-    text += ".";
-    return (
-      <div className="mt-2 mb-4 flex items-start gap-2 text-[12px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-3">
-        <Scale className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-        <p className="leading-relaxed">{text}</p>
-      </div>
-    );
-  };
+  //   let text = `ويمثل العميل (${safeClientType}) بالتوقيع والاعتماد على هذا العرض السيد/ة: `;
+  //   text += repName ? `${repName}` : "........................";
+  //   if (repIdNumber) text += `، (هوية رقم: ${repIdNumber})`;
+  //   if (repCapacity) text += `، بصفته: ${repCapacity}`;
+  //   if (authDocType || authDocNumber) {
+  //     text += `، بموجب `;
+  //     if (authDocType)
+  //       text += `${authDocType === "مستند انتفاع" && customUsufructType ? customUsufructType : authDocType} `;
+  //     if (authDocNumber) text += `رقم (${authDocNumber}) `;
+  //     if (authDocIssueDate && showAuthDocIssueDate)
+  //       text += `بتاريخ ${formatDateParts(authDocIssueDate).gregorian}`;
+  //   }
+  //   text += ".";
+  //   return (
+  //     <div className="mt-2 mb-4 flex items-start gap-2 text-[12px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-3">
+  //       <Scale className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+  //       <p className="leading-relaxed">{text}</p>
+  //     </div>
+  //   );
+  // };
 
   const totalPlotsArea = plots.reduce(
     (sum, plot) => sum + (Number(plot.area) || 0),
@@ -831,7 +843,7 @@ export const LivePreview = ({ data }) => {
 
                   {/* 🚀 تم تعديل الـ mb-8 لتصبح ديناميكية */}
                   <p
-                    className={`text-[28px] font-black leading-tight ${signatureMethod !== "SELF" ? "mb-2" : "mb-8"}`}
+                    className={`text-[28px] font-black text-center leading-tight ${signatureMethod !== "SELF" ? "mb-2" : "mb-8"}`}
                     style={{ color: selectedStyle.accent }}
                   >
                     <EditableSpan value={clientTitle} isEditMode={isEditMode} />{" "}
@@ -945,92 +957,65 @@ export const LivePreview = ({ data }) => {
                   <tr>
                     <td style={{ padding: "60px 70px 20px 70px" }}>
                       <div
-                        className="flex justify-between items-start border-b-[3px] pb-4"
+                        className="flex w-full items-stretch justify-between border-b-[3px] pb-4"
                         style={{ borderColor: selectedStyle.accent }}
                       >
-                        <div className="flex h-16 w-48 items-center justify-center bg-transparent">
-                          <div>
-                            <img
-                              src="/logo.jpeg"
-                              alt="Logo"
-                              className="max-h-full max-w-full object-contain mix-blend-multiply"
-                            />
-
-                            {subject && (
-                              <tr>
-                                <td className="border border-[#123f5944] p-2 text-[#475569]">
-                                  الموضوع
-                                </td>
-                                <td className="border border-[#123f5944] p-2 text-[13px] font-bold text-[#123f59]">
-                                  {subject}
-                                </td>
-                              </tr>
-                            )}
+                        {/* المربع الأيمن: الموضوع */}
+                        <div
+                          className="w-[220px] border flex flex-col justify-center p-3 bg-transparent"
+                          style={{ borderColor: `${selectedStyle.accent}44` }}
+                        >
+                          <div className="text-[#475569] text-[10px] mb-1 font-bold">
+                            الموضوع
+                          </div>
+                          <div className="text-[13px] font-bold text-[#123f59] leading-relaxed break-words">
+                            {subject || "—"}
                           </div>
                         </div>
-                        <div className="w-[280px]">
-                          <table
-                            className="w-full text-right border-collapse text-[10px] font-bold border bg-transparent"
+
+                        {/* المربع الأوسط: الشعار */}
+                        <div className="flex flex-1 items-center justify-center px-4 bg-transparent">
+                          <img
+                            src="/logo.jpeg"
+                            alt="Logo"
+                            className="h-16 w-auto object-contain mix-blend-multiply"
+                          />
+                        </div>
+
+                        {/* المربع الأيسر: التاريخ ورقم المرجع */}
+                        <div
+                          className="w-[240px] border flex flex-col bg-transparent"
+                          style={{ borderColor: `${selectedStyle.accent}44` }}
+                        >
+                          <div
+                            className="flex flex-1 border-b"
                             style={{ borderColor: `${selectedStyle.accent}44` }}
                           >
-                            <tbody>
-                              <tr>
-                                <td
-                                  className="p-2 border w-[35%] text-[#475569]"
-                                  style={{
-                                    borderColor: `${selectedStyle.accent}44`,
-                                  }}
-                                >
-                                  نوع المستند
-                                </td>
-                                <td
-                                  className="p-2 border text-[12px] font-black"
-                                  style={{
-                                    borderColor: `${selectedStyle.accent}44`,
-                                    color: selectedStyle.accent,
-                                  }}
-                                >
-                                  {documentType || "عرض سعر خدمات فنية"}
-                                </td>
-                              </tr>
-                              <tr>
-                                <td
-                                  className="p-2 border text-[#475569]"
-                                  style={{
-                                    borderColor: `${selectedStyle.accent}44`,
-                                  }}
-                                >
-                                  التاريخ
-                                </td>
-                                <td
-                                  className="p-2 border text-[9px] font-bold text-[#123f59]"
-                                  style={{
-                                    borderColor: `${selectedStyle.accent}44`,
-                                  }}
-                                >
-                                  {issueDateParts.combined}
-                                </td>
-                              </tr>
-                              <tr>
-                                <td
-                                  className="p-2 border text-[#475569]"
-                                  style={{
-                                    borderColor: `${selectedStyle.accent}44`,
-                                  }}
-                                >
-                                  رقم المرجع
-                                </td>
-                                <td
-                                  className="p-2 border font-mono text-[11px] font-black text-[#123f59]"
-                                  style={{
-                                    borderColor: `${selectedStyle.accent}44`,
-                                  }}
-                                >
-                                  {referenceNumber}
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
+                            <div
+                              className="w-[85px] p-2 border-l text-[#475569] text-[10px] font-bold flex items-center bg-transparent"
+                              style={{
+                                borderColor: `${selectedStyle.accent}44`,
+                              }}
+                            >
+                              التاريخ
+                            </div>
+                            <div className="flex-1 p-2 text-[9px] font-bold text-[#123f59] flex items-center bg-transparent">
+                              {issueDateParts.combined}
+                            </div>
+                          </div>
+                          <div className="flex flex-1 bg-transparent">
+                            <div
+                              className="w-[85px] p-2 border-l text-[#475569] text-[10px] font-bold flex items-center bg-transparent"
+                              style={{
+                                borderColor: `${selectedStyle.accent}44`,
+                              }}
+                            >
+                              رقم المرجع
+                            </div>
+                            <div className="flex-1 p-2 font-mono text-[11px] font-black text-[#123f59] flex items-center bg-transparent">
+                              {referenceNumber}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -1180,7 +1165,7 @@ export const LivePreview = ({ data }) => {
                             placeholder="اسم العميل"
                           />
                         </h4>
-                        {renderClientRepresentation()}
+                        {/* {renderClientRepresentation()} */}
                         <p
                           className="mb-3 mt-3 text-[12px] font-black"
                           style={{ color: selectedStyle.accent }}
@@ -2536,7 +2521,14 @@ export const LivePreview = ({ data }) => {
                                       اسم الجهة / العميل:
                                     </span>{" "}
                                     <span className="font-black text-slate-800">
-                                      {clientNameForPreview}
+                                      {/* 🚀 قابل للتعديل */}
+                                      <EditableSpan
+                                        value={clientNameForPreview}
+                                        dataObj={data}
+                                        dataKey="clientNameForPreview"
+                                        isEditMode={isEditMode}
+                                        placeholder="اسم العميل"
+                                      />
                                     </span>
                                   </div>
                                   <div>
@@ -2544,10 +2536,18 @@ export const LivePreview = ({ data }) => {
                                       يمثلها في التوقيع:
                                     </span>{" "}
                                     <span className="font-black text-slate-800">
-                                      {signatureMethod === "SELF"
-                                        ? "المالك الفعلي ذو العلاقة"
-                                        : repName ||
-                                          "............................"}
+                                      {/* 🚀 قابل للتعديل */}
+                                      <EditableSpan
+                                        value={
+                                          signatureMethod === "SELF"
+                                            ? "المالك الفعلي ذو العلاقة"
+                                            : repName
+                                        }
+                                        dataObj={data}
+                                        dataKey="repName"
+                                        placeholder="............................"
+                                        isEditMode={isEditMode}
+                                      />
                                     </span>
                                   </div>
                                   <div>
@@ -2571,8 +2571,14 @@ export const LivePreview = ({ data }) => {
                                           رقم الهوية / السجل:
                                         </span>{" "}
                                         <span className="font-mono font-black text-slate-800">
-                                          {repIdNumber ||
-                                            "............................"}
+                                          {/* 🚀 قابل للتعديل */}
+                                          <EditableSpan
+                                            value={repIdNumber}
+                                            dataObj={data}
+                                            dataKey="repIdNumber"
+                                            placeholder="............................"
+                                            isEditMode={isEditMode}
+                                          />
                                         </span>
                                       </div>
                                       <div className="flex flex-col gap-1">
@@ -2587,9 +2593,14 @@ export const LivePreview = ({ data }) => {
                                             ):
                                           </span>{" "}
                                           <span className="font-mono font-black text-cyan-900">
-                                            {authDocNumber
-                                              ? `رقم (${authDocNumber})`
-                                              : "............................"}
+                                            {/* 🚀 قابل للتعديل */}
+                                            <EditableSpan
+                                              value={authDocNumber}
+                                              dataObj={data}
+                                              dataKey="authDocNumber"
+                                              placeholder="............................"
+                                              isEditMode={isEditMode}
+                                            />
                                           </span>
                                         </div>
                                         {(showAuthDocIssueDate ||
@@ -2631,8 +2642,14 @@ export const LivePreview = ({ data }) => {
                                       رقم الجوال:
                                     </span>{" "}
                                     <span className="font-mono font-black text-slate-800">
-                                      {repPhone ||
-                                        "............................"}
+                                      {/* 🚀 يقرأ التعديلات */}
+                                      <EditableSpan
+                                        value={repPhone}
+                                        dataObj={data}
+                                        dataKey="repPhone"
+                                        isEditMode={isEditMode}
+                                        placeholder="............................"
+                                      />{" "}
                                     </span>
                                   </div>
                                   <div className="mt-6 text-center text-slate-400 font-bold">
@@ -2664,7 +2681,14 @@ export const LivePreview = ({ data }) => {
                                       إسم ممثل مقدم الخدمة:
                                     </span>{" "}
                                     <span className="font-black text-slate-800">
-                                      {firstPartyRep || "__________________"}
+                                      {/* 🚀 قابل للتعديل */}
+                                      <EditableSpan
+                                        value={firstPartyRep}
+                                        dataObj={data}
+                                        dataKey="firstPartyRep"
+                                        placeholder="__________________"
+                                        isEditMode={isEditMode}
+                                      />
                                     </span>
                                   </div>
                                   <div>
@@ -2672,8 +2696,14 @@ export const LivePreview = ({ data }) => {
                                       صفة ممثل مقدم الخدمة:
                                     </span>{" "}
                                     <span className="font-black text-slate-800">
-                                      {firstPartyRepCapacity ||
-                                        "__________________"}
+                                      {/* 🚀 قابل للتعديل */}
+                                      <EditableSpan
+                                        value={firstPartyRepCapacity}
+                                        dataObj={data}
+                                        dataKey="firstPartyRepCapacity"
+                                        placeholder="__________________"
+                                        isEditMode={isEditMode}
+                                      />
                                     </span>
                                   </div>
                                   {showFirstPartyEmpId && (
@@ -2682,13 +2712,19 @@ export const LivePreview = ({ data }) => {
                                         الرقم الوظيفي:
                                       </span>{" "}
                                       <span className="font-mono font-black text-slate-800">
-                                        {firstPartyEmpCode ||
-                                          "__________________"}
+                                        {/* 🚀 قابل للتعديل */}
+                                        <EditableSpan
+                                          value={firstPartyEmpCode}
+                                          dataObj={data}
+                                          dataKey="firstPartyEmpCode"
+                                          placeholder="__________________"
+                                          isEditMode={isEditMode}
+                                        />
                                       </span>
                                     </div>
                                   )}
                                   <div className="mt-6 text-center text-slate-400 font-bold">
-                                    التوقيع الشخصي والختم:
+                                    التوقيع الشخصي :
                                     <br />
                                     {firstPartySignatureType === "SYSTEM" &&
                                     employeeSignatureUrl ? (

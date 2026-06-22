@@ -98,13 +98,6 @@ export default function QuotationsDashboard({ onNavigate }) {
         gradient: "from-[#0369a1] to-[#1e3a8a]",
       },
       {
-        id: "APPROVALS",
-        title: "الاعتماد والمراجعة",
-        icon: ShieldCheck,
-        gradient: "from-[#8b5cf6] to-[#7c3aed]",
-        badge: stats.pendingApproval > 0 ? `${stats.pendingApproval} بانتظار الاعتماد` : null,
-      },
-      {
         id: "PAYMENTS",
         title: "الدفعات والتحصيل",
         icon: CreditCard,

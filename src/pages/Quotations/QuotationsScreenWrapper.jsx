@@ -47,7 +47,6 @@ const TAB_TITLES = {
   DIRECTORY: "دليل العروض",
   TEMPLATES: "نماذج عروض الأسعار",
   ITEMS: "البنود والمجموعات",
-  APPROVALS: "الاعتماد والمراجعة",
   PAYMENTS: "الدفعات والتحصيل",
   REPORTS: "تقارير عروض الأسعار",
   CANCELLATIONS: "الملغاة والاسترجاع",
