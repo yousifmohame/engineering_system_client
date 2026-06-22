@@ -1,16 +1,18 @@
 import React, { useState } from "react";
 import { 
   FileText, Search, Plus, BrainCircuit, ShieldAlert, 
-  Map, FileSearch, Layers, Link as LinkIcon, CheckCircle2, AlertCircle, Loader2, ChevronRight, ChevronLeft
+  Map, FileSearch, Layers, Link as LinkIcon, CheckCircle2, AlertCircle, Loader2, ChevronRight, ChevronLeft,
+  Eye, Pencil, Trash2 // 👈 أيقونات الإجراءات الجديدة
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import axios from "../../../api/axios"; // تأكد من مسار الـ axios الصحيح في مشروعك
+import { toast } from "sonner"; // 👈 للتنبيهات
+import axios from "../../../api/axios"; 
 import { UploadDocumentModal } from "./Modals/UploadDocumentModal";
 import { DocumentDetailsModal } from "./Modals/DocumentDetailsModal";
 
 export const PropertyDocumentsArchive = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState(""); // لتجنب إرسال طلب مع كل حرف
+  const [debouncedSearch, setDebouncedSearch] = useState(""); 
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
 
@@ -19,25 +21,21 @@ export const PropertyDocumentsArchive = () => {
   const [isUploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedDocId, setSelectedDocId] = useState(null);
 
-  // 1. Debounce Search (لتحسين أداء البحث)
+  // 1. Debounce Search
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
-      setPage(1); // العودة للصفحة الأولى عند البحث
+      setPage(1); 
     }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // 2. Fetch Data (جلب البيانات الحقيقية من الباك إند)
-  const { data, isLoading, isError, refetch } = useQuery({
+  // 2. Fetch Data 
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ["archive-docs", debouncedSearch, page],
     queryFn: async () => {
       const response = await axios.get("/doc-archive", {
-        params: {
-          search: debouncedSearch,
-          page,
-          limit,
-        },
+        params: { search: debouncedSearch, page, limit },
       });
       return response.data;
     },
@@ -48,7 +46,7 @@ export const PropertyDocumentsArchive = () => {
   const serverStats = data?.stats || { total: 0, confirmed: 0, needsReview: 0, linked: 0 };
   const pagination = data?.pagination || { total: 0, pages: 1 };
 
-  // 3. ترتيب البطاقات الإحصائية لتعرض بيانات الباك إند
+  // 3. الإحصائيات
   const stats = [
     { label: "إجمالي الوثائق", value: serverStats.total, icon: Layers, color: "text-blue-600", bg: "bg-blue-50" },
     { label: "تم التحليل / مؤكدة", value: serverStats.confirmed, icon: BrainCircuit, color: "text-emerald-600", bg: "bg-emerald-50" },
@@ -56,7 +54,7 @@ export const PropertyDocumentsArchive = () => {
     { label: "مرتبطة بمشاريع", value: serverStats.linked, icon: LinkIcon, color: "text-indigo-600", bg: "bg-indigo-50" },
   ];
 
-  // 4. دالة مساعدة لترجمة حالة الوثيقة إلى شكل مرئي (Badge)
+  // 4. Badge Component
   const renderStatusBadge = (status) => {
     const statusConfig = {
       UPLOADED: { text: "مرفوعة (قيد الانتظار)", bg: "bg-slate-100", textCol: "text-slate-600", icon: FileText },
@@ -64,10 +62,8 @@ export const PropertyDocumentsArchive = () => {
       CONFIRMED: { text: "مؤكدة (مراجعة)", bg: "bg-emerald-50 border-emerald-100", textCol: "text-emerald-600", icon: CheckCircle2 },
       ARCHIVED: { text: "مؤرشفة (ملغية)", bg: "bg-rose-50 border-rose-100", textCol: "text-rose-600", icon: ShieldAlert },
     };
-
     const config = statusConfig[status] || statusConfig.UPLOADED;
     const Icon = config.icon;
-
     return (
       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black border ${config.bg} ${config.textCol}`}>
         <Icon className="w-3 h-3" /> {config.text}
@@ -75,10 +71,43 @@ export const PropertyDocumentsArchive = () => {
     );
   };
 
+  // ==========================================
+  // 🚀 دوال الإجراءات (Actions Handlers)
+  // ==========================================
+
+  const handleView = (e, id) => {
+    e.stopPropagation(); // لمنع تداخل الضغط مع الصف
+    setSelectedDocId(id);
+  };
+
+  const handleEdit = (e, id) => {
+    e.stopPropagation();
+    // يمكنك لاحقاً فتح نافذة تعديل مخصصة، حالياً سنفتح نافذة التفاصيل
+    setSelectedDocId(id);
+    toast.info("تم فتح الوثيقة للتحرير والمراجعة");
+  };
+
+  const handleDelete = async (e, id) => {
+    e.stopPropagation();
+    
+    // تأكيد الحذف
+    if (window.confirm("هل أنت متأكد من رغبتك في حذف هذه الوثيقة وإرسالها للأرشيف الملغى؟")) {
+      const loadingToast = toast.loading("جاري الحذف...");
+      try {
+        await axios.delete(`/doc-archive/${id}`);
+        toast.success("تم حذف الوثيقة بنجاح", { id: loadingToast });
+        refetch(); // إعادة تحديث الجدول فوراً
+      } catch (error) {
+        console.error("Delete error:", error);
+        toast.error("حدث خطأ أثناء محاولة الحذف", { id: loadingToast });
+      }
+    }
+  };
+
   return (
     <div className="flex h-full flex-col bg-slate-50/50 p-6 font-[Tajawal]" dir="rtl">
       
-      {/* 🌟 الهيدر (Header) 🌟 */}
+      {/* 🌟 الهيدر (Header) */}
       <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h1 className="text-2xl font-black text-[#123f59] flex items-center gap-3">
@@ -103,7 +132,7 @@ export const PropertyDocumentsArchive = () => {
         </div>
       </div>
 
-      {/* 🌟 البطاقات الإحصائية 🌟 */}
+      {/* 🌟 البطاقات الإحصائية */}
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         {stats.map((stat, idx) => (
           <div key={idx} className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all hover:shadow-md">
@@ -118,7 +147,7 @@ export const PropertyDocumentsArchive = () => {
         ))}
       </div>
 
-      {/* 🌟 منطقة البحث والجدول 🌟 */}
+      {/* 🌟 منطقة البحث والجدول */}
       <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         
         {/* شريط البحث */}
@@ -158,13 +187,15 @@ export const PropertyDocumentsArchive = () => {
                 <th className="p-4 font-black text-slate-500 text-[11px] text-center">القيود</th>
                 <th className="p-4 font-black text-slate-500 text-[11px] text-center">حالة التحليل</th>
                 <th className="p-4 font-black text-slate-500 text-[11px] text-center">الارتباط</th>
+                {/* 👈 عمود الإجراءات الجديد */}
+                <th className="p-4 font-black text-slate-500 text-[11px] text-center w-32">الإجراءات</th> 
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               
               {!isLoading && docs.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="p-12 text-center text-slate-400 font-bold">
+                  <td colSpan="9" className="p-12 text-center text-slate-400 font-bold">
                     <FileSearch className="w-12 h-12 mx-auto mb-3 opacity-20" />
                     لا توجد وثائق ملكية مؤرشفة مطابقة لبحثك.
                   </td>
@@ -229,6 +260,41 @@ export const PropertyDocumentsArchive = () => {
                            <span className="text-[10px] font-bold text-slate-400 border border-slate-200 px-2 py-1 rounded-md bg-white">غير مرتبط</span>
                         )}
                       </td>
+                      
+                      {/* 🚀 عمود الإجراءات (Actions) الجديد */}
+                      <td className="p-4">
+                        <div className="flex items-center justify-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                          
+                          {/* زر عرض التفاصيل */}
+                          <button 
+                            onClick={(e) => handleView(e, doc.id)}
+                            title="عرض التفاصيل الكاملة"
+                            className="p-1.5 text-slate-400 hover:text-[#0e7490] hover:bg-cyan-50 rounded-lg transition-colors"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+
+                          {/* زر التعديل */}
+                          <button 
+                            onClick={(e) => handleEdit(e, doc.id)}
+                            title="تعديل ومراجعة الوثيقة"
+                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+
+                          {/* زر الحذف */}
+                          <button 
+                            onClick={(e) => handleDelete(e, doc.id)}
+                            title="نقل للأرشيف الملغى"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+
+                        </div>
+                      </td>
+
                     </tr>
                   )
                 })
@@ -264,19 +330,22 @@ export const PropertyDocumentsArchive = () => {
 
       </div>
 
+      {/* النوافذ المنبثقة (Modals) */}
       <UploadDocumentModal 
         isOpen={isUploadModalOpen} 
         onClose={() => {
           setUploadModalOpen(false);
-          refetch(); // 👈 إعادة جلب البيانات فور إغلاق نافذة الرفع الناجح
+          refetch(); // إعادة جلب البيانات فور إغلاق نافذة الرفع
         }} 
       />
         
       <DocumentDetailsModal 
         docId={selectedDocId} 
-        onClose={() => setSelectedDocId(null)} 
+        onClose={() => {
+          setSelectedDocId(null);
+          refetch(); // تأكيد جلب البيانات بعد إغلاق التفاصيل تحسباً لأي تعديل تم داخلها
+        }} 
       />
-     
 
     </div>
   );
