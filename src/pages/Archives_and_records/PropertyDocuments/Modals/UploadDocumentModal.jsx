@@ -450,8 +450,7 @@ export const UploadDocumentModal = ({ isOpen, onClose }) => {
     ];
 
     return (
-      <div className="flex flex-col h-full overflow-hidden animate-in slide-in-from-bottom-8 duration-700">
-        
+      <div className="flex flex-col h-full overflow-y-auto custom-scrollbar animate-in slide-in-from-bottom-8 duration-700">
         {/* شريط الإشعارات الذكي (Glassy) */}
         <div className="flex flex-col md:flex-row gap-4 mb-5 shrink-0">
           <div className="flex-1 bg-gradient-to-l from-emerald-500/10 to-teal-500/10 backdrop-blur-xl border border-emerald-200/50 p-4 rounded-3xl flex items-start gap-4 shadow-[0_8px_30px_rgba(16,185,129,0.05)]">
@@ -499,7 +498,7 @@ export const UploadDocumentModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* محتوى التبويبات (Glassy Container) */}
-        <div className="flex-1 overflow-y-auto p-2 pr-2 custom-scrollbar mt-4">
+        <div className="p-2 pr-2 custom-scrollbar mt-4">
           
           {activeReviewTab === "basic" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
