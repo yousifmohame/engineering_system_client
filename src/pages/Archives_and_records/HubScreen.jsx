@@ -19,6 +19,7 @@ import {
 import ProjectsArchiveScreen from "./ProjectsArchive/ProjectsArchiveScreen";
 import BuildingPermitsRegistry from "./Permits/BuildingPermitsRegistry";
 import ReferenceBaseScreen from "./Reference/ReferenceBaseScreen";
+import { PropertyDocumentsArchive } from "./PropertyDocuments/PropertyDocumentsArchive";
 
 const HubScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -99,7 +100,7 @@ const HubScreen = () => {
     },
     {
       id: "DEEDS_ARCHIVE",
-      title: "أرشيف الصكوك",
+      title: "أرشيف وثائق الملكية",
       icon: ScrollText,
       accent: "from-orange-500 to-amber-600",
       soft: "bg-orange-50 text-orange-700 border-orange-100",
@@ -242,10 +243,7 @@ const HubScreen = () => {
                 </div>
               )}
               {activePopup.id === "DEEDS_ARCHIVE" && (
-                <div className="flex flex-col h-full items-center justify-center text-slate-400 bg-slate-50/60">
-                  <ScrollText className="w-20 h-20 mb-4 opacity-20" />
-                  <div className="font-black text-xl">قريباً: أرشيف الصكوك ومستندات الملكية</div>
-                </div>
+                <PropertyDocumentsArchive />
               )}
             </div>
           </div>

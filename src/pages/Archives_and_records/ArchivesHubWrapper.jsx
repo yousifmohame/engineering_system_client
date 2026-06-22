@@ -6,6 +6,7 @@ import HubScreen from "./HubScreen";
 import ProjectsArchiveScreen from "./ProjectsArchive/ProjectsArchiveScreen";
 import BuildingPermitsRegistry from "./Permits/BuildingPermitsRegistry";
 import ReferenceBaseScreen from "./Reference/ReferenceBaseScreen";
+import { PropertyDocumentsArchive } from "./PropertyDocuments/PropertyDocumentsArchive";
 
 
 function ArchivesModernStyles() {
@@ -167,6 +168,13 @@ export default function ArchivesHubWrapper() {
             pageDescription="أرشفة القرارات الاستثنائية والحالات المرجعية الخاصة"
             themeColor="emerald"
             HeaderIcon={ShieldAlert} // تأكد من استيراد ShieldAlert
+          />
+        );
+
+      case "DEEDS_ARCHIVE":
+        return (
+          <PropertyDocumentsArchive
+          fixedCategory= ""
           />
         );
 
