@@ -158,7 +158,7 @@ const EditableSpan = ({
   );
 };
 
-export const LivePreview = ({ data }) => {
+export const LivePreview = ({ data, onUpdate }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [zoomScale, setZoomScale] = useState(0.68);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -593,7 +593,7 @@ export const LivePreview = ({ data }) => {
               <ShieldCheck className="w-3.5 h-3.5 text-[#c5983c]" />
               <select
                 value={bgType}
-                onChange={(e) => onUpdate && onUpdate("bgType", e.target.value)}
+                onChange={(e) => onUpdate && onUpdate("bgType", e.target.value)} // 👈 التأكد من وجود onUpdate
                 className="bg-transparent text-[10px] font-black text-[#123f59] outline-none cursor-pointer"
               >
                 {Object.entries(SECURITY_BACKGROUNDS).map(([key, bg]) => (
@@ -611,7 +611,7 @@ export const LivePreview = ({ data }) => {
                 value={selectedFont}
                 onChange={(e) =>
                   onUpdate && onUpdate("fontFamily", e.target.value)
-                }
+                } // 👈 التأكد من وجود onUpdate
                 className="bg-transparent text-[10px] font-black text-[#123f59] outline-none cursor-pointer"
               >
                 <option value="Tajawal">تجوال (Tajawal)</option>
