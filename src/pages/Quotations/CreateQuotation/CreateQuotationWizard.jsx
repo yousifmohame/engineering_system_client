@@ -9,7 +9,7 @@ import {
   Loader2,
   Check,
   X,
-} from "lucide-react"; // 👈 أضفنا X هنا
+} from "lucide-react";
 
 import {
   STEPS,
@@ -80,7 +80,6 @@ const CreateQuotationWizard = (incomingProps) => {
     incomingProps.quotationId || incomingProps.props?.quotationId;
   const onComplete =
     incomingProps.onComplete || incomingProps.props?.onComplete;
-  // 🌟 استلام دالة الإغلاق من المكون الأب
   const onClose = incomingProps.onClose || incomingProps.props?.onClose;
 
   const queryClient = useQueryClient();
@@ -92,7 +91,7 @@ const CreateQuotationWizard = (incomingProps) => {
   const [referenceNumber, setReferenceNumber] = useState(
     generateReferenceNumber(),
   );
-  // 👇 أضف هذين السطرين هنا 👇
+
   const [subject, setSubject] = useState("");
   const [address, setAddress] = useState("");
   const [selectedClient, setSelectedClient] = useState("");
@@ -111,6 +110,8 @@ const CreateQuotationWizard = (incomingProps) => {
   const [validityDays, setValidityDays] = useState(30);
   const [isRenewable, setIsRenewable] = useState(false);
   const [transactionType, setTransactionType] = useState("");
+  const [transactionTypeName, setTransactionTypeName] = useState(""); // 🚀 اسم الخدمة للتعديلات والمشاهدة
+
   const [licenseNumber, setLicenseNumber] = useState("");
   const [licenseYear, setLicenseYear] = useState("");
   const [serviceYear, setServiceYear] = useState("");
@@ -183,7 +184,7 @@ const CreateQuotationWizard = (incomingProps) => {
     startConditions: ["DOCUMENTS_RECEIVED"],
     customStartDate: "",
     showEndDate: false,
-    timelineItems: [], // مصفوفة الخدمات المرتبطة بالمدة
+    timelineItems: [],
     showTimelineNotes: true,
     timelineNotes:
       "المدة الموضحة أعلاه تقديرية وتُحتسب كأيام عمل، ولا تشمل العطلات الأسبوعية أو الرسمية أو مدد التأخير الناتجة عن نقص المستندات أو متطلبات الجهات ذات العلاقة.",
@@ -255,6 +256,16 @@ const CreateQuotationWizard = (incomingProps) => {
       [],
   });
 
+  // 🚀 مراقبة تغيير transactionType لتعيين الاسم بناءً على الـ ID إن وجد
+  useEffect(() => {
+    if (transactionType && officeServices.length > 0) {
+      const foundService = officeServices.find((s) => s.id === transactionType);
+      if (foundService) {
+        setTransactionTypeName(foundService.name);
+      }
+    }
+  }, [transactionType, officeServices]);
+
   const handleClientSelection = (clientId) => {
     setSelectedClient(clientId);
 
@@ -274,26 +285,24 @@ const CreateQuotationWizard = (incomingProps) => {
       setRepName(rep.name || "");
       setRepIdNumber(rep.idNumber || "");
 
-      // 👇 التعديلات تبدأ من هنا (ربط نوع الممثل بأسلوب التعامل) 👇
       if (rep.type === "وكيل") {
         setSignatureMethod("AGENT");
         setAuthDocType("وكالة");
-        setHandlingMethod("وكيل بموجب وكالة"); // 👈 تأكد أن هذا النص مطابق تماماً لما هو موجود في مصفوفة HANDLING_METHODS
+        setHandlingMethod("وكيل بموجب وكالة");
       } else if (rep.type === "مفوض") {
         setSignatureMethod("AUTHORIZED");
         setAuthDocType("تفويض");
-        setHandlingMethod("مفوض بموجب تفويض"); // 👈 تأكد من تطابق النص
+        setHandlingMethod("مفوض بموجب تفويض");
       } else if (rep.type === "ناظر") {
         setSignatureMethod("AUTHORIZED");
         setAuthDocType("مستفيد");
         setCustomUsufructType("صك نظارة");
-        setHandlingMethod("ناظر وقف"); // 👈 تأكد من تطابق النص
+        setHandlingMethod("ناظر وقف");
       } else {
         setSignatureMethod("AUTHORIZED");
         setAuthDocType("تفويض");
         setHandlingMethod("مفوض بموجب تفويض");
       }
-      // 👆 نهاية التعديل المضاف 👆
 
       if (rep.issueDate) {
         setAuthDocIssueDate(rep.issueDate.split("T")[0]);
@@ -321,8 +330,6 @@ const CreateQuotationWizard = (incomingProps) => {
       setAuthDocExpiryDate("");
       setShowAuthDocExpiryDate(false);
       setCustomUsufructType("");
-
-      // 👇 إعادة أسلوب التعامل للوضع الافتراضي إذا لم يكن هناك وكيل
       setHandlingMethod("المالك مباشرة");
     }
   };
@@ -349,7 +356,11 @@ const CreateQuotationWizard = (incomingProps) => {
       setSelectedTemplate(existingQuote.templateId || "");
       setShowClientCode(existingQuote.showClientCode);
       setShowPropertyCode(existingQuote.showPropertyCode);
+
+      // 🚀 استرجاع الـ ID واسم المعاملة
       setTransactionType(existingQuote.transactionTypeId || "");
+      setTransactionTypeName(existingQuote.transactionType?.name || "");
+
       setLicenseNumber(existingQuote.licenseNumber || "");
       setLicenseYear(existingQuote.licenseYear || "");
       setServiceNumber(existingQuote.serviceNumber || "");
@@ -423,18 +434,18 @@ const CreateQuotationWizard = (incomingProps) => {
       setTermsText(existingQuote.terms || "");
       setConclusion(existingQuote.conclusion || "");
       setHandlingMethod(existingQuote.handlingMethod || "المالك مباشرة");
-      // 👈 واستبدله بهذا الكود:
+
       setOwnerAttachments(
         (existingQuote.attachments || []).map((a) => ({
           id: a.id,
           name: a.fileName,
-          size: (a.fileSize / 1024 / 1024).toFixed(2), // تحويل البايت إلى ميجابايت
+          size: (a.fileSize / 1024 / 1024).toFixed(2),
           type: a.fileType,
-          filePath: a.filePath, // مسار السيرفر الحقيقي
+          filePath: a.filePath,
           description: a.notes || "",
         })),
       );
-      // 🚀 4. استرجاع بيانات الجدول الزمني عند التعديل 🚀
+
       let parsedStartConditions = ["DOCUMENTS_RECEIVED"];
       try {
         if (existingQuote.startConditions) {
@@ -445,7 +456,6 @@ const CreateQuotationWizard = (incomingProps) => {
         }
       } catch (e) {}
 
-      // استخراج الخدمات التي تم تحديد مدة لها مسبقاً
       const mappedTimelineItems = (existingQuote.items || [])
         .filter(
           (i) =>
@@ -453,7 +463,7 @@ const CreateQuotationWizard = (incomingProps) => {
         )
         .map((i, idx) => ({
           id: `time_${Date.now()}_${idx}`,
-          itemId: String(i.id), // يجب أن يكون نصياً ليتطابق مع الـ Select
+          itemId: String(i.id),
           duration: i.executionDuration,
           unit: i.durationUnit || existingQuote.durationUnit || "WORKING_DAY",
           notes: i.timelineNotes || "",
@@ -569,21 +579,18 @@ const CreateQuotationWizard = (incomingProps) => {
   };
 
   const saveMutation = useMutation({
-    // 🌟 1. تعديل هنا: نستقبل payload (بيانات الداتابيز) و pdfData (بيانات شاشة العرض)
     mutationFn: async ({ payload, pdfData }) => {
       let result;
-      // حفظ العرض في قاعدة البيانات
       if (isEditMode) {
         result = (await axios.put(`/quotations/${quotationId}`, payload)).data;
       } else {
         result = (await axios.post("/quotations", payload)).data;
       }
 
-      // 🌟 2. الخطوة الذهبية: نأمر الباك إند بتوليد الـ PDF في الخلفية وحفظه كملف
       try {
         await axios.post("/quotations/generate-and-save-pdf", {
-          ...pdfData, // نمرر نفس بيانات العرض المباشر (Live Preview)
-          quotationId: result.data.id, // نمرر الـ ID لربط الملف بالداتابيز
+          ...pdfData,
+          quotationId: result.data.id,
         });
       } catch (pdfError) {
         console.error(
@@ -632,11 +639,12 @@ const CreateQuotationWizard = (incomingProps) => {
         toast.error(
           "مجموع مدد الخدمات يتجاوز إجمالي مدة التنفيذ! يرجى التعديل.",
         );
-        setCurrentStep(10); // رقم خطوة الجدول الزمني (عدّله إذا غيرت ترتيب الخطوات)
+        setCurrentStep(10);
         return;
       }
     }
 
+    // 🚀 تحديث بناء Payload بحيث يرسل القيم المعدلة
     const payload = {
       referenceNumber,
       subject,
@@ -657,7 +665,9 @@ const CreateQuotationWizard = (incomingProps) => {
       templateId: selectedTemplate,
       showClientCode,
       showPropertyCode,
-      transactionTypeId: transactionType || null,
+      transactionTypeId: transactionType || null, // الـ ID يرسل هنا
+      // 🚀 إرسال الاسم في البايلود لو استخدمناه في الباك إند
+      transactionTypeName: transactionTypeName || "خدمات هندسية",
       serviceNumber,
       serviceYear,
       licenseNumber,
@@ -665,9 +675,11 @@ const CreateQuotationWizard = (incomingProps) => {
 
       clientType,
       signatureMethod,
+
+      // 🚀 هنا مربط الفرس: يجب إرسال القيم المحدثة من State سواء كانت SELF أم لا
       repName: signatureMethod !== "SELF" ? repName : null,
       repIdNumber: signatureMethod !== "SELF" ? repIdNumber : null,
-      repPhone: signatureMethod !== "SELF" ? repPhone : null,
+      repPhone: repPhone, // لا نربط الهاتف بـ SELF، العميل قد يدخل هاتفه
       repCapacity: signatureMethod !== "SELF" ? repCapacity : null,
       authDocType: signatureMethod !== "SELF" ? authDocType : null,
       authDocNumber: signatureMethod !== "SELF" ? authDocNumber : null,
@@ -687,6 +699,8 @@ const CreateQuotationWizard = (incomingProps) => {
 
       firstPartyName,
       firstPartyRep,
+      firstPartyRepCapacity, // 🚀 إرسال التعديل
+      firstPartyEmpCode: firstPartyEmployeeId, // 🚀 إرسال التعديل
       secondPartyName,
       secondPartyRep,
       showTimeline: timelineState.showTimeline,
@@ -704,7 +718,6 @@ const CreateQuotationWizard = (incomingProps) => {
       timelineNotes: timelineState.timelineNotes,
 
       items: items.map((i, idx) => {
-        // البحث هل هذه الخدمة تم ربطها بمدة في الجدول الزمني؟
         const tItem = timelineState.timelineItems.find(
           (t) => String(t.itemId) === String(i.id),
         );
@@ -718,7 +731,6 @@ const CreateQuotationWizard = (incomingProps) => {
           discount: i.discount,
           discountType: i.discountType || "PERCENTAGE",
           taxRate: i.taxRate !== undefined ? i.taxRate : 15,
-          // إرسال تفاصيل المدة للباك إند
           executionDuration: tItem ? Number(tItem.duration) : null,
           durationUnit: tItem ? tItem.unit : null,
           timelineNotes: tItem ? tItem.notes : null,
@@ -742,8 +754,8 @@ const CreateQuotationWizard = (incomingProps) => {
         name: att.name,
         type: att.type,
         size: att.size,
-        tempPath: att.tempPath, // 👈 هذا هو السطر الأهم! يخبر الباك إند بمكان الملف المؤقت
-        filePath: att.filePath, // للملفات المرفوعة مسبقاً (عند التعديل)
+        tempPath: att.tempPath,
+        filePath: att.filePath,
         description: att.description,
       })),
       missingDocs,
@@ -767,6 +779,41 @@ const CreateQuotationWizard = (incomingProps) => {
   const handleNextOrSave = () =>
     setCurrentStep((p) => Math.min(STEPS.length - 1, p + 1));
 
+  // 🚀 دالة جديدة لالتقاط التعديلات المباشرة من LivePreview ومزامنتها مع الـ States الأساسية
+  const handlePreviewUpdate = (key, value) => {
+    switch (key) {
+      case "repName":
+        setRepName(value);
+        break;
+      case "repIdNumber":
+        setRepIdNumber(value);
+        break;
+      case "repPhone":
+        setRepPhone(value);
+        break;
+      case "authDocNumber":
+        setAuthDocNumber(value);
+        break;
+      case "clientNameForPreview":
+        setSecondPartyName(value);
+        break;
+      case "firstPartyRep":
+        setFirstPartyRep(value);
+        break;
+      case "firstPartyRepCapacity":
+        setFirstPartyRepCapacity(value);
+        break;
+      case "firstPartyEmpCode":
+        setFirstPartyEmployeeId(value);
+        break; // نستخدم نفس State الآي دي لغياب state مخصص
+      case "transactionType":
+        setTransactionTypeName(value);
+        break;
+      default:
+        break;
+    }
+  };
+
   const stepProps = {
     referenceNumber,
     setReferenceNumber,
@@ -774,8 +821,8 @@ const CreateQuotationWizard = (incomingProps) => {
     setSubject,
     address,
     setAddress,
-    showSummaryTable, // 👈 2. أضف هذا السطر
-    setShowSummaryTable, // 👈 وأضف هذا السطر
+    showSummaryTable,
+    setShowSummaryTable,
     selectedClient,
     setSelectedClient: handleClientSelection,
     selectedProperty,
@@ -958,6 +1005,7 @@ const CreateQuotationWizard = (incomingProps) => {
     validityDays,
     clientTitle: clientTitle || "المواطن",
     clientNameForPreview:
+      secondPartyName ||
       getClientName(clientsData?.find((c) => c.id === selectedClient)) ||
       getClientName(existingQuote?.client) ||
       "عميل غير محدد",
@@ -970,7 +1018,11 @@ const CreateQuotationWizard = (incomingProps) => {
       existingQuote?.ownership?.code ||
       "الملكية...",
 
-    transactionType,
+    // 🚀 ربط نوع الخدمة بالـ State المحدث
+    transactionType:
+      transactionTypeName ||
+      transactionType ||
+      "خدمات هندسية واستشارية استراتيجية",
     licenseNumber,
     licenseYear,
     serviceNumber,
@@ -998,13 +1050,17 @@ const CreateQuotationWizard = (incomingProps) => {
     grandTotal,
     firstPartyName: "شركة ديتيلز كونسولتس للاستشارات الهندسية",
     firstPartyRep:
+      firstPartyRep ||
       selectedEmployee?.fullName ||
       selectedEmployee?.name ||
       user?.fullName ||
       user?.name ||
       "_________________",
     firstPartyEmpCode:
-      selectedEmployee?.employeeCode || user?.employeeCode || "SYS-XXX",
+      firstPartyEmployeeId || // 🚀 استخدم الـ ID ككود في حال تغييره يدوياً
+      selectedEmployee?.employeeCode ||
+      user?.employeeCode ||
+      "SYS-XXX",
     employeeSignatureUrl:
       selectedEmployee?.signatureUrl || user?.signatureUrl || null,
     firstPartyRepCapacity,
@@ -1024,10 +1080,7 @@ const CreateQuotationWizard = (incomingProps) => {
       selectedPropertyDetails?.districtNode?.name ||
       "---",
 
-    // 👈 سحب تاريخ الوثيقة (الصك)
     deedDate: selectedPropertyDetails?.deedDate || null,
-
-    // 👈 سحب رقم الصك (للتأكيد فقط)
     deedNumber: selectedPropertyDetails?.deedNumber || "---",
     acceptedMethods,
     selectedBankAccounts,
@@ -1057,14 +1110,11 @@ const CreateQuotationWizard = (incomingProps) => {
   };
 
   return (
-    // 🌟 الغلاف الأساسي للنافذة المنبثقة
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-2 sm:p-4">
-      {/* 🌟 الحاوية الخاصة بالنافذة (بأبعاد الشاشة) */}
       <div
         className="flex h-[95vh] w-full max-w-[1600px] flex-col overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white rounded-[24px] shadow-2xl border border-white/20 font-[Tajawal] text-[#123f59] animate-in zoom-in-95 duration-300 relative"
         dir="rtl"
       >
-        {/* 🌟 زر الإغلاق X */}
         {onClose && (
           <button
             onClick={onClose}
@@ -1087,7 +1137,6 @@ const CreateQuotationWizard = (incomingProps) => {
 
         <div className="flex min-h-0 flex-1 overflow-hidden p-2 sm:p-3 gap-4">
           <section className="flex min-h-0 min-w-0 flex-1 lg:flex-[1.1] flex-col overflow-hidden rounded-[20px] border border-[#d8b46a]/25 bg-white shadow-[0_10px_26px_rgba(18,63,89,0.08)]">
-            {/* Header */}
             <div className="shrink-0 border-b border-[#e8ddc8] bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490] px-4 py-3 text-white">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
@@ -1113,10 +1162,9 @@ const CreateQuotationWizard = (incomingProps) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mr-auto pr-10">
-                  {/* 🌟 زر الحفظ السريع كمسودة */}
                   <button
                     type="button"
-                    onClick={() => handleSave(true)} // تمرير true لحفظه كمسودة
+                    onClick={() => handleSave(true)}
                     disabled={saveMutation?.isPending}
                     className="flex items-center gap-1.5 bg-[#e2bf74]/10 hover:bg-[#e2bf74]/25 text-[#e2bf74] border border-[#e2bf74]/40 px-3 py-1.5 rounded-xl text-[10px] font-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -1128,7 +1176,6 @@ const CreateQuotationWizard = (incomingProps) => {
                     حفظ كمسودة
                   </button>
 
-                  {/* عداد المراحل الحالي */}
                   <span className="shrink-0 rounded-xl border border-[#e2bf74]/35 bg-white/10 px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[10px] font-black text-[#e2bf74]">
                     المرحلة {currentStep + 1} / {STEPS.length}
                   </span>
@@ -1137,7 +1184,6 @@ const CreateQuotationWizard = (incomingProps) => {
             </div>
 
             <div className="flex flex-1 overflow-hidden bg-[#fbf8f1]/30">
-              {/* Sidebar Steps */}
               <aside className="hidden md:block w-[180px] shrink-0 border-l border-[#e8ddc8] bg-white/50 p-4 overflow-y-auto custom-scrollbar-slim">
                 <div className="relative">
                   <div className="absolute right-[19px] top-4 bottom-8 w-[2px] bg-slate-200/80 rounded-full" />
@@ -1179,7 +1225,6 @@ const CreateQuotationWizard = (incomingProps) => {
                 </div>
               </aside>
 
-              {/* Main Content Area */}
               <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-5 custom-scrollbar-slim relative">
                 <div className="mx-auto max-w-3xl h-full">
                   <div className="md:hidden flex items-center justify-between mb-4 pb-2 border-b border-[#e8ddc8]">
@@ -1191,7 +1236,6 @@ const CreateQuotationWizard = (incomingProps) => {
                     </span>
                   </div>
 
-                  {/* Steps Router */}
                   {currentStep === 0 && <Step2Template props={stepProps} />}
                   {currentStep === 1 && (
                     <Step0ClientProperty props={stepProps} />
@@ -1211,7 +1255,7 @@ const CreateQuotationWizard = (incomingProps) => {
                       props={{
                         timelineState,
                         setTimelineState,
-                        itemsList: items, // مصفوفة الخدمات التي تمت إضافتها في خطوة نطاق العمل
+                        itemsList: items,
                       }}
                     />
                   )}
@@ -1220,7 +1264,6 @@ const CreateQuotationWizard = (incomingProps) => {
               </div>
             </div>
 
-            {/* Footer Navigation */}
             <div className="shrink-0 border-t border-[#e8ddc8] bg-white p-3 sm:p-4 shadow-[0_-4px_15px_rgba(0,0,0,0.02)] z-10">
               <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
                 <button
@@ -1278,9 +1321,9 @@ const CreateQuotationWizard = (incomingProps) => {
             </div>
           </section>
 
-          {/* Live Preview Sidebar */}
           <aside className="hidden lg:flex min-h-0 min-w-0 flex-[0.9] overflow-hidden rounded-[20px] border border-[#d8b46a]/25 shadow-sm bg-white">
-            <LivePreview data={previewData} />
+            {/* 🚀 تمرير الدالة onUpdate إلى الـ LivePreview */}
+            <LivePreview data={previewData} onUpdate={handlePreviewUpdate} />
           </aside>
         </div>
       </div>
