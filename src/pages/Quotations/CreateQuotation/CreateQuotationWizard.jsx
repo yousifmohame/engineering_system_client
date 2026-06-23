@@ -446,6 +446,7 @@ const CreateQuotationWizard = (incomingProps) => {
       setOfficeTaxBearing(existingQuote.officeTaxBearing);
       setStampType(existingQuote.stampType || "NONE");
 
+      // داخل useEffect الخاص بـ existingQuote
       setBgType(existingQuote.bgType || "official1");
       setFontFamily(existingQuote.fontFamily || "Tajawal");
 
@@ -1177,8 +1178,8 @@ const CreateQuotationWizard = (incomingProps) => {
     bankAccountsData,
     handlingMethod,
     showPropertyCode,
-    bgType,
-    fontFamily,
+    bgType: bgType || "official1", // 👈 تم التعديل ليقرأ الـ State المسمى bgType
+    fontFamily: fontFamily || "Tajawal",
     showClientCode,
     officeTaxBearing,
     transactionRefForPreview:
