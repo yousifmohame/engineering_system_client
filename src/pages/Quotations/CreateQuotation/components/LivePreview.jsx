@@ -838,8 +838,19 @@ export const LivePreview = ({ data }) => {
                       className="text-[42px] font-black mb-6 leading-tight"
                       style={{ color: selectedStyle.accent }}
                     >
-                      {/* 🌟 الآن سيقرأ الاسم الذي قمنا بتمريره */}
-                      {data.documentType}
+                      {/* 🚀 أصبح العنوان قابلاً للتعديل وسيُرسل للـ Wizard عند تغييره */}
+                      <EditableSpan
+                        value={
+                          data.documentTitle ||
+                          data.documentType ||
+                          "عرض سعر فني ومالي"
+                        }
+                        isEditMode={isEditMode}
+                        placeholder="اسم النموذج / عنوان العرض"
+                        onChange={(val) =>
+                          onUpdate && onUpdate("documentTitle", val)
+                        }
+                      />
                     </h1>
                     <h2 className="text-[22px] font-bold text-[#475569]">
                       {data.transactionType ||

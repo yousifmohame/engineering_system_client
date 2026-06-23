@@ -18,7 +18,7 @@ import {
   mapHandlingToEnum,
   getCurrentHijriYear,
   generateHijriYears,
-  HANDLING_METHODS
+  HANDLING_METHODS,
 } from "./utils/quotationConstants";
 import { LivePreview } from "./components/LivePreview";
 import { useAuth } from "../../../context/AuthContext";
@@ -177,6 +177,7 @@ const CreateQuotationWizard = (incomingProps) => {
   const [firstPartyRep, setFirstPartyRep] = useState("");
   const [secondPartyName, setSecondPartyName] = useState("");
   const [secondPartyRep, setSecondPartyRep] = useState("");
+  const [documentTitle, setDocumentTitle] = useState("");
 
   const [timelineState, setTimelineState] = useState({
     showTimeline: true,
@@ -292,25 +293,35 @@ const CreateQuotationWizard = (incomingProps) => {
         setSignatureMethod("AGENT");
         setAuthDocType("وكالة");
         // 🚀 يبحث عن أي خيار في الثوابت يحتوي على كلمة "وكيل"
-        setHandlingMethod(HANDLING_METHODS?.find(m => m.includes("وكيل")) || "وكيل بموجب وكالة");
-        
+        setHandlingMethod(
+          HANDLING_METHODS?.find((m) => m.includes("وكيل")) ||
+            "وكيل بموجب وكالة",
+        );
       } else if (rep.type === "مفوض") {
         setSignatureMethod("AUTHORIZED");
         setAuthDocType("تفويض");
         // 🚀 يبحث عن أي خيار يحتوي على كلمة "مفوض"
-        setHandlingMethod(HANDLING_METHODS?.find(m => m.includes("مفوض")) || "مفوض بموجب تفويض");
-        
+        setHandlingMethod(
+          HANDLING_METHODS?.find((m) => m.includes("مفوض")) ||
+            "مفوض بموجب تفويض",
+        );
       } else if (rep.type === "ناظر") {
         setSignatureMethod("AUTHORIZED");
         setAuthDocType("مستفيد");
         setCustomUsufructType("صك نظارة");
         // 🚀 يبحث عن ناظر أو وقف
-        setHandlingMethod(HANDLING_METHODS?.find(m => m.includes("ناظر") || m.includes("وقف")) || "ناظر وقف");
-        
+        setHandlingMethod(
+          HANDLING_METHODS?.find(
+            (m) => m.includes("ناظر") || m.includes("وقف"),
+          ) || "ناظر وقف",
+        );
       } else {
         setSignatureMethod("AUTHORIZED");
         setAuthDocType("تفويض");
-        setHandlingMethod(HANDLING_METHODS?.find(m => m.includes("مفوض")) || "مفوض بموجب تفويض");
+        setHandlingMethod(
+          HANDLING_METHODS?.find((m) => m.includes("مفوض")) ||
+            "مفوض بموجب تفويض",
+        );
       }
 
       if (rep.issueDate) {
@@ -339,7 +350,9 @@ const CreateQuotationWizard = (incomingProps) => {
       setAuthDocExpiryDate("");
       setShowAuthDocExpiryDate(false);
       setCustomUsufructType("");
-      ssetHandlingMethod(HANDLING_METHODS?.find(m => m.includes("المالك")) || "المالك مباشرة");
+      ssetHandlingMethod(
+        HANDLING_METHODS?.find((m) => m.includes("المالك")) || "المالك مباشرة",
+      );
     }
   };
 
@@ -349,6 +362,7 @@ const CreateQuotationWizard = (incomingProps) => {
         existingQuote.referenceNumber || generateReferenceNumber(),
       );
       setSubject(existingQuote.subject || "");
+      setDocumentTitle(existingQuote.documentTitle || "");
       setAddress(existingQuote.address || "");
       setSelectedClient(existingQuote.clientId || "");
       setSelectedProperty(existingQuote.ownershipId || "");
@@ -366,17 +380,25 @@ const CreateQuotationWizard = (incomingProps) => {
       setShowClientCode(existingQuote.showClientCode);
       setShowPropertyCode(existingQuote.showPropertyCode);
 
-      const fetchedTxName = existingQuote.transactionTypeName || existingQuote.transactionType?.name || existingQuote.transactionTypeId || "";
+      const fetchedTxName =
+        existingQuote.transactionTypeName ||
+        existingQuote.transactionType?.name ||
+        existingQuote.transactionTypeId ||
+        "";
       setTransactionType(fetchedTxName);
       setTransactionTypeName(fetchedTxName);
 
       const cTitle = existingQuote.clientTitle;
       setClientTitle(
-        cTitle === "MR" ? "المواطن" :
-        cTitle === "MRS" ? "المواطنة" :
-        cTitle === "COMPANY" ? "الشركة" :
-        cTitle === "INSTITUTION" ? "المؤسسة" :
-        (cTitle || "المواطن")
+        cTitle === "MR"
+          ? "المواطن"
+          : cTitle === "MRS"
+            ? "المواطنة"
+            : cTitle === "COMPANY"
+              ? "الشركة"
+              : cTitle === "INSTITUTION"
+                ? "المؤسسة"
+                : cTitle || "المواطن",
       );
 
       setLicenseNumber(existingQuote.licenseNumber || "");
@@ -447,11 +469,15 @@ const CreateQuotationWizard = (incomingProps) => {
 
       const hMethod = existingQuote.handlingMethod;
       setHandlingMethod(
-        hMethod === "DIRECT" ? "المالك مباشرة" :
-        hMethod === "AGENT" ? "وكيل بموجب وكالة" :
-        hMethod === "AUTHORIZED" ? "مفوض بموجب تفويض" :
-        hMethod === "BENEFICIARY" ? "ناظر وقف" :
-        (hMethod || "المالك مباشرة")
+        hMethod === "DIRECT"
+          ? "المالك مباشرة"
+          : hMethod === "AGENT"
+            ? "وكيل بموجب وكالة"
+            : hMethod === "AUTHORIZED"
+              ? "مفوض بموجب تفويض"
+              : hMethod === "BENEFICIARY"
+                ? "ناظر وقف"
+                : hMethod || "المالك مباشرة",
       );
 
       setAcceptedMethods(existingQuote.acceptedMethods || ["bank"]);
@@ -675,6 +701,7 @@ const CreateQuotationWizard = (incomingProps) => {
       referenceNumber,
       subject,
       address,
+      documentTitle: documentTitle || documentType,
       clientId: selectedClient || null,
       propertyId: selectedProperty || null,
 
@@ -692,7 +719,7 @@ const CreateQuotationWizard = (incomingProps) => {
       templateId: selectedTemplate,
       showClientCode,
       showPropertyCode,
-      transactionTypeId: transactionType || null, 
+      transactionTypeId: transactionType || null,
       transactionTypeName: transactionType || "خدمات هندسية",
       serviceNumber,
       serviceYear,
@@ -844,6 +871,9 @@ const CreateQuotationWizard = (incomingProps) => {
       case "clientTitle":
         setClientTitle(value);
         break; // اللقب
+      case "documentTitle":
+        setDocumentTitle(value);
+        break;
       default:
         break;
     }
@@ -1030,6 +1060,7 @@ const CreateQuotationWizard = (incomingProps) => {
     referenceNumber,
     subject,
     address,
+    documentTitle: documentTitle || documentType,
     templateType,
     documentType:
       selectedTemplateObj?.documentType ||
