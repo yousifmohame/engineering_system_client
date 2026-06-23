@@ -43,6 +43,27 @@ const IconWithText = ({
   );
 };
 
+// 🚀 دوال المترجم للتعامل مع البيانات القديمة بالإنجليزية
+const getNormalizedTitle = (val) => {
+  if (!val) return "المواطن";
+  const upperVal = val.toUpperCase();
+  if (upperVal === "MR") return "المواطن";
+  if (upperVal === "MRS") return "المواطنة";
+  if (upperVal === "COMPANY") return "الشركة";
+  if (upperVal === "INSTITUTION") return "المؤسسة";
+  return val;
+};
+
+const getNormalizedHandlingMethod = (val) => {
+  if (!val) return "المالك مباشرة";
+  const upperVal = val.toUpperCase();
+  if (upperVal === "DIRECT") return "المالك مباشرة";
+  if (upperVal === "AGENT") return "وكيل بموجب وكالة";
+  if (upperVal === "AUTHORIZED") return "مفوض بموجب تفويض";
+  if (upperVal === "BENEFICIARY") return "ناظر وقف";
+  return val;
+};
+
 // ==========================================
 // الخطوة 7: الشروط والأحكام والافتتاحية
 // ==========================================
@@ -58,20 +79,23 @@ export const Step7Terms = ({ props }) => {
     serverTemplates,
   } = props;
 
-  // حالة للتحقق مما إذا كان المستخدم يكتب لقباً مخصصاً
   const [isCustomTitle, setIsCustomTitle] = useState(false);
 
-  // البحث عن بيانات النموذج المختار
+  // 🚀 تطبيق المترجم على القيم الحالية لتتوافق مع الأزرار
+  const safeClientTitle = getNormalizedTitle(clientTitle);
+  const safeHandlingMethod = getNormalizedHandlingMethod(handlingMethod);
+
   const activeTemplate = serverTemplates?.find(
     (t) => t.id === selectedTemplate,
   );
 
-  // تحديث حالة اللقب المخصص عند التحميل بناءً على القيمة الحالية
   useEffect(() => {
-    if (clientTitle && !CLIENT_TITLES.includes(clientTitle)) {
+    if (safeClientTitle && !CLIENT_TITLES.includes(safeClientTitle)) {
       setIsCustomTitle(true);
+    } else {
+      setIsCustomTitle(false);
     }
-  }, [clientTitle]);
+  }, [safeClientTitle]);
 
   const handleRestoreTemplateTerms = () => {
     if (activeTemplate) {
@@ -81,12 +105,12 @@ export const Step7Terms = ({ props }) => {
 
   const handleTitleClick = (title) => {
     setIsCustomTitle(false);
-    setClientTitle(title);
+    setClientTitle(title); // سيحفظ النص العربي مباشرة
   };
 
   return (
     <div className="animate-in fade-in duration-300 h-full flex flex-col gap-4 max-w-4xl mx-auto pb-4">
-      {/* 1️⃣ قسم معلومات النموذج وزر الاستعادة (أعلى الصفحة) */}
+      {/* 1️⃣ قسم معلومات النموذج وزر الاستعادة */}
       <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex min-w-0 items-center justify-between shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
         <div className="flex min-w-0 items-center gap-3">
           <div className="p-2 bg-white rounded-xl shadow-[0_8px_22px_rgba(18,63,89,0.06)]">
@@ -114,7 +138,7 @@ export const Step7Terms = ({ props }) => {
         </button>
       </div>
 
-      {/* 2️⃣ محرر الشروط والأحكام (يأخذ المساحة الرئيسية) */}
+      {/* 2️⃣ محرر الشروط والأحكام */}
       <div className="flex flex-col bg-white rounded-xl border border-[#d8b46a]/25 shadow-[0_8px_22px_rgba(18,63,89,0.06)] overflow-hidden min-h-[250px]">
         <div className="px-4 py-2.5 bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white border-b border-[#d8b46a]/25 flex min-w-0 justify-between items-center">
           <label className="text-xs font-bold text-[#475569] flex min-w-0 items-center gap-2">
@@ -148,7 +172,7 @@ export const Step7Terms = ({ props }) => {
               key={title}
               onClick={() => handleTitleClick(title)}
               className={`px-4 py-1.5 text-[11px] font-bold rounded-xl border transition-all ${
-                clientTitle === title && !isCustomTitle
+                safeClientTitle === title && !isCustomTitle
                   ? "bg-slate-800 text-white border-slate-800 shadow-[0_8px_18px_rgba(18,63,89,0.08)]"
                   : "bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white text-[#64748b] border-[#d8b46a]/25 hover:border-[#d8b46a]/35"
               }`}
@@ -196,9 +220,9 @@ export const Step7Terms = ({ props }) => {
           {HANDLING_METHODS.map((method) => (
             <button
               key={method}
-              onClick={() => setHandlingMethod(method)}
+              onClick={() => setHandlingMethod(method)} // سيحفظ النص العربي مباشرة
               className={`px-3.5 py-2 text-[11px] font-bold rounded-xl border transition-all ${
-                handlingMethod === method
+                safeHandlingMethod === method
                   ? "bg-[#123f59] text-white border-emerald-600 shadow-[0_8px_18px_rgba(18,63,89,0.08)] scale-[1.02]"
                   : "bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white text-[#64748b] border-[#d8b46a]/25 hover:border-emerald-300"
               }`}

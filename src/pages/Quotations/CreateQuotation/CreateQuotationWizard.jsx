@@ -18,6 +18,7 @@ import {
   mapHandlingToEnum,
   getCurrentHijriYear,
   generateHijriYears,
+  HANDLING_METHODS
 } from "./utils/quotationConstants";
 import { LivePreview } from "./components/LivePreview";
 import { useAuth } from "../../../context/AuthContext";
@@ -285,23 +286,31 @@ const CreateQuotationWizard = (incomingProps) => {
       setRepName(rep.name || "");
       setRepIdNumber(rep.idNumber || "");
 
+      setRepCapacity(rep.capacity || rep.type || "");
+
       if (rep.type === "وكيل") {
         setSignatureMethod("AGENT");
         setAuthDocType("وكالة");
-        setHandlingMethod("وكيل بموجب وكالة");
+        // 🚀 يبحث عن أي خيار في الثوابت يحتوي على كلمة "وكيل"
+        setHandlingMethod(HANDLING_METHODS?.find(m => m.includes("وكيل")) || "وكيل بموجب وكالة");
+        
       } else if (rep.type === "مفوض") {
         setSignatureMethod("AUTHORIZED");
         setAuthDocType("تفويض");
-        setHandlingMethod("مفوض بموجب تفويض");
+        // 🚀 يبحث عن أي خيار يحتوي على كلمة "مفوض"
+        setHandlingMethod(HANDLING_METHODS?.find(m => m.includes("مفوض")) || "مفوض بموجب تفويض");
+        
       } else if (rep.type === "ناظر") {
         setSignatureMethod("AUTHORIZED");
         setAuthDocType("مستفيد");
         setCustomUsufructType("صك نظارة");
-        setHandlingMethod("ناظر وقف");
+        // 🚀 يبحث عن ناظر أو وقف
+        setHandlingMethod(HANDLING_METHODS?.find(m => m.includes("ناظر") || m.includes("وقف")) || "ناظر وقف");
+        
       } else {
         setSignatureMethod("AUTHORIZED");
         setAuthDocType("تفويض");
-        setHandlingMethod("مفوض بموجب تفويض");
+        setHandlingMethod(HANDLING_METHODS?.find(m => m.includes("مفوض")) || "مفوض بموجب تفويض");
       }
 
       if (rep.issueDate) {
@@ -330,7 +339,7 @@ const CreateQuotationWizard = (incomingProps) => {
       setAuthDocExpiryDate("");
       setShowAuthDocExpiryDate(false);
       setCustomUsufructType("");
-      setHandlingMethod("المالك مباشرة");
+      ssetHandlingMethod(HANDLING_METHODS?.find(m => m.includes("المالك")) || "المالك مباشرة");
     }
   };
 
@@ -357,9 +366,18 @@ const CreateQuotationWizard = (incomingProps) => {
       setShowClientCode(existingQuote.showClientCode);
       setShowPropertyCode(existingQuote.showPropertyCode);
 
-      // 🚀 استرجاع الـ ID واسم المعاملة
-      setTransactionType(existingQuote.transactionTypeId || "");
-      setTransactionTypeName(existingQuote.transactionType?.name || "");
+      const fetchedTxName = existingQuote.transactionTypeName || existingQuote.transactionType?.name || existingQuote.transactionTypeId || "";
+      setTransactionType(fetchedTxName);
+      setTransactionTypeName(fetchedTxName);
+
+      const cTitle = existingQuote.clientTitle;
+      setClientTitle(
+        cTitle === "MR" ? "المواطن" :
+        cTitle === "MRS" ? "المواطنة" :
+        cTitle === "COMPANY" ? "الشركة" :
+        cTitle === "INSTITUTION" ? "المؤسسة" :
+        (cTitle || "المواطن")
+      );
 
       setLicenseNumber(existingQuote.licenseNumber || "");
       setLicenseYear(existingQuote.licenseYear || "");
@@ -427,13 +445,21 @@ const CreateQuotationWizard = (incomingProps) => {
       );
       setPaymentCount(existingQuote.payments?.length || 1);
 
+      const hMethod = existingQuote.handlingMethod;
+      setHandlingMethod(
+        hMethod === "DIRECT" ? "المالك مباشرة" :
+        hMethod === "AGENT" ? "وكيل بموجب وكالة" :
+        hMethod === "AUTHORIZED" ? "مفوض بموجب تفويض" :
+        hMethod === "BENEFICIARY" ? "ناظر وقف" :
+        (hMethod || "المالك مباشرة")
+      );
+
       setAcceptedMethods(existingQuote.acceptedMethods || ["bank"]);
       setSelectedBankAccounts(existingQuote.selectedBankAccounts || []);
       setMissingDocs(existingQuote.missingDocs || "");
       setShowMissingDocs(existingQuote.showMissingDocs);
       setTermsText(existingQuote.terms || "");
       setConclusion(existingQuote.conclusion || "");
-      setHandlingMethod(existingQuote.handlingMethod || "المالك مباشرة");
 
       setOwnerAttachments(
         (existingQuote.attachments || []).map((a) => ({
@@ -651,6 +677,7 @@ const CreateQuotationWizard = (incomingProps) => {
       address,
       clientId: selectedClient || null,
       propertyId: selectedProperty || null,
+
       transactionId: selectedTransaction || null,
       meetingId: selectedMeeting || null,
       issueDate,
@@ -665,9 +692,8 @@ const CreateQuotationWizard = (incomingProps) => {
       templateId: selectedTemplate,
       showClientCode,
       showPropertyCode,
-      transactionTypeId: transactionType || null, // الـ ID يرسل هنا
-      // 🚀 إرسال الاسم في البايلود لو استخدمناه في الباك إند
-      transactionTypeName: transactionTypeName || "خدمات هندسية",
+      transactionTypeId: transactionType || null, 
+      transactionTypeName: transactionType || "خدمات هندسية",
       serviceNumber,
       serviceYear,
       licenseNumber,
@@ -762,8 +788,8 @@ const CreateQuotationWizard = (incomingProps) => {
       showMissingDocs,
       terms: termsText,
       conclusion,
-      clientTitle: mapTitleToEnum(clientTitle),
-      handlingMethod: mapHandlingToEnum(handlingMethod),
+      clientTitle: mapTitleToEnum(clientTitle) || clientTitle,
+      handlingMethod: mapHandlingToEnum(handlingMethod) || handlingMethod,
       stampType,
       isDraft,
       status: isDraft
@@ -809,6 +835,15 @@ const CreateQuotationWizard = (incomingProps) => {
       case "transactionType":
         setTransactionTypeName(value);
         break;
+      case "repCapacity":
+        setRepCapacity(value);
+        break; // صفة ممثل العميل
+      case "handlingMethod":
+        setHandlingMethod(value);
+        break; // أسلوب التعامل
+      case "clientTitle":
+        setClientTitle(value);
+        break; // اللقب
       default:
         break;
     }

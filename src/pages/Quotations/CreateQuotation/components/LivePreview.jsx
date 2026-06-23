@@ -128,8 +128,7 @@ const EditableSpan = ({
   placeholder = "---",
   isEditMode,
   className = "",
-  dataObj, // 👈 تمرير كائن البيانات
-  dataKey, // 👈 مفتاح الحقل المراد تعديله
+  onChange, // 👈 أضفنا onChange بدلاً من dataObj و dataKey
 }) => {
   const [localValue, setLocalValue] = useState(value);
   useEffect(() => {
@@ -141,9 +140,9 @@ const EditableSpan = ({
   const handleBlur = (e) => {
     const newVal = e.currentTarget.textContent;
     setLocalValue(newVal);
-    // حفظ القيمة المعدلة مباشرة في كائن البيانات الذي سيرسل للباك إند
-    if (dataObj && dataKey) {
-      dataObj[dataKey] = newVal;
+    // 👈 إرسال القيمة الجديدة للمكون الأب لتحديث الـ State الحقيقي
+    if (onChange) {
+      onChange(newVal);
     }
   };
 
@@ -241,6 +240,18 @@ export const LivePreview = ({ data }) => {
     timelineState,
     showSummaryTable = true,
   } = data || {};
+
+  const getArabicHandlingMethod = (method) => {
+    if (!method) return "المالك مباشرة";
+    const map = {
+      DIRECT: "المالك مباشرة",
+      AGENT: "وكيل بموجب وكالة",
+      AUTHORIZED: "مفوض بموجب تفويض",
+      BENEFICIARY: "ناظر وقف / مستفيد",
+    };
+    return map[method] || method;
+  };
+  const safeHandlingMethod = getArabicHandlingMethod(handlingMethod);
 
   const getQuotationStatusBadge = () => {
     const currentStatus = status || "DRAFT";
@@ -1050,6 +1061,9 @@ export const LivePreview = ({ data }) => {
                                 value={transactionType || "عرض سعر خدمات فنية"}
                                 isEditMode={isEditMode}
                                 placeholder="نوع الخدمة"
+                                onChange={(val) =>
+                                  onUpdate && onUpdate("transactionType", val)
+                                } // 👈 التعديل هنا
                               />
                             </td>
                             <td
@@ -1269,9 +1283,12 @@ export const LivePreview = ({ data }) => {
                                 }}
                               >
                                 <EditableSpan
-                                  value={handlingMethod}
+                                  value={safeHandlingMethod} // 👈 استخدام القيمة المترجمة بدلاً من handlingMethod مباشرة
                                   isEditMode={isEditMode}
                                   placeholder="المالك مباشرة"
+                                  onChange={(val) =>
+                                    onUpdate && onUpdate("handlingMethod", val)
+                                  } // 👈 التعديل هنا
                                 />
                               </td>
                               <td
