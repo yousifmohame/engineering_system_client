@@ -15,14 +15,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
-
-// دالة لتنظيف الرابط
-const getFullUrl = (path) => {
-  if (!path) return '#';
-  if (path.startsWith('http')) return path;
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-  return `${baseUrl.replace('/api', '')}${path}`;
-};
+import { getFullUrl } from '../../utils/urlUtils';
 
 // مترجم الحالات للواجهة العامة
 const STATUS_LABELS = {
