@@ -696,12 +696,16 @@ const CreateQuotationWizard = (incomingProps) => {
       }
     }
 
+    const defaultDocType =
+      selectedTemplateObj?.documentType ||
+      selectedTemplateObj?.category ||
+      selectedTemplateObj?.title ||
+      "عرض سعر فني ومالي";
     // 🚀 تحديث بناء Payload بحيث يرسل القيم المعدلة
     const payload = {
       referenceNumber,
       subject,
       address,
-      documentTitle: documentTitle || documentType,
       clientId: selectedClient || null,
       propertyId: selectedProperty || null,
 
@@ -713,6 +717,7 @@ const CreateQuotationWizard = (incomingProps) => {
         selectedTemplateObj?.category ||
         selectedTemplateObj?.title ||
         "عرض سعر فني ومالي",
+      documentTitle: documentTitle || defaultDocType,
       validityDays: validityDays === "unlimited" ? 30 : validityDays,
       isRenewable,
       templateType,
@@ -1056,17 +1061,22 @@ const CreateQuotationWizard = (incomingProps) => {
     (m) => m.id === selectedMeeting,
   );
 
+  const defaultDocTypePreview =
+    selectedTemplateObj?.documentType ||
+    selectedTemplateObj?.category ||
+    selectedTemplateObj?.title ||
+    "عرض سعر فني ومالي";
   const previewData = {
     referenceNumber,
     subject,
     address,
-    documentTitle: documentTitle || documentType,
     templateType,
     documentType:
       selectedTemplateObj?.documentType ||
       selectedTemplateObj?.category ||
       selectedTemplateObj?.title ||
       "عرض سعر فني ومالي",
+    documentTitle: documentTitle || defaultDocTypePreview,
     issueDate,
     validityDays,
     clientTitle: clientTitle || "المواطن",
