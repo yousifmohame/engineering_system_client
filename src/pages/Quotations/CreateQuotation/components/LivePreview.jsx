@@ -161,8 +161,6 @@ const EditableSpan = ({
 export const LivePreview = ({ data }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [zoomScale, setZoomScale] = useState(0.68);
-  const [bgType, setBgType] = useState("official1");
-  const [selectedFont, setSelectedFont] = useState("Tajawal");
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const componentRef = useRef(null);
 
@@ -240,6 +238,10 @@ export const LivePreview = ({ data }) => {
     timelineState,
     showSummaryTable = true,
   } = data || {};
+
+  // أضف هذين السطرين مع باقي متغيرات data المجلوبة
+  const bgType = data?.bgType || "official1";
+  const selectedFont = data?.fontFamily || "Tajawal";
 
   const getArabicHandlingMethod = (method) => {
     if (!method) return "المالك مباشرة";
@@ -591,7 +593,7 @@ export const LivePreview = ({ data }) => {
               <ShieldCheck className="w-3.5 h-3.5 text-[#c5983c]" />
               <select
                 value={bgType}
-                onChange={(e) => setBgType(e.target.value)}
+                onChange={(e) => onUpdate && onUpdate("bgType", e.target.value)}
                 className="bg-transparent text-[10px] font-black text-[#123f59] outline-none cursor-pointer"
               >
                 {Object.entries(SECURITY_BACKGROUNDS).map(([key, bg]) => (
@@ -607,7 +609,9 @@ export const LivePreview = ({ data }) => {
               <FileText className="w-3.5 h-3.5 text-[#c5983c]" />
               <select
                 value={selectedFont}
-                onChange={(e) => setSelectedFont(e.target.value)}
+                onChange={(e) =>
+                  onUpdate && onUpdate("fontFamily", e.target.value)
+                }
                 className="bg-transparent text-[10px] font-black text-[#123f59] outline-none cursor-pointer"
               >
                 <option value="Tajawal">تجوال (Tajawal)</option>

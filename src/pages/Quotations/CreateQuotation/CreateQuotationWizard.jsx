@@ -179,6 +179,9 @@ const CreateQuotationWizard = (incomingProps) => {
   const [secondPartyRep, setSecondPartyRep] = useState("");
   const [documentTitle, setDocumentTitle] = useState("");
 
+  const [bgType, setBgType] = useState("official1");
+  const [fontFamily, setFontFamily] = useState("Tajawal");
+
   const [timelineState, setTimelineState] = useState({
     showTimeline: true,
     totalDuration: 20,
@@ -442,6 +445,9 @@ const CreateQuotationWizard = (incomingProps) => {
       setTaxRate(existingQuote.taxRate * 100);
       setOfficeTaxBearing(existingQuote.officeTaxBearing);
       setStampType(existingQuote.stampType || "NONE");
+
+      setBgType(existingQuote.bgType || "official1");
+      setFontFamily(existingQuote.fontFamily || "Tajawal");
 
       setItems(
         (existingQuote.items || []).map((i) => ({
@@ -774,6 +780,8 @@ const CreateQuotationWizard = (incomingProps) => {
       showEndDate: timelineState.showEndDate,
       showTimelineNotes: timelineState.showTimelineNotes,
       timelineNotes: timelineState.timelineNotes,
+      bgType,
+      fontFamily,
 
       items: items.map((i, idx) => {
         const tItem = timelineState.timelineItems.find(
@@ -878,6 +886,12 @@ const CreateQuotationWizard = (incomingProps) => {
         break; // اللقب
       case "documentTitle":
         setDocumentTitle(value);
+        break;
+      case "bgType":
+        setBgType(value);
+        break;
+      case "fontFamily":
+        setFontFamily(value);
         break;
       default:
         break;
@@ -1163,6 +1177,8 @@ const CreateQuotationWizard = (incomingProps) => {
     bankAccountsData,
     handlingMethod,
     showPropertyCode,
+    bgType,
+    fontFamily,
     showClientCode,
     officeTaxBearing,
     transactionRefForPreview:
