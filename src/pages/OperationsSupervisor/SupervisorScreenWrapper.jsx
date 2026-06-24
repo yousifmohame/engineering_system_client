@@ -7,35 +7,8 @@ import SupervisorDashboard from "./SupervisorDashboard";
 import OperationsSupervisorScreen from "./pages/OperationsSupervisorScreen";
 // 🌟 استيراد شاشات عروض الأسعار (ليستخدمها مشرف العروض)
 import QuotationsSupervisorScreen from "./pages/QuotationsSupervisorScreen";
-
-const IconWithText = ({
-  icon: Icon,
-  text,
-  className = "",
-  iconClassName = "",
-  textClassName = "",
-  vertical = false,
-}) => {
-  return (
-    <span
-      className={`inline-flex min-w-0 items-center justify-center ${
-        vertical ? "flex-col gap-0.5" : "gap-1.5"
-      } ${className}`}
-    >
-      {Icon && <Icon className={iconClassName || "h-3.5 w-3.5 shrink-0"} />}
-      {text && (
-        <span
-          className={
-            textClassName ||
-            "min-w-0 whitespace-nowrap text-[10px] font-black leading-none"
-          }
-        >
-          {text}
-        </span>
-      )}
-    </span>
-  );
-};
+// 🌟 استيراد شاشة مشرف الرواتب (تأكد من المسار أو استخدم الـ Placeholder)
+// import PayrollSupervisorScreen from "./pages/PayrollSupervisorScreen";
 
 // 💡 قاموس بأسماء شاشات المشرفين لعرضها في عنوان النافذة
 const TAB_TITLES = {
@@ -43,13 +16,14 @@ const TAB_TITLES = {
   QUOTATIONS_SUPERVISOR: "إدارة عروض الأسعار",
   CONTRACTS_SUPERVISOR: "إدارة العقود والاتفاقيات",
   FINANCE_SUPERVISOR: "الاعتمادات المالية",
+  PAYROLL_SUPERVISOR: "مشرف مسيرات الرواتب", // 🌟 القسم الجديد
   AUDIT_SUPERVISOR: "الجودة والتدقيق الشامل",
-  CREATE_QUOTATION: "إنشاء / تعديل عرض سعر", // مبقاة لدعم شاشة العروض
+  CREATE_QUOTATION: "إنشاء / تعديل عرض سعر",
 };
 
 const SupervisorScreenWrapper = () => {
   const [activeModal, setActiveModal] = useState(null);
-  const [editQuoteId, setEditQuoteId] = useState(null); // حالة لحفظ الـ ID الخاص بتعديل العروض
+  const [editQuoteId, setEditQuoteId] = useState(null);
 
   const handleNavigate = (targetId, data = null) => {
     if (targetId === "DASHBOARD") {
@@ -59,7 +33,6 @@ const SupervisorScreenWrapper = () => {
     }
     setActiveModal(targetId);
 
-    // إذا كان هناك ID ممرر (خاص بشاشة عروض الأسعار)، نقوم بحفظه
     if (data?.quotationId) {
       setEditQuoteId(data.quotationId);
     } else {
@@ -73,32 +46,41 @@ const SupervisorScreenWrapper = () => {
   };
 
   const renderPlaceholder = (title) => (
-    <div className="p-3 h-full flex flex-col justify-center items-center text-[#94a3b8] font-bold gap-2.5 bg-[#fbf8f1]">
-      <span className="text-5xl opacity-50">🚧</span>
-      <span className="text-base">{title} (قيد التطوير حالياً)</span>
+    <div className="h-full flex flex-col justify-center items-center text-gray-500 gap-5 p-6">
+      <div className="h-32 w-32 rounded-full bg-white/30 backdrop-blur-xl border border-white/50 flex items-center justify-center shadow-xl">
+        <span className="text-6xl opacity-60">🚧</span>
+      </div>
+      <h2 className="text-2xl font-black drop-shadow-md text-[#123f59]">
+        {title}
+      </h2>
+      <p className="text-base font-bold text-gray-500">
+        هذه الوحدة قيد التطوير والربط حالياً
+      </p>
     </div>
   );
 
   const renderModalContent = () => {
-    // 🌟 1. شاشة مشرف التوثيق والختم
     if (activeModal === "OPERATIONS_SUPERVISOR") {
       return (
-        <div className="h-full min-h-0 overflow-hidden bg-[#fbf8f1]">
+        <div className="h-full min-h-0 overflow-hidden bg-transparent">
           <OperationsSupervisorScreen />
         </div>
       );
     }
 
-    // 🌟 2. شاشة مشرف عروض الأسعار (تمرر onNavigate لتتمكن من فتح معالج العروض)
     if (activeModal === "QUOTATIONS_SUPERVISOR") {
       return (
-        <div className="h-full min-h-0 overflow-hidden bg-[#fbf8f1]">
+        <div className="h-full min-h-0 overflow-hidden bg-transparent">
           <QuotationsSupervisorScreen onNavigate={handleNavigate} />
         </div>
       );
     }
+    
+    // إذا كان لديك شاشة للرواتب يمكنك تفعيلها هنا
+    // if (activeModal === "PAYROLL_SUPERVISOR") {
+    //   return <div className="h-full min-h-0 overflow-hidden bg-transparent"><PayrollSupervisorScreen /></div>;
+    // }
 
-    // عرض الـ Placeholder لباقي الشاشات التي لم تكتمل بعد
     if (TAB_TITLES[activeModal]) {
       return renderPlaceholder(TAB_TITLES[activeModal]);
     }
@@ -108,42 +90,46 @@ const SupervisorScreenWrapper = () => {
 
   return (
     <div
-      className="flex h-full w-full overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white"
+      className="flex h-full w-full overflow-hidden bg-gradient-to-br from-[#e0eafc] to-[#cfdef3] font-cairo relative"
       dir="rtl"
     >
-      {/* 1. الخلفية الثابتة: لوحة المؤشرات (Dashboard) */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-[400px] w-full h-full bg-white shadow-[0_10px_24px_rgba(18,63,89,0.08)] m-3 rounded-[18px] border border-[#e8ddc8] overflow-hidden relative">
-        <div className="flex-1 relative w-full h-full min-h-0 overflow-hidden">
-          {/* 🌟 استدعاء شاشة الداشبورد الجديدة للمشرفين */}
+      {/* ─── الخلفية الجمالية (Animated Blobs) ─── */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-300 rounded-full mix-blend-multiply filter blur-[100px] opacity-40 animate-blob"></div>
+      <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] bg-teal-300 rounded-full mix-blend-multiply filter blur-[100px] opacity-40 animate-blob animation-delay-2000"></div>
+      <div className="absolute bottom-[-10%] left-[20%] w-[40%] h-[40%] bg-amber-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-40 animate-blob animation-delay-4000"></div>
+
+      {/* 1. الداشبورد الرئيسية (Glassmorphism Container) */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-[400px] w-full h-full z-10 relative p-4 lg:p-6">
+        <div className="flex-1 relative w-full h-full min-h-0 bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_rgba(31,38,135,0.05)] rounded-[32px] overflow-hidden">
           <SupervisorDashboard onNavigate={handleNavigate} />
         </div>
       </div>
 
-      {/* 2. النافذة المنبثقة لإنشاء وتعديل عرض السعر (Wizard) */}
-      {/* يتم فتحها من داخل جدول عروض الأسعار */}
-      {activeModal === "CREATE_QUOTATION" && (
+      {/* 2. النافذة المنبثقة لإنشاء عرض السعر */}
+      {/* {activeModal === "CREATE_QUOTATION" && (
         <CreateQuotationWizard
           quotationId={editQuoteId}
           onClose={closeModal}
           onComplete={closeModal}
         />
-      )}
+      )} */}
 
-      {/* 3. النافذة المنبثقة (Modal) الموحدة لباقي شاشات الإشراف */}
+      {/* 3. النافذة المنبثقة (Modal) الموحدة الزجاجية */}
       {activeModal && activeModal !== "CREATE_QUOTATION" && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#06111d]/60 backdrop-blur-sm p-4 font-cairo animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-[95vw] h-[95vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative animate-in zoom-in-95 duration-200">
-            {/* الهيدر الموحد للنافذة */}
-            <div className="flex shrink-0 items-center justify-between border-b border-[#d8b46a]/25 bg-gradient-to-l from-[#06111d] via-[#123f59] to-[#0e7490] px-3 py-1.5 text-white shadow-[0_8px_22px_rgba(18,63,89,0.16)]">
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-[#e2bf74]/35 bg-white/10 text-[#e2bf74]">
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                </span>
-                <div className="min-w-0">
-                  <h2 className="truncate text-[13px] font-black leading-tight text-white">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#06111d]/60 backdrop-blur-md p-4 sm:p-6 font-cairo">
+          <div className="bg-white/90 backdrop-blur-2xl border border-white/70 w-full max-w-[95vw] h-[95vh] rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.3)] flex flex-col overflow-hidden relative animate-in zoom-in-95 duration-200">
+            
+            {/* الهيدر الزجاجي للنافذة */}
+            <div className="p-5 border-b border-gray-200/60 flex justify-between items-center relative z-10 bg-white/50">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-teal-500/20 text-teal-700 flex items-center justify-center border border-teal-500/30 shadow-inner">
+                  <ShieldCheck className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-black text-xl text-[#123f59] drop-shadow-sm">
                     {TAB_TITLES[activeModal]}
-                  </h2>
-                  <p className="hidden text-[9px] font-bold text-white/55 lg:block">
+                  </h3>
+                  <p className="text-sm font-bold text-gray-500 mt-0.5">
                     نافذة الإشراف المتقدمة للتحكم في الاعتمادات والعمليات.
                   </p>
                 </div>
@@ -151,18 +137,14 @@ const SupervisorScreenWrapper = () => {
 
               <button
                 onClick={closeModal}
-                className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/10 px-2 text-[9px] font-black text-white/80 transition hover:bg-rose-500/15 hover:text-white"
+                className="h-12 w-12 rounded-full bg-white border border-gray-200 text-gray-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 flex items-center justify-center transition-all shadow-sm"
               >
-                <IconWithText
-                  icon={X}
-                  text="إغلاق"
-                  iconClassName="h-3.5 w-3.5"
-                />
+                <X className="h-6 w-6" />
               </button>
             </div>
 
-            {/* محتوى الشاشة الفعلي (يتم تحديده بناءً على renderModalContent) */}
-            <div className="relative min-w-0 flex-1 overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white">
+            {/* محتوى الشاشة הפعلي */}
+            <div className="relative min-w-0 flex-1 overflow-hidden bg-gradient-to-br from-[#e0eafc]/50 to-[#cfdef3]/50">
               {renderModalContent()}
             </div>
           </div>
