@@ -8,7 +8,7 @@ import OperationsSupervisorScreen from "./pages/OperationsSupervisorScreen";
 // 🌟 استيراد شاشات عروض الأسعار (ليستخدمها مشرف العروض)
 import QuotationsSupervisorScreen from "./pages/QuotationsSupervisorScreen";
 // 🌟 استيراد شاشة مشرف الرواتب (تأكد من المسار أو استخدم الـ Placeholder)
-// import PayrollSupervisorScreen from "./pages/PayrollSupervisorScreen";
+import PayrollSupervisorScreen from "./pages/PayrollSupervisorScreen";
 
 // 💡 قاموس بأسماء شاشات المشرفين لعرضها في عنوان النافذة
 const TAB_TITLES = {
@@ -75,11 +75,15 @@ const SupervisorScreenWrapper = () => {
         </div>
       );
     }
-    
+
     // إذا كان لديك شاشة للرواتب يمكنك تفعيلها هنا
-    // if (activeModal === "PAYROLL_SUPERVISOR") {
-    //   return <div className="h-full min-h-0 overflow-hidden bg-transparent"><PayrollSupervisorScreen /></div>;
-    // }
+    if (activeModal === "PAYROLL_SUPERVISOR") {
+      return (
+        <div className="h-full min-h-0 overflow-hidden bg-transparent">
+          <PayrollSupervisorScreen />
+        </div>
+      );
+    }
 
     if (TAB_TITLES[activeModal]) {
       return renderPlaceholder(TAB_TITLES[activeModal]);
@@ -118,7 +122,6 @@ const SupervisorScreenWrapper = () => {
       {activeModal && activeModal !== "CREATE_QUOTATION" && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#06111d]/60 backdrop-blur-md p-4 sm:p-6 font-cairo">
           <div className="bg-white/90 backdrop-blur-2xl border border-white/70 w-full max-w-[95vw] h-[95vh] rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.3)] flex flex-col overflow-hidden relative animate-in zoom-in-95 duration-200">
-            
             {/* الهيدر الزجاجي للنافذة */}
             <div className="p-5 border-b border-gray-200/60 flex justify-between items-center relative z-10 bg-white/50">
               <div className="flex items-center gap-4">
