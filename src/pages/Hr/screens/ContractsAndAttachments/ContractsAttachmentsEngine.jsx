@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Search,
@@ -18,53 +18,103 @@ import {
   File,
   Clock,
   X,
+  CalendarDays,
+  RefreshCw,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../../../api/axios";
 import { useAuth } from "../../../../context/AuthContext";
 import FileViewerModal from "../../../FilesExplorer/modals/FileViewerModal";
 
-// --- دوال مساعدة لاستخراج الأيقونات ---
+// --- دوال مساعدة ---
 const getFileMeta = (fileName) => {
   const ext = fileName?.split(".").pop()?.toLowerCase() || "";
-  if (["png", "jpg", "jpeg", "webp", "gif", "svg"].includes(ext)) {
+  if (["png", "jpg", "jpeg", "webp", "gif", "svg"].includes(ext))
     return {
       icon: FileImage,
-      color: "text-blue-500",
-      bg: "bg-blue-50",
+      color: "text-blue-600",
+      bg: "bg-blue-500/20",
       label: "صورة",
     };
-  }
-  if (ext === "pdf") {
+  if (ext === "pdf")
     return {
       icon: FileText,
-      color: "text-rose-500",
-      bg: "bg-rose-50",
+      color: "text-rose-600",
+      bg: "bg-rose-500/20",
       label: "PDF",
     };
-  }
-  if (["zip", "rar", "7z"].includes(ext)) {
+  if (["zip", "rar", "7z"].includes(ext))
     return {
       icon: FileBox,
-      color: "text-amber-500",
-      bg: "bg-amber-50",
+      color: "text-amber-600",
+      bg: "bg-amber-500/20",
       label: "مضغوط",
     };
-  }
   return {
     icon: File,
-    color: "text-gray-500",
-    bg: "bg-gray-50",
+    color: "text-gray-600",
+    bg: "bg-gray-500/20",
     label: ext.toUpperCase() || "ملف",
   };
 };
 
 const formatBytes = (bytes) => {
   if (!bytes) return "0 Bytes";
-  const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const k = 1024,
+    sizes = ["Bytes", "KB", "MB", "GB"],
+    i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+};
+
+// تحويل الميلادي إلى هجري للعرض
+const getHijriDate = (gregorianDate) => {
+  if (!gregorianDate) return "";
+  try {
+    return new Intl.DateTimeFormat("ar-SA-u-ca-islamic", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(gregorianDate));
+  } catch (e) {
+    return "";
+  }
+};
+
+// حساب الأيام المتبقية وحالة المستند
+const getDocumentStatus = (expiryDate, isPermanent) => {
+  if (isPermanent || !expiryDate)
+    return {
+      status: "VALID",
+      text: "ساري (دائم)",
+      classes: "bg-emerald-500/20 text-emerald-800 border-emerald-500/30",
+    };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expDate = new Date(expiryDate);
+  const diffTime = expDate - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0)
+    return {
+      status: "EXPIRED",
+      text: `منتهي منذ ${Math.abs(diffDays)} يوم`,
+      classes:
+        "bg-rose-500/20 text-rose-800 border-rose-500/30 shadow-[0_0_10px_rgba(244,63,94,0.3)]",
+    };
+  if (diffDays <= 30)
+    return {
+      status: "WARNING",
+      text: `ينتهي قريباً (${diffDays} يوم)`,
+      classes:
+        "bg-amber-500/20 text-amber-800 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.3)] animate-pulse",
+    };
+  return {
+    status: "VALID",
+    text: `ساري (متبقي ${diffDays} يوم)`,
+    classes: "bg-emerald-500/20 text-emerald-800 border-emerald-500/30",
+  };
 };
 
 const ATTACHMENT_CATEGORIES = [
@@ -72,29 +122,29 @@ const ATTACHMENT_CATEGORIES = [
     id: "CONTRACT",
     label: "عقود واتفاقيات",
     icon: FileText,
-    color: "text-blue-600",
-    bg: "bg-blue-50",
+    color: "text-blue-700",
+    border: "border-blue-200",
   },
   {
     id: "ID_PASSPORT",
     label: "هويات وجوازات",
     icon: ShieldAlert,
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
+    color: "text-emerald-700",
+    border: "border-emerald-200",
   },
   {
     id: "CERTIFICATE",
     label: "مؤهلات وشهادات",
     icon: FileCheck,
-    color: "text-purple-600",
-    bg: "bg-purple-50",
+    color: "text-purple-700",
+    border: "border-purple-200",
   },
   {
     id: "OTHER",
     label: "مرفقات أخرى",
     icon: FolderOpen,
-    color: "text-gray-600",
-    bg: "bg-gray-50",
+    color: "text-gray-700",
+    border: "border-gray-200",
   },
 ];
 
@@ -107,10 +157,17 @@ export default function ContractsAttachmentsEngine() {
   const [activeFilter, setActiveFilter] = useState("ALL");
 
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [renewingDoc, setRenewingDoc] = useState(null);
   const [fileToView, setFileToView] = useState(null);
 
+  // حقول النموذج
   const [selectedCategory, setSelectedCategory] = useState("CONTRACT");
   const [fileToUpload, setFileToUpload] = useState(null);
+  const [documentName, setDocumentName] = useState("");
+  const [issueDate, setIssueDate] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [isPermanent, setIsPermanent] = useState(false);
+  const [notes, setNotes] = useState("");
 
   const { data: employeesRes, isLoading: isLoadingEmployees } = useQuery({
     queryKey: ["employeesList"],
@@ -134,35 +191,38 @@ export default function ContractsAttachmentsEngine() {
 
   const attachments = useMemo(() => {
     let list = attachmentsRes?.data || [];
-    if (activeFilter !== "ALL") {
-      list = list.filter((f) => f.category === activeFilter); // يقرأ الـ category بشكل سليم
-    }
+    if (activeFilter !== "ALL")
+      list = list.filter((f) => f.category === activeFilter);
     return list;
   }, [attachmentsRes, activeFilter]);
 
   const uploadMutation = useMutation({
     mutationFn: async (formData) => {
-      return api.post(`/employees/${selectedEmpId}/attachments`, formData, {
+      const endpoint = renewingDoc
+        ? `/employees/attachments/${renewingDoc.id}/renew`
+        : `/employees/${selectedEmpId}/attachments`;
+      return api.post(endpoint, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
     },
     onSuccess: () => {
-      toast.success("تم رفع المستند بنجاح");
+      toast.success(
+        renewingDoc
+          ? "تم تجديد المستند وأرشفة القديم بنجاح"
+          : "تم حفظ المستند بنجاح",
+      );
       queryClient.invalidateQueries({
         queryKey: ["employeeAttachments", selectedEmpId],
       });
-      setUploadModalOpen(false);
-      setFileToUpload(null);
+      closeModal();
     },
-    onError: (error) => {
-      toast.error(error?.response?.data?.message || "حدث خطأ أثناء رفع الملف");
-    },
+    onError: (error) =>
+      toast.error(error?.response?.data?.message || "حدث خطأ أثناء حفظ الملف"),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (attachmentId) => {
-      return api.delete(`/employees/attachments/${attachmentId}`);
-    },
+    mutationFn: async (attachmentId) =>
+      api.delete(`/employees/attachments/${attachmentId}`),
     onSuccess: () => {
       toast.success("تم حذف المستند بنجاح");
       queryClient.invalidateQueries({
@@ -172,14 +232,41 @@ export default function ContractsAttachmentsEngine() {
     onError: () => toast.error("حدث خطأ أثناء الحذف"),
   });
 
+  const closeModal = () => {
+    setUploadModalOpen(false);
+    setRenewingDoc(null);
+    setFileToUpload(null);
+    setDocumentName("");
+    setIssueDate("");
+    setExpiryDate("");
+    setIsPermanent(false);
+    setNotes("");
+  };
+
+  const openRenewModal = (doc) => {
+    setRenewingDoc(doc);
+    setSelectedCategory(doc.category);
+    setDocumentName(doc.customName || doc.fileName);
+    setIsPermanent(false);
+    setUploadModalOpen(true);
+  };
+
   const handleUpload = (e) => {
     e.preventDefault();
-    if (!fileToUpload) return toast.error("الرجاء اختيار ملف");
-    if (!user || !user.id) return toast.error("غير مصرح لك بالرفع");
+    if (!fileToUpload && !renewingDoc)
+      return toast.error("الرجاء إرفاق النسخة الجديدة");
+    if (!documentName.trim()) return toast.error("الرجاء إدخال اسم المستند");
+    if (!isPermanent && !expiryDate)
+      return toast.error("الرجاء تحديد تاريخ الانتهاء أو اختيار 'بدون انتهاء'");
 
     const formData = new FormData();
-    formData.append("file", fileToUpload);
-    formData.append("category", selectedCategory); // يتم إرسال التصنيف
+    if (fileToUpload) formData.append("file", fileToUpload);
+    formData.append("category", selectedCategory);
+    formData.append("customName", documentName);
+    if (issueDate) formData.append("issueDate", issueDate);
+    formData.append("isPermanent", isPermanent);
+    if (!isPermanent && expiryDate) formData.append("expiryDate", expiryDate);
+    formData.append("notes", notes);
 
     uploadMutation.mutate(formData);
   };
@@ -188,30 +275,35 @@ export default function ContractsAttachmentsEngine() {
 
   return (
     <div
-      className="flex h-full w-full overflow-hidden bg-[#fbf8f1] font-cairo"
+      className="flex h-full w-full overflow-hidden bg-gradient-to-br from-[#e0eafc] to-[#cfdef3] font-cairo relative"
       dir="rtl"
     >
-      {/* ─── القائمة الجانبية للموظفين ─── */}
-      <div className="w-72 shrink-0 border-l border-[#e8ddc8] bg-white flex flex-col z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-        <div className="p-4 border-b border-[#e8ddc8] bg-gradient-to-br from-[#f8f9fa] to-white">
-          <h3 className="text-sm font-black text-[#123f59] mb-4 flex items-center gap-2">
-            <User className="h-4 w-4" /> سجل الموظفين
+      {/* خلفية جمالية للتصميم الزجاجي */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-300 rounded-full mix-blend-multiply filter blur-[100px] opacity-40 animate-blob"></div>
+      <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] bg-teal-300 rounded-full mix-blend-multiply filter blur-[100px] opacity-40 animate-blob animation-delay-2000"></div>
+      <div className="absolute bottom-[-10%] left-[20%] w-[40%] h-[40%] bg-amber-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-40 animate-blob animation-delay-4000"></div>
+
+      {/* ─── القائمة الجانبية ─── */}
+      <div className="w-80 shrink-0 bg-white/40 backdrop-blur-xl border-l border-white/50 flex flex-col z-10 shadow-[8px_0_32px_rgba(31,38,135,0.05)]">
+        <div className="p-5 border-b border-white/40">
+          <h3 className="text-[15px] font-black text-[#123f59] mb-4 flex items-center gap-2 drop-shadow-sm">
+            <User className="h-5 w-5" /> سجل الموظفين
           </h3>
           <div className="relative">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
             <input
               type="text"
               placeholder="ابحث بالاسم أو الرقم..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-10 pl-3 pr-9 rounded-xl border border-gray-200 bg-gray-50 text-[12px] font-bold outline-none transition focus:border-[#e2bf74] focus:ring-1 focus:ring-[#e2bf74]/30"
+              className="w-full h-11 pl-3 pr-10 rounded-2xl border border-white/60 bg-white/30 backdrop-blur-sm text-[13px] font-bold outline-none transition focus:bg-white/60 focus:ring-2 focus:ring-teal-400/30 placeholder-gray-500"
             />
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2 bg-[#fdfdfc]">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
           {isLoadingEmployees ? (
-            <div className="p-4 text-center text-xs font-bold text-gray-500">
+            <div className="p-4 text-center text-sm font-bold text-gray-600 animate-pulse">
               جاري التحميل...
             </div>
           ) : (
@@ -219,28 +311,24 @@ export default function ContractsAttachmentsEngine() {
               <button
                 key={emp.id}
                 onClick={() => setSelectedEmpId(emp.id)}
-                className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all duration-200 ${
+                className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all duration-300 border ${
                   selectedEmpId === emp.id
-                    ? "bg-gradient-to-l from-[#0e7490] to-[#123f59] border-transparent shadow-[0_4px_12px_rgba(14,116,144,0.2)] text-white"
-                    : "bg-white border-gray-100 hover:border-[#e2bf74]/40 hover:shadow-sm text-gray-700"
+                    ? "bg-[#123f59]/80 backdrop-blur-md border-[#123f59] shadow-lg text-white"
+                    : "bg-white/30 border-white/40 hover:bg-white/60 text-[#123f59]"
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 font-black text-sm ${
-                      selectedEmpId === emp.id
-                        ? "bg-white/20 text-white"
-                        : "bg-[#eef7f6] text-[#0e7490]"
-                    }`}
+                    className={`h-11 w-11 rounded-[14px] flex items-center justify-center shrink-0 font-black text-sm shadow-inner ${selectedEmpId === emp.id ? "bg-white/20 text-white" : "bg-gradient-to-br from-teal-400/20 to-teal-600/20 text-teal-800 border border-teal-500/20"}`}
                   >
                     {emp.name?.charAt(0)}
                   </div>
                   <div className="text-right min-w-0 flex-1">
-                    <p className="text-[12px] font-black truncate">
+                    <p className="text-[13px] font-black truncate drop-shadow-sm">
                       {emp.name}
                     </p>
                     <p
-                      className={`text-[10px] font-bold mt-0.5 ${selectedEmpId === emp.id ? "text-white/80" : "text-gray-400"}`}
+                      className={`text-[10px] font-bold mt-1 ${selectedEmpId === emp.id ? "text-teal-100" : "text-gray-600"}`}
                     >
                       {emp.employeeCode} | {emp.position}
                     </p>
@@ -252,40 +340,38 @@ export default function ContractsAttachmentsEngine() {
         </div>
       </div>
 
-      {/* ─── مساحة العمل (المرفقات) ─── */}
-      <div className="flex-1 flex flex-col min-w-0 relative bg-[#fbf8f1]">
-        <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-[#eef7f6] to-transparent opacity-60 pointer-events-none"></div>
-
+      {/* ─── مساحة العمل ─── */}
+      <div className="flex-1 flex flex-col min-w-0 z-10 relative">
         {!selectedEmpId ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-4 z-10">
-            <div className="h-24 w-24 rounded-full bg-white border-2 border-dashed border-gray-300 flex items-center justify-center shadow-sm">
-              <FolderOpen className="h-10 w-10 text-gray-300" />
+          <div className="flex-1 flex flex-col items-center justify-center text-gray-500 gap-5">
+            <div className="h-32 w-32 rounded-full bg-white/30 backdrop-blur-xl border border-white/50 flex items-center justify-center shadow-xl">
+              <FolderOpen className="h-14 w-14 text-teal-600/60" />
             </div>
-            <p className="text-base font-black text-gray-500">
-              اختر موظفاً من القائمة الجانبية لعرض المستندات
+            <p className="text-lg font-black drop-shadow-md text-[#123f59]">
+              يرجى اختيار موظف لاستعراض محفظة المستندات
             </p>
           </div>
         ) : (
           <>
-            <div className="shrink-0 p-5 border-b border-[#e8ddc8]/60 flex items-center justify-between bg-white/70 backdrop-blur-md z-10">
+            <div className="shrink-0 p-6 border-b border-white/40 flex flex-wrap gap-4 items-center justify-between bg-white/40 backdrop-blur-md">
               <div>
-                <h2 className="text-lg font-black text-[#06111d] flex items-center gap-2">
-                  محفظة المستندات: {selectedEmp?.name}
+                <h2 className="text-xl font-black text-[#123f59] flex items-center gap-3 drop-shadow-sm">
+                  {selectedEmp?.name}
                   {selectedEmp?.status === "active" ? (
-                    <span className="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3" /> نشط
+                    <span className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-800 text-[11px] px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> نشط
                     </span>
                   ) : (
-                    <span className="bg-rose-100 text-rose-700 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" /> غير نشط
+                    <span className="bg-rose-500/20 border border-rose-500/30 text-rose-800 text-[11px] px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                      <AlertCircle className="h-3.5 w-3.5" /> غير نشط
                     </span>
                   )}
                 </h2>
 
-                <div className="flex items-center gap-2 mt-3">
+                <div className="flex flex-wrap items-center gap-2 mt-4">
                   <button
                     onClick={() => setActiveFilter("ALL")}
-                    className={`px-3 py-1 rounded-lg text-[10px] font-black transition ${activeFilter === "ALL" ? "bg-[#06111d] text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                    className={`px-4 py-1.5 rounded-xl text-[11px] font-black transition-all border ${activeFilter === "ALL" ? "bg-[#123f59]/80 text-white border-[#123f59] shadow-md" : "bg-white/40 border-white/50 text-[#123f59] hover:bg-white/60"}`}
                   >
                     الكل
                   </button>
@@ -293,7 +379,7 @@ export default function ContractsAttachmentsEngine() {
                     <button
                       key={cat.id}
                       onClick={() => setActiveFilter(cat.id)}
-                      className={`px-3 py-1 rounded-lg text-[10px] font-black transition flex items-center gap-1 ${activeFilter === cat.id ? "bg-[#06111d] text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                      className={`px-4 py-1.5 rounded-xl text-[11px] font-black transition-all flex items-center gap-1.5 border ${activeFilter === cat.id ? "bg-[#123f59]/80 text-white border-[#123f59] shadow-md" : `bg-white/40 border-white/50 ${cat.color} hover:bg-white/60`}`}
                     >
                       {cat.label}
                     </button>
@@ -303,27 +389,28 @@ export default function ContractsAttachmentsEngine() {
 
               <button
                 onClick={() => setUploadModalOpen(true)}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-[#d4af37] to-[#e2bf74] px-5 text-sm font-black text-[#06111d] shadow-[0_8px_18px_rgba(226,191,116,0.25)] transition hover:-translate-y-0.5"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-500 to-teal-600 px-6 text-[13px] font-black text-white shadow-[0_8px_20px_rgba(20,184,166,0.3)] transition-all hover:scale-105 hover:shadow-[0_10px_25px_rgba(20,184,166,0.4)] border border-teal-400/50"
               >
-                <UploadCloud className="h-5 w-5" />
-                رفع مستند جديد
+                <UploadCloud className="h-5 w-5" /> إضافة مستند جديد
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar z-10">
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
               {isLoadingAttachments ? (
                 <div className="flex justify-center items-center h-full">
-                  <p className="font-bold text-gray-500 animate-pulse">
-                    جاري تحميل المستندات...
+                  <p className="font-bold text-[#123f59] animate-pulse text-lg">
+                    جاري استحضار المستندات...
                   </p>
                 </div>
               ) : attachments.length === 0 ? (
-                <div className="text-center py-24 text-gray-400">
-                  <FileText className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="font-bold">لا توجد مستندات مسجلة.</p>
+                <div className="text-center py-32 text-gray-500">
+                  <FileText className="h-16 w-16 mx-auto mb-4 text-[#123f59]/30" />
+                  <p className="font-black text-lg drop-shadow-sm">
+                    لا توجد مستندات مسجلة ضمن هذا التصنيف.
+                  </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
                   {attachments.map((file) => {
                     const catInfo =
                       ATTACHMENT_CATEGORIES.find(
@@ -331,63 +418,99 @@ export default function ContractsAttachmentsEngine() {
                       ) || ATTACHMENT_CATEGORIES[3];
                     const meta = getFileMeta(file.fileName);
                     const FileTypeIcon = meta.icon;
+                    const docStatus = getDocumentStatus(
+                      file.expiryDate,
+                      file.isPermanent,
+                    );
 
                     return (
                       <div
                         key={file.id}
-                        className="group relative bg-white border border-gray-100 rounded-[20px] p-4 shadow-sm hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)] transition-all duration-300 hover:border-[#e2bf74]/50 flex flex-col h-[200px]"
+                        className="group relative bg-white/40 backdrop-blur-xl border border-white/60 rounded-[28px] p-5 shadow-[0_8px_32px_rgba(31,38,135,0.07)] hover:bg-white/60 hover:-translate-y-1 transition-all duration-300 flex flex-col h-[260px] overflow-hidden"
                       >
-                        <div className="flex items-start justify-between mb-3">
+                        {/* غلور في خلفية الكرت لجمالية إضافية */}
+                        <div className="absolute -top-10 -right-10 w-24 h-24 bg-white/40 rounded-full blur-2xl"></div>
+
+                        {/* الهيدر (الحالة والتصنيف) */}
+                        <div className="flex justify-between items-start mb-3 z-10">
                           <div
-                            className={`h-12 w-12 rounded-2xl flex items-center justify-center ${meta.bg} ${meta.color} shadow-inner`}
+                            className={`px-2.5 py-1 rounded-xl text-[10px] font-black border flex items-center gap-1 backdrop-blur-sm ${docStatus.classes}`}
+                          >
+                            {docStatus.status === "EXPIRED" ? (
+                              <AlertCircle className="h-3 w-3" />
+                            ) : (
+                              <CheckCircle2 className="h-3 w-3" />
+                            )}
+                            {docStatus.text}
+                          </div>
+                          <div
+                            className={`h-12 w-12 rounded-2xl flex items-center justify-center ${meta.bg} ${meta.color} border border-white/50 shadow-inner`}
                           >
                             <FileTypeIcon
                               className="h-6 w-6"
                               strokeWidth={1.5}
                             />
                           </div>
-                          <span className="text-[10px] font-black bg-gray-100 text-gray-600 px-2.5 py-1 rounded-lg flex items-center gap-1 border border-gray-200/50">
-                            <catInfo.icon className="h-3 w-3" /> {catInfo.label}
-                          </span>
                         </div>
 
-                        <div className="min-w-0 flex-1">
+                        {/* البيانات */}
+                        <div className="z-10 flex-1">
+                          <span
+                            className={`text-[9px] font-black px-2 py-0.5 rounded-lg border bg-white/50 backdrop-blur-sm ${catInfo.border} ${catInfo.color} mb-2 inline-block`}
+                          >
+                            {catInfo.label}
+                          </span>
                           <h4
-                            className="text-[13px] font-black text-[#06111d] truncate mb-1"
-                            title={file.fileName}
+                            className="text-[15px] font-black text-[#123f59] truncate mb-1 drop-shadow-sm"
+                            title={file.customName || file.fileName}
+                          >
+                            {file.customName || file.fileName}
+                          </h4>
+                          <p
+                            className="text-[10px] font-bold text-gray-500 truncate"
+                            dir="ltr"
                           >
                             {file.fileName}
-                          </h4>
-                          <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400">
-                            <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
-                              {meta.label}
-                            </span>
-                            <span>{formatBytes(file.fileSize)}</span>
-                          </div>
-                        </div>
+                          </p>
 
-                        <div className="pt-3 mt-auto border-t border-gray-100 flex items-center justify-between">
-                          <div className="flex items-center gap-2 max-w-[50%]">
-                            <div className="h-6 w-6 rounded-full bg-[#123f59] flex items-center justify-center text-white text-[9px] font-black shrink-0">
-                              {file.uploadedBy?.name?.charAt(0) || (
-                                <User className="h-3 w-3" />
+                          {/* التواريخ */}
+                          {(file.issueDate || file.expiryDate) && (
+                            <div className="mt-3 space-y-1 text-[10px] font-bold text-[#123f59]/80 bg-white/30 p-2 rounded-xl border border-white/40">
+                              {file.issueDate && (
+                                <p className="flex justify-between">
+                                  <span>الإصدار:</span>{" "}
+                                  <span>
+                                    {new Date(
+                                      file.issueDate,
+                                    ).toLocaleDateString("ar-SA")}
+                                  </span>
+                                </p>
+                              )}
+                              {file.expiryDate && !file.isPermanent && (
+                                <p className="flex justify-between">
+                                  <span>الانتهاء:</span>{" "}
+                                  <span>
+                                    {new Date(
+                                      file.expiryDate,
+                                    ).toLocaleDateString("ar-SA")}
+                                  </span>
+                                </p>
                               )}
                             </div>
-                            <div className="truncate">
-                              <p className="text-[9px] font-black text-gray-700 truncate">
-                                {file.uploadedBy?.name || "مستخدم النظام"}
-                              </p>
-                              <p className="text-[8px] font-bold text-gray-400 flex items-center gap-0.5">
-                                <Clock className="h-2.5 w-2.5" />{" "}
-                                {new Date(file.createdAt).toLocaleDateString(
-                                  "ar-SA",
-                                )}
-                              </p>
-                            </div>
-                          </div>
+                          )}
+                        </div>
 
-                          <div className="flex items-center gap-1.5">
-                            {/* 🚀 إرسال البيانات للمودل بصيغته المتوقعة تماماً */}
+                        {/* الأزرار والإجراءات */}
+                        <div className="pt-4 mt-auto border-t border-white/50 flex items-center justify-between z-10">
+                          <div className="flex gap-1.5">
+                            {docStatus.status === "EXPIRED" && (
+                              <button
+                                onClick={() => openRenewModal(file)}
+                                className="h-9 px-3 rounded-xl bg-indigo-500/20 text-indigo-700 border border-indigo-500/30 hover:bg-indigo-500/40 text-[11px] font-black flex items-center gap-1.5 shadow-sm transition"
+                              >
+                                <RefreshCw className="h-3.5 w-3.5" /> تجديد
+                              </button>
+                            )}
                             <button
                               onClick={() =>
                                 setFileToView({
@@ -396,47 +519,37 @@ export default function ContractsAttachmentsEngine() {
                                     ?.split(".")
                                     .pop()
                                     ?.toLowerCase(),
-                                  name: file.fileName,
-                                  originalName: file.fileName,
-                                  size: file.fileSize,
+                                  name: file.customName || file.fileName,
                                 })
                               }
-                              className="h-8 w-8 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition shadow-sm"
-                              title="معاينة الملف"
+                              className="h-9 w-9 rounded-xl bg-white/50 text-[#123f59] border border-white/60 hover:bg-white flex items-center justify-center shadow-sm transition"
                             >
                               <Eye className="h-4 w-4" />
                             </button>
-
                             <a
                               href={
                                 api.defaults.baseURL.replace("/api", "") +
                                 file.filePath
-                              } // 👈 استخدام الرابط الكامل للتحميل
+                              }
                               download
                               target="_blank"
                               rel="noreferrer"
-                              className="h-8 w-8 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white flex items-center justify-center transition shadow-sm"
-                              title="تحميل"
+                              className="h-9 w-9 rounded-xl bg-white/50 text-emerald-600 border border-white/60 hover:bg-white flex items-center justify-center shadow-sm transition"
                             >
                               <Download className="h-4 w-4" />
                             </a>
-
-                            <button
-                              onClick={() => {
-                                if (
-                                  window.confirm(
-                                    "هل أنت متأكد من حذف هذا المستند نهائياً؟",
-                                  )
-                                ) {
-                                  deleteMutation.mutate(file.id);
-                                }
-                              }}
-                              className="h-8 w-8 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white flex items-center justify-center transition shadow-sm"
-                              title="حذف"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
                           </div>
+
+                          <button
+                            onClick={() =>
+                              window.confirm(
+                                "هل أنت متأكد من حذف المستند نهائياً؟",
+                              ) && deleteMutation.mutate(file.id)
+                            }
+                            className="h-9 w-9 rounded-xl bg-rose-500/10 text-rose-600 border border-rose-500/20 hover:bg-rose-500 hover:text-white flex items-center justify-center shadow-sm transition"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </div>
                     );
@@ -448,93 +561,220 @@ export default function ContractsAttachmentsEngine() {
         )}
       </div>
 
+      {/* ─── نافذة الرفع والتجديد (Liquid Glass) ─── */}
       {uploadModalOpen && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#06111d]/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-[#06111d]/40 backdrop-blur-md overflow-y-auto">
           <form
             onSubmit={handleUpload}
-            className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95"
+            className="bg-white/60 backdrop-blur-2xl border border-white/70 rounded-[32px] w-full max-w-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] my-auto relative overflow-hidden"
           >
-            <div className="p-5 border-b border-gray-100 bg-gradient-to-br from-gray-50 to-white flex justify-between items-center">
+            {/* تأثيرات لونية داخل المودل */}
+            <div className="absolute top-0 right-0 w-full h-32 bg-gradient-to-b from-teal-400/20 to-transparent pointer-events-none"></div>
+
+            <div className="p-6 border-b border-white/50 flex justify-between items-center relative z-10">
               <div>
-                <h3 className="font-black text-[15px] text-[#06111d]">
-                  إضافة مستند جديد
+                <h3 className="font-black text-xl text-[#123f59] flex items-center gap-2 drop-shadow-sm">
+                  {renewingDoc ? (
+                    <RefreshCw className="h-6 w-6 text-indigo-600" />
+                  ) : (
+                    <UploadCloud className="h-6 w-6 text-teal-600" />
+                  )}
+                  {renewingDoc ? "تجديد مستند منتهي" : "إضافة مستند جديد"}
                 </h3>
-                <p className="text-[11px] text-gray-500 font-bold mt-1">
-                  يتم الرفع إلى ملف: {selectedEmp?.name}
+                <p className="text-[12px] text-gray-600 font-bold mt-1">
+                  يتم الحفظ في ملف الموظف:{" "}
+                  <span className="text-teal-700">{selectedEmp?.name}</span>
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => setUploadModalOpen(false)}
-                className="h-8 w-8 rounded-full bg-gray-100 text-gray-500 hover:bg-rose-100 hover:text-rose-600 flex items-center justify-center transition"
+                onClick={closeModal}
+                className="h-10 w-10 rounded-full bg-white/50 border border-white/60 text-gray-600 hover:bg-rose-500/20 hover:text-rose-600 flex items-center justify-center transition shadow-sm"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="p-5 space-y-5">
+
+            <div className="p-6 space-y-6 relative z-10">
+              {/* التصنيف (معطل في حالة التجديد للحفاظ على نفس التصنيف) */}
               <div>
-                <label className="block text-xs font-black text-gray-700 mb-2">
+                <label className="block text-[13px] font-black text-[#123f59] mb-2 drop-shadow-sm">
                   تصنيف المستند
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {ATTACHMENT_CATEGORIES.map((cat) => (
                     <button
                       type="button"
                       key={cat.id}
+                      disabled={!!renewingDoc}
                       onClick={() => setSelectedCategory(cat.id)}
-                      className={`flex items-center gap-2 p-3 rounded-xl border text-[11px] font-black transition ${
+                      className={`flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border transition-all duration-300 ${
                         selectedCategory === cat.id
-                          ? `border-[#0e7490] bg-[#0e7490] text-white shadow-md`
-                          : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300"
+                          ? `bg-[#123f59]/90 backdrop-blur-md text-white border-[#123f59] shadow-lg scale-105`
+                          : "bg-white/40 border-white/60 text-[#123f59] hover:bg-white/70 disabled:opacity-50 disabled:hover:scale-100"
                       }`}
                     >
-                      <cat.icon className="h-4 w-4 shrink-0" />
-                      {cat.label}
+                      <cat.icon className="h-5 w-5" />
+                      <span className="text-[11px] font-black">
+                        {cat.label}
+                      </span>
                     </button>
                   ))}
                 </div>
               </div>
 
+              {/* اسم المستند */}
               <div>
-                <label className="block text-xs font-black text-gray-700 mb-2">
-                  الملف المرفق
+                <label className="block text-[13px] font-black text-[#123f59] mb-2 drop-shadow-sm">
+                  اسم المستند (كما سيظهر في النظام)
                 </label>
-                <div className="relative group">
+                <input
+                  type="text"
+                  required
+                  value={documentName}
+                  onChange={(e) => setDocumentName(e.target.value)}
+                  className="w-full h-12 px-4 bg-white/50 backdrop-blur-sm border border-white/60 rounded-2xl text-[14px] font-bold text-[#123f59] outline-none focus:bg-white/80 focus:ring-2 focus:ring-teal-500/40 transition-all placeholder-gray-400 shadow-inner"
+                  placeholder="مثال: هوية وطنية، عقد عمل، شهادة هندسية..."
+                />
+              </div>
+
+              {/* التواريخ */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {/* تاريخ الإصدار */}
+                <div className="bg-white/30 backdrop-blur-sm p-4 rounded-2xl border border-white/50">
+                  <label className="block text-[12px] font-black text-[#123f59] mb-2">
+                    تاريخ الإصدار (اختياري)
+                  </label>
                   <input
-                    type="file"
-                    onChange={(e) => setFileToUpload(e.target.files[0])}
-                    className="block w-full text-xs text-gray-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-[11px] file:font-black file:bg-[#eef7f6] file:text-[#0e7490] hover:file:bg-[#0e7490] hover:file:text-white file:transition-all cursor-pointer border-2 border-dashed border-gray-300 rounded-2xl p-3 bg-gray-50 group-hover:border-[#0e7490]/50 transition-colors"
+                    type="date"
+                    value={issueDate}
+                    onChange={(e) => setIssueDate(e.target.value)}
+                    className="w-full h-11 px-3 bg-white/60 border border-white/60 rounded-xl text-sm font-bold outline-none focus:bg-white focus:ring-2 focus:ring-teal-500/40"
                   />
+                  {issueDate && (
+                    <p className="text-[11px] text-teal-700 font-bold mt-2 bg-teal-500/10 p-1.5 rounded-lg border border-teal-500/20 text-center">
+                      يوافق هجري: {getHijriDate(issueDate)}
+                    </p>
+                  )}
+                </div>
+
+                {/* تاريخ الانتهاء */}
+                <div className="bg-white/30 backdrop-blur-sm p-4 rounded-2xl border border-white/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[12px] font-black text-[#123f59]">
+                      تاريخ الانتهاء
+                    </label>
+                    <label className="flex items-center gap-1.5 text-[11px] font-bold text-[#123f59] cursor-pointer bg-white/50 px-2 py-1 rounded-lg border border-white/60">
+                      <input
+                        type="checkbox"
+                        checked={isPermanent}
+                        onChange={(e) => {
+                          setIsPermanent(e.target.checked);
+                          if (e.target.checked) setExpiryDate("");
+                        }}
+                        className="accent-teal-600 w-3.5 h-3.5"
+                      />
+                      بدون تاريخ (دائم)
+                    </label>
+                  </div>
+                  <input
+                    type="date"
+                    disabled={isPermanent}
+                    value={expiryDate}
+                    onChange={(e) => setExpiryDate(e.target.value)}
+                    className="w-full h-11 px-3 bg-white/60 border border-white/60 rounded-xl text-sm font-bold outline-none focus:bg-white focus:ring-2 focus:ring-rose-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  {expiryDate && !isPermanent && (
+                    <p className="text-[11px] text-rose-700 font-bold mt-2 bg-rose-500/10 p-1.5 rounded-lg border border-rose-500/20 text-center">
+                      يوافق هجري: {getHijriDate(expiryDate)}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* الملاحظات */}
+              <div>
+                <label className="flex items-center gap-2 text-[13px] font-black text-[#123f59] mb-2 drop-shadow-sm">
+                  ملاحظات{" "}
+                  {renewingDoc && (
+                    <span className="text-rose-600 text-[10px] bg-rose-100 px-2 py-0.5 rounded-lg">
+                      إجباري لبيان سبب التجديد
+                    </span>
+                  )}
+                </label>
+                <textarea
+                  value={notes}
+                  required={!!renewingDoc}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full p-4 bg-white/50 backdrop-blur-sm border border-white/60 rounded-2xl text-[13px] font-bold text-[#123f59] outline-none focus:bg-white/80 focus:ring-2 focus:ring-teal-500/40 transition-all shadow-inner custom-scrollbar"
+                  rows="2"
+                  placeholder="أضف أي ملاحظات أو تفاصيل إضافية..."
+                ></textarea>
+              </div>
+
+              {/* رفع الملف */}
+              <div className="bg-white/40 backdrop-blur-md border-2 border-dashed border-teal-500/40 rounded-3xl p-5 text-center hover:bg-white/60 transition-all relative group overflow-hidden">
+                <input
+                  type="file"
+                  onChange={(e) => setFileToUpload(e.target.files[0])}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                />
+                <div className="relative z-10 pointer-events-none flex flex-col items-center gap-3">
+                  <div
+                    className={`h-14 w-14 rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${fileToUpload ? "bg-teal-500 text-white" : "bg-white border border-teal-200 text-teal-600"}`}
+                  >
+                    {fileToUpload ? (
+                      <CheckCircle2 className="h-7 w-7" />
+                    ) : (
+                      <UploadCloud className="h-7 w-7" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[14px] font-black text-[#123f59]">
+                      {fileToUpload
+                        ? fileToUpload.name
+                        : "اضغط هنا لاختيار المستند المرفق"}
+                    </p>
+                    <p className="text-[11px] font-bold text-gray-500 mt-1">
+                      يدعم PDF, الصور, والملفات المضغوطة
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="p-5 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+
+            <div className="p-6 bg-white/30 backdrop-blur-md border-t border-white/50 flex justify-end gap-4 relative z-10">
               <button
                 type="button"
-                onClick={() => setUploadModalOpen(false)}
-                className="px-5 py-2.5 rounded-xl text-[12px] font-black text-gray-600 bg-white border border-gray-200 hover:bg-gray-100 transition"
+                onClick={closeModal}
+                className="px-6 py-2.5 rounded-2xl text-[13px] font-black text-[#123f59] bg-white/50 border border-white/60 hover:bg-white transition-all shadow-sm"
               >
                 إلغاء
               </button>
               <button
                 type="submit"
                 disabled={uploadMutation.isPending}
-                className="px-6 py-2.5 rounded-xl text-[12px] font-black bg-[#0e7490] text-white hover:bg-[#0b5b73] shadow-[0_4px_12px_rgba(14,116,144,0.25)] flex items-center gap-2 transition disabled:opacity-70"
+                className="px-8 py-2.5 rounded-2xl text-[13px] font-black bg-gradient-to-r from-teal-500 to-teal-600 text-white hover:from-teal-600 hover:to-teal-700 shadow-[0_8px_20px_rgba(20,184,166,0.3)] flex items-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {uploadMutation.isPending ? (
-                  "جاري الرفع..."
+                  <RefreshCw className="h-5 w-5 animate-spin" />
+                ) : renewingDoc ? (
+                  <RefreshCw className="h-5 w-5" />
                 ) : (
-                  <>
-                    <UploadCloud className="h-4 w-4" /> حفظ المستند
-                  </>
+                  <UploadCloud className="h-5 w-5" />
                 )}
+                {uploadMutation.isPending
+                  ? "جاري المعالجة..."
+                  : renewingDoc
+                    ? "اعتماد التجديد"
+                    : "حفظ المستند"}
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* ─── نافذة عرض الملفات ─── */}
+      {/* ─── نافذة العرض ─── */}
       {fileToView && (
         <FileViewerModal
           file={fileToView}
