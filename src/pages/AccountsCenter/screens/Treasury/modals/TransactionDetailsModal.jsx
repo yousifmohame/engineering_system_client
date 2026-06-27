@@ -10,7 +10,8 @@ import {
   CheckCircle, 
   XCircle 
 } from "lucide-react";
-// تأكد من تعديل مسار الاستيراد حسب المسار الفعلي في مشروعك
+// (تأكد من عدد النقاط للوصول لمجلد utils في مشروعك)
+import { getFullUrl } from "../../../../../utils/urlUtils"; 
 import FileViewerModal from "../../../../FilesExplorer/modals/FileViewerModal";
 
 const TransactionDetailsModal = ({ transaction, onClose }) => {
@@ -24,30 +25,35 @@ const TransactionDetailsModal = ({ transaction, onClose }) => {
   const isApprove = transaction.status === 'APPROVED';
   const isInbound = transaction.direction === 'INBOUND';
 
-  // دالة لتحويل الرابط النصي إلى كائن يفهمه FileViewerModal
+  // دالة لتحويل الرابط وتمريره للمودال
   const handleViewFile = (fileUrl) => {
     if (!fileUrl) return;
 
-    // استخراج اسم الملف والامتداد من الرابط
+    // 💡 استخدام الدالة المركزية للحصول على الرابط الصحيح
+    const fullUrl = getFullUrl(fileUrl);
+
+    // استخراج اسم الملف والامتداد
     const fileName = fileUrl.split('/').pop() || "مستند_مرفق";
     const extension = fileName.split('.').pop().toLowerCase();
 
-    // تحديد نوع الملف (مهم جداً لكي يتعرف عليه المودال)
+    // تحديد نوع الملف (لكي يتعرف عليه FileViewerModal)
     let fileCategory = "unknown";
     if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(extension)) {
       fileCategory = "image";
     } else if (extension === 'pdf') {
       fileCategory = "pdf";
+    } else if (['doc', 'docx', 'xls', 'xlsx'].includes(extension)) {
+      fileCategory = "document";
     }
 
-    // بناء الكائن وتمريره للحالة
+    // بناء الكائن
     setViewerFile({
-      url: fileUrl,              // الرابط للعرض
-      path: fileUrl,             // بعض المكونات تستخدم path بدلاً من url
-      name: fileName,            // اسم الملف
-      type: fileCategory,        // نوع الملف (صورة، pdf، الخ)
-      extension: extension,      // الامتداد (png, pdf)
-      mimeType: `${fileCategory}/${extension}` // صيغة MIME إن لزم
+      url: fullUrl,
+      path: fullUrl,
+      name: fileName,            
+      type: fileCategory,        
+      extension: extension,      
+      mimeType: `${fileCategory}/${extension === 'jpg' ? 'jpeg' : extension}` 
     });
   };
 
@@ -75,7 +81,7 @@ const TransactionDetailsModal = ({ transaction, onClose }) => {
             </div>
             <button 
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+              className="p-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -147,8 +153,8 @@ const TransactionDetailsModal = ({ transaction, onClose }) => {
                   {transaction.attachmentIds.map((fileUrl, index) => (
                     <button 
                       key={index} 
-                      onClick={() => handleViewFile(fileUrl)} // استخدام الدالة الجديدة هنا
-                      className="flex items-center justify-between p-3 bg-white border border-slate-200 hover:border-blue-400 hover:shadow-md rounded-xl transition-all group w-full text-right"
+                      onClick={() => handleViewFile(fileUrl)} 
+                      className="flex items-center justify-between p-3 bg-white border border-slate-200 hover:border-blue-400 hover:shadow-md rounded-xl transition-all group w-full text-right cursor-pointer"
                     >
                       <div className="flex items-center gap-3 overflow-hidden">
                         <div className="bg-blue-50 p-2 rounded-lg text-blue-600">

@@ -10,7 +10,7 @@ import PermissionTreeBuilder from "./screens/permissionTree/PermissionTreeBuilde
 import PermissionTreeBuilderEmploye from "./screens/permissionTree/PermissionTreeBuilderEmploye";
 import EmployeePortal from "./screens/EmployeePortal/EmployeePortal";
 import LeavesAbsenceManagement from "./screens/LeavesAbsence/LeavesAbsenceManagement";
-import PayrollManagement from "./screens/payroll/PayrollManagement";
+import PayrollManagement from "./screens/payroll/index";
 // أضف هذا السطر مع باقي الاستيرادات في الأعلى
 import ContractsAttachmentsEngine from "./screens/ContractsAndAttachments/ContractsAttachmentsEngine";
 import JobOffersScreen from "./screens/JobOffers/JobOffersScreen"; // 👈 أضف هذا السطر

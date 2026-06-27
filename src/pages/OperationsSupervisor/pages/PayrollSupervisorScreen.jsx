@@ -9,9 +9,10 @@ import {
   FileText,
   DollarSign,
   X,
-  CheckCheck
+  CheckCheck,
+  Undo
 } from "lucide-react";
-import axios from "../../../api/axios"; // تأكد من استيراد إعدادات axios الخاصة بمشروعك (مثلاً من api/axiosConfig)
+import axios from "../../../api/axios"; // تأكد من المسار حسب مشروعك
 
 const PayrollSupervisorScreen = () => {
   // === الحالات (States) ===
@@ -20,7 +21,10 @@ const PayrollSupervisorScreen = () => {
   const [monthFilter, setMonthFilter] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [sourceFilter, setSourceFilter] = useState("ALL");
   
-  // حالات التعديل
+  // حالة نافذة إجراءات المشرف (الاعتماد / الرفض / الإرجاع)
+  const [actionModal, setActionModal] = useState({ isOpen: false, data: null, actionType: null, note: "" });
+  
+  // حالات التعديل المالي المباشر (اختياري للمشرف)
   const [editModal, setEditModal] = useState({ isOpen: false, data: null });
   const [saving, setSaving] = useState(false);
 
@@ -31,12 +35,10 @@ const PayrollSupervisorScreen = () => {
   const fetchPayrolls = async () => {
     setLoading(true);
     try {
-      // قم بتعديل المسار حسب إعدادات الـ axios الخاصة بك
       const response = await axios.get(`/payrolls?month=${monthFilter}&source=${sourceFilter}`);
       setPayrolls(response.data);
     } catch (error) {
       console.error("Error fetching payrolls:", error);
-      // يمكن إضافة إشعار خطأ هنا (Toast)
     } finally {
       setLoading(false);
     }
@@ -59,17 +61,35 @@ const PayrollSupervisorScreen = () => {
     }
   };
 
-  // 2. الاعتماد (Approve)
-  const handleApprove = async (id) => {
+  // 2. تنفيذ إجراء المشرف (اعتماد / إرجاع / رفض)
+  const executeSupervisorAction = async () => {
+    setSaving(true);
     try {
-      await axios.patch(`/payrolls/${id}/approve`);
-      fetchPayrolls(); // تحديث القائمة
+      await axios.post(`/payrolls/${actionModal.data.id}/supervisor-action`, {
+        action: actionModal.actionType,
+        note: actionModal.note
+      });
+      setActionModal({ isOpen: false, data: null, actionType: null, note: "" });
+      fetchPayrolls();
     } catch (error) {
-      console.error("Error approving payroll:", error);
+      console.error("Action error:", error);
+    } finally {
+      setSaving(false);
     }
   };
 
-  // 3. تحديث القسيمة
+  // 3. إلغاء الاعتماد
+  const handleRevoke = async (id) => {
+    if(!window.confirm("هل أنت متأكد من إلغاء الاعتماد لإرجاعه للتعديل؟")) return;
+    try {
+      await axios.patch(`/payrolls/${id}/revoke`);
+      fetchPayrolls();
+    } catch (error) {
+      console.error("Revoke error:", error);
+    }
+  };
+
+  // 4. تحديث القسيمة مالياً (تعديل مباشر من المشرف)
   const handleSaveEdit = async () => {
     setSaving(true);
     try {
@@ -88,7 +108,7 @@ const PayrollSupervisorScreen = () => {
     }
   };
 
-  // 4. رفع ملف مدد
+  // 5. رفع ملف مدد
   const handleMudadUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -106,7 +126,7 @@ const PayrollSupervisorScreen = () => {
       console.error("Error uploading mudad:", error);
     } finally {
       setLoading(false);
-      e.target.value = null; // إعادة تعيين الحقل
+      e.target.value = null;
     }
   };
 
@@ -114,18 +134,22 @@ const PayrollSupervisorScreen = () => {
   const getStatusBadge = (status) => {
     const badges = {
       PENDING: "bg-gray-100 text-gray-700 border-gray-200",
-      UNDER_REVIEW: "bg-amber-50 text-amber-700 border-amber-200",
-      APPROVED: "bg-blue-50 text-blue-700 border-blue-200",
+      UNDER_REVIEW: "bg-cyan-50 text-cyan-700 border-cyan-200",
+      APPROVED: "bg-indigo-50 text-indigo-700 border-indigo-200",
+      RETURNED: "bg-amber-50 text-amber-700 border-amber-200",
+      REJECTED: "bg-rose-50 text-rose-700 border-rose-200",
       PAID: "bg-emerald-50 text-emerald-700 border-emerald-200"
     };
     const labels = {
       PENDING: "مسودة",
-      UNDER_REVIEW: "بانتظار الاعتماد",
+      UNDER_REVIEW: "قيد المراجعة",
       APPROVED: "معتمد",
+      RETURNED: "مُرجع للتعديل",
+      REJECTED: "مرفوض",
       PAID: "مدفوع (مدد)"
     };
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-bold border ${badges[status] || badges.PENDING}`}>
+      <span className={`px-3 py-1 rounded-full text-[11px] font-bold border ${badges[status] || badges.PENDING}`}>
         {labels[status] || status}
       </span>
     );
@@ -204,83 +228,88 @@ const PayrollSupervisorScreen = () => {
 
       {/* ─── جدول البيانات ─── */}
       <div className="flex-1 bg-white/60 backdrop-blur-xl border border-white/50 rounded-3xl shadow-sm overflow-hidden flex flex-col">
-        <div className="overflow-x-auto flex-1">
+        <div className="overflow-x-auto flex-1 custom-scrollbar">
           <table className="w-full text-right">
             <thead className="bg-[#123f59]/5 text-[#123f59] sticky top-0 backdrop-blur-md z-10">
               <tr>
-                <th className="p-4 font-black whitespace-nowrap">الموظف</th>
-                <th className="p-4 font-black whitespace-nowrap">القسم</th>
-                <th className="p-4 font-black whitespace-nowrap">الأساسي</th>
-                <th className="p-4 font-black whitespace-nowrap">البدلات</th>
-                <th className="p-4 font-black whitespace-nowrap">الخصومات</th>
-                <th className="p-4 font-black whitespace-nowrap">الصافي</th>
-                <th className="p-4 font-black whitespace-nowrap">المصدر</th>
-                <th className="p-4 font-black whitespace-nowrap text-center">الحالة</th>
-                <th className="p-4 font-black whitespace-nowrap text-center">الإجراءات</th>
+                <th className="p-4 font-black text-sm whitespace-nowrap">الموظف</th>
+                <th className="p-4 font-black text-sm whitespace-nowrap">الأساسي</th>
+                <th className="p-4 font-black text-sm whitespace-nowrap">البدلات</th>
+                <th className="p-4 font-black text-sm whitespace-nowrap text-rose-700">الخصومات</th>
+                <th className="p-4 font-black text-sm whitespace-nowrap">الصافي</th>
+                <th className="p-4 font-black text-sm whitespace-nowrap">المصدر</th>
+                <th className="p-4 font-black text-sm whitespace-nowrap text-center">الحالة</th>
+                <th className="p-4 font-black text-sm whitespace-nowrap text-center">الإجراءات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100/50">
               {loading && payrolls.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="p-8 text-center text-gray-500 font-bold">
+                  <td colSpan="8" className="p-8 text-center text-gray-500 font-bold">
                     جاري تحميل البيانات...
                   </td>
                 </tr>
               ) : payrolls.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="p-12 text-center text-gray-500">
-                    <FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                    <p className="font-bold text-lg">لا توجد مسيرات رواتب لهذا الشهر</p>
-                    <p className="text-sm">قم بتوليد المسير أو تغيير فلاتر البحث</p>
+                  <td colSpan="8" className="p-12 text-center text-gray-500">
+                    <FileText className="w-12 h-12 mx-auto mb-3 opacity-40 text-[#123f59]" />
+                    <p className="font-black text-lg text-[#123f59]">لا توجد مسيرات رواتب لهذا الشهر</p>
+                    <p className="text-sm font-bold">قم بتوليد المسير أو تغيير فلاتر البحث</p>
                   </td>
                 </tr>
               ) : (
                 payrolls.map((record) => (
                   <tr key={record.id} className="hover:bg-white/50 transition-colors">
-                    <td className="p-4">
-                      <div className="font-bold text-[#123f59]">{record.employee.name}</div>
-                      <div className="text-xs text-gray-500 font-bold">{record.employee.employeeCode}</div>
+                    <td className="p-4 align-middle">
+                      <div className="font-black text-[#123f59] text-sm">{record.employee?.name}</div>
+                      <div className="text-xs text-gray-500 font-bold mt-1">{record.employee?.employeeCode} - {record.employee?.department}</div>
                     </td>
-                    <td className="p-4 text-sm font-bold text-gray-600">{record.employee.department}</td>
-                    <td className="p-4 font-bold text-gray-700">{record.baseSalary} ر.س</td>
-                    <td className="p-4 text-sm font-bold text-gray-600">
-                      <div>سكن: {record.housingAllow}</div>
-                      <div>نقل: {record.transportAllow}</div>
+                    <td className="p-4 font-bold text-gray-600 text-sm align-middle">{Number(record.baseSalary).toLocaleString()} ر.س</td>
+                    <td className="p-4 text-sm font-bold text-emerald-600 align-middle">
+                      +{(Number(record.housingAllow) + Number(record.transportAllow)).toLocaleString()} ر.س
                     </td>
-                    <td className="p-4 font-bold text-rose-600">{record.deductions} ر.س</td>
-                    <td className="p-4 font-black text-emerald-600 text-lg">{record.netSalary} ر.س</td>
-                    <td className="p-4">{getSourceBadge(record.source)}</td>
-                    <td className="p-4 text-center">{getStatusBadge(record.status)}</td>
-                    <td className="p-4">
+                    <td className="p-4 font-bold text-rose-500 text-sm align-middle">-{Number(record.deductions).toLocaleString()} ر.س</td>
+                    <td className="p-4 font-black text-[#123f59] text-base align-middle">{Number(record.netSalary).toLocaleString()} ر.س</td>
+                    <td className="p-4 align-middle">{getSourceBadge(record.source)}</td>
+                    <td className="p-4 text-center align-middle">{getStatusBadge(record.status)}</td>
+                    <td className="p-4 align-middle">
                       <div className="flex items-center justify-center gap-2">
-                        {/* زر التعديل يظهر فقط إذا لم يكن مدفوعاً */}
-                        {record.status !== "PAID" && (
-                          <button 
-                            onClick={() => setEditModal({ isOpen: true, data: { ...record } })}
-                            className="p-2 rounded-xl bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 transition-colors"
-                            title="تعديل الأرقام"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                        )}
                         
-                        {/* زر الاعتماد يظهر للمسودات أو تحت المراجعة */}
-                        {(record.status === "PENDING" || record.status === "UNDER_REVIEW") && (
-                          <button 
-                            onClick={() => handleApprove(record.id)}
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#123f59] text-white hover:bg-[#0c2a3d] shadow-md transition-colors text-sm font-bold"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            اعتماد
+                        {/* أزرار الإجراءات إذا كان قيد المراجعة */}
+                        {record.status === "UNDER_REVIEW" && (
+                          <>
+                            <button onClick={() => setActionModal({ isOpen: true, data: record, actionType: "APPROVE", note: "" })} className="p-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors" title="اعتماد">
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setActionModal({ isOpen: true, data: record, actionType: "RETURN", note: "" })} className="p-2 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors" title="إرجاع للتعديل">
+                              <Undo className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setActionModal({ isOpen: true, data: record, actionType: "REJECT", note: "" })} className="p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors" title="رفض">
+                              <X className="w-4 h-4" />
+                            </button>
+                            
+                            {/* زر تعديل مباشر للمشرف (اختياري) */}
+                            <button onClick={() => setEditModal({ isOpen: true, data: { ...record } })} className="p-2 rounded-xl bg-gray-50 text-gray-600 hover:bg-gray-200 transition-colors" title="تعديل مالي مباشر">
+                              <Edit className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+
+                        {/* زر إلغاء الاعتماد إذا كان معتمداً */}
+                        {record.status === "APPROVED" && (
+                          <button onClick={() => handleRevoke(record.id)} className="px-3 py-1.5 rounded-xl bg-gray-50 text-gray-600 border border-gray-200 hover:bg-rose-50 hover:text-rose-600 transition-colors text-xs font-bold shadow-sm">
+                            إلغاء الاعتماد
                           </button>
                         )}
 
-                        {record.status === "APPROVED" && (
-                          <span className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 text-sm font-bold cursor-default">
-                            <CheckCheck className="w-4 h-4" />
-                            بانتظار مدد
-                          </span>
+                        {record.status === "RETURNED" && <span className="text-xs text-amber-600 font-bold bg-amber-50 px-2 py-1 rounded-lg">عند الموارد البشرية</span>}
+                        {record.status === "REJECTED" && <span className="text-xs text-rose-600 font-bold bg-rose-50 px-2 py-1 rounded-lg">مرفوض نهائياً</span>}
+                        
+                        {/* حالة المسودة */}
+                        {record.status === "PENDING" && (
+                           <span className="text-xs text-gray-500 font-bold bg-gray-50 border border-gray-200 px-2 py-1 rounded-lg">بانتظار الإرسال</span>
                         )}
+
                       </div>
                     </td>
                   </tr>
@@ -291,7 +320,56 @@ const PayrollSupervisorScreen = () => {
         </div>
       </div>
 
-      {/* ─── مودال التعديل ─── */}
+      {/* ─── مودال إجراءات المشرف (اعتماد / إرجاع / رفض) ─── */}
+      {actionModal.isOpen && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-[#06111d]/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95">
+            <div className={`p-5 border-b flex justify-between items-center text-white 
+              ${actionModal.actionType === 'APPROVE' ? 'bg-emerald-600' : 
+                actionModal.actionType === 'RETURN' ? 'bg-amber-500' : 'bg-rose-600'}`}>
+              <h3 className="font-black text-xl flex items-center gap-2">
+                {actionModal.actionType === 'APPROVE' && <CheckCircle className="w-6 h-6"/>}
+                {actionModal.actionType === 'RETURN' && <Undo className="w-6 h-6"/>}
+                {actionModal.actionType === 'REJECT' && <X className="w-6 h-6"/>}
+                
+                {actionModal.actionType === 'APPROVE' && 'تأكيد الاعتماد'}
+                {actionModal.actionType === 'RETURN' && 'إرجاع للتعديل'}
+                {actionModal.actionType === 'REJECT' && 'رفض المسير'}
+              </h3>
+            </div>
+            
+            <div className="p-6">
+              <div className="mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <p className="text-sm font-bold text-gray-600">الموظف: <span className="font-black text-[#123f59]">{actionModal.data?.employee?.name}</span></p>
+                <p className="text-sm font-bold text-gray-600 mt-1">الصافي: <span className="font-black text-[#123f59]">{Number(actionModal.data?.netSalary).toLocaleString()} ر.س</span></p>
+              </div>
+
+              <label className="block text-sm font-bold text-gray-700 mb-2">ملاحظات المشرف (اختياري / إلزامي في حالة الرفض)</label>
+              <textarea 
+                rows="4"
+                value={actionModal.note}
+                onChange={(e) => setActionModal({ ...actionModal, note: e.target.value })}
+                placeholder="اكتب أسباب الإرجاع أو الرفض أو أي ملاحظات هنا..."
+                className="w-full bg-white border border-gray-300 rounded-xl p-3 font-bold focus:ring-2 focus:ring-teal-500 outline-none resize-none"
+              />
+            </div>
+
+            <div className="p-5 bg-gray-50 border-t flex justify-end gap-3">
+              <button onClick={() => setActionModal({ isOpen: false, data: null, actionType: null, note: "" })} className="px-5 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-200 transition-colors">
+                إلغاء
+              </button>
+              <button onClick={executeSupervisorAction} disabled={saving || (actionModal.actionType === 'REJECT' && !actionModal.note.trim())} className={`px-5 py-2.5 rounded-xl font-bold text-white shadow-md transition-colors flex items-center gap-2 disabled:opacity-50 
+                ${actionModal.actionType === 'APPROVE' ? 'bg-emerald-600 hover:bg-emerald-700' : 
+                  actionModal.actionType === 'RETURN' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-rose-600 hover:bg-rose-700'}`}>
+                {saving ? <RefreshCw className="w-5 h-5 animate-spin" /> : 'تأكيد الإجراء'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* ─── مودال التعديل المالي المباشر (للمشرف) ─── */}
       {editModal.isOpen && editModal.data && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#06111d]/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95">
