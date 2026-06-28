@@ -19,6 +19,8 @@ import {
   Save,
   CheckCircle2,
   Loader2,
+  ZoomIn,   // 👈 أيقونة التكبير
+  ZoomOut   // 👈 أيقونة التصغير
 } from "lucide-react";
 
 import usePermissionStore from "../../../../stores/usePermissionStore";
@@ -47,6 +49,9 @@ const RoleAssignmentTreeEmploye = () => {
   const [viewMode, setViewMode] = useState("tree");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const treeContainerRef = useRef(null);
+
+  // 🚀 حالات التكبير والتصغير (Zoom State)
+  const [zoomScale, setZoomScale] = useState(1);
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
   const [assignedPermissions, setAssignedPermissions] = useState(new Map());
@@ -135,6 +140,13 @@ const RoleAssignmentTreeEmploye = () => {
       );
     },
   });
+
+  // ==========================================
+  // 🔎 ZOOM FUNCTIONS
+  // ==========================================
+  const handleZoomIn = () => setZoomScale((prev) => Math.min(prev + 0.1, 2));   // الحد الأقصى 200%
+  const handleZoomOut = () => setZoomScale((prev) => Math.max(prev - 0.1, 0.1)); // الحد الأدنى 10%
+  const handleZoomReset = () => setZoomScale(1);                                // العودة لـ 100%
 
   // ==========================================
   // ASSIGNMENT LOGIC (تفاعل الواجهة)
@@ -348,6 +360,7 @@ const RoleAssignmentTreeEmploye = () => {
 
       {/* MAIN ORG CHART AREA */}
       <div className="flex-1 flex flex-col relative overflow-hidden bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiNjYmQ1ZTEiLz48L3N2Zz4=')]">
+        
         {/* HEADER TOOLBAR */}
         <div className="absolute top-5 left-5 right-5 z-40 flex items-center justify-between pointer-events-none">
           {/* اختيار الموظف (Real Data) */}
@@ -413,6 +426,39 @@ const RoleAssignmentTreeEmploye = () => {
           </div>
         </div>
 
+        {/* 🎛️ ZOOM CONTROLS TOOLBAR */}
+        {viewMode === "tree" && (
+          <div className="absolute bottom-6 left-6 z-40 flex flex-col items-center gap-1 bg-white/95 backdrop-blur p-1.5 rounded-2xl border border-slate-200 shadow-lg pointer-events-auto">
+            <button 
+              onClick={handleZoomIn} 
+              className="p-2 hover:bg-slate-100 rounded-xl text-slate-600 hover:text-indigo-600 transition-colors" 
+              title="تكبير"
+            >
+              <ZoomIn size={18} strokeWidth={2.5} />
+            </button>
+            
+            <div className="w-full h-px bg-slate-200 my-0.5"></div>
+            
+            <button 
+              onClick={handleZoomReset} 
+              className="py-1.5 px-2 hover:bg-slate-100 rounded-xl text-[11px] font-black text-slate-600 transition-colors w-full" 
+              title="إعادة الضبط"
+            >
+              {Math.round(zoomScale * 100)}%
+            </button>
+            
+            <div className="w-full h-px bg-slate-200 my-0.5"></div>
+            
+            <button 
+              onClick={handleZoomOut} 
+              className="p-2 hover:bg-slate-100 rounded-xl text-slate-600 hover:text-indigo-600 transition-colors" 
+              title="تصغير"
+            >
+              <ZoomOut size={18} strokeWidth={2.5} />
+            </button>
+          </div>
+        )}
+
         {/* TREE CANVAS */}
         <div
           ref={treeContainerRef}
@@ -450,7 +496,15 @@ const RoleAssignmentTreeEmploye = () => {
           }}
         >
           {viewMode === "tree" ? (
-            <div className="org-wrapper">
+            // 🚀 تطبيق الـ Zoom هنا
+            <div 
+              className="org-wrapper"
+              style={{
+                transform: `scale(${zoomScale})`,
+                transformOrigin: "top center",
+                transition: "transform 0.2s ease-in-out"
+              }}
+            >
               {filteredTree.length > 0 ? (
                 <div className="org-children" style={{ paddingTop: 0 }}>
                   {filteredTree.map((node) => (
@@ -464,7 +518,7 @@ const RoleAssignmentTreeEmploye = () => {
                   ))}
                 </div>
               ) : (
-                <div className="mt-32 flex flex-col items-center text-slate-400 bg-white/50 p-10 rounded-3xl border border-slate-200">
+                <div className="mt-32 flex flex-col items-center text-slate-400 bg-white/50 p-10 rounded-3xl border border-slate-200" style={{ transform: `scale(${1/zoomScale})` }}>
                   <Layers
                     size={64}
                     className="mb-4 opacity-50 text-indigo-300"

@@ -17,6 +17,8 @@ import {
   Minimize2,
   Unlink,
   Plus,
+  ZoomIn,   // 👈 تمت إضافة أيقونة التكبير
+  ZoomOut   // 👈 تمت إضافة أيقونة التصغير
 } from "lucide-react";
 
 import usePermissionStore from "../../../../stores/usePermissionStore";
@@ -32,6 +34,7 @@ const advancedOrgStyles = `
     direction: rtl;
     padding: 40px;
     min-width: max-content;
+    /* تمت إضافة الانتقال السلس للتكبير/التصغير في الـ inline style */
   }
   /* عقدة الشجرة (تحوي البطاقة وأبنائها) */
   .org-node-container {
@@ -141,6 +144,9 @@ const PermissionTreeBuilder = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dropTarget, setDropTarget] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  // 🚀 حالات التكبير والتصغير (Zoom State)
+  const [zoomScale, setZoomScale] = useState(1);
 
   const [selectedNodeDetails, setSelectedNodeDetails] = useState(null);
   const treeContainerRef = useRef(null);
@@ -173,6 +179,13 @@ const PermissionTreeBuilder = () => {
   }, [loadPermissionTree, loadFlatPermissions]);
 
   // ==========================================
+  // 🔎 ZOOM FUNCTIONS
+  // ==========================================
+  const handleZoomIn = () => setZoomScale((prev) => Math.min(prev + 0.1, 2));   // الحد الأقصى 200%
+  const handleZoomOut = () => setZoomScale((prev) => Math.max(prev - 0.1, 0.1)); // الحد الأدنى 10%
+  const handleZoomReset = () => setZoomScale(1);                                // العودة لـ 100%
+
+  // ==========================================
   // ⚡ DRAG & DROP (PERFORMANCE OPTIMIZED)
   // ==========================================
   const handleDragStart = (e, node) => {
@@ -181,7 +194,6 @@ const PermissionTreeBuilder = () => {
     setIsDragging(true);
     e.dataTransfer.effectAllowed = "move";
 
-    // صورة شفافة للماوس أثناء السحب لتجنب الظل المزعج للمتصفح
     const img = new Image();
     img.src =
       "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
@@ -194,7 +206,6 @@ const PermissionTreeBuilder = () => {
     setDropTarget(null);
   };
 
-  // 🚀 تقليل الـ Renders: لا تقم بتحديث الـ State إلا إذا تغير الهدف الفعلي
   const handleDragOver = useCallback(
     (e, nodeId) => {
       e.preventDefault();
@@ -243,6 +254,11 @@ const PermissionTreeBuilder = () => {
       setEditName("");
     }
   };
+  
+  const cancelEdit = () => {
+      setEditingNode(null);
+      setEditName("");
+  }
 
   const handleUnlink = async (node) => {
     if (
@@ -291,7 +307,7 @@ const PermissionTreeBuilder = () => {
   const filteredTree = filterTree(permissionTree, searchQuery);
 
   // ==========================================
-  // 🎨 NODE STYLING (Matching the Provided Image)
+  // 🎨 NODE STYLING
   // ==========================================
   const getNodeStyle = (depth) => {
     switch (depth) {
@@ -307,7 +323,7 @@ const PermissionTreeBuilder = () => {
   };
 
   // ==========================================
-  // TREE NODE RENDERER (Robust Structural Layout)
+  // TREE NODE RENDERER
   // ==========================================
   const renderOrgNode = (node, depth = 0) => {
     const isExpanded = expandedNodes.has(node.id);
@@ -319,14 +335,12 @@ const PermissionTreeBuilder = () => {
 
     return (
       <div className="org-node-container" key={node.id}>
-        {/* 🔥 منطقة الهيت بوكس (Hitbox) لتسهيل الإفلات */}
         <div
           className="relative pt-2"
           onDragOver={(e) => handleDragOver(e, node.id)}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, node)}
         >
-          {/* THE CARD */}
           <motion.div
             layout="position"
             draggable
@@ -346,14 +360,12 @@ const PermissionTreeBuilder = () => {
             `}
             style={{ padding: isDeepNode ? "10px 24px" : "18px" }}
           >
-            {/* مقبض السحب */}
             {!isDeepNode && (
               <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 cursor-grab text-current/40 hover:text-current/80 transition-colors">
                 <GripHorizontal size={16} />
               </div>
             )}
 
-            {/* الاسم وحالة التعديل */}
             {editingNode === node.id ? (
               <input
                 value={editName}
@@ -377,7 +389,6 @@ const PermissionTreeBuilder = () => {
               </div>
             )}
 
-            {/* الأزرار العائمة (Quick Actions) */}
             <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-auto">
               <ActionButton
                 icon={Edit2}
@@ -401,7 +412,6 @@ const PermissionTreeBuilder = () => {
               />
             </div>
 
-            {/* زر التوسيع والطي (Expand/Collapse) */}
             {hasChildren && !isDeepNode && (
               <button
                 onClick={(e) => {
@@ -420,7 +430,6 @@ const PermissionTreeBuilder = () => {
           </motion.div>
         </div>
 
-        {/* RECURSIVE CHILDREN */}
         <AnimatePresence>
           {isExpanded && hasChildren && (
             <motion.div
@@ -475,6 +484,7 @@ const PermissionTreeBuilder = () => {
 
       {/* MAIN ORG CHART AREA */}
       <div className="flex-1 flex flex-col relative overflow-hidden bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiNjYmQ1ZTEiLz48L3N2Zz4=')]">
+        
         {/* HEADER TOOLBAR */}
         <div className="absolute top-5 left-5 right-5 z-40 flex items-center justify-between pointer-events-none">
           <div className="pointer-events-auto relative w-80 shadow-lg rounded-2xl overflow-hidden">
@@ -518,6 +528,39 @@ const PermissionTreeBuilder = () => {
           </div>
         </div>
 
+        {/* 🎛️ ZOOM CONTROLS TOOLBAR */}
+        {viewMode === "tree" && (
+          <div className="absolute bottom-6 left-6 z-40 flex flex-col items-center gap-1 bg-white/95 backdrop-blur p-1.5 rounded-2xl border border-slate-200 shadow-lg pointer-events-auto">
+            <button 
+              onClick={handleZoomIn} 
+              className="p-2 hover:bg-slate-100 rounded-xl text-slate-600 hover:text-indigo-600 transition-colors" 
+              title="تكبير"
+            >
+              <ZoomIn size={18} strokeWidth={2.5} />
+            </button>
+            
+            <div className="w-full h-px bg-slate-200 my-0.5"></div>
+            
+            <button 
+              onClick={handleZoomReset} 
+              className="py-1.5 px-2 hover:bg-slate-100 rounded-xl text-[11px] font-black text-slate-600 transition-colors w-full" 
+              title="إعادة الضبط"
+            >
+              {Math.round(zoomScale * 100)}%
+            </button>
+            
+            <div className="w-full h-px bg-slate-200 my-0.5"></div>
+            
+            <button 
+              onClick={handleZoomOut} 
+              className="p-2 hover:bg-slate-100 rounded-xl text-slate-600 hover:text-indigo-600 transition-colors" 
+              title="تصغير"
+            >
+              <ZoomOut size={18} strokeWidth={2.5} />
+            </button>
+          </div>
+        )}
+
         {/* TREE CANVAS */}
         <div
           ref={treeContainerRef}
@@ -549,10 +592,17 @@ const PermissionTreeBuilder = () => {
           }}
         >
           {viewMode === "tree" ? (
-            <div className="org-wrapper">
+            // 🚀 تطبيق الـ Zoom هنا على الحاوية الداخلية فقط لكي يعمل السحب (Panning) بسلاسة
+            <div 
+              className="org-wrapper"
+              style={{
+                transform: `scale(${zoomScale})`,
+                transformOrigin: "top center",
+                transition: "transform 0.2s ease-in-out"
+              }}
+            >
               {filteredTree.length > 0 ? (
                 <div className="org-children" style={{ paddingTop: 0 }}>
-                  {/* Root level mapping */}
                   {filteredTree.map((node) => (
                     <div
                       className="org-child"
@@ -564,7 +614,7 @@ const PermissionTreeBuilder = () => {
                   ))}
                 </div>
               ) : (
-                <div className="mt-32 flex flex-col items-center text-slate-400 bg-white/50 p-10 rounded-3xl border border-slate-200">
+                <div className="mt-32 flex flex-col items-center text-slate-400 bg-white/50 p-10 rounded-3xl border border-slate-200" style={{ transform: `scale(${1/zoomScale})` /* إلغاء التكبير للرسالة */ }}>
                   <Layers
                     size={64}
                     className="mb-4 opacity-50 text-indigo-300"
