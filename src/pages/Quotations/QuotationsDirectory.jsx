@@ -1,3 +1,4 @@
+// src/pages/Quotations/QuotationsDirectory.jsx
 import React, { useState, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "../../api/axios";
@@ -12,7 +13,9 @@ import {
   Plus,
   Lock,
   DownloadCloud,
-  Unlock // أيقونة فك القفل الجديدة
+  Unlock,
+  CheckCircle, // أيقونة السجل
+  CalendarClock
 } from "lucide-react";
 import { format } from "date-fns";
 import { arSA } from "date-fns/locale";
@@ -112,9 +115,18 @@ const QuotationsDirectory = ({ onNavigate }) => {
     },
   });
 
+  // منطق الحذف المرن: نمنع الحذف فقط إذا كان مرتبطاً بمعاملة، أو تم قبولها، أو مسددة.
+  const canDeleteQuotation = (q) => {
+    const isLockedState = ["ACCEPTED", "PARTIALLY_PAID", "SENT"].includes(q.status);
+    const hasTransaction = !!q.transactionId; // إذا تم تحويله لمعاملة فعلية
+    const hasPayments = (q.collectedAmount || 0) > 0; // إذا تم دفع أي مبلغ
+    
+    return !isLockedState && !hasTransaction && !hasPayments;
+  };
+
   const handleDelete = useCallback((e, quote) => {
     e.stopPropagation();
-    if (window.confirm(`هل أنت متأكد من نقل العرض (${quote.number}) إلى سلة المحذوفات؟`)) {
+    if (window.confirm(`هل أنت متأكد من حذف العرض (${quote.number})؟`)) {
       deleteQuotationMutation.mutate(quote.id);
     }
   }, [deleteQuotationMutation]);
@@ -149,13 +161,12 @@ const QuotationsDirectory = ({ onNavigate }) => {
     }, {
       onSuccess: () => {
         toast.dismiss(toastId);
-        // فتح شاشة التعديل مباشرة بعد نجاح فك القفل
         handleEditQuotation(null, quote);
       }
     });
   }, [handleEditQuotation, updateQuotationMutation]);
 
-  // التفاصيل
+  // التفاصيل (يفتح النافذة الشاملة التي تحتوي بدورها على سجل التتبع)
   const handleViewDetails = useCallback((e, id) => {
     e?.stopPropagation();
     setSelectedQuoteId(id);
@@ -191,7 +202,7 @@ const QuotationsDirectory = ({ onNavigate }) => {
     }
   };
 
-  // 🌟 الفلترة الشاملة بدون قيود المستخدمين
+  // 🌟 الفلترة الشاملة
   const filteredData = useMemo(() => {
     if (!quotationsData) return [];
     return quotationsData.filter((q) => {
@@ -205,7 +216,7 @@ const QuotationsDirectory = ({ onNavigate }) => {
     });
   }, [quotationsData, searchTerm, filterStatus]);
 
-  // 🌟 العداد الشامل بدون قيود المستخدمين
+  // 🌟 العداد الشامل
   const getStatusCount = useCallback((status) => {
     if (!quotationsData) return 0;
     return quotationsData.filter((q) => q.status === status && !q.isDeleted).length;
@@ -231,7 +242,6 @@ const QuotationsDirectory = ({ onNavigate }) => {
           handlePrint(null, q);
         }}
         onEdit={(quote) => {
-          // إذا كان مقفول يطلب السبب، غير كدة يعدل على طول
           const isLocked = ["APPROVED", "SENT", "ACCEPTED", "PARTIALLY_PAID"].includes(quote.status);
           if (isLocked) {
              handleUnlockAndEdit(null, quote);
@@ -302,13 +312,13 @@ const QuotationsDirectory = ({ onNavigate }) => {
                 <span className="text-xs font-bold">جاري التحميل...</span>
               </div>
             ) : (
-              <table className="w-full text-right border-collapse min-w-[1100px]">
+              <table className="w-full text-right border-collapse min-w-[1200px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
                     <th className="p-3 text-[10px] text-slate-500 font-black w-10">#</th>
-                    <th className="p-3 text-[10px] text-slate-500 font-black">رقم العرض</th>
-                    <th className="p-3 text-[10px] text-slate-500 font-black">التاريخ</th>
-                    <th className="p-3 text-[10px] text-slate-500 font-black">العميل</th>
+                    <th className="p-3 text-[10px] text-slate-500 font-black">رقم العرض / المالك</th>
+                    <th className="p-3 text-[10px] text-slate-500 font-black">تاريخ وتوقيت الإنشاء</th>
+                    <th className="p-3 text-[10px] text-slate-500 font-black">تاريخ الاعتماد / الإصدار</th>
                     <th className="p-3 text-[10px] text-slate-500 font-black">الإجمالي</th>
                     <th className="p-3 text-[10px] text-slate-500 font-black text-center w-32">نسبة التحصيل</th>
                     <th className="p-3 text-[10px] text-slate-500 font-black text-center">الحالة</th>
@@ -324,28 +334,45 @@ const QuotationsDirectory = ({ onNavigate }) => {
                     // 🌟 القيود المنطقية للعمل
                     const isLocked = ["APPROVED", "SENT", "ACCEPTED", "PARTIALLY_PAID"].includes(q.status);
                     const canEdit = ["DRAFT", "NEEDS_MODIFICATION", "PENDING_APPROVAL"].includes(q.status);
-                    const canTrash = ["DRAFT", "NEEDS_MODIFICATION", "REJECTED"].includes(q.status);
                     const hasPdf = !!q.pdfUrl;
+                    const canTrash = canDeleteQuotation(q);
 
                     return (
                       <tr key={q.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={(e) => handleViewDetails(e, q.id)}>
                         <td className="p-3 text-[10px] text-slate-400 font-mono font-bold">{idx + 1}</td>
                         <td className="p-3">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span className="font-mono text-xs font-black text-[#123f59]">{q.number}</span>
-                            {q.templateType === "DETAILED" && (
-                              <span className="text-[8px] text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded font-black">تفصيلي</span>
-                            )}
+                          <div className="flex flex-col min-w-0 gap-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-[11px] font-black text-[#123f59]">{q.number}</span>
+                              {q.templateType === "DETAILED" && (
+                                <span className="text-[8px] text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded font-black">تفصيلي</span>
+                              )}
+                            </div>
+                            <span className="font-bold text-[10px] text-slate-500 truncate max-w-[150px]">{getClientName(q.client)}</span>
                           </div>
                         </td>
                         <td className="p-3 text-[10px] font-mono text-slate-600 font-bold whitespace-nowrap">
-                          {/* 🌟 التعديل: عرض التاريخ والساعة */}
-                          <div className="flex flex-col gap-0.5">
-                            <span>{format(new Date(q.issueDate), "yyyy-MM-dd", { locale: arSA })}</span>
-                            <span className="text-[9px] text-slate-400">{format(new Date(q.issueDate), "hh:mm a", { locale: arSA })}</span>
+                          {/* 🌟 عمود تاريخ الإنشاء الحقيقي */}
+                          <div className="flex items-center gap-1.5">
+                            <CalendarClock className="w-3.5 h-3.5 text-slate-400" />
+                            <div className="flex flex-col gap-0.5">
+                              <span>{q.createdAt ? format(new Date(q.createdAt), "yyyy-MM-dd", { locale: arSA }) : "---"}</span>
+                              <span className="text-[9px] text-slate-400">{q.createdAt ? format(new Date(q.createdAt), "hh:mm a", { locale: arSA }) : "---"}</span>
+                            </div>
                           </div>
                         </td>
-                        <td className="p-3 font-bold text-xs text-slate-700">{getClientName(q.client)}</td>
+                        <td className="p-3 text-[10px] font-mono text-slate-600 font-bold whitespace-nowrap">
+                          {/* 🌟 عمود تاريخ الاعتماد أو الإصدار */}
+                          <div className="flex items-center gap-1.5">
+                            <CheckCircle className={`w-3.5 h-3.5 ${q.stampedAt ? 'text-emerald-500' : 'text-slate-300'}`} />
+                            <div className="flex flex-col gap-0.5">
+                              <span>{q.stampedAt ? format(new Date(q.stampedAt), "yyyy-MM-dd", { locale: arSA }) : (q.issueDate ? format(new Date(q.issueDate), "yyyy-MM-dd", { locale: arSA }) : "---")}</span>
+                              <span className={`text-[9px] ${q.stampedAt ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                {q.stampedAt ? format(new Date(q.stampedAt), "hh:mm a", { locale: arSA }) : "غير معتمد بعد"}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
                         <td className="p-3 text-xs font-black text-[#0f766e] font-mono">
                           {formatCurrency(q.total)} ر.س
                         </td>
@@ -366,8 +393,8 @@ const QuotationsDirectory = ({ onNavigate }) => {
                         <td className="p-3 text-center">
                           <div className="flex min-w-0 items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                             
-                            {/* استعراض التفاصيل */}
-                            <button onClick={(e) => handleViewDetails(e, q.id)} className="p-1.5 bg-slate-100 text-slate-600 rounded hover:bg-slate-200 transition-colors" title="عرض تفاصيل الطلب والسجل">
+                            {/* استعراض التفاصيل (تتضمن تقرير السجل الزمني بداخلها) */}
+                            <button onClick={(e) => handleViewDetails(e, q.id)} className="p-1.5 bg-slate-100 text-slate-600 rounded hover:bg-slate-200 transition-colors" title="عرض تفاصيل الطلب وتتبع السجل">
                               <Eye className="w-4 h-4" />
                             </button>
 
@@ -417,13 +444,13 @@ const QuotationsDirectory = ({ onNavigate }) => {
                               )}
                             </button>
 
-                            {/* زر الحذف */}
+                            {/* زر الحذف منفصل تماماً ومقيد بشروط صارمة */}
                             <AccessControl code="QUOTE_ACTION_DELETE" name="حذف عرض السعر" moduleName="عروض الأسعار" tabName="الجدول">
                               <button
                                 onClick={(e) => canTrash && handleDelete(e, q)}
                                 disabled={!canTrash || deleteQuotationMutation.isPending}
                                 className={`p-1.5 rounded transition-colors ${canTrash ? "bg-rose-50 text-rose-600 hover:bg-rose-100" : "bg-slate-50 text-slate-300 cursor-not-allowed"}`}
-                                title={canTrash ? "نقل لسلة المحذوفات" : "مغلق: لا يمكن حذف العروض المعتمدة مالياً"}
+                                title={canTrash ? "نقل لسلة المحذوفات" : "مغلق: لا يمكن حذف العروض المعتمدة مالياً أو المحولة لمعاملات"}
                               >
                                 {deleteQuotationMutation.isPending && selectedQuoteId === q.id ? (
                                   <Loader2 className="w-4 h-4 animate-spin" />
