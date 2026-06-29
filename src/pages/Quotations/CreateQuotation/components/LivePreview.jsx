@@ -386,6 +386,37 @@ export const LivePreview = ({ data, onUpdate }) => {
   const handleZoomOut = () =>
     setZoomScale((prev) => Math.max(prev - 0.1, 0.38));
 
+  // ==========================================
+  // 🚀 دالة مساعدة لتوليد اسم الملف الديناميكي
+  // ==========================================
+  const generateQuotationFileName = () => {
+    // 1. استخراج الاسم الأول والأخير
+    const fullName = clientNameForPreview || secondPartyName || "عميل_غير_محدد";
+    const nameParts = fullName.trim().split(" ");
+    const firstAndLastName = nameParts.length > 1 
+      ? `${nameParts[0]} ${nameParts[nameParts.length - 1]}` 
+      : nameParts[0];
+
+    // 2. اسم الحي
+    const districtName = propertyDistrict && propertyDistrict !== "---" ? propertyDistrict : "حي_غير_محدد";
+
+    // 3. التاريخ الهجري (اليوم)
+    const today = new Date();
+    const formattedDate = today.toISOString().split("T")[0];
+
+    // 4. رقم النسخة
+    const version = data?.version || "1";
+
+    // 5. تجميع الاسم
+    const rawFileName = `عرض سعر_${firstAndLastName}_${districtName}_${formattedDate}_V${version}.pdf`;
+    
+    // 6. التنظيف (يُفضل استبدال المسافات بشرطة سفلية لدعم أفضل في جميع المتصفحات)
+    return rawFileName.replace(/[\/\\?%*:|"<>]/g, '-').replace(/\s+/g, '_');
+  };
+
+  // ==========================================
+  // 🚀 دالة الطباعة المحدثة
+  // ==========================================
   const handlePrint = async () => {
     setIsGeneratingPdf(true);
     try {
@@ -403,7 +434,10 @@ export const LivePreview = ({ data, onUpdate }) => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `عرض_سعر_${referenceNumber}.pdf`;
+      
+      // 🚀 هنا نستخدم الاسم الديناميكي الجديد
+      link.download = generateQuotationFileName();
+      
       document.body.appendChild(link);
       link.click();
       link.remove();
