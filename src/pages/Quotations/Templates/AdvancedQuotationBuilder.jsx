@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import api from "../../../api/axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, LayoutTemplate } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import BuilderSidebar from "./components/BuilderSidebar";
 import A4Preview from "./components/A4Preview";
 import { DEFAULT_TEMPLATE } from "./constants";
@@ -35,7 +35,10 @@ const IconWithText = ({
 export default function AdvancedQuotationBuilder({ templateId, onBack }) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [template, setTemplate] = useState(DEFAULT_TEMPLATE);
+  const [template, setTemplate] = useState({
+    ...DEFAULT_TEMPLATE,
+    items: [], // إضافة مصفوفة البنود الافتراضية للنموذج
+  });
 
   const { data: fetchedTemplate, isLoading: isFetching } = useQuery({
     queryKey: ["quotation-template", templateId],
@@ -55,17 +58,14 @@ export default function AdvancedQuotationBuilder({ templateId, onBack }) {
         header: fetchedTemplate.sections?.header || DEFAULT_TEMPLATE.header,
         intro: fetchedTemplate.sections?.intro || DEFAULT_TEMPLATE.intro,
         table: fetchedTemplate.options || DEFAULT_TEMPLATE.table,
-        financials:
-          fetchedTemplate.sections?.financials || DEFAULT_TEMPLATE.financials,
+        financials: fetchedTemplate.sections?.financials || DEFAULT_TEMPLATE.financials,
         terms: {
-          title:
-            fetchedTemplate.sections?.terms?.title || DEFAULT_TEMPLATE.terms.title,
+          title: fetchedTemplate.sections?.terms?.title || DEFAULT_TEMPLATE.terms.title,
           text: fetchedTemplate.defaultTerms || DEFAULT_TEMPLATE.terms.text,
         },
-        signatures:
-          fetchedTemplate.sections?.signatures || DEFAULT_TEMPLATE.signatures,
-        pageStyle:
-          fetchedTemplate.sections?.pageStyle || DEFAULT_TEMPLATE.pageStyle,
+        signatures: fetchedTemplate.sections?.signatures || DEFAULT_TEMPLATE.signatures,
+        pageStyle: fetchedTemplate.sections?.pageStyle || DEFAULT_TEMPLATE.pageStyle,
+        items: fetchedTemplate.items || [], // استرجاع البنود المحفوظة مع النموذج
       });
     }
   }, [fetchedTemplate]);
@@ -78,7 +78,7 @@ export default function AdvancedQuotationBuilder({ templateId, onBack }) {
       return await api.post("/quotation-templates", payload);
     },
     onSuccess: () => {
-      toast.success("تم الحفظ بنجاح");
+      toast.success("تم حفظ النموذج واعتماده بنجاح");
       queryClient.invalidateQueries(["quotation-templates"]);
       onBack();
     },
@@ -102,6 +102,7 @@ export default function AdvancedQuotationBuilder({ templateId, onBack }) {
       },
       options: template.table,
       defaultTerms: template.terms.text,
+      items: template.items, // إرسال البنود ليتم حفظها كعناصر افتراضية للنموذج
       employeeId: user?.id,
     };
 
@@ -115,19 +116,14 @@ export default function AdvancedQuotationBuilder({ templateId, onBack }) {
           <div className="grid h-12 w-12 place-items-center rounded-2xl border border-[#d8b46a]/35 bg-white shadow-[0_10px_24px_rgba(18,63,89,0.10)]">
             <IconWithText icon={Loader2} iconClassName="h-6 w-6 animate-spin text-[#123f59]" />
           </div>
-          <p className="text-xs font-black text-[#123f59]">
-            جاري تحميل النموذج...
-          </p>
+          <p className="text-xs font-black text-[#123f59]">جاري تحميل بيئة النموذج...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      className="flex h-full min-h-0 w-full overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-[Tajawal]"
-      dir="rtl"
-    >
+    <div className="flex h-full min-h-0 w-full overflow-hidden bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white font-[Tajawal]" dir="rtl">
       <BuilderSidebar
         template={template}
         setTemplate={setTemplate}
@@ -139,7 +135,7 @@ export default function AdvancedQuotationBuilder({ templateId, onBack }) {
 
       <section className="min-w-0 flex-1 overflow-hidden">
         <div className="flex h-full min-h-0 flex-col">
-<A4Preview template={template} setTemplate={setTemplate} />
+          <A4Preview template={template} setTemplate={setTemplate} />
         </div>
       </section>
     </div>

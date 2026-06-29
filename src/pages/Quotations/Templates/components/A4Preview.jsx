@@ -1,46 +1,16 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   FileText,
-  Building2,
-  Eye,
   Printer,
   ZoomIn,
   ZoomOut,
   RotateCcw,
-  Palette,
-  Maximize2,
-  Minimize2,
-  ScanSearch,
+  Building,
+  UserCheck,
+  Eye,
+  Scale,
 } from "lucide-react";
 
-const IconWithText = ({
-  icon: Icon,
-  text,
-  className = "",
-  iconClassName = "",
-  textClassName = "",
-  vertical = false,
-}) => {
-  return (
-    <span
-      className={`inline-flex min-w-0 items-center justify-center ${
-        vertical ? "flex-col gap-0.5" : "gap-1.5"
-      } ${className}`}
-    >
-      {Icon && <Icon className={iconClassName || "h-4 w-4 shrink-0"} />}
-      {text && (
-        <span
-          className={
-            textClassName ||
-            "min-w-0 break-words text-[10px] font-black leading-tight"
-          }
-        >
-          {text}
-        </span>
-      )}
-    </span>
-  );
-};
 
 const STYLE_PRESETS = {
   classic: {
@@ -80,113 +50,59 @@ const DEFAULT_PAGE_STYLE = {
   showOuterBorder: false,
 };
 
-
-
+// ==========================================
+// مكون تذييل الصفحة الموحد (Footer)
+// ==========================================
 const DetailsPrintFooter = ({ accentColor = "#0f5570" }) => {
   return (
-    <footer
-      className="
-        details-print-footer absolute bottom-[7mm] left-[10mm] right-[10mm]
-        bg-white font-[Tajawal]
-      "
+    <div
+      className="border-t-[2.5px] pt-2 mt-4"
+      style={{ borderColor: accentColor }}
       dir="ltr"
     >
-      <div className="border-t-[2.5px] pt-1.5" style={{ borderColor: accentColor }}>
-        <div className="flex items-start gap-2" style={{ color: accentColor }}>
-          <img
-            src="/qrcode.png"
-            alt="QR Code"
-            className="h-[16mm] w-[16mm] shrink-0 object-contain"
-          />
-
-          <div className="min-w-0 flex-1">
-            <div
-              className="
-                flex items-center justify-end gap-1 whitespace-nowrap
-                text-[10.5px] font-black leading-[1.35]
-              "
-              dir="rtl"
-            >
-              <span>📍</span>
-              <span>حي الملك فهد - الرياض - المملكة العربية السعودية - الرمز البريدي : ١٢٢٧٤</span>
-              <span>·</span>
-              <span>جوال : ٠٥٩٠٧٢٢٨٢٧</span>
-              <span>·</span>
-              <span>الرقم الوطني الموحد : ٧٠٥٢٣٠٣٨٢٨</span>
-            </div>
-
-            <div
-              className="
-                mt-0.5 flex items-center gap-1 whitespace-nowrap
-                text-[10.5px] font-black leading-[1.35]
-              "
-              dir="ltr"
-            >
-              <span>📍</span>
-              <span>King Fahd Dist - RIYADH - Kingdom of Saudi Arabia -POSTAL CODE :12274</span>
-              <span>☎</span>
-              <span>0590722827</span>
-              <span>- N.N:</span>
-              <span>7052303828</span>
-              <span>✉</span>
-              <span>info@details-consults.sa</span>
-            </div>
+      <div className="flex items-start gap-3" style={{ color: accentColor }}>
+        <div className="h-[16mm] w-[16mm] shrink-0 border border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center bg-slate-50/50">
+          <span className="text-[7px] font-black text-slate-400 leading-tight text-center">
+            QR
+            <br />
+            للتحقق
+          </span>
+        </div>
+        <div className="min-w-0 flex-1 flex flex-col justify-center py-1">
+          <div
+            className="flex items-center justify-end gap-1.5 whitespace-nowrap text-[10.5px] font-black leading-[1.4]"
+            dir="rtl"
+          >
+            <span>📍</span>
+            <span>
+              حي الملك فهد - الرياض - المملكة العربية السعودية - الرمز البريدي :
+              ١٢٢٧٤
+            </span>
+            <span className="opacity-50">·</span>
+            <span>جوال : ٠٥٩٠٧٢٢٨٢٧</span>
+            <span className="opacity-50">·</span>
+            <span>الرقم الوطني الموحد : ٧٠٥٢٣٠٣٨٢٨</span>
+          </div>
+          <div
+            className="mt-1 flex items-center justify-start gap-1 whitespace-nowrap text-[10px] font-black leading-[1.4]"
+            dir="ltr"
+          >
+            <span>📍</span>
+            <span>
+              King Fahd Dist - RIYADH - Kingdom of Saudi Arabia - POSTAL CODE :
+              12274
+            </span>
+            <span className="ml-1">☎</span>
+            <span>0590722827</span>
+            <span className="ml-1">- N.N:</span>
+            <span>7052303828</span>
+            <span className="ml-1">✉</span>
+            <span>info@details-consults.sa</span>
           </div>
         </div>
       </div>
-    </footer>
+    </div>
   );
-};
-
-
-
-
-const toArabicDigits = (value) =>
-  String(value ?? "").replace(/\d/g, (digit) => "٠١٢٣٤٥٦٧٨٩"[Number(digit)]);
-
-const getDatePart = (formatter, date, type) =>
-  formatter.formatToParts(date).find((part) => part.type === type)?.value || "";
-
-const formatDateParts = (value) => {
-  const date = value ? new Date(value) : new Date();
-
-  if (Number.isNaN(date.getTime())) {
-    const fallback = String(value || "");
-    return {
-      gregorian: fallback,
-      hijri: fallback,
-      combined: `ميلادي: ${fallback} / هجري: ${fallback}`,
-    };
-  }
-
-  const gregorianFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-gregory", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-
-  const hijriFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-
-  const gregorianDay = getDatePart(gregorianFormatter, date, "day");
-  const gregorianMonth = getDatePart(gregorianFormatter, date, "month");
-  const gregorianYear = getDatePart(gregorianFormatter, date, "year");
-
-  const hijriDay = getDatePart(hijriFormatter, date, "day");
-  const hijriMonth = getDatePart(hijriFormatter, date, "month");
-  const hijriYear = getDatePart(hijriFormatter, date, "year");
-
-  const gregorian = toArabicDigits(`${gregorianDay}/${gregorianMonth}/${gregorianYear}`);
-  const hijri = toArabicDigits(`${hijriDay}/${hijriMonth}/${hijriYear}`);
-
-  return {
-    gregorian,
-    hijri,
-    combined: `ميلادي: ${gregorian} / هجري: ${hijri}`,
-  };
 };
 
 const A4_WIDTH_PX = 794;
@@ -195,28 +111,26 @@ const A4_HEIGHT_PX = 1123;
 export default function A4Preview({ template, setTemplate }) {
   const printRef = useRef(null);
   const previewScrollRef = useRef(null);
-  const [zoom, setZoom] = useState(0.7);
+  const [zoom, setZoom] = useState(0.75);
 
+  // 🚀 بيانات وهمية لمحاكاة العرض وتوضيح المتغيرات
   const dummyData = {
-    clientName: "شركة البلاد العقارية المحدودة",
-    serviceType: "تعديل مكونات - مستودعات",
-    plotNumber: "الثانية من ج (14)",
-    planNumber: "1391",
-    district: "المشاعل",
-    area: "54726.75",
-    oldLicenseNo: "1483/8744",
-    date: formatDateParts(new Date()).combined,
+    clientName: "شركة أبعاد التطوير العقارية المحدودة",
+    serviceType: template.title || "خدمات هندسية متكاملة",
+    plotNumber: "847 / ج",
+    planNumber: "2944",
+    district: "الملقا",
+    area: "12,500.00",
+    date: new Date().toLocaleDateString("ar-SA"),
+    reference: `QT-${Date.now().toString().slice(-5)}`,
   };
 
-  const pageStyle = {
-    ...DEFAULT_PAGE_STYLE,
-    ...(template.pageStyle || {}),
-  };
-
+  const pageStyle = { ...DEFAULT_PAGE_STYLE, ...(template.pageStyle || {}) };
   const preset = STYLE_PRESETS[pageStyle.preset] || STYLE_PRESETS.classic;
   const accentColor = pageStyle.accentColor || preset.accentColor;
   const goldColor = pageStyle.goldColor || preset.goldColor;
-  const paperBackground = pageStyle.paperTone === "soft" ? "#fffdf7" : "#ffffff";
+  const paperBackground =
+    pageStyle.paperTone === "soft" ? "#fdfbf7" : "#ffffff";
   const paddingMm =
     pageStyle.density === "compact"
       ? 11
@@ -225,31 +139,8 @@ export default function A4Preview({ template, setTemplate }) {
         : Number(pageStyle.pagePaddingMm || 15);
   const fontScale = Number(pageStyle.fontScale || 1);
 
-  const updatePageStyle = (patch) => {
-    if (!setTemplate) return;
-
-    setTemplate((prev) => ({
-      ...prev,
-      pageStyle: {
-        ...DEFAULT_PAGE_STYLE,
-        ...(prev.pageStyle || {}),
-        ...patch,
-      },
-    }));
-  };
-
-  const applyPreset = (presetKey) => {
-    const nextPreset = STYLE_PRESETS[presetKey] || STYLE_PRESETS.classic;
-
-    updatePageStyle({
-      preset: presetKey,
-      accentColor: nextPreset.accentColor,
-      goldColor: nextPreset.goldColor,
-      paperTone: nextPreset.paperTone,
-    });
-  };
-
-  let previewIntroText = template.intro.text || "";
+  // استبدال المتغيرات في نص المقدمة
+  let previewIntroText = template.intro?.text || "";
   Object.keys(dummyData).forEach((key) => {
     previewIntroText = previewIntroText.replace(
       new RegExp(`{{${key}}}`, "g"),
@@ -259,37 +150,19 @@ export default function A4Preview({ template, setTemplate }) {
 
   const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.1, 1.6));
   const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.1, 0.35));
-  const handleResetZoom = () => setZoom(0.7);
+  const handleResetZoom = () => setZoom(0.75);
 
-  const handleFitToWidth = () => {
-    const containerWidth = previewScrollRef.current?.clientWidth || 900;
-    const nextZoom = Math.max(
-      0.35,
-      Math.min(1.25, (containerWidth - 64) / A4_WIDTH_PX),
-    );
-
-    setZoom(Number(nextZoom.toFixed(2)));
-  };
-
+  // 🚀 دالة طباعة مخصصة للـ Iframe (ممتازة للنماذج السريعة)
   const handlePrint = () => {
     const printNode = printRef.current;
-
     if (!printNode) return;
 
     const iframe = document.createElement("iframe");
-    iframe.setAttribute("title", "print-a4-template");
     iframe.style.position = "fixed";
-    iframe.style.left = "-10000px";
-    iframe.style.top = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "0";
-
+    iframe.style.right = "-10000px";
     document.body.appendChild(iframe);
 
-    const iframeWindow = iframe.contentWindow;
-    const iframeDocument = iframeWindow.document;
-
+    const iframeDocument = iframe.contentWindow.document;
     const appStyles = Array.from(
       document.querySelectorAll('link[rel="stylesheet"], style'),
     )
@@ -301,82 +174,26 @@ export default function A4Preview({ template, setTemplate }) {
       <!doctype html>
       <html dir="rtl" lang="ar">
         <head>
-          <meta charset="utf-8" />
-          <title>${template.title || "quotation-template"}</title>
+          <title>معاينة النموذج - ${template.title}</title>
           ${appStyles}
           <style>
-            html,
-            body {
-              width: 210mm;
-              min-height: 297mm;
-              margin: 0;
-              padding: 0;
-              background: #ffffff;
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-
-            body {
-              direction: rtl;
-              font-family: Tajawal, Arial, sans-serif;
-            }
-
-            .print-shell {
-              width: 210mm;
-              min-height: 297mm;
-              margin: 0 auto;
-              background: #ffffff;
-            }
-
-            .a4-template-print-area {
-              width: 210mm !important;
-              min-height: 297mm !important;
-              margin: 0 !important;
-              box-shadow: none !important;
-              transform: none !important;
-              overflow: visible !important;
-            }
-
-            @page {
-              size: A4;
-              margin: 0;
-            }
+            @page { size: A4; margin: 0; }
+            body { margin: 0; background: #fff; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; font-family: Tajawal, sans-serif; }
+            .print-shell { width: 210mm; margin: 0 auto; background: ${paperBackground}; }
+            .a4-template-print-area { width: 210mm !important; min-height: 297mm !important; box-shadow: none !important; transform: none !important; }
+            .avoid-break { page-break-inside: avoid; }
           </style>
         </head>
-        <body>
-          <div class="print-shell">
-            ${printNode.outerHTML}
-          </div>
-        </body>
+        <body><div class="print-shell">${printNode.outerHTML}</div></body>
       </html>
     `);
     iframeDocument.close();
 
-    const runPrint = () => {
-      const images = Array.from(iframeDocument.images || []);
-
-      Promise.all(
-        images.map((image) => {
-          if (image.complete) return Promise.resolve();
-
-          return new Promise((resolve) => {
-            image.onload = resolve;
-            image.onerror = resolve;
-          });
-        }),
-      ).then(() => {
-        setTimeout(() => {
-          iframeWindow.focus();
-          iframeWindow.print();
-
-          setTimeout(() => {
-            document.body.removeChild(iframe);
-          }, 600);
-        }, 250);
-      });
-    };
-
-    setTimeout(runPrint, 300);
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(() => document.body.removeChild(iframe), 500);
+    }, 500);
   };
 
   const scaledWidth = Math.round(A4_WIDTH_PX * zoom);
@@ -385,310 +202,649 @@ export default function A4Preview({ template, setTemplate }) {
   return (
     <div
       ref={previewScrollRef}
-      className="
-        min-h-0 flex-1 overflow-auto
-        bg-gradient-to-br from-[#eef7f6] via-[#fbf8f1] to-white
-        p-4 pb-28 custom-scrollbar-slim
-      "
+      className="min-h-0 flex-1 overflow-auto bg-transparent p-4 pb-28 custom-scrollbar flex flex-col items-center relative"
       dir="rtl"
     >
-      {/* Toolbar compactée */}
-      <div className="sticky top-0 z-30 mx-auto mb-2 max-w-[980px] rounded-[18px] border border-[#d8b46a]/25 bg-white/95 p-2 shadow-[0_8px_18px_rgba(18,63,89,0.08)] backdrop-blur-xl">
-        <div className="flex min-w-0 items-center justify-end gap-2">
-          <div className="flex min-w-0 flex-1 items-center justify-end gap-1 overflow-x-auto custom-scrollbar-slim">
+      {/* 🚀 Toolbar - Liquid Glass Design */}
+      <div className="sticky top-2 z-30 mx-auto w-full max-w-[800px] mb-6 rounded-[20px] border border-white/60 bg-white/40 p-2.5 shadow-[0_8px_32px_0_rgba(18,63,89,0.06)] backdrop-blur-2xl transition-all hover:bg-white/50">
+        <div className="flex min-w-0 items-center justify-between gap-4">
+          <div className="flex items-center gap-2 px-3">
+            <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-[#123f59] to-[#0e7490] text-[#d8b46a] shadow-sm">
+              <Eye className="w-4 h-4" />
+            </span>
+            <div className="flex flex-col">
+              <span className="text-[11px] font-black text-[#123f59]">
+                المعاينة الحية للنموذج
+              </span>
+              <span className="text-[9px] font-bold text-slate-500">
+                يتحدث تلقائياً حسب التعديلات
+              </span>
+            </div>
+          </div>
+
+          <div className="flex min-w-0 items-center justify-end gap-1.5 overflow-x-auto custom-scrollbar-slim">
             <button
               onClick={handlePrint}
-              className="inline-flex h-8 shrink-0 items-center justify-center rounded-xl bg-[#123f59] px-2.5 text-[9px] font-black text-white transition hover:bg-[#0f3448]"
-              type="button"
+              className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-l from-[#123f59] to-[#0e7490] px-4 text-[10px] font-black text-white transition hover:shadow-md hover:-translate-y-0.5"
             >
-              <IconWithText
-                icon={Printer}
-                text="طباعة"
-                iconClassName="h-3.5 w-3.5 text-[#e2bf74]"
-                textClassName="text-[9px] font-black leading-none"
-              />
+              <Printer className="w-3.5 h-3.5 text-[#d8b46a]" /> تصدير ومعاينة
+              الطباعة
             </button>
-
+            <div className="w-px h-5 bg-[#d8b46a]/30 mx-1"></div>
             <button
               onClick={handleZoomOut}
-              className="inline-flex h-8 shrink-0 items-center justify-center rounded-xl border border-[#d8b46a]/25 bg-[#fbf8f1] px-2 text-[9px] font-black text-[#64748b] transition hover:bg-white hover:text-[#123f59]"
-              type="button"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white bg-white/60 text-slate-600 transition hover:bg-white shadow-sm"
             >
-              <IconWithText
-                icon={ZoomOut}
-                text="تصغير"
-                iconClassName="h-3.5 w-3.5"
-                textClassName="text-[9px] font-black leading-none"
-              />
+              <ZoomOut className="w-4 h-4" />
             </button>
-
-            <span className="inline-flex h-8 min-w-[46px] shrink-0 items-center justify-center rounded-xl border border-[#d8b46a]/25 bg-white px-2 text-[9px] font-black text-[#123f59]">
+            <span className="inline-flex h-9 min-w-[50px] shrink-0 items-center justify-center rounded-xl border border-white/50 bg-[#fbf8f1]/80 px-2 text-[10px] font-black text-[#123f59] font-mono shadow-inner">
               {Math.round(zoom * 100)}%
             </span>
-
             <button
               onClick={handleZoomIn}
-              className="inline-flex h-8 shrink-0 items-center justify-center rounded-xl border border-[#d8b46a]/25 bg-[#fbf8f1] px-2 text-[9px] font-black text-[#64748b] transition hover:bg-white hover:text-[#123f59]"
-              type="button"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white bg-white/60 text-slate-600 transition hover:bg-white shadow-sm"
             >
-              <IconWithText
-                icon={ZoomIn}
-                text="تكبير"
-                iconClassName="h-3.5 w-3.5"
-                textClassName="text-[9px] font-black leading-none"
-              />
+              <ZoomIn className="w-4 h-4" />
             </button>
-
             <button
               onClick={handleResetZoom}
-              className="inline-flex h-8 shrink-0 items-center justify-center rounded-xl border border-[#d8b46a]/25 bg-[#fbf8f1] px-2 text-[9px] font-black text-[#c5983c] transition hover:bg-white hover:text-[#123f59]"
-              type="button"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white bg-white/60 text-[#c5983c] transition hover:bg-white shadow-sm"
+              title="إعادة الحجم الافتراضي"
             >
-              <IconWithText
-                icon={RotateCcw}
-                text="إعادة"
-                iconClassName="h-3.5 w-3.5"
-                textClassName="text-[9px] font-black leading-none"
-              />
+              <RotateCcw className="w-4 h-4" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Preview canvas */}
-      <div className="mx-auto flex justify-center pb-12">
+      {/* 🚀 Preview Canvas (تطبيق هندسة LivePreview) */}
+      <div
+        className="mx-auto flex justify-center pb-12 transition-transform duration-300"
+        style={{
+          transform: `scale(${zoom})`,
+          transformOrigin: "top center",
+          width: `${A4_WIDTH_PX}px`,
+        }}
+      >
         <div
-          className="relative"
+          ref={printRef}
+          className="a4-template-print-area relative overflow-hidden bg-white shadow-[0_20px_60px_-15px_rgba(18,63,89,0.3)] ring-1 ring-slate-900/5 print:shadow-none print:ring-0"
           style={{
-            width: `${scaledWidth}px`,
-            minHeight: `${scaledHeight}px`,
+            width: "210mm",
+            minHeight: "297mm",
+            backgroundColor: paperBackground,
+            color: "#123f59",
+            fontSize: `${12 * fontScale}px`,
+            fontFamily: "'Tajawal', sans-serif",
           }}
         >
-          <div
-            className="absolute right-0 top-0 origin-top-right transition-transform duration-200 ease-out"
-            style={{
-              transform: `scale(${zoom})`,
-              width: `${A4_WIDTH_PX}px`,
-            }}
-          >
+          {/* إطار الصفحة الخارجي إذا تم تفعيله */}
+          {pageStyle.showOuterBorder && (
             <div
-              ref={printRef}
-              className="a4-template-print-area relative overflow-hidden bg-white shadow-[0_20px_55px_rgba(18,63,89,0.18)]"
-              style={{
-                width: "210mm",
-                minHeight: "297mm",
-                padding: `${paddingMm}mm ${paddingMm}mm 30mm ${paddingMm}mm`,
-                transformOrigin: "top right",
-                backgroundColor: paperBackground,
-                color: "#123f59",
-                fontSize: `${12 * fontScale}px`,
-                border: pageStyle.showOuterBorder
-                  ? `2px solid ${accentColor}`
-                  : "none",
-              }}
-            >
-              <header
-                className="mb-5 border-b-2 pb-4"
-                style={{ borderColor: accentColor }}
-              >
-                <div className="flex items-start justify-between gap-8">
-                  <div className="flex items-start">
-                    {template.header.showLogo && (
-                      <div
-                        className="
-                          flex h-20 w-64 shrink-0 items-center justify-center
-                          rounded-xl border bg-white p-2
-                        "
-                        style={{ borderColor: `${goldColor}55` }}
-                      >
+              className="absolute inset-0 z-0 pointer-events-none"
+              style={{ border: `3px solid ${accentColor}`, margin: "5mm" }}
+            ></div>
+          )}
+
+          {/* الاعتماد على نظام الجداول لترويسة وتذييل احترافي في الطباعة */}
+          <table
+            className="document-table w-full border-collapse border-none relative z-10"
+            style={{ padding: `${paddingMm}mm` }}
+          >
+            {/* 🚀 الترويسة (Header) */}
+            <thead className="table-header-group">
+              <tr>
+                <td
+                  style={{
+                    padding: `${paddingMm}mm ${paddingMm}mm 5mm ${paddingMm}mm`,
+                  }}
+                >
+                  <div
+                    className="flex w-full items-stretch justify-between border-b-[3px] pb-4"
+                    style={{ borderColor: accentColor }}
+                  >
+                    {/* المربع الأيمن: الموضوع */}
+                    <div
+                      className="w-[220px] border flex flex-col justify-center p-3 bg-white/50"
+                      style={{ borderColor: `${accentColor}44` }}
+                    >
+                      <div className="text-slate-500 text-[10px] mb-1 font-bold">
+                        الموضوع
+                      </div>
+                      <div className="text-[13px] font-black text-[#123f59] leading-relaxed break-words">
+                        {template.header?.documentTitle ||
+                          "عرض سعر خدمات هندسية"}
+                      </div>
+                    </div>
+                    {/* المربع الأوسط: الشعار */}
+                    {template.header?.showLogo && (
+                      <div className="flex flex-1 items-center justify-center px-4">
                         <img
                           src="/logo.jpeg"
-                          alt="Details Consulting Engineers"
-                          className="max-h-full max-w-full object-contain"
+                          alt="Logo"
+                          className="h-16 w-auto object-contain mix-blend-multiply grayscale-[20%]"
                         />
                       </div>
                     )}
+                    {/* المربع الأيسر: التاريخ ورقم المرجع */}
+                    <div
+                      className="w-[240px] border flex flex-col bg-white/50"
+                      style={{ borderColor: `${accentColor}44` }}
+                    >
+                      {template.header?.showDate && (
+                        <div
+                          className="flex flex-1 border-b"
+                          style={{ borderColor: `${accentColor}44` }}
+                        >
+                          <div
+                            className="w-[85px] p-2 border-l text-slate-500 text-[10px] font-bold flex items-center"
+                            style={{ borderColor: `${accentColor}44` }}
+                          >
+                            تاريخ الإصدار
+                          </div>
+                          <div className="flex-1 p-2 text-[11px] font-black text-[#123f59] flex items-center font-mono">
+                            {dummyData.date}
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex flex-1">
+                        <div
+                          className="w-[85px] p-2 border-l text-slate-500 text-[10px] font-bold flex items-center"
+                          style={{ borderColor: `${accentColor}44` }}
+                        >
+                          رقم المرجع
+                        </div>
+                        <div className="flex-1 p-2 font-mono text-[11px] font-black text-[#123f59] flex items-center">
+                          {dummyData.reference}
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                </td>
+              </tr>
+            </thead>
 
-                  <div className="text-left">
-                    <h3
-                      className="mb-2 text-lg font-black"
+            {/* 🚀 المحتوى (Body) */}
+            <tbody className="table-row-group">
+              <tr>
+                <td
+                  style={{ padding: `5mm ${paddingMm}mm 10mm ${paddingMm}mm` }}
+                >
+                  {/* المقدمة */}
+                  <section className="mb-8 avoid-break">
+                    <h4
+                      className="mb-3 text-[13px] font-black flex items-center gap-1.5"
                       style={{ color: accentColor }}
                     >
-                      {template.header.documentTitle}
-                    </h3>
-                    {template.header.showDate && (
-                      <p
-                        className="inline-flex items-center rounded-xl border bg-[#fbf8f1] px-2 py-1 text-xs font-bold text-[#64748b]"
-                        style={{ borderColor: `${goldColor}55` }}
-                      >
-التاريخ: {dummyData.date}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </header>
-
-              <section className="mb-5">
-                <h4
-                  className="mb-1 text-sm font-black"
-                  style={{ color: accentColor }}
-                >
-                  {template.intro.addresseePrefix} {dummyData.clientName}
-                </h4>
-                <p
-                  className="mb-3 text-sm font-bold"
-                  style={{ color: accentColor }}
-                >
-                  المحترم
-                </p>
-                <p
-                  className="mb-3 text-sm font-bold"
-                  style={{ color: accentColor }}
-                >
-                  {template.intro.greeting}
-                </p>
-                <p className="text-justify text-xs font-medium leading-7 text-[#475569]">
-                  {previewIntroText}
-                </p>
-              </section>
-
-              <section className="mb-5">
-                <div
-                  className="mb-2 flex items-center gap-1.5 text-xs font-black"
-                  style={{ color: accentColor }}
-                >
-                  <FileText className="h-4 w-4" style={{ color: goldColor }} />
-                  نطاق العمل والتكاليف
-                </div>
-
-                <table
-                  className="w-full border-collapse text-center text-xs"
-                  style={{ border: `1px solid ${accentColor}` }}
-                >
-                  <thead>
-                    <tr
-                      className="font-black text-white"
-                      style={{ backgroundColor: accentColor }}
+                      <UserCheck
+                        className="w-4.5 h-4.5"
+                        style={{ color: goldColor }}
+                      />{" "}
+                      أولاً: بيانات العميل والمشروع
+                    </h4>
+                    <table
+                      className="w-full border-collapse text-right text-[11px] mb-4"
+                      style={{ border: `1px solid ${accentColor}` }}
                     >
-                      <th className="w-8 p-2" style={{ border: `1px solid ${accentColor}` }}>م</th>
-                      <th className="p-2 text-right" style={{ border: `1px solid ${accentColor}` }}>الوصف</th>
-                      {template.table.showUnit && (
-                        <th className="w-16 p-2" style={{ border: `1px solid ${accentColor}` }}>الوحدة</th>
-                      )}
-                      {template.table.showQuantity && (
-                        <th className="w-16 p-2" style={{ border: `1px solid ${accentColor}` }}>الكمية</th>
-                      )}
-                      {template.table.showUnitPrice && (
-                        <th className="w-20 p-2" style={{ border: `1px solid ${accentColor}` }}>سعر الوحدة</th>
-                      )}
-                      <th className="w-24 p-2" style={{ border: `1px solid ${accentColor}` }}>الإجمالي</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="p-2" style={{ border: `1px solid ${accentColor}` }}>1</td>
-                      <td className="p-2 text-right" style={{ border: `1px solid ${accentColor}` }}>
-                        المخططات المعمارية حسب كود البناء السعودي
-                      </td>
-                      {template.table.showUnit && <td className="p-2" style={{ border: `1px solid ${accentColor}` }}>خدمة</td>}
-                      {template.table.showQuantity && <td className="p-2" style={{ border: `1px solid ${accentColor}` }}>1</td>}
-                      {template.table.showUnitPrice && <td className="p-2" style={{ border: `1px solid ${accentColor}` }}>—</td>}
-                      <td className="p-2" style={{ border: `1px solid ${accentColor}` }}>—</td>
-                    </tr>
-                    {template.financials.showSubtotal && (
-                      <tr className="bg-[#fbf8f1] font-bold">
-                        <td
-                          className="p-2 text-left"
-                          style={{ border: `1px solid ${accentColor}` }}
-                          colSpan={
-                            2 +
-                            (template.table.showUnit ? 1 : 0) +
-                            (template.table.showQuantity ? 1 : 0) +
-                            (template.table.showUnitPrice ? 1 : 0)
-                          }
+                      <tbody className="font-bold text-[#123f59]">
+                        <tr>
+                          <td
+                            className="p-2.5 border bg-slate-50/60 w-1/4"
+                            style={{ borderColor: `${accentColor}44` }}
+                          >
+                            {template.intro?.addresseePrefix ||
+                              "السادة المحترمين"}
+                          </td>
+                          <td
+                            className="p-2.5 border font-black w-3/4"
+                            style={{
+                              borderColor: `${accentColor}44`,
+                              color: accentColor,
+                            }}
+                          >
+                            {dummyData.clientName}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            className="p-2.5 border bg-slate-50/60"
+                            style={{ borderColor: `${accentColor}44` }}
+                          >
+                            بيانات المشروع المعني
+                          </td>
+                          <td
+                            className="p-2.5 border font-mono font-bold text-slate-700"
+                            style={{ borderColor: `${accentColor}44` }}
+                          >
+                            حي {dummyData.district} | مخطط رقم{" "}
+                            {dummyData.planNumber} | قطعة رقم{" "}
+                            {dummyData.plotNumber} | المساحة {dummyData.area} م²
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <p
+                      className="mb-3 text-[12px] font-black"
+                      style={{ color: accentColor }}
+                    >
+                      {template.intro?.greeting ||
+                        "السلام عليكم ورحمة الله وبركاته،،،"}
+                    </p>
+                    <div className="text-justify text-[11.5px] leading-[2.2] font-bold text-slate-700 whitespace-pre-wrap pl-4">
+                      {previewIntroText}
+                    </div>
+                  </section>
+
+                  {/* جدول البنود والتكاليف */}
+                  <section className="mb-8 avoid-break">
+                    <h4
+                      className="mb-3 text-[13px] font-black flex items-center gap-1.5"
+                      style={{ color: accentColor }}
+                    >
+                      <FileText
+                        className="w-4.5 h-4.5"
+                        style={{ color: goldColor }}
+                      />{" "}
+                      ثانياً: نطاق العمل المعتمد والتكلفة
+                    </h4>
+
+                    <table
+                      className="w-full border-collapse text-center text-[11px]"
+                      style={{
+                        border: `1px solid ${accentColor}`,
+                        tableLayout: "fixed",
+                      }}
+                    >
+                      <thead>
+                        <tr
+                          className="font-black text-white"
+                          style={{ backgroundColor: accentColor }}
                         >
-                          الإجمالي قبل الضريبة
-                        </td>
-                        <td className="p-2" style={{ border: `1px solid ${accentColor}` }}>—</td>
-                      </tr>
-                    )}
-                    <tr className="font-bold">
-                      <td
-                        className="p-2 text-left"
-                        style={{ border: `1px solid ${accentColor}` }}
-                        colSpan={
-                          2 +
-                          (template.table.showUnit ? 1 : 0) +
-                          (template.table.showQuantity ? 1 : 0) +
-                          (template.table.showUnitPrice ? 1 : 0)
-                        }
+                          <th
+                            className="p-2.5 border w-[6%]"
+                            style={{ borderColor: accentColor }}
+                          >
+                            م
+                          </th>
+                          <th
+                            className="p-2.5 text-right border"
+                            style={{
+                              borderColor: accentColor,
+                              width: template.table?.showQuantity
+                                ? "44%"
+                                : "60%",
+                            }}
+                          >
+                            وصف نطاق العمل (البند)
+                          </th>
+                          {template.table?.showUnit && (
+                            <th
+                              className="p-2.5 border w-[12%]"
+                              style={{ borderColor: accentColor }}
+                            >
+                              الوحدة
+                            </th>
+                          )}
+                          {template.table?.showQuantity && (
+                            <th
+                              className="p-2.5 border w-[12%]"
+                              style={{ borderColor: accentColor }}
+                            >
+                              الكمية
+                            </th>
+                          )}
+                          {template.table?.showUnitPrice && (
+                            <th
+                              className="p-2.5 border w-[16%]"
+                              style={{ borderColor: accentColor }}
+                            >
+                              سعر الوحدة
+                            </th>
+                          )}
+                          <th
+                            className="p-2.5 border w-[18%]"
+                            style={{ borderColor: accentColor }}
+                          >
+                            الإجمالي
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="font-bold text-[#123f59]">
+                        {!template.items || template.items.length === 0 ? (
+                          // عرض بيانات تجريبية إذا لم يتم إضافة بنود في النموذج
+                          <tr>
+                            <td
+                              className="p-3 border font-mono bg-slate-50/50"
+                              style={{ borderColor: `${accentColor}44` }}
+                            >
+                              1
+                            </td>
+                            <td
+                              className="p-3 text-right border leading-relaxed"
+                              style={{ borderColor: `${accentColor}44` }}
+                            >
+                              {dummyData.serviceType}
+                              <br />
+                              <span className="text-[9px] text-slate-500 font-bold mt-1 block">
+                                شاملة استخراج الرخص وإعداد المخططات المعمارية
+                                والإنشائية متوافقة مع كود البناء السعودي.
+                              </span>
+                            </td>
+                            {template.table?.showUnit && (
+                              <td
+                                className="p-3 border text-slate-600"
+                                style={{ borderColor: `${accentColor}44` }}
+                              >
+                                خدمة مقطوعة
+                              </td>
+                            )}
+                            {template.table?.showQuantity && (
+                              <td
+                                className="p-3 border font-mono text-slate-600"
+                                style={{ borderColor: `${accentColor}44` }}
+                              >
+                                1
+                              </td>
+                            )}
+                            {template.table?.showUnitPrice && (
+                              <td
+                                className="p-3 border font-mono text-slate-600"
+                                style={{ borderColor: `${accentColor}44` }}
+                              >
+                                25,000 ر.س
+                              </td>
+                            )}
+                            <td
+                              className="p-3 border font-mono font-black text-cyan-800 bg-cyan-50/20"
+                              style={{ borderColor: `${accentColor}44` }}
+                            >
+                              25,000 ر.س
+                            </td>
+                          </tr>
+                        ) : (
+                          // عرض البنود الافتراضية الخاصة بالنموذج
+                          template.items.map((item, idx) => (
+                            <tr
+                              key={idx}
+                              className="avoid-break border-b border-slate-100"
+                            >
+                              <td
+                                className="p-3 border font-mono bg-slate-50/50"
+                                style={{ borderColor: `${accentColor}44` }}
+                              >
+                                {idx + 1}
+                              </td>
+                              <td
+                                className="p-3 text-right border leading-relaxed"
+                                style={{ borderColor: `${accentColor}44` }}
+                              >
+                                <span className="block font-black mb-1">
+                                  {item.name}
+                                </span>
+                                {item.description && (
+                                  <span className="text-[9.5px] text-slate-500 font-bold block">
+                                    {item.description}
+                                  </span>
+                                )}
+                              </td>
+                              {template.table?.showUnit && (
+                                <td
+                                  className="p-3 border text-slate-600"
+                                  style={{ borderColor: `${accentColor}44` }}
+                                >
+                                  {item.unit}
+                                </td>
+                              )}
+                              {template.table?.showQuantity && (
+                                <td
+                                  className="p-3 border font-mono text-slate-600"
+                                  style={{ borderColor: `${accentColor}44` }}
+                                >
+                                  {item.quantity}
+                                </td>
+                              )}
+                              {template.table?.showUnitPrice && (
+                                <td
+                                  className="p-3 border font-mono text-slate-600"
+                                  style={{ borderColor: `${accentColor}44` }}
+                                >
+                                  {item.unitPrice.toLocaleString()} ر.س
+                                </td>
+                              )}
+                              <td
+                                className="p-3 border font-mono font-black text-cyan-800 bg-cyan-50/20"
+                                style={{ borderColor: `${accentColor}44` }}
+                              >
+                                {(
+                                  item.quantity * item.unitPrice
+                                ).toLocaleString()}{" "}
+                                ر.س
+                              </td>
+                            </tr>
+                          ))
+                        )}
+
+                        {/* قسم الماليات */}
+                        {template.financials?.showSubtotal && (
+                          <tr className="bg-slate-50/80">
+                            <td
+                              colSpan={
+                                2 +
+                                (template.table?.showUnit ? 1 : 0) +
+                                (template.table?.showQuantity ? 1 : 0) +
+                                (template.table?.showUnitPrice ? 1 : 0) -
+                                1
+                              }
+                              className="p-2.5 border text-left font-black"
+                              style={{ borderColor: `${accentColor}44` }}
+                            >
+                              الإجمالي قبل الضريبة:
+                            </td>
+                            <td
+                              className="p-2.5 border font-mono font-black text-[12px] text-slate-800"
+                              style={{ borderColor: `${accentColor}44` }}
+                            >
+                              25,000.00 ر.س
+                            </td>
+                          </tr>
+                        )}
+                        <tr className="bg-transparent">
+                          <td
+                            colSpan={
+                              2 +
+                              (template.table?.showUnit ? 1 : 0) +
+                              (template.table?.showQuantity ? 1 : 0) +
+                              (template.table?.showUnitPrice ? 1 : 0) -
+                              1
+                            }
+                            className="p-2.5 border text-left font-bold text-slate-600"
+                            style={{ borderColor: `${accentColor}44` }}
+                          >
+                            ضريبة القيمة المضافة (
+                            {template.financials?.vatPercentage || 15}%):
+                          </td>
+                          <td
+                            className="p-2.5 border font-mono font-bold text-[12px] text-slate-700"
+                            style={{ borderColor: `${accentColor}44` }}
+                          >
+                            3,750.00 ر.س
+                          </td>
+                        </tr>
+                        {template.financials?.showTotal && (
+                          <tr
+                            className="font-black text-white"
+                            style={{ backgroundColor: accentColor }}
+                          >
+                            <td
+                              colSpan={
+                                2 +
+                                (template.table?.showUnit ? 1 : 0) +
+                                (template.table?.showQuantity ? 1 : 0) +
+                                (template.table?.showUnitPrice ? 1 : 0) -
+                                1
+                              }
+                              className="p-3 border text-left text-[12.5px]"
+                              style={{ borderColor: accentColor }}
+                            >
+                              الإجمالي النهائي المستحق الصافي للدفع:
+                            </td>
+                            <td
+                              className="p-3 border font-mono text-[13px]"
+                              style={{ borderColor: accentColor }}
+                            >
+                              28,750.00 ر.س
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </section>
+
+                  {/* الشروط والأحكام */}
+                  <section className="mb-10 avoid-break">
+                    <h4
+                      className="mb-3 text-[13px] font-black flex items-center gap-1.5"
+                      style={{ color: accentColor }}
+                    >
+                      <Scale
+                        className="w-4.5 h-4.5"
+                        style={{ color: goldColor }}
+                      />{" "}
+                      ثالثاً:{" "}
+                      {template.terms?.title ||
+                        "الشروط والأحكام والالتزامات العامة"}
+                    </h4>
+                    <div className="bg-slate-50/50 border border-slate-100 p-4 rounded-xl text-justify text-[11.5px] leading-[2.2] text-slate-700 font-bold whitespace-pre-wrap">
+                      {template.terms?.text ||
+                        "سيتم إدراج الشروط والأحكام الخاصة بالمكتب هنا..."}
+                    </div>
+                  </section>
+
+                  {/* التوقيعات */}
+                  {(template.signatures?.showClient ||
+                    template.signatures?.showOffice) && (
+                    <section className="mt-12 avoid-break">
+                      <h4
+                        className="mb-6 text-[12.5px] font-black text-center"
+                        style={{ color: accentColor }}
                       >
-                        ضريبة القيمة المضافة {template.financials.vatPercentage}%
-                      </td>
-                      <td className="p-2" style={{ border: `1px solid ${accentColor}` }}>—</td>
-                    </tr>
-                    {template.financials.showTotal && (
-                      <tr className="font-black text-white" style={{ backgroundColor: accentColor }}>
-                        <td
-                          className="p-2 text-left"
-                          style={{ border: `1px solid ${accentColor}` }}
-                          colSpan={
-                            2 +
-                            (template.table.showUnit ? 1 : 0) +
-                            (template.table.showQuantity ? 1 : 0) +
-                            (template.table.showUnitPrice ? 1 : 0)
-                          }
-                        >
-                          الإجمالي النهائي
-                        </td>
-                        <td className="p-2" style={{ border: `1px solid ${accentColor}` }}>—</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </section>
+                        صيغة الاعتماد والموافقة النهائية والتواقيع الرسمية
+                      </h4>
+                      <table
+                        className="w-full border-collapse text-center text-[11px] table-fixed"
+                        style={{ border: `2px solid ${accentColor}` }}
+                      >
+                        <thead>
+                          <tr
+                            className="font-black text-white text-[12px]"
+                            style={{ backgroundColor: accentColor }}
+                          >
+                            {template.signatures?.showClient && (
+                              <th
+                                className="p-3 border-l"
+                                style={{ borderColor: accentColor }}
+                              >
+                                الطرف الثاني:{" "}
+                                {template.signatures?.clientLabel ||
+                                  "اعتماد العميل المالك"}
+                              </th>
+                            )}
+                            {template.signatures?.showOffice && (
+                              <th className="p-3">
+                                الطرف الأول:{" "}
+                                {template.signatures?.officeLabel ||
+                                  "مقدم الخدمة"}
+                              </th>
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody className="font-bold text-[#123f59]">
+                          <tr>
+                            {template.signatures?.showClient && (
+                              <td
+                                className="p-4 border-l align-top"
+                                style={{ borderColor: `${accentColor}44` }}
+                              >
+                                <div className="flex flex-col gap-4 text-right pr-4">
+                                  <div>
+                                    <span className="text-slate-500 font-bold">
+                                      الاسم:
+                                    </span>{" "}
+                                    <span className="font-black text-slate-800">
+                                      {dummyData.clientName}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-500 font-bold">
+                                      الصفة:
+                                    </span>{" "}
+                                    <span className="font-black text-slate-800">
+                                      المالك للمشروع
+                                    </span>
+                                  </div>
+                                  <div className="mt-6 text-center text-slate-400 font-bold mb-4">
+                                    التوقيع والختم:
+                                    <br />
+                                    <span className="inline-block mt-6">
+                                      ...................................................
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+                            )}
+                            {template.signatures?.showOffice && (
+                              <td
+                                className="p-4 align-top"
+                                style={{ borderColor: `${accentColor}44` }}
+                              >
+                                <div className="flex flex-col gap-4 text-right pr-4">
+                                  <div>
+                                    <span className="text-slate-500 font-bold">
+                                      الجهة:
+                                    </span>{" "}
+                                    <span className="font-black text-slate-800">
+                                      شركة ديتيلز كونسولتس الهندسية
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-500 font-bold">
+                                      الممثل:
+                                    </span>{" "}
+                                    <span className="font-black text-slate-800">
+                                      إدارة العقود والمشاريع
+                                    </span>
+                                  </div>
+                                  <div className="mt-6 text-center text-slate-400 font-bold mb-4">
+                                    الاعتماد الرسمي:
+                                    <br />
+                                    <span className="inline-block mt-6">
+                                      ...................................................
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        </tbody>
+                      </table>
+                    </section>
+                  )}
+                </td>
+              </tr>
+            </tbody>
 
-              <section className="mb-10">
-                <h4
-                  className="mb-2 text-sm font-black underline underline-offset-4"
-                  style={{ color: accentColor, textDecorationColor: goldColor }}
+            {/* 🚀 التذييل (Footer) */}
+            <tfoot className="table-footer-group">
+              <tr>
+                <td
+                  style={{ padding: `10mm ${paddingMm}mm 10mm ${paddingMm}mm` }}
                 >
-                  {template.terms.title}
-                </h4>
-                <div className="whitespace-pre-line text-justify text-xs leading-7 text-[#475569]">
-                  {template.terms.text}
-                </div>
-              </section>
-
-              <section className="mt-14 grid grid-cols-2 gap-8 text-center">
-                {template.signatures.showClient && (
-                  <div>
-                    <p className="mb-12 text-xs font-black" style={{ color: accentColor }}>
-                      {template.signatures.clientLabel}
-                    </p>
-                    <div
-                      className="mx-auto w-2/3 border-b"
-                      style={{ borderColor: `${goldColor}80` }}
-                    />
-                  </div>
-                )}
-                {template.signatures.showOffice && (
-                  <div>
-                    <p className="mb-12 text-xs font-black" style={{ color: accentColor }}>
-                      {template.signatures.officeLabel}
-                    </p>
-                    <div
-                      className="mx-auto w-2/3 border-b"
-                      style={{ borderColor: `${goldColor}80` }}
-                    />
-                  </div>
-                )}
-              </section>
-
-              <DetailsPrintFooter accentColor={accentColor} />
-            </div>
-          </div>
+                  <DetailsPrintFooter accentColor={accentColor} />
+                </td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
     </div>
