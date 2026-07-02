@@ -1,16 +1,14 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import {
   FileText,
   Printer,
   ZoomIn,
   ZoomOut,
   RotateCcw,
-  Building,
   UserCheck,
   Eye,
   Scale,
 } from "lucide-react";
-
 
 const STYLE_PRESETS = {
   classic: {
@@ -113,18 +111,6 @@ export default function A4Preview({ template, setTemplate }) {
   const previewScrollRef = useRef(null);
   const [zoom, setZoom] = useState(0.75);
 
-  // 🚀 بيانات وهمية لمحاكاة العرض وتوضيح المتغيرات
-  const dummyData = {
-    clientName: "شركة أبعاد التطوير العقارية المحدودة",
-    serviceType: template.title || "خدمات هندسية متكاملة",
-    plotNumber: "847 / ج",
-    planNumber: "2944",
-    district: "الملقا",
-    area: "12,500.00",
-    date: new Date().toLocaleDateString("ar-SA"),
-    reference: `QT-${Date.now().toString().slice(-5)}`,
-  };
-
   const pageStyle = { ...DEFAULT_PAGE_STYLE, ...(template.pageStyle || {}) };
   const preset = STYLE_PRESETS[pageStyle.preset] || STYLE_PRESETS.classic;
   const accentColor = pageStyle.accentColor || preset.accentColor;
@@ -139,20 +125,19 @@ export default function A4Preview({ template, setTemplate }) {
         : Number(pageStyle.pagePaddingMm || 15);
   const fontScale = Number(pageStyle.fontScale || 1);
 
-  // استبدال المتغيرات في نص المقدمة
-  let previewIntroText = template.intro?.text || "";
-  Object.keys(dummyData).forEach((key) => {
-    previewIntroText = previewIntroText.replace(
-      new RegExp(`{{${key}}}`, "g"),
-      dummyData[key],
-    );
-  });
+  const previewIntroText = template.intro?.text || "";
+
+  // 🚀 حسابات الجدول المالية بناءً على البنود الفعلية
+  const items = template.items || [];
+  const subtotal = items.reduce((acc, item) => acc + (Number(item.quantity) * Number(item.unitPrice)), 0);
+  const vatPercentage = template.financials?.vatPercentage || 15;
+  const vatAmount = subtotal * (vatPercentage / 100);
+  const total = subtotal + vatAmount;
 
   const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.1, 1.6));
   const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.1, 0.35));
   const handleResetZoom = () => setZoom(0.75);
 
-  // 🚀 دالة طباعة مخصصة للـ Iframe (ممتازة للنماذج السريعة)
   const handlePrint = () => {
     const printNode = printRef.current;
     if (!printNode) return;
@@ -196,16 +181,13 @@ export default function A4Preview({ template, setTemplate }) {
     }, 500);
   };
 
-  const scaledWidth = Math.round(A4_WIDTH_PX * zoom);
-  const scaledHeight = Math.round(A4_HEIGHT_PX * zoom);
-
   return (
     <div
       ref={previewScrollRef}
       className="min-h-0 flex-1 overflow-auto bg-transparent p-4 pb-28 custom-scrollbar flex flex-col items-center relative"
       dir="rtl"
     >
-      {/* 🚀 Toolbar - Liquid Glass Design */}
+      {/* Toolbar */}
       <div className="sticky top-2 z-30 mx-auto w-full max-w-[800px] mb-6 rounded-[20px] border border-white/60 bg-white/40 p-2.5 shadow-[0_8px_32px_0_rgba(18,63,89,0.06)] backdrop-blur-2xl transition-all hover:bg-white/50">
         <div className="flex min-w-0 items-center justify-between gap-4">
           <div className="flex items-center gap-2 px-3">
@@ -217,7 +199,7 @@ export default function A4Preview({ template, setTemplate }) {
                 المعاينة الحية للنموذج
               </span>
               <span className="text-[9px] font-bold text-slate-500">
-                يتحدث تلقائياً حسب التعديلات
+                يتحدث تلقائياً حسب التعديلات (بدون بيانات تجريبية)
               </span>
             </div>
           </div>
@@ -257,7 +239,7 @@ export default function A4Preview({ template, setTemplate }) {
         </div>
       </div>
 
-      {/* 🚀 Preview Canvas (تطبيق هندسة LivePreview) */}
+      {/* Preview Canvas */}
       <div
         className="mx-auto flex justify-center pb-12 transition-transform duration-300"
         style={{
@@ -278,7 +260,6 @@ export default function A4Preview({ template, setTemplate }) {
             fontFamily: "'Tajawal', sans-serif",
           }}
         >
-          {/* إطار الصفحة الخارجي إذا تم تفعيله */}
           {pageStyle.showOuterBorder && (
             <div
               className="absolute inset-0 z-0 pointer-events-none"
@@ -286,12 +267,11 @@ export default function A4Preview({ template, setTemplate }) {
             ></div>
           )}
 
-          {/* الاعتماد على نظام الجداول لترويسة وتذييل احترافي في الطباعة */}
           <table
             className="document-table w-full border-collapse border-none relative z-10"
             style={{ padding: `${paddingMm}mm` }}
           >
-            {/* 🚀 الترويسة (Header) */}
+            {/* الترويسة */}
             <thead className="table-header-group">
               <tr>
                 <td
@@ -303,7 +283,6 @@ export default function A4Preview({ template, setTemplate }) {
                     className="flex w-full items-stretch justify-between border-b-[3px] pb-4"
                     style={{ borderColor: accentColor }}
                   >
-                    {/* المربع الأيمن: الموضوع */}
                     <div
                       className="w-[220px] border flex flex-col justify-center p-3 bg-white/50"
                       style={{ borderColor: `${accentColor}44` }}
@@ -312,11 +291,10 @@ export default function A4Preview({ template, setTemplate }) {
                         الموضوع
                       </div>
                       <div className="text-[13px] font-black text-[#123f59] leading-relaxed break-words">
-                        {template.header?.documentTitle ||
-                          "عرض سعر خدمات هندسية"}
+                        {template.header?.documentTitle}
                       </div>
                     </div>
-                    {/* المربع الأوسط: الشعار */}
+                    
                     {template.header?.showLogo && (
                       <div className="flex flex-1 items-center justify-center px-4">
                         <img
@@ -326,7 +304,7 @@ export default function A4Preview({ template, setTemplate }) {
                         />
                       </div>
                     )}
-                    {/* المربع الأيسر: التاريخ ورقم المرجع */}
+                    
                     <div
                       className="w-[240px] border flex flex-col bg-white/50"
                       style={{ borderColor: `${accentColor}44` }}
@@ -342,8 +320,8 @@ export default function A4Preview({ template, setTemplate }) {
                           >
                             تاريخ الإصدار
                           </div>
-                          <div className="flex-1 p-2 text-[11px] font-black text-[#123f59] flex items-center font-mono">
-                            {dummyData.date}
+                          <div className="flex-1 p-2 text-[11px] font-black text-slate-300 flex items-center font-mono">
+                            [تاريخ الإصدار]
                           </div>
                         </div>
                       )}
@@ -354,8 +332,8 @@ export default function A4Preview({ template, setTemplate }) {
                         >
                           رقم المرجع
                         </div>
-                        <div className="flex-1 p-2 font-mono text-[11px] font-black text-[#123f59] flex items-center">
-                          {dummyData.reference}
+                        <div className="flex-1 p-2 font-mono text-[11px] font-black text-slate-300 flex items-center">
+                          [رقم المرجع]
                         </div>
                       </div>
                     </div>
@@ -364,13 +342,12 @@ export default function A4Preview({ template, setTemplate }) {
               </tr>
             </thead>
 
-            {/* 🚀 المحتوى (Body) */}
+            {/* المحتوى */}
             <tbody className="table-row-group">
               <tr>
-                <td
-                  style={{ padding: `5mm ${paddingMm}mm 10mm ${paddingMm}mm` }}
-                >
-                  {/* المقدمة */}
+                <td style={{ padding: `5mm ${paddingMm}mm 10mm ${paddingMm}mm` }}>
+                  
+                  {/* بيانات العميل والمشروع */}
                   <section className="mb-8 avoid-break">
                     <h4
                       className="mb-3 text-[13px] font-black flex items-center gap-1.5"
@@ -392,17 +369,13 @@ export default function A4Preview({ template, setTemplate }) {
                             className="p-2.5 border bg-slate-50/60 w-1/4"
                             style={{ borderColor: `${accentColor}44` }}
                           >
-                            {template.intro?.addresseePrefix ||
-                              "السادة المحترمين"}
+                            {template.intro?.addresseePrefix}
                           </td>
                           <td
-                            className="p-2.5 border font-black w-3/4"
-                            style={{
-                              borderColor: `${accentColor}44`,
-                              color: accentColor,
-                            }}
+                            className="p-2.5 border font-black w-3/4 text-slate-400"
+                            style={{ borderColor: `${accentColor}44` }}
                           >
-                            {dummyData.clientName}
+                            [اسم العميل]
                           </td>
                         </tr>
                         <tr>
@@ -413,12 +386,10 @@ export default function A4Preview({ template, setTemplate }) {
                             بيانات المشروع المعني
                           </td>
                           <td
-                            className="p-2.5 border font-mono font-bold text-slate-700"
+                            className="p-2.5 border font-mono font-bold text-slate-400"
                             style={{ borderColor: `${accentColor}44` }}
                           >
-                            حي {dummyData.district} | مخطط رقم{" "}
-                            {dummyData.planNumber} | قطعة رقم{" "}
-                            {dummyData.plotNumber} | المساحة {dummyData.area} م²
+                            حي [اسم الحي] | مخطط رقم [رقم المخطط] | قطعة رقم [رقم القطعة] | المساحة [المساحة] م²
                           </td>
                         </tr>
                       </tbody>
@@ -428,8 +399,7 @@ export default function A4Preview({ template, setTemplate }) {
                       className="mb-3 text-[12px] font-black"
                       style={{ color: accentColor }}
                     >
-                      {template.intro?.greeting ||
-                        "السلام عليكم ورحمة الله وبركاته،،،"}
+                      {template.intro?.greeting}
                     </p>
                     <div className="text-justify text-[11.5px] leading-[2.2] font-bold text-slate-700 whitespace-pre-wrap pl-4">
                       {previewIntroText}
@@ -471,9 +441,7 @@ export default function A4Preview({ template, setTemplate }) {
                             className="p-2.5 text-right border"
                             style={{
                               borderColor: accentColor,
-                              width: template.table?.showQuantity
-                                ? "44%"
-                                : "60%",
+                              width: template.table?.showQuantity ? "44%" : "60%",
                             }}
                           >
                             وصف نطاق العمل (البند)
@@ -511,32 +479,33 @@ export default function A4Preview({ template, setTemplate }) {
                         </tr>
                       </thead>
                       <tbody className="font-bold text-[#123f59]">
-                        {!template.items || template.items.length === 0 ? (
-                          // عرض بيانات تجريبية إذا لم يتم إضافة بنود في النموذج
-                          <tr>
+                        {items.map((item, idx) => (
+                          <tr key={idx} className="avoid-break border-b border-slate-100">
                             <td
                               className="p-3 border font-mono bg-slate-50/50"
                               style={{ borderColor: `${accentColor}44` }}
                             >
-                              1
+                              {idx + 1}
                             </td>
                             <td
                               className="p-3 text-right border leading-relaxed"
                               style={{ borderColor: `${accentColor}44` }}
                             >
-                              {dummyData.serviceType}
-                              <br />
-                              <span className="text-[9px] text-slate-500 font-bold mt-1 block">
-                                شاملة استخراج الرخص وإعداد المخططات المعمارية
-                                والإنشائية متوافقة مع كود البناء السعودي.
+                              <span className="block font-black mb-1">
+                                {item.name}
                               </span>
+                              {item.description && (
+                                <span className="text-[9.5px] text-slate-500 font-bold block">
+                                  {item.description}
+                                </span>
+                              )}
                             </td>
                             {template.table?.showUnit && (
                               <td
                                 className="p-3 border text-slate-600"
                                 style={{ borderColor: `${accentColor}44` }}
                               >
-                                خدمة مقطوعة
+                                {item.unit}
                               </td>
                             )}
                             {template.table?.showQuantity && (
@@ -544,7 +513,7 @@ export default function A4Preview({ template, setTemplate }) {
                                 className="p-3 border font-mono text-slate-600"
                                 style={{ borderColor: `${accentColor}44` }}
                               >
-                                1
+                                {item.quantity}
                               </td>
                             )}
                             {template.table?.showUnitPrice && (
@@ -552,78 +521,17 @@ export default function A4Preview({ template, setTemplate }) {
                                 className="p-3 border font-mono text-slate-600"
                                 style={{ borderColor: `${accentColor}44` }}
                               >
-                                25,000 ر.س
+                                {Number(item.unitPrice).toLocaleString()} ر.س
                               </td>
                             )}
                             <td
                               className="p-3 border font-mono font-black text-cyan-800 bg-cyan-50/20"
                               style={{ borderColor: `${accentColor}44` }}
                             >
-                              25,000 ر.س
+                              {(item.quantity * item.unitPrice).toLocaleString()} ر.س
                             </td>
                           </tr>
-                        ) : (
-                          // عرض البنود الافتراضية الخاصة بالنموذج
-                          template.items.map((item, idx) => (
-                            <tr
-                              key={idx}
-                              className="avoid-break border-b border-slate-100"
-                            >
-                              <td
-                                className="p-3 border font-mono bg-slate-50/50"
-                                style={{ borderColor: `${accentColor}44` }}
-                              >
-                                {idx + 1}
-                              </td>
-                              <td
-                                className="p-3 text-right border leading-relaxed"
-                                style={{ borderColor: `${accentColor}44` }}
-                              >
-                                <span className="block font-black mb-1">
-                                  {item.name}
-                                </span>
-                                {item.description && (
-                                  <span className="text-[9.5px] text-slate-500 font-bold block">
-                                    {item.description}
-                                  </span>
-                                )}
-                              </td>
-                              {template.table?.showUnit && (
-                                <td
-                                  className="p-3 border text-slate-600"
-                                  style={{ borderColor: `${accentColor}44` }}
-                                >
-                                  {item.unit}
-                                </td>
-                              )}
-                              {template.table?.showQuantity && (
-                                <td
-                                  className="p-3 border font-mono text-slate-600"
-                                  style={{ borderColor: `${accentColor}44` }}
-                                >
-                                  {item.quantity}
-                                </td>
-                              )}
-                              {template.table?.showUnitPrice && (
-                                <td
-                                  className="p-3 border font-mono text-slate-600"
-                                  style={{ borderColor: `${accentColor}44` }}
-                                >
-                                  {item.unitPrice.toLocaleString()} ر.س
-                                </td>
-                              )}
-                              <td
-                                className="p-3 border font-mono font-black text-cyan-800 bg-cyan-50/20"
-                                style={{ borderColor: `${accentColor}44` }}
-                              >
-                                {(
-                                  item.quantity * item.unitPrice
-                                ).toLocaleString()}{" "}
-                                ر.س
-                              </td>
-                            </tr>
-                          ))
-                        )}
+                        ))}
 
                         {/* قسم الماليات */}
                         {template.financials?.showSubtotal && (
@@ -633,8 +541,7 @@ export default function A4Preview({ template, setTemplate }) {
                                 2 +
                                 (template.table?.showUnit ? 1 : 0) +
                                 (template.table?.showQuantity ? 1 : 0) +
-                                (template.table?.showUnitPrice ? 1 : 0) -
-                                1
+                                (template.table?.showUnitPrice ? 1 : 0) - 1
                               }
                               className="p-2.5 border text-left font-black"
                               style={{ borderColor: `${accentColor}44` }}
@@ -645,7 +552,7 @@ export default function A4Preview({ template, setTemplate }) {
                               className="p-2.5 border font-mono font-black text-[12px] text-slate-800"
                               style={{ borderColor: `${accentColor}44` }}
                             >
-                              25,000.00 ر.س
+                              {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })} ر.س
                             </td>
                           </tr>
                         )}
@@ -655,20 +562,18 @@ export default function A4Preview({ template, setTemplate }) {
                               2 +
                               (template.table?.showUnit ? 1 : 0) +
                               (template.table?.showQuantity ? 1 : 0) +
-                              (template.table?.showUnitPrice ? 1 : 0) -
-                              1
+                              (template.table?.showUnitPrice ? 1 : 0) - 1
                             }
                             className="p-2.5 border text-left font-bold text-slate-600"
                             style={{ borderColor: `${accentColor}44` }}
                           >
-                            ضريبة القيمة المضافة (
-                            {template.financials?.vatPercentage || 15}%):
+                            ضريبة القيمة المضافة ({vatPercentage}%):
                           </td>
                           <td
                             className="p-2.5 border font-mono font-bold text-[12px] text-slate-700"
                             style={{ borderColor: `${accentColor}44` }}
                           >
-                            3,750.00 ر.س
+                            {vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })} ر.س
                           </td>
                         </tr>
                         {template.financials?.showTotal && (
@@ -681,8 +586,7 @@ export default function A4Preview({ template, setTemplate }) {
                                 2 +
                                 (template.table?.showUnit ? 1 : 0) +
                                 (template.table?.showQuantity ? 1 : 0) +
-                                (template.table?.showUnitPrice ? 1 : 0) -
-                                1
+                                (template.table?.showUnitPrice ? 1 : 0) - 1
                               }
                               className="p-3 border text-left text-[12.5px]"
                               style={{ borderColor: accentColor }}
@@ -693,7 +597,7 @@ export default function A4Preview({ template, setTemplate }) {
                               className="p-3 border font-mono text-[13px]"
                               style={{ borderColor: accentColor }}
                             >
-                              28,750.00 ر.س
+                              {total.toLocaleString(undefined, { minimumFractionDigits: 2 })} ر.س
                             </td>
                           </tr>
                         )}
@@ -701,29 +605,27 @@ export default function A4Preview({ template, setTemplate }) {
                     </table>
                   </section>
 
-                  {/* الشروط والأحكام */}
-                  <section className="mb-10 avoid-break">
-                    <h4
-                      className="mb-3 text-[13px] font-black flex items-center gap-1.5"
-                      style={{ color: accentColor }}
-                    >
-                      <Scale
-                        className="w-4.5 h-4.5"
-                        style={{ color: goldColor }}
-                      />{" "}
-                      ثالثاً:{" "}
-                      {template.terms?.title ||
-                        "الشروط والأحكام والالتزامات العامة"}
-                    </h4>
-                    <div className="bg-slate-50/50 border border-slate-100 p-4 rounded-xl text-justify text-[11.5px] leading-[2.2] text-slate-700 font-bold whitespace-pre-wrap">
-                      {template.terms?.text ||
-                        "سيتم إدراج الشروط والأحكام الخاصة بالمكتب هنا..."}
-                    </div>
-                  </section>
+                  {/* الشروط والأحكام - تظهر فقط إذا كان هناك نص مدخل */}
+                  {template.terms?.text && template.terms.text.trim() !== "" && (
+                    <section className="mb-10 avoid-break">
+                      <h4
+                        className="mb-3 text-[13px] font-black flex items-center gap-1.5"
+                        style={{ color: accentColor }}
+                      >
+                        <Scale
+                          className="w-4.5 h-4.5"
+                          style={{ color: goldColor }}
+                        />{" "}
+                        ثالثاً: {template.terms?.title}
+                      </h4>
+                      <div className="bg-slate-50/50 border border-slate-100 p-4 rounded-xl text-justify text-[11.5px] leading-[2.2] text-slate-700 font-bold whitespace-pre-wrap">
+                        {template.terms?.text}
+                      </div>
+                    </section>
+                  )}
 
                   {/* التوقيعات */}
-                  {(template.signatures?.showClient ||
-                    template.signatures?.showOffice) && (
+                  {(template.signatures?.showClient || template.signatures?.showOffice) && (
                     <section className="mt-12 avoid-break">
                       <h4
                         className="mb-6 text-[12.5px] font-black text-center"
@@ -745,16 +647,12 @@ export default function A4Preview({ template, setTemplate }) {
                                 className="p-3 border-l"
                                 style={{ borderColor: accentColor }}
                               >
-                                الطرف الثاني:{" "}
-                                {template.signatures?.clientLabel ||
-                                  "اعتماد العميل المالك"}
+                                الطرف الثاني: {template.signatures?.clientLabel}
                               </th>
                             )}
                             {template.signatures?.showOffice && (
                               <th className="p-3">
-                                الطرف الأول:{" "}
-                                {template.signatures?.officeLabel ||
-                                  "مقدم الخدمة"}
+                                الطرف الأول: {template.signatures?.officeLabel}
                               </th>
                             )}
                           </tr>
@@ -768,20 +666,12 @@ export default function A4Preview({ template, setTemplate }) {
                               >
                                 <div className="flex flex-col gap-4 text-right pr-4">
                                   <div>
-                                    <span className="text-slate-500 font-bold">
-                                      الاسم:
-                                    </span>{" "}
-                                    <span className="font-black text-slate-800">
-                                      {dummyData.clientName}
-                                    </span>
+                                    <span className="text-slate-500 font-bold">الاسم:</span>{" "}
+                                    <span className="font-black text-slate-400">[اسم العميل]</span>
                                   </div>
                                   <div>
-                                    <span className="text-slate-500 font-bold">
-                                      الصفة:
-                                    </span>{" "}
-                                    <span className="font-black text-slate-800">
-                                      المالك للمشروع
-                                    </span>
+                                    <span className="text-slate-500 font-bold">الصفة:</span>{" "}
+                                    <span className="font-black text-slate-800">المالك للمشروع</span>
                                   </div>
                                   <div className="mt-6 text-center text-slate-400 font-bold mb-4">
                                     التوقيع والختم:
@@ -800,20 +690,12 @@ export default function A4Preview({ template, setTemplate }) {
                               >
                                 <div className="flex flex-col gap-4 text-right pr-4">
                                   <div>
-                                    <span className="text-slate-500 font-bold">
-                                      الجهة:
-                                    </span>{" "}
-                                    <span className="font-black text-slate-800">
-                                      شركة ديتيلز كونسولتس الهندسية
-                                    </span>
+                                    <span className="text-slate-500 font-bold">الجهة:</span>{" "}
+                                    <span className="font-black text-slate-800">شركة ديتيلز كونسولتس الهندسية</span>
                                   </div>
                                   <div>
-                                    <span className="text-slate-500 font-bold">
-                                      الممثل:
-                                    </span>{" "}
-                                    <span className="font-black text-slate-800">
-                                      إدارة العقود والمشاريع
-                                    </span>
+                                    <span className="text-slate-500 font-bold">الممثل:</span>{" "}
+                                    <span className="font-black text-slate-800">إدارة العقود والمشاريع</span>
                                   </div>
                                   <div className="mt-6 text-center text-slate-400 font-bold mb-4">
                                     الاعتماد الرسمي:
@@ -834,12 +716,10 @@ export default function A4Preview({ template, setTemplate }) {
               </tr>
             </tbody>
 
-            {/* 🚀 التذييل (Footer) */}
+            {/* التذييل */}
             <tfoot className="table-footer-group">
               <tr>
-                <td
-                  style={{ padding: `10mm ${paddingMm}mm 10mm ${paddingMm}mm` }}
-                >
+                <td style={{ padding: `10mm ${paddingMm}mm 10mm ${paddingMm}mm` }}>
                   <DetailsPrintFooter accentColor={accentColor} />
                 </td>
               </tr>
